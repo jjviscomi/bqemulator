@@ -1,0 +1,2 @@
+SELECT TO_HEX(HLL_COUNT.INIT(n)) AS sketch
+FROM UNNEST([1, 2, 3]) AS n

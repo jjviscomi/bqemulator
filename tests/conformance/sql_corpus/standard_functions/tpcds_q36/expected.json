@@ -1,0 +1,116 @@
+{
+  "fixture_version": 2,
+  "bigquery": {
+    "project": "your-bigquery-project",
+    "job_id": "41ca9c8a-68d8-45bf-99c1-329a1ab194bd",
+    "location": "US",
+    "total_bytes_processed": 614,
+    "total_bytes_billed": 41943040,
+    "duration_ms": 797
+  },
+  "schema": [
+    {
+      "name": "gross_margin",
+      "type": "NUMERIC",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "i_category",
+      "type": "STRING",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "i_class",
+      "type": "STRING",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "lochierarchy",
+      "type": "INTEGER",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "rank_within_parent",
+      "type": "INTEGER",
+      "mode": "NULLABLE"
+    }
+  ],
+  "rows": [
+    {
+      "gross_margin": "0.13",
+      "i_category": null,
+      "i_class": null,
+      "lochierarchy": 2,
+      "rank_within_parent": 1
+    },
+    {
+      "gross_margin": "0.1",
+      "i_category": "Sports",
+      "i_class": null,
+      "lochierarchy": 1,
+      "rank_within_parent": 1
+    },
+    {
+      "gross_margin": "0.122222222",
+      "i_category": "Books",
+      "i_class": null,
+      "lochierarchy": 1,
+      "rank_within_parent": 2
+    },
+    {
+      "gross_margin": "0.176923077",
+      "i_category": "Music",
+      "i_class": null,
+      "lochierarchy": 1,
+      "rank_within_parent": 3
+    },
+    {
+      "gross_margin": "0.1",
+      "i_category": "Books",
+      "i_class": "fiction",
+      "lochierarchy": 0,
+      "rank_within_parent": 1
+    },
+    {
+      "gross_margin": "0.15",
+      "i_category": "Books",
+      "i_class": "history",
+      "lochierarchy": 0,
+      "rank_within_parent": 2
+    },
+    {
+      "gross_margin": "0.15",
+      "i_category": "Music",
+      "i_class": "jazz",
+      "lochierarchy": 0,
+      "rank_within_parent": 1
+    },
+    {
+      "gross_margin": "0.2",
+      "i_category": "Music",
+      "i_class": "rock",
+      "lochierarchy": 0,
+      "rank_within_parent": 2
+    },
+    {
+      "gross_margin": "0.1",
+      "i_category": "Sports",
+      "i_class": "athletic",
+      "lochierarchy": 0,
+      "rank_within_parent": 1
+    },
+    {
+      "gross_margin": "0.1",
+      "i_category": "Sports",
+      "i_class": "team",
+      "lochierarchy": 0,
+      "rank_within_parent": 1
+    }
+  ],
+  "row_count": 10,
+  "duration_class": "fast",
+  "job_metadata": {
+    "cache_hit": false,
+    "statement_type": "SELECT"
+  }
+}

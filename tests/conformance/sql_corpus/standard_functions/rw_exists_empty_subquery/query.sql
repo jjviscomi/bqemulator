@@ -1,0 +1,3 @@
+SELECT
+  EXISTS (SELECT 1 LIMIT 0) AS r_limit_zero,
+  EXISTS (SELECT 1 FROM UNNEST(ARRAY<INT64>[])) AS r_empty_array

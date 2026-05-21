@@ -1,0 +1,50 @@
+{
+  "fixture_version": 2,
+  "bigquery": {
+    "project": "your-bigquery-project",
+    "job_id": "240f5315-131d-49dd-b8c8-01aa6372a6cd",
+    "location": "US",
+    "total_bytes_processed": 40,
+    "total_bytes_billed": 10485760,
+    "duration_ms": 2204
+  },
+  "schema": [
+    {
+      "name": "id",
+      "type": "INTEGER",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "name",
+      "type": "STRING",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "note",
+      "type": "STRING",
+      "mode": "NULLABLE"
+    }
+  ],
+  "rows": [
+    {
+      "id": 1,
+      "name": "Alice",
+      "note": null
+    },
+    {
+      "id": 2,
+      "name": "Bob",
+      "note": "ok"
+    },
+    {
+      "id": 3,
+      "name": null,
+      "note": null
+    }
+  ],
+  "row_count": 3,
+  "duration_class": "medium",
+  "job_metadata": {
+    "statement_type": "SCRIPT"
+  }
+}

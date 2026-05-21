@@ -1,0 +1,1 @@
+SELECT SQRT(16.0) AS x

@@ -1,0 +1,10 @@
+{
+  "mode": "named",
+  "parameters": [
+    {
+      "name": "ids",
+      "type": {"type": "ARRAY", "arrayType": {"type": "INT64"}},
+      "value": [1, 2, 3]
+    }
+  ]
+}

@@ -1,0 +1,1 @@
+SELECT REPEAT('ab', 0) AS s

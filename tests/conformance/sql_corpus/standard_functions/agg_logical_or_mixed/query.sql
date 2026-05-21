@@ -1,0 +1,1 @@
+SELECT LOGICAL_OR(n > 5) AS b FROM `${DATASET}.nums`

@@ -1,0 +1,2 @@
+CREATE TABLE `${DATASET}.tbl` (n INT64);
+INSERT INTO `${DATASET}.tbl` (n) VALUES (42);

@@ -1,0 +1,13 @@
+{
+  "_comment": "Seed baseline pending first Linux-CI recording. macOS dev boxes cannot generate a real mutation score because mutmut 3.5.0 uses os.fork() after loading native extensions (DuckDB, pyarrow), which segfaults on the Apple Objective-C runtime — see ADR 0026's 'local-recording limitation on macOS' negative-consequence note. To land the first real baseline, dispatch the `.github/workflows/mutation.yml` workflow with `record-baseline=true`, download the `mutation-baseline` artefact, and commit the replacement file.",
+  "score": 0.0,
+  "killed": 0,
+  "survived": 0,
+  "no_tests": 0,
+  "skipped": 0,
+  "timeout": 0,
+  "suspicious": 0,
+  "total": 0,
+  "run_at": "2026-05-19",
+  "pending_first_ci_run": true
+}

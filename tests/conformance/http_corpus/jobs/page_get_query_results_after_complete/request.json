@@ -1,0 +1,4 @@
+{
+  "method": "GET",
+  "path": "/bigquery/v2/projects/${PROJECT}/queries/${JOB_ID}"
+}

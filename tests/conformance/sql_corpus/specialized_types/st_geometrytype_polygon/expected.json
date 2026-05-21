@@ -1,0 +1,25 @@
+{
+  "fixture_version": 1,
+  "bigquery": {
+    "project": "your-bigquery-project",
+    "job_id": "25403175-edcc-4aa9-84a6-73335f80d75b",
+    "location": "US",
+    "total_bytes_processed": 0,
+    "total_bytes_billed": 0,
+    "duration_ms": 508
+  },
+  "schema": [
+    {
+      "name": "t",
+      "type": "STRING",
+      "mode": "NULLABLE"
+    }
+  ],
+  "rows": [
+    {
+      "t": "ST_Polygon"
+    }
+  ],
+  "row_count": 1,
+  "duration_class": "fast"
+}

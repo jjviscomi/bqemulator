@@ -1,0 +1,1 @@
+SELECT ASCII('A') AS n

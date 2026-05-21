@@ -1,0 +1,1 @@
+SELECT ROUND(2.5) AS x, ROUND(3.5) AS y

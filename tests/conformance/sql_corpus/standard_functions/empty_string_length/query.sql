@@ -1,0 +1,1 @@
+SELECT LENGTH('') AS n

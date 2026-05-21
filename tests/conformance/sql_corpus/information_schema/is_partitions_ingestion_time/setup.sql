@@ -1,0 +1,4 @@
+CREATE OR REPLACE TABLE `${DATASET}.p_ingest`
+(value INT64)
+PARTITION BY _PARTITIONDATE;
+INSERT INTO `${DATASET}.p_ingest` (value) VALUES (1), (2), (3);

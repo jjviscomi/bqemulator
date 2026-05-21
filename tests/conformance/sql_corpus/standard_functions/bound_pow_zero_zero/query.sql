@@ -1,0 +1,1 @@
+SELECT POW(0, 0) AS x

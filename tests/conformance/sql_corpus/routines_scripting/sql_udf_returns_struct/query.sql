@@ -1,0 +1,2 @@
+CREATE TEMP FUNCTION named_pair(a INT64, b INT64) RETURNS STRUCT<x INT64, y INT64> AS (STRUCT(a AS x, b AS y));
+SELECT named_pair(2, 3) AS p

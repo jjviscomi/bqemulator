@@ -1,0 +1,1 @@
+SELECT LENGTH('日本語') AS n

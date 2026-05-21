@@ -1,0 +1,1 @@
+SELECT ROUND(COVAR_POP(x, y), 6) AS c FROM `${DATASET}.nums`

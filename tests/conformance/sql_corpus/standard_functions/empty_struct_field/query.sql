@@ -1,0 +1,1 @@
+SELECT STRUCT('' AS s, CAST(NULL AS INT64) AS n) AS empty_like

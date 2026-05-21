@@ -1,0 +1,5 @@
+CREATE OR REPLACE PROCEDURE `${DATASET}`.p_square(IN x INT64)
+BEGIN
+  SELECT x * x AS sq;
+END;
+CALL `${DATASET}`.p_square(9)

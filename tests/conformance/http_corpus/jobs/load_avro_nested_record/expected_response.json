@@ -1,0 +1,46 @@
+{
+  "fixture_version": 1,
+  "bigquery": {
+    "project": "your-bigquery-project",
+    "location": "US"
+  },
+  "http_status": 200,
+  "headers": {
+    "content-type": "application/json"
+  },
+  "body": {
+    "kind": "bigquery#job",
+    "etag": "<*>",
+    "id": "<*>",
+    "selfLink": "<*>",
+    "user_email": "<*>",
+    "configuration": {
+      "load": {
+        "sourceUris": [
+          "gs://test-webhook-bucket/bqemu-conformance/g1/load_avro_nested_record.avro"
+        ],
+        "destinationTable": {
+          "projectId": "<*>",
+          "datasetId": "<*>",
+          "tableId": "people"
+        },
+        "writeDisposition": "WRITE_TRUNCATE",
+        "sourceFormat": "AVRO"
+      },
+      "jobType": "<*>"
+    },
+    "jobReference": {
+      "projectId": "<*>",
+      "jobId": "<*>",
+      "location": "<*>"
+    },
+    "statistics": {
+      "creationTime": "<*>",
+      "startTime": "<*>",
+      "reservation_id": "<*>"
+    },
+    "status": "<*>",
+    "principal_subject": "<*>",
+    "jobCreationReason": "<*>"
+  }
+}

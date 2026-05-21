@@ -1,0 +1,67 @@
+{
+  "fixture_version": 1,
+  "bigquery": {
+    "project": "your-bigquery-project",
+    "job_id": "0f1dc519-7700-4250-8039-821f7d39be1c",
+    "location": "US",
+    "total_bytes_processed": 837,
+    "total_bytes_billed": 31457280,
+    "duration_ms": 618
+  },
+  "schema": [
+    {
+      "name": "l_orderkey",
+      "type": "INTEGER",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "revenue",
+      "type": "NUMERIC",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "o_orderdate",
+      "type": "DATE",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "o_orderpriority",
+      "type": "STRING",
+      "mode": "NULLABLE"
+    }
+  ],
+  "rows": [
+    {
+      "l_orderkey": 2,
+      "revenue": "180",
+      "o_orderdate": "1995-02-15",
+      "o_orderpriority": "2-HIGH"
+    },
+    {
+      "l_orderkey": 1,
+      "revenue": "145",
+      "o_orderdate": "1995-01-15",
+      "o_orderpriority": "1-URGENT"
+    },
+    {
+      "l_orderkey": 7,
+      "revenue": "120.9",
+      "o_orderdate": "1995-07-15",
+      "o_orderpriority": "1-URGENT"
+    },
+    {
+      "l_orderkey": 5,
+      "revenue": "120",
+      "o_orderdate": "1995-05-15",
+      "o_orderpriority": "4-NOT SPECIFIED"
+    },
+    {
+      "l_orderkey": 8,
+      "revenue": "70",
+      "o_orderdate": "1995-08-15",
+      "o_orderpriority": "3-MEDIUM"
+    }
+  ],
+  "row_count": 5,
+  "duration_class": "fast"
+}

@@ -1,0 +1,1 @@
+SELECT VARIANCE(x) AS v FROM `${DATASET}.nums`

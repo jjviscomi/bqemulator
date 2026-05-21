@@ -1,0 +1,1 @@
+SELECT FORMAT('%.3f', 3.14159) AS s

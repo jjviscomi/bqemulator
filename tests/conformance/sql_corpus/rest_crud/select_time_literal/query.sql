@@ -1,0 +1,1 @@
+SELECT TIME '12:34:56' AS t

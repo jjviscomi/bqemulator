@@ -1,0 +1,25 @@
+{
+  "fixture_version": 2,
+  "bigquery": {
+    "project": "your-bigquery-project",
+    "job_id": "af78e60c-68da-4902-92ae-7e397b99652a",
+    "location": "US",
+    "total_bytes_processed": 0,
+    "total_bytes_billed": 0,
+    "duration_ms": 571
+  },
+  "schema": [
+    {
+      "name": "gj",
+      "type": "STRING",
+      "mode": "NULLABLE"
+    }
+  ],
+  "rows": [
+    {
+      "gj": "{ \"type\": \"MultiPoint\", \"coordinates\": [ [0, 0], [1, 1] ] } "
+    }
+  ],
+  "row_count": 1,
+  "duration_class": "fast"
+}

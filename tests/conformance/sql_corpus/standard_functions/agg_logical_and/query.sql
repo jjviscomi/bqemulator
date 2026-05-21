@@ -1,0 +1,1 @@
+SELECT LOGICAL_AND(n > 0) AS b FROM `${DATASET}.nums`

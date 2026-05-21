@@ -1,0 +1,63 @@
+# typos CLI configuration for bqemulator.
+# See https://github.com/crate-ci/typos.
+
+[files]
+extend-exclude = [
+    "site/**",
+    "*.lock",
+    ".venv/**",
+    "htmlcov/**",
+    ".hypothesis/**",
+    ".mypy_cache/**",
+    ".pytest_cache/**",
+    ".ruff_cache/**",
+    "node_modules/**",
+    "tests/e2e/nodejs_client/node_modules/**",
+    # Conformance fixtures contain BigQuery-recorded result rows that
+    # include arbitrary string content (Unicode test strings, prefix-
+    # truncation outputs, etc.). The recorder is the only path that
+    # produces these files, so a "typo" detected here is by definition
+    # a real BigQuery output — never a typo in source code.
+    "tests/conformance/sql_corpus/**/expected.json",
+    # P3.a error-shape fixtures intentionally contain malformed SQL
+    # (e.g. "SLECT 1" — a deliberate keyword misspelling that real
+    # BigQuery rejects). The fixture's whole purpose is to record
+    # BigQuery's response to the misspelled keyword, so typos here
+    # are by-design.
+    "tests/conformance/sql_corpus/**/error_*/query.sql",
+]
+
+[default.extend-words]
+# Common short-form test-local variable; reads clearly in context.
+strat = "strat"
+# U.S. English usage accepted by bqemulator; dictionary accepts both.
+unparseable = "unparseable"
+# English prefix, not a typo for "miss" or "mist".
+mis = "mis"
+# Intentionally-misspelled BigQuery key name used in P7.a test
+# fixtures and CHANGELOG examples that demonstrate the
+# ``build_job_config`` typo-rejection contract (a user passing
+# ``write_dispositon`` instead of ``write_disposition`` must get a
+# loud ValueError, not a silent pass-through).
+dispositon = "dispositon"
+# TPC-DS Q44 canonical spec SQL uses ``asceding`` (typo for
+# "ascending") in its derived-table alias. Preserved verbatim so
+# the fixture matches the published spec text; the BigQuery
+# baseline records the exact column name as ``asceding``.
+asceding = "asceding"
+# US state code (North Dakota) used in TPC-DS IN-lists. typos
+# otherwise flags it as a misspelling of "AND".
+ND = "ND"
+# Timezone abbreviation (Indian / Israel Standard Time). Appears in
+# timezone-parsing fixtures and the error-mapper's rationale comment
+# documenting how DuckDB and BigQuery diverge on this abbreviation.
+IST = "IST"
+
+[default.extend-identifiers]
+STRUCTs = "STRUCTs"
+# English-plural form of the SQL keyword SELECT — used in CHANGELOG /
+# code comments where multiple SELECT statements are described
+# collectively ("compat-mode SELECTs", "naked literal SELECTs"). The
+# typos linter mistakes the trailing ``s`` for a separate token and
+# flags ``SELEC`` as a misspelling of ``SELECT``.
+SELECTs = "SELECTs"

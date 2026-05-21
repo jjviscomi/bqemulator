@@ -1,0 +1,139 @@
+{
+  "fixture_version": 2,
+  "bigquery": {
+    "project": "your-bigquery-project",
+    "job_id": "2b335176-4319-49e3-a319-8bd1262b6ffd",
+    "location": "US",
+    "total_bytes_processed": 904,
+    "total_bytes_billed": 52428800,
+    "duration_ms": 1171
+  },
+  "schema": [
+    {
+      "name": "c_last_name",
+      "type": "STRING",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "c_first_name",
+      "type": "STRING",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "c_salutation",
+      "type": "STRING",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "c_preferred_cust_flag",
+      "type": "STRING",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "ss_ticket_number",
+      "type": "INTEGER",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "cnt",
+      "type": "INTEGER",
+      "mode": "NULLABLE"
+    }
+  ],
+  "rows": [
+    {
+      "c_last_name": "Anderson",
+      "c_first_name": "Alice",
+      "c_salutation": "Mr.",
+      "c_preferred_cust_flag": "Y",
+      "ss_ticket_number": 1001,
+      "cnt": 1
+    },
+    {
+      "c_last_name": "Anderson",
+      "c_first_name": "Alice",
+      "c_salutation": "Mr.",
+      "c_preferred_cust_flag": "Y",
+      "ss_ticket_number": 1002,
+      "cnt": 1
+    },
+    {
+      "c_last_name": "Brown",
+      "c_first_name": "Bob",
+      "c_salutation": "Ms.",
+      "c_preferred_cust_flag": "N",
+      "ss_ticket_number": 1003,
+      "cnt": 1
+    },
+    {
+      "c_last_name": "Brown",
+      "c_first_name": "Bob",
+      "c_salutation": "Ms.",
+      "c_preferred_cust_flag": "N",
+      "ss_ticket_number": 1004,
+      "cnt": 1
+    },
+    {
+      "c_last_name": "Brown",
+      "c_first_name": "Bob",
+      "c_salutation": "Ms.",
+      "c_preferred_cust_flag": "N",
+      "ss_ticket_number": 1005,
+      "cnt": 1
+    },
+    {
+      "c_last_name": "Clarke",
+      "c_first_name": "Carol",
+      "c_salutation": "Dr.",
+      "c_preferred_cust_flag": "Y",
+      "ss_ticket_number": 1006,
+      "cnt": 1
+    },
+    {
+      "c_last_name": "Clarke",
+      "c_first_name": "Carol",
+      "c_salutation": "Dr.",
+      "c_preferred_cust_flag": "Y",
+      "ss_ticket_number": 1007,
+      "cnt": 1
+    },
+    {
+      "c_last_name": "Clarke",
+      "c_first_name": "Carol",
+      "c_salutation": "Dr.",
+      "c_preferred_cust_flag": "Y",
+      "ss_ticket_number": 1008,
+      "cnt": 1
+    },
+    {
+      "c_last_name": "Clarke",
+      "c_first_name": "Carol",
+      "c_salutation": "Dr.",
+      "c_preferred_cust_flag": "Y",
+      "ss_ticket_number": 1009,
+      "cnt": 1
+    },
+    {
+      "c_last_name": "Clarke",
+      "c_first_name": "Carol",
+      "c_salutation": "Dr.",
+      "c_preferred_cust_flag": "Y",
+      "ss_ticket_number": 1010,
+      "cnt": 1
+    },
+    {
+      "c_last_name": "Clarke",
+      "c_first_name": "Carol",
+      "c_salutation": "Dr.",
+      "c_preferred_cust_flag": "Y",
+      "ss_ticket_number": 1011,
+      "cnt": 1
+    }
+  ],
+  "row_count": 11,
+  "duration_class": "medium",
+  "job_metadata": {
+    "cache_hit": false,
+    "statement_type": "SELECT"
+  }
+}

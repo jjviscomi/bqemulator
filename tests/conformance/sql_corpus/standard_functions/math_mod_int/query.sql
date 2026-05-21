@@ -1,0 +1,1 @@
+SELECT MOD(10, 3) AS x

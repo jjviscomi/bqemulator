@@ -1,0 +1,50 @@
+{
+  "fixture_version": 1,
+  "bigquery": {
+    "project": "your-bigquery-project",
+    "location": "US"
+  },
+  "http_status": 200,
+  "headers": {
+    "content-type": "application/json"
+  },
+  "body": {
+    "kind": "bigquery#job",
+    "etag": "<*>",
+    "id": "<*>",
+    "selfLink": "<*>",
+    "user_email": "<*>",
+    "configuration": {
+      "query": {
+        "query": "SELECT 7 AS lucky",
+        "destinationTable": "<*>",
+        "writeDisposition": "<*>",
+        "priority": "<*>",
+        "useLegacySql": "<*>"
+      },
+      "jobType": "<*>"
+    },
+    "jobReference": {
+      "projectId": "<*>",
+      "jobId": "<*>",
+      "location": "<*>"
+    },
+    "statistics": {
+      "creationTime": "<*>",
+      "startTime": "<*>",
+      "endTime": "<*>",
+      "totalBytesProcessed": "<*>",
+      "query": {
+        "totalBytesProcessed": "<*>",
+        "totalBytesBilled": "<*>",
+        "cacheHit": "<*>",
+        "statementType": "SELECT"
+      }
+    },
+    "status": {
+      "state": "DONE"
+    },
+    "principal_subject": "<*>",
+    "jobCreationReason": "<*>"
+  }
+}

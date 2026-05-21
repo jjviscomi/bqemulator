@@ -1,0 +1,19 @@
+{
+  "fixture_version": 2,
+  "bigquery": {
+    "project": "your-bigquery-project",
+    "job_id": null,
+    "location": "US",
+    "total_bytes_processed": 0,
+    "total_bytes_billed": 0,
+    "duration_ms": 492
+  },
+  "error": {
+    "reason": "duplicate",
+    "location": null,
+    "http_status": 409,
+    "message_pattern": "Already\\ Exists:\\ Table\\ [\\w\\-\\.:]+\\.t_dup",
+    "message_sample": "Already Exists: Table your-bigquery-project:bqemu_conformance_ec6ed9570f46_error_create_tab.t_dup"
+  },
+  "duration_class": "fast"
+}

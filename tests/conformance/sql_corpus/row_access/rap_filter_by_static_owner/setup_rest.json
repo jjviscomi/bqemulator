@@ -1,0 +1,16 @@
+[
+  {
+    "method": "POST",
+    "path": "/bigquery/v2/projects/${PROJECT}/datasets/${DATASET_ID}/tables/docs/rowAccessPolicies",
+    "body": {
+      "rowAccessPolicyReference": {
+        "projectId": "${PROJECT}",
+        "datasetId": "${DATASET_ID}",
+        "tableId": "docs",
+        "policyId": "alice_docs"
+      },
+      "filterPredicate": "owner_email = 'alice@example.com'",
+      "grantees": ["${PRINCIPAL}"]
+    }
+  }
+]

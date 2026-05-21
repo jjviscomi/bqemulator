@@ -1,0 +1,1 @@
+SELECT SAFE_DIVIDE(1.0, 0.0) AS r_pos, SAFE_DIVIDE(-1.0, 0.0) AS r_neg, SAFE_DIVIDE(0.0, 0.0) AS r_zero

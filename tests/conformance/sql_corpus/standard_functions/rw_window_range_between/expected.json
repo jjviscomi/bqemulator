@@ -1,0 +1,97 @@
+{
+  "fixture_version": 1,
+  "bigquery": {
+    "project": "your-bigquery-project",
+    "job_id": "01c78db7-8f95-4610-b92c-e8f358923e6f",
+    "location": "US",
+    "total_bytes_processed": 208,
+    "total_bytes_billed": 10485760,
+    "duration_ms": 965
+  },
+  "schema": [
+    {
+      "name": "user_id",
+      "type": "INTEGER",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "ts",
+      "type": "TIMESTAMP",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "events_last_10m",
+      "type": "INTEGER",
+      "mode": "NULLABLE"
+    }
+  ],
+  "rows": [
+    {
+      "user_id": 1,
+      "ts": "2024-01-15T09:00:00+00:00",
+      "events_last_10m": 1
+    },
+    {
+      "user_id": 1,
+      "ts": "2024-01-15T09:05:00+00:00",
+      "events_last_10m": 2
+    },
+    {
+      "user_id": 1,
+      "ts": "2024-01-15T09:10:00+00:00",
+      "events_last_10m": 3
+    },
+    {
+      "user_id": 2,
+      "ts": "2024-01-15T10:00:00+00:00",
+      "events_last_10m": 1
+    },
+    {
+      "user_id": 2,
+      "ts": "2024-01-15T10:01:00+00:00",
+      "events_last_10m": 2
+    },
+    {
+      "user_id": 2,
+      "ts": "2024-01-15T10:10:00+00:00",
+      "events_last_10m": 3
+    },
+    {
+      "user_id": 2,
+      "ts": "2024-01-15T10:20:00+00:00",
+      "events_last_10m": 2
+    },
+    {
+      "user_id": 3,
+      "ts": "2024-01-15T11:00:00+00:00",
+      "events_last_10m": 1
+    },
+    {
+      "user_id": 3,
+      "ts": "2024-01-15T11:30:00+00:00",
+      "events_last_10m": 1
+    },
+    {
+      "user_id": 4,
+      "ts": "2024-01-16T08:00:00+00:00",
+      "events_last_10m": 1
+    },
+    {
+      "user_id": 5,
+      "ts": "2024-01-16T09:00:00+00:00",
+      "events_last_10m": 1
+    },
+    {
+      "user_id": 5,
+      "ts": "2024-01-16T09:05:00+00:00",
+      "events_last_10m": 2
+    },
+    {
+      "user_id": 5,
+      "ts": "2024-01-16T09:10:00+00:00",
+      "events_last_10m": 3
+    }
+  ],
+  "row_count": 13,
+  "duration_class": "fast"
+}

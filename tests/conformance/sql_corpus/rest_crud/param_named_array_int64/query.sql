@@ -1,0 +1,1 @@
+SELECT v FROM UNNEST(@ids) AS v ORDER BY v

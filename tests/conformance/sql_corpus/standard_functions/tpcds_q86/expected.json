@@ -1,0 +1,109 @@
+{
+  "fixture_version": 2,
+  "bigquery": {
+    "project": "your-bigquery-project",
+    "job_id": "325d8d6d-e65b-45f7-88c9-c2234e241518",
+    "location": "US",
+    "total_bytes_processed": 402,
+    "total_bytes_billed": 31457280,
+    "duration_ms": 672
+  },
+  "schema": [
+    {
+      "name": "total_sum",
+      "type": "NUMERIC",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "i_category",
+      "type": "STRING",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "i_class",
+      "type": "STRING",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "lochierarchy",
+      "type": "INTEGER",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "rank_within_parent",
+      "type": "INTEGER",
+      "mode": "NULLABLE"
+    }
+  ],
+  "rows": [
+    {
+      "total_sum": "430",
+      "i_category": null,
+      "i_class": null,
+      "lochierarchy": 2,
+      "rank_within_parent": 1
+    },
+    {
+      "total_sum": "310",
+      "i_category": "Sports",
+      "i_class": null,
+      "lochierarchy": 1,
+      "rank_within_parent": 1
+    },
+    {
+      "total_sum": "90",
+      "i_category": "Music",
+      "i_class": null,
+      "lochierarchy": 1,
+      "rank_within_parent": 2
+    },
+    {
+      "total_sum": "30",
+      "i_category": "Books",
+      "i_class": null,
+      "lochierarchy": 1,
+      "rank_within_parent": 3
+    },
+    {
+      "total_sum": "30",
+      "i_category": "Books",
+      "i_class": "fiction",
+      "lochierarchy": 0,
+      "rank_within_parent": 1
+    },
+    {
+      "total_sum": "50",
+      "i_category": "Music",
+      "i_class": "rock",
+      "lochierarchy": 0,
+      "rank_within_parent": 1
+    },
+    {
+      "total_sum": "40",
+      "i_category": "Music",
+      "i_class": "jazz",
+      "lochierarchy": 0,
+      "rank_within_parent": 2
+    },
+    {
+      "total_sum": "180",
+      "i_category": "Sports",
+      "i_class": "athletic",
+      "lochierarchy": 0,
+      "rank_within_parent": 1
+    },
+    {
+      "total_sum": "130",
+      "i_category": "Sports",
+      "i_class": "team",
+      "lochierarchy": 0,
+      "rank_within_parent": 2
+    }
+  ],
+  "row_count": 9,
+  "duration_class": "fast",
+  "job_metadata": {
+    "cache_hit": false,
+    "statement_type": "SELECT"
+  }
+}

@@ -1,0 +1,1 @@
+SELECT UNICODE('A') AS x

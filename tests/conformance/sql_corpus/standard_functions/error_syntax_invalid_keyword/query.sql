@@ -1,0 +1,1 @@
+SLECT 1 AS n

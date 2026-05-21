@@ -1,0 +1,1 @@
+SELECT FORMAT('') AS s

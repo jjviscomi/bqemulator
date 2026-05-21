@@ -1,0 +1,44 @@
+{
+  "fixture_version": 1,
+  "bigquery": {
+    "project": "your-bigquery-project",
+    "location": "US"
+  },
+  "http_status": 200,
+  "headers": {
+    "content-type": "application/json"
+  },
+  "body": {
+    "kind": "bigquery#table",
+    "etag": "<*>",
+    "id": "<*>",
+    "selfLink": "<*>",
+    "tableReference": {
+      "projectId": "<*>",
+      "datasetId": "<*>",
+      "tableId": "<*>"
+    },
+    "schema": {
+      "fields": [
+        {
+          "name": "a",
+          "type": "INTEGER"
+        },
+        {
+          "name": "b",
+          "type": "STRING"
+        }
+      ]
+    },
+    "numBytes": "0",
+    "numLongTermBytes": "0",
+    "numRows": "0",
+    "creationTime": "<*>",
+    "lastModifiedTime": "<*>",
+    "type": "TABLE",
+    "location": "<*>",
+    "numTotalLogicalBytes": "0",
+    "numActiveLogicalBytes": "0",
+    "numLongTermLogicalBytes": "0"
+  }
+}

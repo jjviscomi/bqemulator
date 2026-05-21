@@ -1,0 +1,5 @@
+SELECT user_id, ts,
+  COUNT(*) OVER (PARTITION BY user_id ORDER BY UNIX_SECONDS(ts)
+    RANGE BETWEEN 600 PRECEDING AND CURRENT ROW) AS events_last_10m
+FROM `${DATASET}.events`
+ORDER BY user_id, ts

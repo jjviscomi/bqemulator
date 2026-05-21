@@ -1,0 +1,1 @@
+SELECT INTEGER(1) AS n

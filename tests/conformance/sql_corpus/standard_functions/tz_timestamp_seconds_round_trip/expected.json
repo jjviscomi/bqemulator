@@ -1,0 +1,29 @@
+{
+  "fixture_version": 2,
+  "bigquery": {
+    "project": "your-bigquery-project",
+    "job_id": "9a3c5ff2-8c2a-4bd6-9451-e816e27feabd",
+    "location": "US",
+    "total_bytes_processed": 0,
+    "total_bytes_billed": 0,
+    "duration_ms": 692
+  },
+  "schema": [
+    {
+      "name": "ts",
+      "type": "TIMESTAMP",
+      "mode": "NULLABLE"
+    }
+  ],
+  "rows": [
+    {
+      "ts": "2024-01-15T12:00:00+00:00"
+    }
+  ],
+  "row_count": 1,
+  "duration_class": "fast",
+  "job_metadata": {
+    "cache_hit": false,
+    "statement_type": "SELECT"
+  }
+}

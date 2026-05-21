@@ -1,0 +1,179 @@
+{
+  "fixture_version": 2,
+  "bigquery": {
+    "project": "your-bigquery-project",
+    "job_id": "50262330-67e8-4292-a747-701c0f353bce",
+    "location": "US",
+    "total_bytes_processed": 1658,
+    "total_bytes_billed": 41943040,
+    "duration_ms": 766
+  },
+  "schema": [
+    {
+      "name": "i_category",
+      "type": "STRING",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "i_brand",
+      "type": "STRING",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "s_store_name",
+      "type": "STRING",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "s_company_name",
+      "type": "STRING",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "d_year",
+      "type": "INTEGER",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "d_moy",
+      "type": "INTEGER",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "avg_monthly_sales",
+      "type": "NUMERIC",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "sum_sales",
+      "type": "NUMERIC",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "psum",
+      "type": "NUMERIC",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "nsum",
+      "type": "NUMERIC",
+      "mode": "NULLABLE"
+    }
+  ],
+  "rows": [
+    {
+      "i_category": "Sports",
+      "i_brand": "BrandA",
+      "s_store_name": "Store Alpha",
+      "s_company_name": "Co1",
+      "d_year": 1999,
+      "d_moy": 2,
+      "avg_monthly_sales": "65",
+      "sum_sales": "20",
+      "psum": "10",
+      "nsum": "30"
+    },
+    {
+      "i_category": "Sports",
+      "i_brand": "BrandA",
+      "s_store_name": "Store Alpha",
+      "s_company_name": "Co1",
+      "d_year": 1999,
+      "d_moy": 3,
+      "avg_monthly_sales": "65",
+      "sum_sales": "30",
+      "psum": "20",
+      "nsum": "40"
+    },
+    {
+      "i_category": "Sports",
+      "i_brand": "BrandA",
+      "s_store_name": "Store Alpha",
+      "s_company_name": "Co1",
+      "d_year": 1999,
+      "d_moy": 4,
+      "avg_monthly_sales": "65",
+      "sum_sales": "40",
+      "psum": "30",
+      "nsum": "50"
+    },
+    {
+      "i_category": "Sports",
+      "i_brand": "BrandA",
+      "s_store_name": "Store Alpha",
+      "s_company_name": "Co1",
+      "d_year": 1999,
+      "d_moy": 5,
+      "avg_monthly_sales": "65",
+      "sum_sales": "50",
+      "psum": "40",
+      "nsum": "60"
+    },
+    {
+      "i_category": "Sports",
+      "i_brand": "BrandA",
+      "s_store_name": "Store Alpha",
+      "s_company_name": "Co1",
+      "d_year": 1999,
+      "d_moy": 8,
+      "avg_monthly_sales": "65",
+      "sum_sales": "80",
+      "psum": "70",
+      "nsum": "90"
+    },
+    {
+      "i_category": "Sports",
+      "i_brand": "BrandA",
+      "s_store_name": "Store Alpha",
+      "s_company_name": "Co1",
+      "d_year": 1999,
+      "d_moy": 9,
+      "avg_monthly_sales": "65",
+      "sum_sales": "90",
+      "psum": "80",
+      "nsum": "100"
+    },
+    {
+      "i_category": "Sports",
+      "i_brand": "BrandA",
+      "s_store_name": "Store Alpha",
+      "s_company_name": "Co1",
+      "d_year": 1999,
+      "d_moy": 10,
+      "avg_monthly_sales": "65",
+      "sum_sales": "100",
+      "psum": "90",
+      "nsum": "110"
+    },
+    {
+      "i_category": "Sports",
+      "i_brand": "BrandA",
+      "s_store_name": "Store Alpha",
+      "s_company_name": "Co1",
+      "d_year": 1999,
+      "d_moy": 11,
+      "avg_monthly_sales": "65",
+      "sum_sales": "110",
+      "psum": "100",
+      "nsum": "120"
+    },
+    {
+      "i_category": "Sports",
+      "i_brand": "BrandA",
+      "s_store_name": "Store Alpha",
+      "s_company_name": "Co1",
+      "d_year": 1999,
+      "d_moy": 12,
+      "avg_monthly_sales": "65",
+      "sum_sales": "120",
+      "psum": "110",
+      "nsum": "130"
+    }
+  ],
+  "row_count": 9,
+  "duration_class": "fast",
+  "job_metadata": {
+    "cache_hit": false,
+    "statement_type": "SELECT"
+  }
+}

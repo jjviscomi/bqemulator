@@ -1,0 +1,16 @@
+{
+  "fixture_version": 1,
+  "source": "hand-authored-emulator-baseline",
+  "note": "Hand-authored. Verifies that a multipart envelope whose JSON part is malformed surfaces a 400 with the invalidQuery reason \u2014 no media bytes are touched.",
+  "http_status": 400,
+  "headers": {
+    "content-type": "application/json"
+  },
+  "body": {
+    "error": {
+      "code": 400,
+      "message": "<*>",
+      "status": "INVALID_ARGUMENT"
+    }
+  }
+}

@@ -1,0 +1,20 @@
+{
+  "fixture_version": 2,
+  "bigquery": {
+    "project": "your-bigquery-project",
+    "job_id": "bdb87f17-cba9-431b-aa4f-69039b7650fa",
+    "location": "US",
+    "total_bytes_processed": 14,
+    "total_bytes_billed": 10485760,
+    "duration_ms": 2481
+  },
+  "schema": [],
+  "rows": [],
+  "row_count": 0,
+  "duration_class": "medium",
+  "job_metadata": {
+    "cache_hit": false,
+    "statement_type": "UPDATE",
+    "num_dml_affected_rows": 1
+  }
+}

@@ -1,0 +1,1 @@
+SELECT CAST(NULL AS INT64) IN (1, 2, 3) AS result

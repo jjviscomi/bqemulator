@@ -1,0 +1,1 @@
+SELECT BYTE_LENGTH('日本') AS n

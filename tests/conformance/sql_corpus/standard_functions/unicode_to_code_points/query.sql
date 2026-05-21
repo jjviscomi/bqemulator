@@ -1,0 +1,1 @@
+SELECT TO_CODE_POINTS('abc') AS pts

@@ -1,0 +1,9 @@
+CREATE OR REPLACE TABLE `${DATASET}.events` (
+  user_id STRING,
+  duration RANGE<TIMESTAMP>
+);
+
+INSERT INTO `${DATASET}.events` (user_id, duration) VALUES
+  ("alice", RANGE<TIMESTAMP> "[2024-01-01 09:00:00+00, 2024-01-01 10:00:00+00)"),
+  ("alice", RANGE<TIMESTAMP> "[2024-01-01 10:00:00+00, 2024-01-01 11:00:00+00)"),
+  ("alice", RANGE<TIMESTAMP> "[2024-01-01 14:00:00+00, 2024-01-01 15:00:00+00)");

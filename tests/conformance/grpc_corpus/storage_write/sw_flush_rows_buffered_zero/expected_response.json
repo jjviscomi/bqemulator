@@ -1,0 +1,26 @@
+{
+  "fixture_version": 1,
+  "bigquery": {
+    "project": "your-bigquery-project",
+    "location": "US"
+  },
+  "calls": [
+    {
+      "method": "BigQueryWrite.CreateWriteStream",
+      "status": "OK",
+      "response": {
+        "name": "<*>",
+        "type_": "BUFFERED",
+        "create_time": "<*>",
+        "table_schema": "<*>",
+        "write_mode": "WRITE_MODE_UNSPECIFIED",
+        "location": ""
+      }
+    },
+    {
+      "method": "BigQueryWrite.FlushRows",
+      "status": "OUT_OF_RANGE",
+      "error_message": "Offset 0 is beyond the end of the stream Entity: ${STREAM_NAME}"
+    }
+  ]
+}

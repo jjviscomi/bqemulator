@@ -1,0 +1,71 @@
+[
+  {
+    "method": "POST",
+    "path": "/bigquery/v2/projects/${PROJECT}/datasets",
+    "body": {
+      "datasetReference": {
+        "projectId": "${PROJECT}",
+        "datasetId": "${DATASET_ID}_views"
+      },
+      "location": "US"
+    }
+  },
+  {
+    "method": "POST",
+    "path": "/bigquery/v2/projects/${PROJECT}/datasets/${DATASET_ID}_views/tables",
+    "body": {
+      "tableReference": {
+        "projectId": "${PROJECT}",
+        "datasetId": "${DATASET_ID}_views",
+        "tableId": "orders_with_names"
+      },
+      "view": {
+        "query": "SELECT o.id, c.name, o.amount FROM `${PROJECT}.${DATASET_ID}.orders` AS o JOIN `${PROJECT}.${DATASET_ID}.customers` AS c USING (customer_id)",
+        "useLegacySql": false
+      }
+    }
+  },
+  {
+    "method": "POST",
+    "path": "/bigquery/v2/projects/${PROJECT}/datasets/${DATASET_ID}/tables/orders/rowAccessPolicies",
+    "body": {
+      "rowAccessPolicyReference": {
+        "projectId": "${PROJECT}",
+        "datasetId": "${DATASET_ID}",
+        "tableId": "orders",
+        "policyId": "blocks_principal"
+      },
+      "filterPredicate": "id = 1",
+      "grantees": ["${OTHER_PRINCIPAL}"]
+    }
+  },
+  {
+    "method": "POST",
+    "path": "/bigquery/v2/projects/${PROJECT}/datasets/${DATASET_ID}/tables/customers/rowAccessPolicies",
+    "body": {
+      "rowAccessPolicyReference": {
+        "projectId": "${PROJECT}",
+        "datasetId": "${DATASET_ID}",
+        "tableId": "customers",
+        "policyId": "blocks_principal_customers"
+      },
+      "filterPredicate": "customer_id = 10",
+      "grantees": ["${OTHER_PRINCIPAL}"]
+    }
+  },
+  {
+    "method": "PATCH",
+    "path": "/bigquery/v2/projects/${PROJECT}/datasets/${DATASET_ID}",
+    "body": {
+      "access": [
+        {
+          "view": {
+            "projectId": "${PROJECT}",
+            "datasetId": "${DATASET_ID}_views",
+            "tableId": "orders_with_names"
+          }
+        }
+      ]
+    }
+  }
+]

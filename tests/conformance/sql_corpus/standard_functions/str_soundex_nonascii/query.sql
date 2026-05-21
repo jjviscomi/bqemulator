@@ -1,0 +1,1 @@
+SELECT SOUNDEX('Müller') AS x

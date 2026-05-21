@@ -1,0 +1,1 @@
+SELECT FORMAT_DATE('%Y-%m-%d', DATE '0001-01-01') AS s

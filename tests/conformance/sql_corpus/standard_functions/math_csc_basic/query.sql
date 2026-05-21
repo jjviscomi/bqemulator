@@ -1,0 +1,1 @@
+SELECT ROUND(CSC(1.0), 6) AS x

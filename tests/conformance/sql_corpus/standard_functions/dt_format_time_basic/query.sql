@@ -1,0 +1,1 @@
+SELECT FORMAT_TIME('%H:%M:%S', TIME '12:30:45') AS s

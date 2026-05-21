@@ -1,0 +1,1 @@
+SELECT LPAD(CAST(NULL AS STRING), 5, "0") AS result

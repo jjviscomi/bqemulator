@@ -1,0 +1,1 @@
+SELECT JSON_VALUE('[10, 20, 30]', '$[1]') AS v

@@ -1,0 +1,46 @@
+{
+  "fixture_version": 1,
+  "bigquery": {
+    "project": "your-bigquery-project",
+    "job_id": "4bb21351-9c28-458b-b652-3e4d4bfac730",
+    "location": "US",
+    "total_bytes_processed": 23,
+    "total_bytes_billed": 10485760,
+    "duration_ms": 4472
+  },
+  "schema": [
+    {
+      "name": "id",
+      "type": "INTEGER",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "person",
+      "type": "RECORD",
+      "mode": "NULLABLE",
+      "fields": [
+        {
+          "name": "name",
+          "type": "STRING",
+          "mode": "NULLABLE"
+        },
+        {
+          "name": "age",
+          "type": "INTEGER",
+          "mode": "NULLABLE"
+        }
+      ]
+    }
+  ],
+  "rows": [
+    {
+      "id": 1,
+      "person": {
+        "name": "Alice",
+        "age": 30
+      }
+    }
+  ],
+  "row_count": 1,
+  "duration_class": "medium"
+}

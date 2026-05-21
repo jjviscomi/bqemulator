@@ -1,0 +1,25 @@
+# Example docker-compose for local usage.
+# Run `docker compose up` to start the emulator on :9050 (REST) and :9060 (gRPC).
+
+services:
+  bqemulator:
+    image: ghcr.io/jjviscomi/bqemulator:latest
+    # build: .  # uncomment to build from source
+    container_name: bqemulator
+    ports:
+      - "9050:9050"
+      - "9060:9060"
+    environment:
+      BQEMU_DATA_DIR: /var/lib/bqemulator
+      BQEMU_LOG_LEVEL: info
+    volumes:
+      - bqemu-data:/var/lib/bqemulator
+    healthcheck:
+      test: ["CMD", "python", "-c", "import httpx; httpx.get('http://127.0.0.1:9050/healthz').raise_for_status()"]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+    restart: unless-stopped
+
+volumes:
+  bqemu-data:

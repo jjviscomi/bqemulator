@@ -1,0 +1,1 @@
+SELECT NORMALIZE('é', NFC) AS s

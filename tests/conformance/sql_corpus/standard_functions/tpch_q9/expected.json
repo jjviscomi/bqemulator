@@ -1,0 +1,71 @@
+{
+  "fixture_version": 2,
+  "bigquery": {
+    "project": "your-bigquery-project",
+    "job_id": "b5905687-8588-4a32-93c6-26e2a0d4f10c",
+    "location": "US",
+    "total_bytes_processed": 4715,
+    "total_bytes_billed": 62914560,
+    "duration_ms": 905
+  },
+  "schema": [
+    {
+      "name": "nation",
+      "type": "STRING",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "o_year",
+      "type": "INTEGER",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "sum_profit",
+      "type": "NUMERIC",
+      "mode": "NULLABLE"
+    }
+  ],
+  "rows": [
+    {
+      "nation": "CANADA",
+      "o_year": 1996,
+      "sum_profit": "2310"
+    },
+    {
+      "nation": "CANADA",
+      "o_year": 1995,
+      "sum_profit": "9820.8"
+    },
+    {
+      "nation": "CANADA",
+      "o_year": 1994,
+      "sum_profit": "303.52"
+    },
+    {
+      "nation": "CANADA",
+      "o_year": 1993,
+      "sum_profit": "1230"
+    },
+    {
+      "nation": "FRANCE",
+      "o_year": 1995,
+      "sum_profit": "2710.92"
+    },
+    {
+      "nation": "GERMANY",
+      "o_year": 1995,
+      "sum_profit": "-378"
+    },
+    {
+      "nation": "GERMANY",
+      "o_year": 1993,
+      "sum_profit": "-1774.8"
+    }
+  ],
+  "row_count": 7,
+  "duration_class": "fast",
+  "job_metadata": {
+    "cache_hit": false,
+    "statement_type": "SELECT"
+  }
+}

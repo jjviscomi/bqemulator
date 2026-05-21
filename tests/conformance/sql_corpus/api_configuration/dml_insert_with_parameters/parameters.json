@@ -1,0 +1,7 @@
+{
+  "mode": "named",
+  "parameters": [
+    {"name": "id", "type": "INT64", "value": 42},
+    {"name": "label", "type": "STRING", "value": "param-bound"}
+  ]
+}

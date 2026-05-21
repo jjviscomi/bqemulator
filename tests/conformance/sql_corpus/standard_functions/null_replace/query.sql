@@ -1,0 +1,1 @@
+SELECT REPLACE(CAST(NULL AS STRING), "a", "b") AS result

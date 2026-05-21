@@ -1,0 +1,25 @@
+{
+  "fixture_version": 1,
+  "bigquery": {
+    "project": "your-bigquery-project",
+    "job_id": "bde41c36-666c-4aac-8898-391f669232a8",
+    "location": "US",
+    "total_bytes_processed": 0,
+    "total_bytes_billed": 0,
+    "duration_ms": 518
+  },
+  "schema": [
+    {
+      "name": "s",
+      "type": "STRING",
+      "mode": "NULLABLE"
+    }
+  ],
+  "rows": [
+    {
+      "s": "\u05e9\u05dc"
+    }
+  ],
+  "row_count": 1,
+  "duration_class": "fast"
+}

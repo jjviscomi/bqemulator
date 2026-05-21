@@ -1,0 +1,9 @@
+{
+  "method": "POST",
+  "path": "/bigquery/v2/projects/${PROJECT}/queries",
+  "body": {
+    "query": "SELECT NOT_A_FUNCTION(1)",
+    "useLegacySql": false,
+    "dryRun": true
+  }
+}

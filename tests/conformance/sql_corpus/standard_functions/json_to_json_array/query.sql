@@ -1,0 +1,1 @@
+SELECT TO_JSON([1, 2, 3]) AS j

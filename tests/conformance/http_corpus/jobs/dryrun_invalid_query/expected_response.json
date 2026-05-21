@@ -1,0 +1,27 @@
+{
+  "fixture_version": 1,
+  "bigquery": {
+    "project": "your-bigquery-project",
+    "location": "US"
+  },
+  "http_status": 400,
+  "headers": {
+    "content-type": "application/json"
+  },
+  "body": {
+    "error": {
+      "code": 400,
+      "message": "<*>",
+      "errors": [
+        {
+          "message": "<*>",
+          "domain": "global",
+          "reason": "invalidQuery",
+          "location": "<*>",
+          "locationType": "<*>"
+        }
+      ],
+      "status": "<*>"
+    }
+  }
+}

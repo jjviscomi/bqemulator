@@ -1,0 +1,24 @@
+{
+  "fixture_version": 1,
+  "calls": [
+    {
+      "method": "BigQueryWrite.CreateWriteStream",
+      "request": {
+        "parent": "projects/${PROJECT}/datasets/${DATASET_ID}/tables/write_target",
+        "write_stream": {
+          "type_": "BUFFERED"
+        }
+      },
+      "capture": {
+        "STREAM_NAME": "name"
+      }
+    },
+    {
+      "method": "BigQueryWrite.FlushRows",
+      "request": {
+        "write_stream": "${STREAM_NAME}",
+        "offset": "0"
+      }
+    }
+  ]
+}

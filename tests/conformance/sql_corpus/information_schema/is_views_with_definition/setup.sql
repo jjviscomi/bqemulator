@@ -1,0 +1,3 @@
+CREATE OR REPLACE TABLE `${DATASET}.src_def` (id INT64, name STRING);
+CREATE OR REPLACE VIEW `${DATASET}.v_def` AS
+SELECT id, name FROM `${DATASET}.src_def` WHERE id > 0;

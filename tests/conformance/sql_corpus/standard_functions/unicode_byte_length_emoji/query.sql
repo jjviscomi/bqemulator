@@ -1,0 +1,1 @@
+SELECT BYTE_LENGTH('😀') AS n

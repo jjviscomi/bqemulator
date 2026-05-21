@@ -1,0 +1,11 @@
+--===bqemu-fixture-boundary===
+Content-Type: application/json; charset=UTF-8
+
+{"configuration": {"load": {"destinationTable": {"projectId": "${PROJECT}", "datasetId": "${DATASET_ID}", "tableId": "tbl"}, "sourceFormat": "BOGUS", "writeDisposition": "WRITE_TRUNCATE"}}}
+--===bqemu-fixture-boundary===
+Content-Type: text/csv
+
+id,name
+1,a
+
+--===bqemu-fixture-boundary===--

@@ -1,0 +1,1 @@
+SELECT ROUND(CORR(x, y), 6) AS r FROM `${DATASET}.nums`

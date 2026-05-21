@@ -1,0 +1,1 @@
+SELECT PARSE_TIMESTAMP('%Y-%m-%d %H:%M:%S', '2024-01-15 12:34:56') AS ts

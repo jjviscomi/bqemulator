@@ -1,0 +1,1 @@
+SELECT ROUND(TANH(0), 12) AS x

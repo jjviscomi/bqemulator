@@ -1,0 +1,3 @@
+SELECT id FROM `${DATASET}.geo_named`
+WHERE loc IS NOT NULL
+ORDER BY id

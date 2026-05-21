@@ -1,0 +1,2 @@
+CREATE TEMP FUNCTION js_sqrt(x FLOAT64) RETURNS FLOAT64 LANGUAGE js AS "return Math.sqrt(x);";
+SELECT js_sqrt(16.0) AS r

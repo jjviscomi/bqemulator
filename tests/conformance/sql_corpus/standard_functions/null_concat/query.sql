@@ -1,0 +1,1 @@
+SELECT CONCAT(CAST(NULL AS STRING), "x") AS result

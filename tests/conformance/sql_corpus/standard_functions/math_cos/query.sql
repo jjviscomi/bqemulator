@@ -1,0 +1,1 @@
+SELECT ROUND(COS(0), 12) AS x

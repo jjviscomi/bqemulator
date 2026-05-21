@@ -1,0 +1,46 @@
+{
+  "fixture_version": 1,
+  "bigquery": {
+    "project": "your-bigquery-project",
+    "location": "US"
+  },
+  "http_status": 200,
+  "headers": {
+    "content-type": "application/json"
+  },
+  "body": {
+    "kind": "bigquery#job",
+    "etag": "<*>",
+    "id": "<*>",
+    "selfLink": "<*>",
+    "user_email": "<*>",
+    "configuration": {
+      "extract": {
+        "sourceTable": {
+          "projectId": "<*>",
+          "datasetId": "<*>",
+          "tableId": "src"
+        },
+        "destinationUri": "<*>",
+        "destinationUris": [
+          "gs://test-webhook-bucket/bqemu-conformance/g1/extract_avro_basic.avro"
+        ],
+        "destinationFormat": "AVRO"
+      },
+      "jobType": "<*>"
+    },
+    "jobReference": {
+      "projectId": "<*>",
+      "jobId": "<*>",
+      "location": "<*>"
+    },
+    "statistics": {
+      "creationTime": "<*>",
+      "startTime": "<*>",
+      "reservation_id": "<*>"
+    },
+    "status": "<*>",
+    "principal_subject": "<*>",
+    "jobCreationReason": "<*>"
+  }
+}

@@ -1,0 +1,1 @@
+SELECT SPLIT(CAST(NULL AS STRING), ",") AS result

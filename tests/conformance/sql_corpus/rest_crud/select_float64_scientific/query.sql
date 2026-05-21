@@ -1,0 +1,1 @@
+SELECT 1.5e10 AS x

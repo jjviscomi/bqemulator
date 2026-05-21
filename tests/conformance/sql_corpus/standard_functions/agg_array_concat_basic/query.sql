@@ -1,0 +1,2 @@
+SELECT ARRAY_CONCAT_AGG(arr ORDER BY id) AS combined
+FROM `${DATASET}.arrays`

@@ -1,0 +1,5 @@
+{
+  "destination": "${PROJECT}.${DATASET_ID}.target",
+  "write_disposition": "WRITE_TRUNCATE",
+  "schema_update_options": ["ALLOW_FIELD_ADDITION"]
+}

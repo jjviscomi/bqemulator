@@ -1,0 +1,27 @@
+{
+  "fixture_version": 1,
+  "bigquery": {
+    "project": "your-bigquery-project",
+    "location": "US"
+  },
+  "calls": [
+    {
+      "method": "BigQueryRead.CreateReadSession",
+      "status": "OK",
+      "response": {
+        "name": "<*>",
+        "expire_time": "<*>",
+        "data_format": "ARROW",
+        "arrow_schema": {
+          "serialized_schema": "<*>"
+        },
+        "table": "projects/${PROJECT}/datasets/${DATASET_ID}/tables/empty_read_data",
+        "streams": [],
+        "estimated_total_bytes_scanned": "<*>",
+        "estimated_total_physical_file_size": "<*>",
+        "estimated_row_count": "<*>",
+        "trace_id": "<*>"
+      }
+    }
+  ]
+}

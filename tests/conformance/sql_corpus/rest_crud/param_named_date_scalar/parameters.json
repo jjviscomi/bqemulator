@@ -1,0 +1,6 @@
+{
+  "mode": "named",
+  "parameters": [
+    {"name": "d", "type": "DATE", "value": "2024-01-15"}
+  ]
+}

@@ -1,0 +1,50 @@
+{
+  "fixture_version": 1,
+  "bigquery": {
+    "project": "your-bigquery-project",
+    "location": "US"
+  },
+  "http_status": 200,
+  "headers": {
+    "content-type": "application/json"
+  },
+  "body": {
+    "kind": "bigquery#job",
+    "etag": "<*>",
+    "id": "<*>",
+    "selfLink": "<*>",
+    "user_email": "<*>",
+    "configuration": {
+      "query": {
+        "query": "SELECT 1 AS a, CAST(2.5 AS FLOAT64) AS b, 'c' AS c",
+        "destinationTable": "<*>",
+        "writeDisposition": "<*>",
+        "priority": "<*>",
+        "useLegacySql": "<*>"
+      },
+      "dryRun": "<*>",
+      "jobType": "<*>"
+    },
+    "jobReference": {
+      "projectId": "<*>",
+      "location": "<*>"
+    },
+    "statistics": {
+      "creationTime": "<*>",
+      "endTime": "<*>",
+      "totalBytesProcessed": "<*>",
+      "query": {
+        "totalBytesProcessed": "<*>",
+        "totalBytesBilled": "<*>",
+        "cacheHit": "<*>",
+        "schema": "<*>",
+        "statementType": "SELECT",
+        "totalBytesProcessedAccuracy": "<*>"
+      }
+    },
+    "status": {
+      "state": "DONE"
+    },
+    "principal_subject": "<*>"
+  }
+}

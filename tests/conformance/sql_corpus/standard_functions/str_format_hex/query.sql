@@ -1,0 +1,1 @@
+SELECT FORMAT('%x', 255) AS s

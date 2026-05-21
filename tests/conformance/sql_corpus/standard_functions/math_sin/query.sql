@@ -1,0 +1,1 @@
+SELECT ROUND(SIN(0), 12) AS x

@@ -1,0 +1,1 @@
+SELECT ROUND(3.5) AS x

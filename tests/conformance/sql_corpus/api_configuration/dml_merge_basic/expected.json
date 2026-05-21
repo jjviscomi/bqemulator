@@ -1,0 +1,20 @@
+{
+  "fixture_version": 2,
+  "bigquery": {
+    "project": "your-bigquery-project",
+    "job_id": "29948f6a-c2d8-4a4e-93f6-86de7cae8e0d",
+    "location": "US",
+    "total_bytes_processed": 13,
+    "total_bytes_billed": 10485760,
+    "duration_ms": 5001
+  },
+  "schema": [],
+  "rows": [],
+  "row_count": 0,
+  "duration_class": "medium",
+  "job_metadata": {
+    "cache_hit": false,
+    "statement_type": "MERGE",
+    "num_dml_affected_rows": 2
+  }
+}

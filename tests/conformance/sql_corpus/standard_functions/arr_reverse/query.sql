@@ -1,0 +1,1 @@
+SELECT ARRAY_REVERSE([1, 2, 3]) AS a

@@ -1,0 +1,1 @@
+SELECT ROUND(COVAR_SAMP(x, y), 6) AS c FROM `${DATASET}.nums`

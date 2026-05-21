@@ -1,0 +1,1 @@
+DELETE FROM `${DATASET}`.target WHERE TRUE

@@ -1,0 +1,3 @@
+CREATE TABLE FUNCTION `${DATASET}`.always_empty()
+  AS (SELECT v FROM UNNEST(ARRAY<INT64>[]) AS v);
+SELECT COUNT(*) AS n FROM `${DATASET}`.always_empty()

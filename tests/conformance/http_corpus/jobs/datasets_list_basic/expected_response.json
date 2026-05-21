@@ -1,0 +1,27 @@
+{
+  "fixture_version": 1,
+  "bigquery": {
+    "project": "your-bigquery-project",
+    "location": "US"
+  },
+  "http_status": 200,
+  "headers": {
+    "content-type": "application/json"
+  },
+  "body": {
+    "kind": "bigquery#datasetList",
+    "etag": "<*>",
+    "datasets": [
+      {
+        "kind": "bigquery#dataset",
+        "id": "<*>",
+        "datasetReference": {
+          "datasetId": "<*>",
+          "projectId": "<*>"
+        },
+        "location": "<*>",
+        "type": "DEFAULT"
+      }
+    ]
+  }
+}

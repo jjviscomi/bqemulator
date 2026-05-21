@@ -1,0 +1,29 @@
+{
+  "fixture_version": 2,
+  "bigquery": {
+    "project": "your-bigquery-project",
+    "job_id": "cf1cd479-7464-4126-9881-6d23ee306a4b",
+    "location": "US",
+    "total_bytes_processed": 0,
+    "total_bytes_billed": 0,
+    "duration_ms": 634
+  },
+  "schema": [
+    {
+      "name": "meters",
+      "type": "FLOAT",
+      "mode": "NULLABLE"
+    }
+  ],
+  "rows": [
+    {
+      "meters": 10007.559105973372
+    }
+  ],
+  "row_count": 1,
+  "duration_class": "fast",
+  "job_metadata": {
+    "cache_hit": false,
+    "statement_type": "SELECT"
+  }
+}

@@ -1,0 +1,1 @@
+SELECT 2 IN (1, 2, 3) AS b

@@ -1,0 +1,1 @@
+SELECT ARRAY_LAST([10, 20, 30]) AS l

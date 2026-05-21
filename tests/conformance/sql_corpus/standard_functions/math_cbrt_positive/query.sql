@@ -1,0 +1,1 @@
+SELECT ROUND(CBRT(27.0), 6) AS x

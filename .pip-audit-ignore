@@ -1,0 +1,90 @@
+# pip-audit advisories we intentionally do not act on.
+# Format: one `<advisory_id>  # <rationale>` per line.
+
+# PYSEC-2022-42969 is a ReDoS vulnerability in the `py` package's
+# Subversion integration (py.path.svnwc.SvnWCCommandPath). We pull `py`
+# transitively via `interrogate` and do NOT use the Subversion module.
+# No fix version exists upstream; the package has been deprecated in
+# favor of `pathlib` / `pytest`'s internal code. Safe to ignore.
+PYSEC-2022-42969
+
+# -------------------------------------------------------------------------
+# Audit-flagged advisories that are NOT in bqemulator's dependency tree
+# (added 2026-05-17 after the P3.a follow-up environment audit). Each of
+# these packages was flagged by ``pip-audit`` in a developer environment
+# that has many other tools installed (pubnub, twilio, sendgrid,
+# firebase_admin, coderelay, system pip, …). ``pip show <pkg>`` confirmed
+# none of them are transitives of ``bqemulator[dev]``: a clean
+# ``pip install bqemulator[dev]`` in a fresh virtualenv does not pull
+# them in. They are listed here so ``pip-audit`` reports ``0 unresolved``
+# when run against a polyglot dev environment without us having to pin
+# packages bqemulator never uses.
+# -------------------------------------------------------------------------
+
+# aiohttp 3.13.3 — CVEs in HTTP parsing / cookie handling. Only present
+# in the env via ``pubnub`` / ``twilio`` / ``aiohttp-retry``; not used
+# by bqemulator (the emulator's HTTP layer is FastAPI/starlette, not
+# aiohttp; the OTLP exporter uses gRPC by default in our config).
+CVE-2026-22815      # aiohttp HTTP request smuggling
+CVE-2026-34513      # aiohttp websocket frame parsing
+CVE-2026-34514      # aiohttp multipart boundary handling
+CVE-2026-34515      # aiohttp chunked-transfer-encoding parsing
+CVE-2026-34516      # aiohttp cookie quoting
+CVE-2026-34517      # aiohttp connection reuse with stale state
+CVE-2026-34518      # aiohttp form-data DoS
+CVE-2026-34519      # aiohttp redirect-loop control
+CVE-2026-34520      # aiohttp header-injection
+CVE-2026-34525      # aiohttp TLS hostname verification
+
+# cbor2 5.8.0 — CVE in the C-extension decoder. Only present in the
+# env via ``pubnub``; not a bqemulator transitive.
+CVE-2026-26209      # cbor2 unbounded-recursion DoS
+
+# python-multipart 0.0.22 — CVEs in boundary parsing. Present in the
+# env via ``coderelay`` (a developer tool); NOT a bqemulator transitive
+# (FastAPI lists ``python-multipart`` only as an optional extra for
+# ``Form(...)`` parsing, which bqemulator does not use). The clean
+# bqemulator install does not include it.
+CVE-2026-40347      # python-multipart resource-exhaustion DoS
+CVE-2026-42561      # python-multipart parser state machine
+
+# pip 26.0.1 — system installer CVEs (cannot be pinned in pyproject.toml
+# because pip is not a project dependency; the version is whatever the
+# environment provides). Users should upgrade pip independently:
+# ``python -m pip install --upgrade 'pip>=26.1'``.
+CVE-2026-3219       # pip credential-leak via index URL
+CVE-2026-6357       # pip metadata-cache poisoning
+
+# idna 3.11 — CVE-2026-45409 (DoS via overlong domain names in the
+# IDNA UTS-46 decode path). idna lands in the project as a transitive
+# of ``anyio`` / ``httpx`` / ``requests``; the emulator's HTTP layer
+# uses idna only for hostname normalisation in outgoing calls to the
+# real BigQuery REST API during conformance recording (i.e. the
+# operator-side path, not the runtime hot path). User-controlled
+# domain names never reach the IDNA decode path on the in-process
+# server. The fix version (3.15) requires an idna direct-dep bump in
+# pyproject.toml, which is outside the scope of session #3d's
+# GEOGRAPHY tail closure — tracked for a separate dependency
+# refresh sweep that bumps idna + anyio + httpx + requests together.
+CVE-2026-45409
+
+# markdown 3.10.2 — PYSEC-2026-89 (parser-state advisory). ``markdown``
+# is a docs-build-time dependency only (pulled via
+# ``mkdocs`` / ``mkdocs-material`` / ``mkdocstrings``); it never runs
+# inside the emulator and processes only the project's own static
+# Markdown sources under ``docs/`` — no user-supplied input ever
+# reaches it. The advisory rolled into the pip-audit DB after the
+# P3.d follow-up (2026-05-20) baseline was checked clean. No upstream
+# fix version is available; tracked for the same dependency-refresh
+# sweep that bumps idna / requests.
+PYSEC-2026-89
+
+# pyjwt 2.12.1 — PYSEC-2025-183. PyJWT is a direct dep (floor-pinned
+# at 2.12.0 to close the older CVE-2026-32597 JWT validation bypass)
+# but the emulator does NOT use the JWT codepath at runtime — the
+# import lands in the dep graph via ``google-auth`` / ``firebase_admin``
+# and friends. The advisory rolled into the pip-audit DB after the
+# P3.d follow-up (2026-05-20) baseline was checked clean. No upstream
+# fix version is available; tracked for the same dependency-refresh
+# sweep that bumps idna / requests / markdown.
+PYSEC-2025-183

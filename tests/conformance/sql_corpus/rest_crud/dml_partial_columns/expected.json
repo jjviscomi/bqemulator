@@ -1,0 +1,37 @@
+{
+  "fixture_version": 1,
+  "bigquery": {
+    "project": "your-bigquery-project",
+    "job_id": "a38284ae-cb3a-40ad-b89b-379ef821231b",
+    "location": "US",
+    "total_bytes_processed": 170,
+    "total_bytes_billed": 10485760,
+    "duration_ms": 3738
+  },
+  "schema": [
+    {
+      "name": "order_id",
+      "type": "INTEGER",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "customer",
+      "type": "STRING",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "amount",
+      "type": "NUMERIC",
+      "mode": "NULLABLE"
+    }
+  ],
+  "rows": [
+    {
+      "order_id": 60,
+      "customer": "PartialCust",
+      "amount": null
+    }
+  ],
+  "row_count": 1,
+  "duration_class": "medium"
+}

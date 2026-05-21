@@ -1,0 +1,3 @@
+SELECT id FROM `${DATASET}.hourly_events`
+WHERE event_ts >= TIMESTAMP '2024-01-15 10:00:00+00'
+ORDER BY id

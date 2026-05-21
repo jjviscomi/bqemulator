@@ -1,0 +1,11 @@
+[
+  {
+    "method": "POST",
+    "path": "/bigquery/v2/projects/${PROJECT}/datasets/${DATASET_ID}/tables/tbl/insertAll",
+    "body": {
+      "rows": [
+        {"insertId": "dedup-fixture-key-1", "json": {"n": 42}}
+      ]
+    }
+  }
+]

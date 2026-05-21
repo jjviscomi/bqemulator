@@ -1,0 +1,1 @@
+SELECT BIT_XOR(n) AS b FROM `${DATASET}.nums`

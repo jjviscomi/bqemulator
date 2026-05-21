@@ -1,0 +1,8 @@
+{
+  "mode": "positional",
+  "parameters": [
+    {"type": "INT64", "value": 7},
+    {"type": "STRING", "value": "alpha"},
+    {"type": "BOOL", "value": true}
+  ]
+}

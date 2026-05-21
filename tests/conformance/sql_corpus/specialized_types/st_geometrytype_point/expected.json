@@ -1,0 +1,25 @@
+{
+  "fixture_version": 1,
+  "bigquery": {
+    "project": "your-bigquery-project",
+    "job_id": "914658cb-3e62-4a00-9f3c-f77d6cc4d2c8",
+    "location": "US",
+    "total_bytes_processed": 0,
+    "total_bytes_billed": 0,
+    "duration_ms": 558
+  },
+  "schema": [
+    {
+      "name": "t",
+      "type": "STRING",
+      "mode": "NULLABLE"
+    }
+  ],
+  "rows": [
+    {
+      "t": "ST_Point"
+    }
+  ],
+  "row_count": 1,
+  "duration_class": "fast"
+}

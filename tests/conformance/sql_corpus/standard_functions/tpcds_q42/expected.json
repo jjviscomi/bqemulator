@@ -1,0 +1,65 @@
+{
+  "fixture_version": 2,
+  "bigquery": {
+    "project": "your-bigquery-project",
+    "job_id": "ba290e16-430b-414f-9dbe-d956f59074a1",
+    "location": "US",
+    "total_bytes_processed": 567,
+    "total_bytes_billed": 31457280,
+    "duration_ms": 863
+  },
+  "schema": [
+    {
+      "name": "d_year",
+      "type": "INTEGER",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "i_category_id",
+      "type": "INTEGER",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "i_category",
+      "type": "STRING",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "sum_ext_sales_price",
+      "type": "NUMERIC",
+      "mode": "NULLABLE"
+    }
+  ],
+  "rows": [
+    {
+      "d_year": 2000,
+      "i_category_id": 1,
+      "i_category": "Sports",
+      "sum_ext_sales_price": "140"
+    },
+    {
+      "d_year": 2000,
+      "i_category_id": 2,
+      "i_category": "Music",
+      "sum_ext_sales_price": "100"
+    },
+    {
+      "d_year": 2000,
+      "i_category_id": 4,
+      "i_category": "Jewelry",
+      "sum_ext_sales_price": "80"
+    },
+    {
+      "d_year": 2000,
+      "i_category_id": 3,
+      "i_category": "Books",
+      "sum_ext_sales_price": "60"
+    }
+  ],
+  "row_count": 4,
+  "duration_class": "fast",
+  "job_metadata": {
+    "cache_hit": false,
+    "statement_type": "SELECT"
+  }
+}

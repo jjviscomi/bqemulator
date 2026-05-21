@@ -1,0 +1,1 @@
+SELECT ROUND(COT(1.0), 6) AS x

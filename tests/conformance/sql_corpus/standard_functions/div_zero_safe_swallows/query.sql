@@ -1,0 +1,1 @@
+SELECT SAFE.LN(1 / 0) AS x

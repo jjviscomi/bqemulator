@@ -1,0 +1,89 @@
+{
+  "fixture_version": 2,
+  "bigquery": {
+    "project": "your-bigquery-project",
+    "job_id": "292eb45c-72d3-47d9-bb58-84b20849bb54",
+    "location": "US",
+    "total_bytes_processed": 746,
+    "total_bytes_billed": 31457280,
+    "duration_ms": 1004
+  },
+  "schema": [
+    {
+      "name": "d_year",
+      "type": "INTEGER",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "brand_id",
+      "type": "INTEGER",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "brand",
+      "type": "STRING",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "sum_agg",
+      "type": "NUMERIC",
+      "mode": "NULLABLE"
+    }
+  ],
+  "rows": [
+    {
+      "d_year": 2000,
+      "brand_id": 1003,
+      "brand": "brandc #3",
+      "sum_agg": "75"
+    },
+    {
+      "d_year": 2000,
+      "brand_id": 1001,
+      "brand": "branda #1",
+      "sum_agg": "70"
+    },
+    {
+      "d_year": 2000,
+      "brand_id": 1002,
+      "brand": "brandb #2",
+      "sum_agg": "40"
+    },
+    {
+      "d_year": 2000,
+      "brand_id": 1005,
+      "brand": "brande #5",
+      "sum_agg": "12"
+    },
+    {
+      "d_year": 2001,
+      "brand_id": 1001,
+      "brand": "branda #1",
+      "sum_agg": "60"
+    },
+    {
+      "d_year": 2001,
+      "brand_id": 1003,
+      "brand": "brandc #3",
+      "sum_agg": "30"
+    },
+    {
+      "d_year": 2002,
+      "brand_id": 1002,
+      "brand": "brandb #2",
+      "sum_agg": "80"
+    },
+    {
+      "d_year": 2002,
+      "brand_id": 1005,
+      "brand": "brande #5",
+      "sum_agg": "36"
+    }
+  ],
+  "row_count": 8,
+  "duration_class": "medium",
+  "job_metadata": {
+    "cache_hit": false,
+    "statement_type": "SELECT"
+  }
+}

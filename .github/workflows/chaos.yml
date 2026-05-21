@@ -1,0 +1,66 @@
+name: Chaos
+
+# Tier 7 chaos suite — deliberately disrupts the emulator
+# (mid-query process kills, file corruption, resource exhaustion,
+# clock skew) and asserts it fails safely rather than silently
+# corrupting data. See docs/adr/0021-chaos-tier-design-contract.md
+# for the design contract.
+#
+# === Trigger policy: manual only (workflow_dispatch) ===
+#
+# This workflow is intentionally NOT scheduled and NOT auto-triggered
+# on push or pull_request. The gating / cadence decision is deferred
+# until after the project's GitHub repo is set up and there is real
+# PR traffic to characterise runtime, flakiness, and runner-cost
+# trade-offs against. Until then, an operator runs this workflow via
+# the GitHub Actions "Run workflow" button (or
+# `gh workflow run chaos`).
+#
+# Candidate future triggers, evaluated post-setup:
+#   - per-PR gate (push + pull_request on main) — the suite's per-test
+#     `--timeout=60` bounds the worst-case run at ~18 min for the
+#     18 tests; aggressive parallelism could halve that
+#   - nightly schedule — cheaper per-PR, but bugs ship to main before
+#     detection
+#   - release-gate-only
+#
+# Running locally:
+#
+#     make test-chaos
+#
+# (equivalent to `pytest tests/chaos -m chaos --timeout=60`)
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: chaos-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  chaos:
+    name: Chaos tier (manual)
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+      - name: Install dev deps
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[dev,all]"
+      - name: Run chaos suite
+        run: |
+          pytest tests/chaos -m chaos --timeout=60 --junit-xml=chaos-results.xml
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: chaos-results
+          path: chaos-results.xml
+          if-no-files-found: warn

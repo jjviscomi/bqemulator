@@ -1,0 +1,40 @@
+{
+  "fixture_version": 1,
+  "source": "hand-authored-emulator-baseline",
+  "note": "Hand-authored against the in-process emulator. Re-record from real BigQuery once operator credentials + a BQEMU_CONFORMANCE_PROJECT are available; the multipart/related upload host is documented at https://cloud.google.com/bigquery/docs/loading-data-local#multipart-upload.",
+  "http_status": 200,
+  "headers": {
+    "content-type": "application/json"
+  },
+  "body": {
+    "kind": "bigquery#job",
+    "id": "<*>",
+    "etag": "<*>",
+    "jobReference": {
+      "projectId": "<*>",
+      "jobId": "<*>",
+      "location": "<*>"
+    },
+    "configuration": {
+      "load": {
+        "destinationTable": {
+          "projectId": "<*>",
+          "datasetId": "<*>",
+          "tableId": "tbl"
+        },
+        "sourceFormat": "CSV",
+        "writeDisposition": "WRITE_TRUNCATE",
+        "skipLeadingRows": 1,
+        "sourceUris": "<*>"
+      }
+    },
+    "status": {
+      "state": "DONE"
+    },
+    "statistics": {
+      "load": {
+        "outputRows": "3"
+      }
+    }
+  }
+}

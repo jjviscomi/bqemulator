@@ -1,0 +1,97 @@
+{
+  "fixture_version": 1,
+  "bigquery": {
+    "project": "your-bigquery-project",
+    "job_id": "d2c6247f-924b-4faf-9f70-fd24e844b29f",
+    "location": "US",
+    "total_bytes_processed": 309,
+    "total_bytes_billed": 10485760,
+    "duration_ms": 702
+  },
+  "schema": [
+    {
+      "name": "user_id",
+      "type": "INTEGER",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "event_type",
+      "type": "STRING",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "sec_since_prev",
+      "type": "INTEGER",
+      "mode": "NULLABLE"
+    }
+  ],
+  "rows": [
+    {
+      "user_id": 1,
+      "event_type": "view",
+      "sec_since_prev": null
+    },
+    {
+      "user_id": 1,
+      "event_type": "click",
+      "sec_since_prev": 300
+    },
+    {
+      "user_id": 1,
+      "event_type": "purchase",
+      "sec_since_prev": 300
+    },
+    {
+      "user_id": 2,
+      "event_type": "view",
+      "sec_since_prev": null
+    },
+    {
+      "user_id": 2,
+      "event_type": "view",
+      "sec_since_prev": 60
+    },
+    {
+      "user_id": 2,
+      "event_type": "click",
+      "sec_since_prev": 540
+    },
+    {
+      "user_id": 2,
+      "event_type": "purchase",
+      "sec_since_prev": 600
+    },
+    {
+      "user_id": 3,
+      "event_type": "view",
+      "sec_since_prev": null
+    },
+    {
+      "user_id": 3,
+      "event_type": "click",
+      "sec_since_prev": 1800
+    },
+    {
+      "user_id": 4,
+      "event_type": "purchase",
+      "sec_since_prev": null
+    },
+    {
+      "user_id": 5,
+      "event_type": "view",
+      "sec_since_prev": null
+    },
+    {
+      "user_id": 5,
+      "event_type": "purchase",
+      "sec_since_prev": 300
+    },
+    {
+      "user_id": 5,
+      "event_type": "purchase",
+      "sec_since_prev": 300
+    }
+  ],
+  "row_count": 13,
+  "duration_class": "fast"
+}

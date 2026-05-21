@@ -1,0 +1,1 @@
+SELECT JSON_ARRAY_INSERT(JSON '[1,2,3]', '$[0]', 99) AS j

@@ -1,0 +1,1 @@
+SELECT NULLIF("a", CAST(NULL AS STRING)) AS result

@@ -1,0 +1,1 @@
+SELECT ROUND(CSCH(-2.0), 6) AS x

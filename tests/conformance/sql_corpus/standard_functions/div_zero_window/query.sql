@@ -1,0 +1,1 @@
+SELECT a / SUM(b) OVER (PARTITION BY p) AS quotient FROM `${DATASET}.t`

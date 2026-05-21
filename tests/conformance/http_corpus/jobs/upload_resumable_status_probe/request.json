@@ -1,0 +1,7 @@
+{
+  "method": "PUT",
+  "path": "/upload/bigquery/v2/projects/${PROJECT}/jobs?upload_id=${UPLOAD_ID}",
+  "headers": {
+    "Content-Range": "bytes */100"
+  }
+}

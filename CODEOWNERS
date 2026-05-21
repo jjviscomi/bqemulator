@@ -1,0 +1,55 @@
+# CODEOWNERS — routes reviews to subsystem owners.
+# See https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-security/customizing-your-repository/about-code-owners
+
+# Global fallback: the project lead reviews anything without a more specific owner.
+*                                           @jjviscomi
+
+# Core domain
+/src/bqemulator/domain/                     @jjviscomi
+/src/bqemulator/catalog/                    @jjviscomi
+/src/bqemulator/storage/                    @jjviscomi
+
+# SQL translation
+/src/bqemulator/sql/                        @jjviscomi
+/src/bqemulator/scripting/                  @jjviscomi
+/src/bqemulator/udf/                        @jjviscomi
+
+# Versioning subsystem
+/src/bqemulator/versioning/                 @jjviscomi
+
+# Types
+/src/bqemulator/types/                      @jjviscomi
+
+# API surfaces
+/src/bqemulator/api/                        @jjviscomi
+/src/bqemulator/grpc_api/                   @jjviscomi
+/src/bqemulator/streaming/                  @jjviscomi
+
+# Observability
+/src/bqemulator/observability/              @jjviscomi
+
+# Tests
+/tests/unit/                                @jjviscomi
+/tests/integration/                         @jjviscomi
+/tests/e2e/                                 @jjviscomi
+/tests/conformance/                         @jjviscomi
+
+# Docs
+/docs/                                      @jjviscomi
+/docs/adr/                                  @jjviscomi
+/docs/rfcs/                                 @jjviscomi
+
+# CI / build
+/.github/                                   @jjviscomi
+/Dockerfile                                 @jjviscomi
+/Makefile                                   @jjviscomi
+/pyproject.toml                             @jjviscomi
+
+# Governance
+/GOVERNANCE.md                              @jjviscomi
+/CODEOWNERS                                 @jjviscomi
+/SECURITY.md                                @jjviscomi
+
+# TSC (Technical Steering Committee)
+# Listed here so they are auto-requested on RFC changes.
+/docs/rfcs/                                 @jjviscomi

@@ -1,0 +1,11 @@
+{
+  "fixture_version": 1,
+  "calls": [
+    {
+      "method": "BigQueryWrite.GetWriteStream",
+      "request": {
+        "name": "projects/${PROJECT}/datasets/${DATASET_ID}/tables/write_target/streams/_default"
+      }
+    }
+  ]
+}

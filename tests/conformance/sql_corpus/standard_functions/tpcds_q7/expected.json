@@ -1,0 +1,67 @@
+{
+  "fixture_version": 2,
+  "bigquery": {
+    "project": "your-bigquery-project",
+    "job_id": "98351d59-8ace-4424-9800-c936daf1bdd3",
+    "location": "US",
+    "total_bytes_processed": 999,
+    "total_bytes_billed": 52428800,
+    "duration_ms": 780
+  },
+  "schema": [
+    {
+      "name": "i_item_id",
+      "type": "STRING",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "agg1",
+      "type": "FLOAT",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "agg2",
+      "type": "NUMERIC",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "agg3",
+      "type": "NUMERIC",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "agg4",
+      "type": "NUMERIC",
+      "mode": "NULLABLE"
+    }
+  ],
+  "rows": [
+    {
+      "i_item_id": "AAAA1",
+      "agg1": 4.0,
+      "agg2": "15",
+      "agg3": "0.75",
+      "agg4": "14.25"
+    },
+    {
+      "i_item_id": "AAAA2",
+      "agg1": 2.0,
+      "agg2": "30",
+      "agg3": "2",
+      "agg4": "28"
+    },
+    {
+      "i_item_id": "AAAA3",
+      "agg1": 1.0,
+      "agg2": "40",
+      "agg3": "3",
+      "agg4": "37"
+    }
+  ],
+  "row_count": 3,
+  "duration_class": "fast",
+  "job_metadata": {
+    "cache_hit": false,
+    "statement_type": "SELECT"
+  }
+}

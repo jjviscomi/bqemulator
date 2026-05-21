@@ -1,0 +1,6 @@
+CREATE OR REPLACE TABLE `${DATASET}.monthly_sales`
+PARTITION BY DATE_TRUNC(sale_date, MONTH)
+AS
+  SELECT 1 AS id, NUMERIC "100" AS amount, DATE "2024-01-15" AS sale_date UNION ALL
+  SELECT 2 AS id, NUMERIC "200" AS amount, DATE "2024-02-15" AS sale_date UNION ALL
+  SELECT 3 AS id, NUMERIC "300" AS amount, DATE "2024-03-15" AS sale_date;

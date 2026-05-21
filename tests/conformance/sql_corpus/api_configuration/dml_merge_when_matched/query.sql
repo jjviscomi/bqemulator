@@ -1,0 +1,4 @@
+MERGE `${DATASET}`.target T
+USING (SELECT 1 AS id UNION ALL SELECT 2) S
+  ON T.id = S.id
+WHEN MATCHED THEN UPDATE SET label = 'after'

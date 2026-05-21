@@ -1,0 +1,1 @@
+SELECT REGEXP_REPLACE('abc123', r'[0-9]+', 'X') AS s

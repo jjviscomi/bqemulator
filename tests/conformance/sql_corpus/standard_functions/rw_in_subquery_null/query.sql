@@ -1,0 +1,4 @@
+SELECT
+  (1 IN (SELECT CAST(NULL AS INT64))) AS r_value_in_null,
+  (CAST(NULL AS INT64) IN (SELECT 1)) AS r_null_in_set,
+  (CAST(NULL AS INT64) IN (SELECT CAST(NULL AS INT64))) AS r_both_null

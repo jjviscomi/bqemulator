@@ -1,0 +1,1 @@
+SELECT ARRAY_LENGTH(SPLIT('a,日本,😀', ',')) AS n

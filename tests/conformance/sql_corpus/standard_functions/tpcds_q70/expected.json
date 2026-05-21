@@ -1,0 +1,95 @@
+{
+  "fixture_version": 2,
+  "bigquery": {
+    "project": "your-bigquery-project",
+    "job_id": "bee9b862-25f1-4baa-aded-2d90728780aa",
+    "location": "US",
+    "total_bytes_processed": 369,
+    "total_bytes_billed": 31457280,
+    "duration_ms": 936
+  },
+  "schema": [
+    {
+      "name": "total_sum",
+      "type": "NUMERIC",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "s_state",
+      "type": "STRING",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "s_county",
+      "type": "STRING",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "lochierarchy",
+      "type": "INTEGER",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "rank_within_parent",
+      "type": "INTEGER",
+      "mode": "NULLABLE"
+    }
+  ],
+  "rows": [
+    {
+      "total_sum": "400",
+      "s_state": null,
+      "s_county": null,
+      "lochierarchy": 2,
+      "rank_within_parent": 1
+    },
+    {
+      "total_sum": "310",
+      "s_state": "TN",
+      "s_county": null,
+      "lochierarchy": 1,
+      "rank_within_parent": 1
+    },
+    {
+      "total_sum": "90",
+      "s_state": "CA",
+      "s_county": null,
+      "lochierarchy": 1,
+      "rank_within_parent": 2
+    },
+    {
+      "total_sum": "50",
+      "s_state": "CA",
+      "s_county": "Orange County",
+      "lochierarchy": 0,
+      "rank_within_parent": 1
+    },
+    {
+      "total_sum": "40",
+      "s_state": "CA",
+      "s_county": "Bronx County",
+      "lochierarchy": 0,
+      "rank_within_parent": 2
+    },
+    {
+      "total_sum": "180",
+      "s_state": "TN",
+      "s_county": "Williamson County",
+      "lochierarchy": 0,
+      "rank_within_parent": 1
+    },
+    {
+      "total_sum": "130",
+      "s_state": "TN",
+      "s_county": "Franklin Parish",
+      "lochierarchy": 0,
+      "rank_within_parent": 2
+    }
+  ],
+  "row_count": 7,
+  "duration_class": "fast",
+  "job_metadata": {
+    "cache_hit": false,
+    "statement_type": "SELECT"
+  }
+}

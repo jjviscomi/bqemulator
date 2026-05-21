@@ -1,0 +1,1 @@
+SELECT JSON_ARRAY(1, 'two', TRUE) AS j

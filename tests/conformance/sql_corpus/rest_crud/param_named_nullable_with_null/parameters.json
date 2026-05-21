@@ -1,0 +1,6 @@
+{
+  "mode": "named",
+  "parameters": [
+    {"name": "s", "type": "STRING", "value": null}
+  ]
+}

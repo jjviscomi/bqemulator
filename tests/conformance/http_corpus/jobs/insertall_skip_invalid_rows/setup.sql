@@ -1,0 +1,1 @@
+CREATE TABLE `${DATASET}.tbl` (n INT64);

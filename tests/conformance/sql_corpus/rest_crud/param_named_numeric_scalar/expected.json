@@ -1,0 +1,25 @@
+{
+  "fixture_version": 2,
+  "bigquery": {
+    "project": "your-bigquery-project",
+    "job_id": "5ae2ce37-d2bf-42ed-beb9-5749f9741a54",
+    "location": "US",
+    "total_bytes_processed": 0,
+    "total_bytes_billed": 0,
+    "duration_ms": 664
+  },
+  "schema": [
+    {
+      "name": "amt",
+      "type": "NUMERIC",
+      "mode": "NULLABLE"
+    }
+  ],
+  "rows": [
+    {
+      "amt": "123.45"
+    }
+  ],
+  "row_count": 1,
+  "duration_class": "fast"
+}

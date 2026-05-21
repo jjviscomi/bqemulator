@@ -1,0 +1,1 @@
+SELECT COUNTIF(amount > NUMERIC '100.00') AS n FROM `${DATASET}.orders`

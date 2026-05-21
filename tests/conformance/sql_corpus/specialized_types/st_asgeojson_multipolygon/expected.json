@@ -1,0 +1,25 @@
+{
+  "fixture_version": 2,
+  "bigquery": {
+    "project": "your-bigquery-project",
+    "job_id": "9eb5b0f5-2851-403e-a58c-5ea5e8a0b67e",
+    "location": "US",
+    "total_bytes_processed": 0,
+    "total_bytes_billed": 0,
+    "duration_ms": 728
+  },
+  "schema": [
+    {
+      "name": "gj",
+      "type": "STRING",
+      "mode": "NULLABLE"
+    }
+  ],
+  "rows": [
+    {
+      "gj": "{ \"type\": \"MultiPolygon\", \"coordinates\": [ [ [ [0, 0], [1, 0], [1, 1], [0, 1], [0, 0] ] ], [ [ [2, 2], [3, 2], [3, 3], [2.5, 3.00011402647166], [2, 3], [2, 2] ] ] ] } "
+    }
+  ],
+  "row_count": 1,
+  "duration_class": "fast"
+}

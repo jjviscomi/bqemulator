@@ -1,0 +1,8 @@
+{
+  "labels": {
+    "team": "data-platform",
+    "env": "test",
+    "fixture": "labels_multiple_keys",
+    "cost-center": "1234"
+  }
+}

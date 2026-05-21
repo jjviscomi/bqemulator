@@ -1,0 +1,1 @@
+SELECT ROUND(POWER(16.0, 0.5), 6) AS x

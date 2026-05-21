@@ -1,0 +1,217 @@
+{
+  "fixture_version": 1,
+  "bigquery": {
+    "project": "your-bigquery-project",
+    "location": "US"
+  },
+  "http_status": 200,
+  "headers": {
+    "content-type": "application/json"
+  },
+  "body": {
+    "kind": "bigquery#queryResponse",
+    "schema": {
+      "fields": [
+        {
+          "name": "n",
+          "type": "INTEGER",
+          "mode": "NULLABLE"
+        }
+      ]
+    },
+    "jobReference": {
+      "projectId": "<*>",
+      "jobId": "<*>",
+      "location": "<*>"
+    },
+    "totalRows": "100",
+    "pageToken": "<*>",
+    "rows": [
+      {
+        "f": [
+          {
+            "v": "1"
+          }
+        ]
+      },
+      {
+        "f": [
+          {
+            "v": "2"
+          }
+        ]
+      },
+      {
+        "f": [
+          {
+            "v": "3"
+          }
+        ]
+      },
+      {
+        "f": [
+          {
+            "v": "4"
+          }
+        ]
+      },
+      {
+        "f": [
+          {
+            "v": "5"
+          }
+        ]
+      },
+      {
+        "f": [
+          {
+            "v": "6"
+          }
+        ]
+      },
+      {
+        "f": [
+          {
+            "v": "7"
+          }
+        ]
+      },
+      {
+        "f": [
+          {
+            "v": "8"
+          }
+        ]
+      },
+      {
+        "f": [
+          {
+            "v": "9"
+          }
+        ]
+      },
+      {
+        "f": [
+          {
+            "v": "10"
+          }
+        ]
+      },
+      {
+        "f": [
+          {
+            "v": "11"
+          }
+        ]
+      },
+      {
+        "f": [
+          {
+            "v": "12"
+          }
+        ]
+      },
+      {
+        "f": [
+          {
+            "v": "13"
+          }
+        ]
+      },
+      {
+        "f": [
+          {
+            "v": "14"
+          }
+        ]
+      },
+      {
+        "f": [
+          {
+            "v": "15"
+          }
+        ]
+      },
+      {
+        "f": [
+          {
+            "v": "16"
+          }
+        ]
+      },
+      {
+        "f": [
+          {
+            "v": "17"
+          }
+        ]
+      },
+      {
+        "f": [
+          {
+            "v": "18"
+          }
+        ]
+      },
+      {
+        "f": [
+          {
+            "v": "19"
+          }
+        ]
+      },
+      {
+        "f": [
+          {
+            "v": "20"
+          }
+        ]
+      },
+      {
+        "f": [
+          {
+            "v": "21"
+          }
+        ]
+      },
+      {
+        "f": [
+          {
+            "v": "22"
+          }
+        ]
+      },
+      {
+        "f": [
+          {
+            "v": "23"
+          }
+        ]
+      },
+      {
+        "f": [
+          {
+            "v": "24"
+          }
+        ]
+      },
+      {
+        "f": [
+          {
+            "v": "25"
+          }
+        ]
+      }
+    ],
+    "totalBytesProcessed": "<*>",
+    "jobComplete": true,
+    "cacheHit": "<*>",
+    "queryId": "<*>",
+    "jobCreationReason": "<*>",
+    "totalBytesBilled": "<*>",
+    "location": "<*>",
+    "creationTime": "<*>",
+    "startTime": "<*>",
+    "endTime": "<*>"
+  }
+}

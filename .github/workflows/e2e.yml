@@ -1,0 +1,260 @@
+name: E2E
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  schedule:
+    - cron: "17 3 * * *"  # nightly full matrix
+
+concurrency:
+  group: e2e-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  packages: read
+
+jobs:
+  docker-build:
+    name: Build container (linux/amd64)
+    runs-on: ubuntu-latest
+    outputs:
+      image: ${{ steps.build.outputs.image }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - name: Build
+        id: build
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          platforms: linux/amd64
+          load: true
+          tags: ghcr.io/jjviscomi/bqemulator:ci-${{ github.sha }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+      - name: Export image tarball
+        run: docker save ghcr.io/jjviscomi/bqemulator:ci-${{ github.sha }} -o /tmp/bqemu.tar
+      - uses: actions/upload-artifact@v4
+        with:
+          name: bqemu-image
+          path: /tmp/bqemu.tar
+          retention-days: 1
+
+  python-e2e:
+    name: E2E — Python client
+    runs-on: ubuntu-latest
+    needs: docker-build
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - uses: actions/download-artifact@v4
+        with:
+          name: bqemu-image
+          path: /tmp
+      - name: Load image
+        run: docker load -i /tmp/bqemu.tar
+      - name: Install
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[dev,all]"
+      - name: Run
+        env:
+          BQEMU_IMAGE: ghcr.io/jjviscomi/bqemulator:ci-${{ github.sha }}
+        run: pytest tests/e2e/python_client -m e2e
+
+  nodejs-e2e:
+    name: E2E — Node.js client
+    runs-on: ubuntu-latest
+    needs: docker-build
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+          cache-dependency-path: tests/e2e/nodejs_client/package-lock.json
+      - uses: actions/download-artifact@v4
+        with:
+          name: bqemu-image
+          path: /tmp
+      - run: docker load -i /tmp/bqemu.tar
+      - name: Start emulator container
+        env:
+          BQEMU_IMAGE: ghcr.io/jjviscomi/bqemulator:ci-${{ github.sha }}
+        run: |
+          docker run -d --name bqemu \
+            -p 9050:9050 -p 9060:9060 \
+            -e BQEMU_REST_HOST=0.0.0.0 \
+            -e BQEMU_GRPC_HOST=0.0.0.0 \
+            -e BQEMU_REST_PORT=9050 \
+            -e BQEMU_GRPC_PORT=9060 \
+            -e BQEMU_ADMIN_ENABLED=1 \
+            "$BQEMU_IMAGE"
+          # Wait up to 60s for /healthz to respond.
+          for _ in $(seq 1 120); do
+            if curl -sf http://localhost:9050/healthz > /dev/null; then exit 0; fi
+            sleep 0.5
+          done
+          echo "::error::bqemulator did not become ready in 60s"
+          docker logs bqemu || true
+          exit 1
+      - name: Install + test
+        env:
+          BQEMU_REST_URL: http://localhost:9050
+          BQEMU_GRPC_ENDPOINT: localhost:9060
+        run: |
+          cd tests/e2e/nodejs_client
+          npm ci
+          npm test
+      - name: Container logs (on failure)
+        if: failure()
+        run: docker logs bqemu || true
+      - name: Stop container
+        if: always()
+        run: docker rm -f bqemu || true
+
+  go-e2e:
+    name: E2E — Go client
+    runs-on: ubuntu-latest
+    needs: docker-build
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.22"
+          cache: true
+          cache-dependency-path: tests/e2e/go_client/go.mod
+      - uses: actions/download-artifact@v4
+        with:
+          name: bqemu-image
+          path: /tmp
+      - run: docker load -i /tmp/bqemu.tar
+      - name: Start emulator container
+        env:
+          BQEMU_IMAGE: ghcr.io/jjviscomi/bqemulator:ci-${{ github.sha }}
+        run: |
+          docker run -d --name bqemu \
+            -p 9050:9050 -p 9060:9060 \
+            -e BQEMU_REST_HOST=0.0.0.0 \
+            -e BQEMU_GRPC_HOST=0.0.0.0 \
+            -e BQEMU_REST_PORT=9050 \
+            -e BQEMU_GRPC_PORT=9060 \
+            -e BQEMU_ADMIN_ENABLED=1 \
+            "$BQEMU_IMAGE"
+          for _ in $(seq 1 120); do
+            if curl -sf http://localhost:9050/healthz > /dev/null; then exit 0; fi
+            sleep 0.5
+          done
+          echo "::error::bqemulator did not become ready in 60s"
+          docker logs bqemu || true
+          exit 1
+      - name: Test
+        env:
+          BQEMU_REST_URL: http://localhost:9050
+          BQEMU_GRPC_ENDPOINT: localhost:9060
+        run: |
+          cd tests/e2e/go_client
+          go test ./... -count=1
+      - name: Container logs (on failure)
+        if: failure()
+        run: docker logs bqemu || true
+      - name: Stop container
+        if: always()
+        run: docker rm -f bqemu || true
+
+  java-e2e:
+    name: E2E — Java client
+    runs-on: ubuntu-latest
+    needs: docker-build
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+          cache: maven
+      - uses: actions/download-artifact@v4
+        with:
+          name: bqemu-image
+          path: /tmp
+      - run: docker load -i /tmp/bqemu.tar
+      - name: Start emulator container
+        env:
+          BQEMU_IMAGE: ghcr.io/jjviscomi/bqemulator:ci-${{ github.sha }}
+        run: |
+          docker run -d --name bqemu \
+            -p 9050:9050 -p 9060:9060 \
+            -e BQEMU_REST_HOST=0.0.0.0 \
+            -e BQEMU_GRPC_HOST=0.0.0.0 \
+            -e BQEMU_REST_PORT=9050 \
+            -e BQEMU_GRPC_PORT=9060 \
+            -e BQEMU_ADMIN_ENABLED=1 \
+            "$BQEMU_IMAGE"
+          for _ in $(seq 1 120); do
+            if curl -sf http://localhost:9050/healthz > /dev/null; then exit 0; fi
+            sleep 0.5
+          done
+          echo "::error::bqemulator did not become ready in 60s"
+          docker logs bqemu || true
+          exit 1
+      - name: Test
+        env:
+          BQEMU_REST_URL: http://localhost:9050
+          BQEMU_GRPC_ENDPOINT: localhost:9060
+        run: |
+          cd tests/e2e/java_client
+          mvn -B test
+      - name: Container logs (on failure)
+        if: failure()
+        run: docker logs bqemu || true
+      - name: Stop container
+        if: always()
+        run: docker rm -f bqemu || true
+
+  bq-cli-e2e:
+    # G5 (2026-05-21) — fifth conformance client: Google's ``bq`` CLI.
+    # Uses testcontainers (same lifecycle as the Python suite) since
+    # bq is a Python subprocess we drive from pytest, not a separate
+    # toolchain that needs its own container. The google-cloud-cli
+    # install step adds ~30s to job setup but is non-optional: a missing
+    # ``bq`` binary would skip the whole suite at pytest collection
+    # time, masking a regression silently.
+    name: E2E — bq CLI
+    runs-on: ubuntu-latest
+    needs: docker-build
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - uses: actions/download-artifact@v4
+        with:
+          name: bqemu-image
+          path: /tmp
+      - name: Load image
+        run: docker load -i /tmp/bqemu.tar
+      - name: Install google-cloud-cli
+        # https://cloud.google.com/sdk/docs/install#deb — installs
+        # ``bq`` (BigQuery CLI 2.x) which is part of the google-cloud-cli
+        # package on Debian/Ubuntu.
+        run: |
+          echo "deb [signed-by=/usr/share/keyrings/cloud.google.gpg] https://packages.cloud.google.com/apt cloud-sdk main" \
+            | sudo tee /etc/apt/sources.list.d/google-cloud-sdk.list
+          curl https://packages.cloud.google.com/apt/doc/apt-key.gpg \
+            | sudo gpg --dearmor -o /usr/share/keyrings/cloud.google.gpg
+          sudo apt-get update -y
+          sudo apt-get install -y google-cloud-cli
+          bq version
+      - name: Install bqemulator (Python + testcontainers)
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[dev,all]"
+      - name: Run
+        env:
+          BQEMU_IMAGE: ghcr.io/jjviscomi/bqemulator:ci-${{ github.sha }}
+        run: pytest tests/e2e/bq_cli_client -m e2e

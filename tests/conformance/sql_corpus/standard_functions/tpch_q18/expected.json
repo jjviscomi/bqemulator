@@ -1,0 +1,59 @@
+{
+  "fixture_version": 2,
+  "bigquery": {
+    "project": "your-bigquery-project",
+    "job_id": "f410fb61-91b3-49d1-9c4f-27a46655c23e",
+    "location": "US",
+    "total_bytes_processed": 2240,
+    "total_bytes_billed": 31457280,
+    "duration_ms": 755
+  },
+  "schema": [
+    {
+      "name": "c_name",
+      "type": "STRING",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "c_custkey",
+      "type": "INTEGER",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "o_orderkey",
+      "type": "INTEGER",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "o_orderdate",
+      "type": "DATE",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "o_totalprice",
+      "type": "NUMERIC",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "sum_qty",
+      "type": "NUMERIC",
+      "mode": "NULLABLE"
+    }
+  ],
+  "rows": [
+    {
+      "c_name": "Customer#000000007",
+      "c_custkey": 7,
+      "o_orderkey": 22,
+      "o_orderdate": "1995-12-15",
+      "o_totalprice": "99999",
+      "sum_qty": "330"
+    }
+  ],
+  "row_count": 1,
+  "duration_class": "fast",
+  "job_metadata": {
+    "cache_hit": false,
+    "statement_type": "SELECT"
+  }
+}

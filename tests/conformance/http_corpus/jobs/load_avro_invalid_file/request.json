@@ -1,0 +1,18 @@
+{
+  "method": "POST",
+  "path": "/bigquery/v2/projects/${PROJECT}/jobs",
+  "body": {
+    "configuration": {
+      "load": {
+        "destinationTable": {
+          "projectId": "${PROJECT}",
+          "datasetId": "${DATASET_ID}",
+          "tableId": "tbl"
+        },
+        "sourceUris": ["gs://${GCS_BUCKET}/g1/load_avro_invalid_file.txt"],
+        "sourceFormat": "AVRO",
+        "writeDisposition": "WRITE_TRUNCATE"
+      }
+    }
+  }
+}

@@ -1,0 +1,1 @@
+SELECT ARRAY_CONCAT([1, 2], [3, 4]) AS a

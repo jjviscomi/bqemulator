@@ -1,0 +1,36 @@
+name: Feature request
+description: Suggest a new feature or behavior
+title: "[feat]: "
+labels: [enhancement, triage]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Before filing, please check `docs/reference/out-of-scope.md` — some
+        features are explicitly excluded with rationale. For architectural
+        changes, open an RFC.
+  - type: textarea
+    id: problem
+    attributes:
+      label: What problem does this solve?
+      description: User story or concrete use case.
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed behavior
+      description: How should bqemulator behave? Match what real BigQuery does?
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+  - type: checkboxes
+    id: terms
+    attributes:
+      label: Code of Conduct
+      options:
+        - label: I agree to follow this project's Code of Conduct
+          required: true

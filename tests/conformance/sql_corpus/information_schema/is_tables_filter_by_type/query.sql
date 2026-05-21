@@ -1,0 +1,4 @@
+SELECT table_name
+FROM `${DATASET}.INFORMATION_SCHEMA.TABLES`
+WHERE table_type = 'BASE TABLE'
+ORDER BY table_name

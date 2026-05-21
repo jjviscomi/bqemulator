@@ -1,0 +1,1 @@
+SELECT id FROM `${DATASET}.base_t` ORDER BY id

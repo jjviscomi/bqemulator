@@ -1,0 +1,9 @@
+{
+  "mode": "positional",
+  "parameters": [
+    {
+      "type": {"type": "ARRAY", "arrayType": {"type": "INT64"}},
+      "value": [5, 3, 7]
+    }
+  ]
+}

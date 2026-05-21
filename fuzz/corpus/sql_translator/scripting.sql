@@ -1,0 +1,5 @@
+DECLARE x INT64 DEFAULT 1;
+BEGIN
+  SET x = x + 1;
+  IF x > 0 THEN SELECT x; END IF;
+END

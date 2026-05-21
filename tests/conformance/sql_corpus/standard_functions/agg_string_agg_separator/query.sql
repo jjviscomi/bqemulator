@@ -1,0 +1,1 @@
+SELECT STRING_AGG(label, ',' ORDER BY n) AS s FROM `${DATASET}.nums`

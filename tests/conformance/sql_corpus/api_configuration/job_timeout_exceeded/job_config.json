@@ -1,0 +1,4 @@
+{
+  "job_timeout_ms": 1,
+  "use_query_cache": false
+}

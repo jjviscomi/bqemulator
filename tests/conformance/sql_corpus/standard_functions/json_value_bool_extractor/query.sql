@@ -1,0 +1,1 @@
+SELECT BOOL(PARSE_JSON('true')) AS b

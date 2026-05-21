@@ -1,0 +1,111 @@
+{
+  "fixture_version": 2,
+  "bigquery": {
+    "project": "your-bigquery-project",
+    "job_id": "99bcdcde-07b9-4d32-918e-dcf02f48599e",
+    "location": "US",
+    "total_bytes_processed": 429,
+    "total_bytes_billed": 52428800,
+    "duration_ms": 780
+  },
+  "schema": [
+    {
+      "name": "warehouse_short",
+      "type": "STRING",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "sm_type",
+      "type": "STRING",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "cc_name",
+      "type": "STRING",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "days_30",
+      "type": "INTEGER",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "days_31_60",
+      "type": "INTEGER",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "days_61_90",
+      "type": "INTEGER",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "days_91_120",
+      "type": "INTEGER",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "days_over_120",
+      "type": "INTEGER",
+      "mode": "NULLABLE"
+    }
+  ],
+  "rows": [
+    {
+      "warehouse_short": "Warehouse Alpha",
+      "sm_type": "EXPRESS",
+      "cc_name": "Mid Atlantic",
+      "days_30": 0,
+      "days_31_60": 0,
+      "days_61_90": 0,
+      "days_91_120": 0,
+      "days_over_120": 1
+    },
+    {
+      "warehouse_short": "Warehouse Alpha",
+      "sm_type": "EXPRESS",
+      "cc_name": "NY Metro",
+      "days_30": 1,
+      "days_31_60": 0,
+      "days_61_90": 1,
+      "days_91_120": 0,
+      "days_over_120": 0
+    },
+    {
+      "warehouse_short": "Warehouse Alpha",
+      "sm_type": "OVERNIGHT",
+      "cc_name": "NY Metro",
+      "days_30": 0,
+      "days_31_60": 0,
+      "days_61_90": 0,
+      "days_91_120": 1,
+      "days_over_120": 0
+    },
+    {
+      "warehouse_short": "Warehouse Beta",
+      "sm_type": "EXPRESS",
+      "cc_name": "NY Metro",
+      "days_30": 0,
+      "days_31_60": 0,
+      "days_61_90": 1,
+      "days_91_120": 0,
+      "days_over_120": 0
+    },
+    {
+      "warehouse_short": "Warehouse Beta",
+      "sm_type": "OVERNIGHT",
+      "cc_name": "Mid Atlantic",
+      "days_30": 1,
+      "days_31_60": 0,
+      "days_61_90": 0,
+      "days_91_120": 0,
+      "days_over_120": 0
+    }
+  ],
+  "row_count": 5,
+  "duration_class": "fast",
+  "job_metadata": {
+    "cache_hit": false,
+    "statement_type": "SELECT"
+  }
+}

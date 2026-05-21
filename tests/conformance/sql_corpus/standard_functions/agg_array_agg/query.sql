@@ -1,0 +1,1 @@
+SELECT ARRAY_AGG(n ORDER BY n) AS arr FROM `${DATASET}.nums`

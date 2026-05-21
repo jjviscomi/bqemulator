@@ -1,0 +1,50 @@
+{
+  "fixture_version": 2,
+  "bigquery": {
+    "project": "your-bigquery-project",
+    "job_id": "d51a019b-510c-44b7-b99d-f813b169cd4c",
+    "location": "US",
+    "total_bytes_processed": 1010,
+    "total_bytes_billed": 41943040,
+    "duration_ms": 1026
+  },
+  "schema": [
+    {
+      "name": "ca_county",
+      "type": "STRING",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "d_year",
+      "type": "INTEGER",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "web_q1_q2_increase",
+      "type": "NUMERIC",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "store_q1_q2_increase",
+      "type": "NUMERIC",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "web_q2_q3_increase",
+      "type": "NUMERIC",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "store_q2_q3_increase",
+      "type": "NUMERIC",
+      "mode": "NULLABLE"
+    }
+  ],
+  "rows": [],
+  "row_count": 0,
+  "duration_class": "medium",
+  "job_metadata": {
+    "cache_hit": false,
+    "statement_type": "SELECT"
+  }
+}

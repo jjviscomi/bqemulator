@@ -1,0 +1,1 @@
+SELECT PARSE_DATE('%Y/%m/%d', '2024/01/15') AS d

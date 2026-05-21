@@ -1,0 +1,1 @@
+SELECT CEILING(-3.2) AS x

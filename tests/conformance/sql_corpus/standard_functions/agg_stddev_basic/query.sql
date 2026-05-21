@@ -1,0 +1,1 @@
+SELECT ROUND(STDDEV(x), 6) AS s FROM `${DATASET}.nums`

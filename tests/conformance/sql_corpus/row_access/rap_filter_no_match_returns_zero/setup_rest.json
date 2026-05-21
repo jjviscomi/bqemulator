@@ -1,0 +1,16 @@
+[
+  {
+    "method": "POST",
+    "path": "/bigquery/v2/projects/${PROJECT}/datasets/${DATASET_ID}/tables/orders/rowAccessPolicies",
+    "body": {
+      "rowAccessPolicyReference": {
+        "projectId": "${PROJECT}",
+        "datasetId": "${DATASET_ID}",
+        "tableId": "orders",
+        "policyId": "granted_to_someone_else"
+      },
+      "filterPredicate": "country = 'EU'",
+      "grantees": ["${OTHER_PRINCIPAL}"]
+    }
+  }
+]

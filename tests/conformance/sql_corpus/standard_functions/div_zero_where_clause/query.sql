@@ -1,0 +1,1 @@
+SELECT x FROM `${DATASET}.t` WHERE 1 / x > 0 ORDER BY x

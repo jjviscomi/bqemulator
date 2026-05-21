@@ -1,0 +1,7 @@
+CREATE OR REPLACE TABLE `${DATASET}.p_basic`
+(dt DATE, value INT64)
+PARTITION BY dt;
+INSERT INTO `${DATASET}.p_basic` VALUES
+  (DATE '2026-05-20', 1),
+  (DATE '2026-05-20', 2),
+  (DATE '2026-05-21', 3);

@@ -1,0 +1,28 @@
+{
+  "fixture_version": 1,
+  "bigquery": {
+    "project": "your-bigquery-project",
+    "job_id": "bdf9b155-fb4a-4af4-96f3-685e160e52d9",
+    "location": "US",
+    "total_bytes_processed": 71,
+    "total_bytes_billed": 10485760,
+    "duration_ms": 747
+  },
+  "schema": [
+    {
+      "name": "customer",
+      "type": "STRING",
+      "mode": "NULLABLE"
+    }
+  ],
+  "rows": [
+    {
+      "customer": "Alice"
+    },
+    {
+      "customer": "Bob"
+    }
+  ],
+  "row_count": 2,
+  "duration_class": "fast"
+}

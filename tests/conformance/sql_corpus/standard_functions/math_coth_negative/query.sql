@@ -1,0 +1,1 @@
+SELECT ROUND(COTH(-2.0), 6) AS x

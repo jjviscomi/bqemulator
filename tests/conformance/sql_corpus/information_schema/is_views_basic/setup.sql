@@ -1,0 +1,3 @@
+CREATE OR REPLACE TABLE `${DATASET}.src_basic` (id INT64);
+CREATE OR REPLACE VIEW `${DATASET}.v_basic` AS
+SELECT id FROM `${DATASET}.src_basic`;

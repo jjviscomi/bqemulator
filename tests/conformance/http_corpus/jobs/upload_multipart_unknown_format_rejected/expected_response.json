@@ -1,0 +1,16 @@
+{
+  "fixture_version": 1,
+  "source": "hand-authored-emulator-baseline",
+  "note": "Hand-authored. Verifies sourceFormat=BOGUS surfaces an invalidQuery error envelope before the executor reaches the file IO path.",
+  "http_status": 400,
+  "headers": {
+    "content-type": "application/json"
+  },
+  "body": {
+    "error": {
+      "code": 400,
+      "message": "<*>",
+      "status": "INVALID_ARGUMENT"
+    }
+  }
+}

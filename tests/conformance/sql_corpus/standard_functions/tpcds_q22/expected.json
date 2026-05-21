@@ -1,0 +1,165 @@
+{
+  "fixture_version": 2,
+  "bigquery": {
+    "project": "your-bigquery-project",
+    "job_id": "97055638-adac-417b-b16f-c613a8a1e016",
+    "location": "US",
+    "total_bytes_processed": 458,
+    "total_bytes_billed": 41943040,
+    "duration_ms": 905
+  },
+  "schema": [
+    {
+      "name": "i_product_name",
+      "type": "STRING",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "i_brand",
+      "type": "STRING",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "i_class",
+      "type": "STRING",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "i_category",
+      "type": "STRING",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "qoh",
+      "type": "FLOAT",
+      "mode": "NULLABLE"
+    }
+  ],
+  "rows": [
+    {
+      "i_product_name": "Sprocket Delta",
+      "i_brand": null,
+      "i_class": null,
+      "i_category": null,
+      "qoh": 50.0
+    },
+    {
+      "i_product_name": "Sprocket Delta",
+      "i_brand": "BrandC",
+      "i_class": null,
+      "i_category": null,
+      "qoh": 50.0
+    },
+    {
+      "i_product_name": "Sprocket Delta",
+      "i_brand": "BrandC",
+      "i_class": "rock",
+      "i_category": null,
+      "qoh": 50.0
+    },
+    {
+      "i_product_name": "Sprocket Delta",
+      "i_brand": "BrandC",
+      "i_class": "rock",
+      "i_category": "Music",
+      "qoh": 50.0
+    },
+    {
+      "i_product_name": "Gizmo Charlie",
+      "i_brand": null,
+      "i_class": null,
+      "i_category": null,
+      "qoh": 60.0
+    },
+    {
+      "i_product_name": "Gizmo Charlie",
+      "i_brand": "BrandB",
+      "i_class": null,
+      "i_category": null,
+      "qoh": 60.0
+    },
+    {
+      "i_product_name": "Gizmo Charlie",
+      "i_brand": "BrandB",
+      "i_class": "team",
+      "i_category": null,
+      "qoh": 60.0
+    },
+    {
+      "i_product_name": "Gizmo Charlie",
+      "i_brand": "BrandB",
+      "i_class": "team",
+      "i_category": "Sports",
+      "qoh": 60.0
+    },
+    {
+      "i_product_name": "Widget Bravo",
+      "i_brand": null,
+      "i_class": null,
+      "i_category": null,
+      "qoh": 75.0
+    },
+    {
+      "i_product_name": "Widget Bravo",
+      "i_brand": "BrandA",
+      "i_class": null,
+      "i_category": null,
+      "qoh": 75.0
+    },
+    {
+      "i_product_name": "Widget Bravo",
+      "i_brand": "BrandA",
+      "i_class": "athletic",
+      "i_category": null,
+      "qoh": 75.0
+    },
+    {
+      "i_product_name": "Widget Bravo",
+      "i_brand": "BrandA",
+      "i_class": "athletic",
+      "i_category": "Sports",
+      "qoh": 75.0
+    },
+    {
+      "i_product_name": null,
+      "i_brand": null,
+      "i_class": null,
+      "i_category": null,
+      "qoh": 78.33333333333333
+    },
+    {
+      "i_product_name": "Widget Alpha",
+      "i_brand": null,
+      "i_class": null,
+      "i_category": null,
+      "qoh": 105.0
+    },
+    {
+      "i_product_name": "Widget Alpha",
+      "i_brand": "BrandA",
+      "i_class": null,
+      "i_category": null,
+      "qoh": 105.0
+    },
+    {
+      "i_product_name": "Widget Alpha",
+      "i_brand": "BrandA",
+      "i_class": "athletic",
+      "i_category": null,
+      "qoh": 105.0
+    },
+    {
+      "i_product_name": "Widget Alpha",
+      "i_brand": "BrandA",
+      "i_class": "athletic",
+      "i_category": "Sports",
+      "qoh": 105.0
+    }
+  ],
+  "row_count": 17,
+  "duration_class": "fast",
+  "job_metadata": {
+    "cache_hit": false,
+    "statement_type": "SELECT"
+  }
+}

@@ -1,0 +1,3 @@
+SELECT order_id FROM `${DATASET}.orders`
+WHERE amount BETWEEN NUMERIC '100.00' AND NUMERIC '275.00'
+ORDER BY order_id

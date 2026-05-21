@@ -1,0 +1,6 @@
+{
+  "mode": "named",
+  "parameters": [
+    {"name": "amt", "type": "NUMERIC", "value": "123.45"}
+  ]
+}

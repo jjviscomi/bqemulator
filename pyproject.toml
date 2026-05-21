@@ -1,0 +1,627 @@
+[build-system]
+requires = ["hatchling>=1.21"]
+build-backend = "hatchling.build"
+
+[project]
+name = "bqemulator"
+dynamic = ["version"]
+description = "Local emulator for Google BigQuery — REST + gRPC (Storage Read/Write) APIs, DuckDB-backed, SQLGlot-powered."
+readme = "README.md"
+license = { file = "LICENSE" }
+requires-python = ">=3.11"
+authors = [
+    { name = "bqemulator contributors" },
+]
+keywords = [
+    "bigquery",
+    "emulator",
+    "duckdb",
+    "sqlglot",
+    "google-cloud",
+    "testing",
+    "mock",
+    "local",
+    "ci",
+]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: Apache Software License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3 :: Only",
+    "Topic :: Database",
+    "Topic :: Software Development :: Testing",
+    "Topic :: Software Development :: Testing :: Mocking",
+    "Typing :: Typed",
+]
+
+dependencies = [
+    "duckdb>=1.0",
+    "sqlglot>=23.0",
+    "pyarrow>=14.0",
+    "fastapi>=0.110",
+    "uvicorn[standard]>=0.27",
+    "grpcio>=1.60",
+    "grpcio-tools>=1.60",
+    "grpcio-health-checking>=1.60",
+    "protobuf>=4.25",
+    "googleapis-common-protos>=1.62",
+    # Storage Read/Write API servicer uses proto-plus types from this package.
+    "google-cloud-bigquery-storage>=2.24",
+    "click>=8.1",
+    "pydantic>=2.5",
+    "pydantic-settings>=2.2",
+    "structlog>=24.1",
+    "opentelemetry-api>=1.24",
+    "opentelemetry-sdk>=1.24",
+    "opentelemetry-instrumentation-fastapi>=0.45b0",
+    "opentelemetry-instrumentation-grpc>=0.45b0",
+    "opentelemetry-exporter-otlp>=1.24",
+    "prometheus-client>=0.20",
+    "orjson>=3.10",
+    "httpx>=0.27",
+    "alembic>=1.13",
+    # Floor pin on alembic's transitive Mako dep to dodge CVE-2026-44307
+    # (template-injection in the Babel string-extractor). 1.3.12 is the
+    # fixed version. Alembic does not pin Mako tightly enough to guarantee
+    # it on its own.
+    "Mako>=1.3.12",
+    # Floor pin to dodge CVE-2026-44431 / CVE-2026-44432 in urllib3 2.6.3
+    # (request smuggling / redirect-handling). 2.7.0 is the fixed version.
+    "urllib3>=2.7.0",
+    # DuckDB requires pytz at the Python layer to materialise
+    # ``TIMESTAMP WITH TIME ZONE`` results. Phase 7's
+    # ``FOR SYSTEM_TIME AS OF <expression>`` may evaluate non-literal
+    # expressions through DuckDB; without pytz that path fails with a
+    # confusing ``ModuleNotFoundError`` from inside DuckDB itself.
+    "pytz>=2024.1",
+    # Floor pins on google-auth transitives to dodge CVEs flagged by
+    # pip-audit on 2026-05-17. cryptography 46.0.5 → 46.0.7 closes
+    # CVE-2026-34073 + CVE-2026-39892 (X.509 / PKCS-7 parsing). pyasn1
+    # 0.6.2 → 0.6.3 closes CVE-2026-30922 (BER-encoding edge case).
+    # PyJWT 2.11.0 → 2.12.0 closes CVE-2026-32597 (JWT validation
+    # bypass). Each is transitive via ``google-cloud-bigquery-storage``
+    # → ``google-auth``; floor-pinning here makes the fix mandatory
+    # for any bqemulator install.
+    "cryptography>=46.0.7",
+    "pyasn1>=0.6.3",
+    "pyjwt>=2.12.0",
+    # Floor pin to dodge CVE-2026-25645 in requests 2.32.5
+    # (credential-leak on redirect). 2.33.0 is the fixed version.
+    # ``requests`` is a transitive of ``google-cloud-bigquery`` and
+    # other HTTP clients in the dep tree.
+    "requests>=2.33.0",
+    # Floor pin to dodge CVE-2026-28684 in python-dotenv 1.2.1
+    # (env-injection on malformed .env). 1.2.2 is the fixed version.
+    # ``python-dotenv`` is a transitive of ``pydantic-settings`` and
+    # ``testcontainers``.
+    "python-dotenv>=1.2.2",
+    # G3 / ADR 0030: the Storage Read API's Avro wire format is the
+    # **Java client default**. ``fastavro`` is on the hot path for
+    # CreateReadSession + ReadRows so it must be installed even when
+    # the operator doesn't opt into the ``[avro]`` extra (which still
+    # exists for the G1 load/extract path). Promoting from the
+    # ``[avro]`` optional extra to the runtime tree closes the
+    # "default-Java-client silently broken" failure mode.
+    "fastavro>=1.9",
+]
+
+[project.optional-dependencies]
+avro = [
+    # ``fastavro`` is now a runtime dependency (G3 / ADR 0030) so the
+    # extra is a no-op alias kept for compatibility with the
+    # ``[all]`` rollup and any user docs / install scripts that still
+    # request ``bqemulator[avro]``.
+    "fastavro>=1.9",
+]
+orc = [
+    # Apache pyorc — read-only ORC support for ``load`` jobs (G1, ADR 0027).
+    # DuckDB 1.5's community ORC extension is not packaged for darwin-arm64,
+    # so we route ORC loads through pyorc + arrow_bridge instead.
+    "pyorc>=0.10",
+]
+udf-js = [
+    # mini-racer is the maintained successor to py-mini-racer (renamed
+    # upstream). Embedded V8 runtime for JavaScript UDFs.
+    "mini-racer>=0.12",
+    # DuckDB's Python scalar-UDF registration uses numpy for value
+    # marshalling between DuckDB's type system and the callable.
+    "numpy>=1.26",
+]
+compression = [
+    "zstandard>=0.22",
+    "python-snappy>=0.7",
+]
+import = [
+    "google-cloud-bigquery>=3.0",
+]
+all = [
+    "bqemulator[avro,orc,udf-js,compression,import]",
+]
+testing = [
+    # Floor on 9.0.3 to dodge CVE-2025-71176 in pytest 9.0.2 (path-
+    # traversal in the rewriter cache). The baseline floor of 8.0 is
+    # superseded.
+    "pytest>=9.0.3",
+    "pytest-asyncio>=0.23",
+    "pytest-cov>=5.0",
+    "pytest-benchmark>=4.0",
+    "pytest-xdist>=3.5",
+    # Phase 11 chaos tier — every chaos test is capped at 60s via
+    # ``make test-chaos`` (``--timeout=60``). The chaos rules in
+    # docs/architecture/testing-strategy.md make pytest-timeout a hard
+    # requirement, so we declare it explicitly rather than relying on
+    # a transitive install.
+    "pytest-timeout>=2.3",
+    "hypothesis>=6.98",
+    "testcontainers>=4.0",
+    "google-cloud-bigquery>=3.0",
+    "google-cloud-bigquery-storage>=2.24",
+]
+docs = [
+    "mkdocs>=1.5",
+    "mkdocs-material>=9.5",
+    "mkdocstrings[python]>=0.24",
+    "mike>=2.0",
+    # Floor pin to dodge CVE-2026-46338 in pymdown-extensions <= 10.21.2
+    # (docs-build-time only; doesn't run inside the emulator).
+    "pymdown-extensions>=10.21.3",
+    # Floor pin to dodge CVE-2026-4539 in Pygments 2.19.2 (ReDoS in
+    # the C tokenizer). 2.20.0 is the fixed version. Pygments is
+    # transitive of mkdocs-material (for syntax highlighting in
+    # generated docs).
+    "pygments>=2.20.0",
+]
+dev = [
+    "bqemulator[avro,orc,udf-js,compression,import,testing,docs]",
+    "ruff>=0.3",
+    "mypy>=1.9",
+    "bandit>=1.7",
+    "pip-audit>=2.7",
+    "interrogate>=1.5",
+    "pre-commit>=3.6",
+    "mutmut>=2.4",
+    "vulture>=2.11",
+]
+
+[project.urls]
+Homepage = "https://github.com/jjviscomi/bqemulator"
+Documentation = "https://jjviscomi.github.io/bqemulator/"
+Repository = "https://github.com/jjviscomi/bqemulator"
+Issues = "https://github.com/jjviscomi/bqemulator/issues"
+Changelog = "https://github.com/jjviscomi/bqemulator/blob/main/CHANGELOG.md"
+
+[project.scripts]
+bqemulator = "bqemulator.cli:main"
+
+[project.entry-points.pytest11]
+bqemulator = "bqemulator.testing.fixtures"
+
+# ---------------------------------------------------------------------------
+# Hatch build configuration
+# ---------------------------------------------------------------------------
+
+[tool.hatch.version]
+path = "src/bqemulator/__init__.py"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/bqemulator"]
+
+[tool.hatch.build.targets.sdist]
+include = [
+    "src/bqemulator",
+    "tests",
+    "README.md",
+    "LICENSE",
+    "CHANGELOG.md",
+    "pyproject.toml",
+]
+
+# ---------------------------------------------------------------------------
+# Ruff — lint + format
+# ---------------------------------------------------------------------------
+
+[tool.ruff]
+target-version = "py311"
+line-length = 100
+src = ["src", "tests"]
+extend-exclude = [
+    "src/bqemulator/grpc_api/proto",
+    "docs/examples",
+]
+
+[tool.ruff.lint]
+select = ["ALL"]
+# Multiplication sign is intentional in the conformance coverage
+# matrix's "Variation" column histogram (``happy×3 / null×1 ...``) —
+# see ADR 0022 §"Variation taxonomy". Without this allowlist the
+# RUF001/RUF002 ambiguous-character checks fire on every histogram
+# rendering site and assertion.
+allowed-confusables = ["×"]
+ignore = [
+    "D203",    # one-blank-line-before-class conflicts with D211
+    "D213",    # multi-line-summary-second-line conflicts with D212
+    "COM812",  # conflicts with formatter
+    "ISC001",  # conflicts with formatter
+    "FIX002",  # TODO comments are flagged via issue links, not inline
+    "TD002",   # TODO author not required
+    "TD003",   # TODO link enforced separately
+    "PLR0913", # too-many-arguments — pydantic / FastAPI signatures often exceed
+    "ANN401",  # Any sometimes necessary for decorators
+    "EM101",   # exception strings can be literal
+    "EM102",   # exception f-strings ok
+    "TRY003",  # long exception messages acceptable
+    "D105",    # dunder docstrings noisy — signature is self-documenting
+    "D107",    # __init__ docstrings — class docstring covers construction (D101 is enforced)
+    "PLC0415", # lazy imports used deliberately (coverage, optional extras)
+    "TC001",   # runtime imports kept at module top for pydantic schemas + FastAPI DI
+    "TC002",
+    "TC003",
+    "FBT001",  # boolean positional args in click CLI + repository protocol
+    "FBT002",
+    "S608",    # dynamic SQL uses only internal constants (CATALOG_SCHEMA), not user input
+    "ERA001",  # commented-out code used for inline design rationale
+    "PLR0911", # too-many-return-statements — type-dispatch functions are naturally branchy
+    "PLR0912", # too-many-branches — type-dispatch and route config pass-through
+    "C901",    # too-complex — suppressed per-function with noqa where justified
+    "PIE810",  # call bool() on a truthy value — unnecessary
+]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**" = [
+    "S101",    # assert is the point of tests
+    "D",       # docstrings optional in tests
+    "ANN",     # annotations optional in tests
+    "PLR2004", # magic numbers fine in tests
+    "SLF001",  # private member access fine in tests
+    "B017",    # pytest.raises(Exception) appropriate for "any raise" assertions
+    "PT011",   # explicit about intent, matches the domain
+    "INP001",  # tests are not packages
+    "RET504",  # test-local helpers can keep a temporary for readability
+    "SIM105",  # contextlib.suppress is overkill in test cleanup
+    "S104",    # 0.0.0.0 bind fine in tests
+    "S108",    # /tmp paths fine in tests
+    "S110",    # try/except/pass fine in test cleanup
+    "PT018",   # compound assertions fine in tests
+    "PT019",   # fixture without return used for side-effect setup
+    "ARG001",  # unused fixture args used for dependency ordering
+]
+"tests/e2e/**" = [
+    "ASYNC109", # explicit asyncio.wait_for is appropriate for e2e
+]
+"src/bqemulator/__init__.py" = ["D104"]
+"src/bqemulator/__main__.py" = ["D100"]
+# Repository implementations: methods inherit semantics from CatalogRepository protocol.
+"src/bqemulator/catalog/memory_repository.py" = ["D102"]
+"src/bqemulator/catalog/duckdb_repository.py" = ["D102"]
+# Middleware `dispatch`: implements starlette.middleware.base.BaseHTTPMiddleware contract.
+"src/bqemulator/api/middleware.py" = ["D102"]
+# FastAPI routes use Depends() and Annotated — linted elsewhere. Route
+# handlers are free functions (not methods), so we drop D103 too;
+# operation docstrings live on the router-level summary.
+"src/bqemulator/api/routes/*.py" = ["D102", "D103", "FAST002"]
+# gRPC interceptors: `intercept_service` implements grpc.aio.ServerInterceptor.
+"src/bqemulator/grpc_api/interceptors.py" = ["D102"]
+"scripts/**" = ["D", "T201", "INP001"]
+
+[tool.ruff.lint.pydocstyle]
+convention = "google"
+
+[tool.ruff.lint.isort]
+known-first-party = ["bqemulator"]
+force-sort-within-sections = true
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+docstring-code-format = true
+
+# ---------------------------------------------------------------------------
+# Mypy — strict type checking
+# ---------------------------------------------------------------------------
+
+[tool.mypy]
+python_version = "3.11"
+strict = true
+warn_unused_configs = true
+warn_redundant_casts = true
+warn_unused_ignores = true
+warn_return_any = true
+warn_unreachable = true
+disallow_untyped_defs = true
+disallow_any_unimported = true
+disallow_any_generics = true
+no_implicit_optional = true
+check_untyped_defs = true
+no_implicit_reexport = true
+pretty = true
+show_error_codes = true
+show_column_numbers = true
+plugins = ["pydantic.mypy"]
+exclude = [
+    "^src/bqemulator/grpc_api/proto/",
+    "^docs/examples/",
+]
+
+[[tool.mypy.overrides]]
+# Third-party libraries without shipped type stubs (or with incomplete ones).
+# We ignore missing imports so our typed code remains strict.
+module = [
+    "duckdb.*",
+    "sqlglot.*",
+    "google.protobuf.*",
+    "google.rpc.*",
+    "grpc.*",
+    "proto",
+    "grpc_health.*",
+    "fastavro.*",
+    "py_mini_racer.*",
+    "prometheus_client.*",
+    "opentelemetry.*",
+    "testcontainers.*",
+    "pyarrow.*",
+    "pyorc.*",
+]
+ignore_missing_imports = true
+disable_error_code = ["misc"]
+
+[[tool.mypy.overrides]]
+# Adapter modules that wrap untyped gRPC / Testcontainers / pyarrow APIs.
+# Subclassing Any-typed base classes is fine in these modules; we preserve
+# strictness for the domain core.
+module = [
+    "bqemulator.grpc_api.*",
+    "bqemulator.testing.testcontainers",
+    "bqemulator.storage.engine",
+    # Route modules work extensively with pyarrow types which are Any.
+    "bqemulator.api.routes.*",
+    "bqemulator.storage.arrow_bridge",
+    "bqemulator.sql.cache",
+    "bqemulator.sql.table_rewriter",
+    "bqemulator.jobs.executor",
+    "bqemulator.jobs.orc_reader",
+    "bqemulator.jobs.avro_reader",
+    "bqemulator.streaming.*",
+    # Phase 6 modules wrap untyped DuckDB create_function + py-mini-racer
+    # and return pyarrow.Table which is Any-typed.
+    "bqemulator.udf.*",
+    "bqemulator.scripting.*",
+    "bqemulator.sql.rewriter.*",
+]
+disable_error_code = ["misc", "no-any-return", "arg-type", "return"]
+warn_return_any = false
+disallow_any_unimported = false
+
+[tool.pydantic-mypy]
+init_forbid_extra = true
+init_typed = true
+warn_required_dynamic_aliases = true
+
+# ---------------------------------------------------------------------------
+# Pytest + coverage
+# ---------------------------------------------------------------------------
+
+[tool.pytest.ini_options]
+minversion = "8.0"
+testpaths = ["tests"]
+addopts = [
+    "--strict-markers",
+    "--strict-config",
+    "-ra",
+]
+markers = [
+    "unit: fast hermetic unit tests (no I/O)",
+    "integration: emulator in-process + client",
+    "e2e: live container + real clients",
+    "conformance: compared to real BigQuery",
+    "property: Hypothesis property-based tests",
+    "perf: pytest-benchmark performance tests",
+    "chaos: deliberately disruptive — fault injection / resource exhaustion / crash",
+    "differential: row-order perturbation of the conformance corpus (Tier 5 sibling; manual-only CI)",
+    "slow: slow tests (minutes)",
+]
+asyncio_mode = "auto"
+filterwarnings = [
+    "error",
+    "ignore::DeprecationWarning:google.*",
+    "ignore::DeprecationWarning:grpc.*",
+    "ignore::DeprecationWarning:websockets.*",
+    "ignore::DeprecationWarning:uvicorn.*",
+    "ignore::DeprecationWarning:pkg_resources.*",
+    # py-mini-racer's ctypes bindings trigger a Python 3.14+
+    # ``_pack_ without _layout_`` deprecation that we can't fix
+    # upstream.
+    "ignore::DeprecationWarning:ctypes",
+    "ignore::DeprecationWarning:py_mini_racer.*",
+]
+
+[tool.coverage.run]
+# `source_pkgs` uses dynamic measurement of the installed package so modules
+# imported by pytest plugin entry points (bqemulator.testing.fixtures) are
+# still measured correctly.
+source_pkgs = ["bqemulator"]
+branch = true
+parallel = true
+omit = [
+    "*/bqemulator/__main__.py",
+    "*/bqemulator/grpc_api/proto/*",
+    # Test helpers — they are exercised BY tests (as fixtures and containers)
+    # but are not the subject of direct coverage. CI e2e tests exercise
+    # testcontainers.py against a live Docker daemon, not covered here.
+    "*/bqemulator/testing/fixtures.py",
+    "*/bqemulator/testing/testcontainers.py",
+    "*/bqemulator/testing/_thread_runner.py",
+    # Tracing enabled path requires a running OTLP collector — exercised
+    # in e2e tests with Jaeger, not in unit/integration.
+    "*/bqemulator/observability/tracing.py",
+    # Empty scaffolding modules (populated in later phases).
+    "*/bqemulator/sql/rewriter/__init__.py",
+    "*/bqemulator/testing/__init__.py",
+    "*/bqemulator/jobs/commands/__init__.py",
+    "tests/*",
+    "scripts/*",
+]
+
+[tool.coverage.report]
+show_missing = true
+skip_covered = false
+precision = 2
+fail_under = 90
+exclude_lines = [
+    "pragma: no cover",
+    "raise NotImplementedError",
+    "if TYPE_CHECKING:",
+    "if __name__ == .__main__.:",
+    "@overload",
+    "\\.\\.\\.",
+]
+
+[tool.coverage.html]
+directory = "htmlcov"
+
+[tool.coverage.xml]
+output = "coverage.xml"
+
+# ---------------------------------------------------------------------------
+# Interrogate — docstring coverage
+# ---------------------------------------------------------------------------
+
+[tool.interrogate]
+# We enforce docstrings on the PUBLIC API surface (classes, public functions
+# and methods). Semi-private (``_foo``) and dunder methods are exempt —
+# their names are self-documenting and docstrings on private helpers add
+# noise without improving discoverability.
+ignore-init-method = true
+ignore-init-module = true
+ignore-magic = true
+ignore-semiprivate = true
+ignore-private = true
+ignore-property-decorators = false
+ignore-module = false
+ignore-nested-functions = true
+ignore-nested-classes = true
+ignore-setters = true
+fail-under = 90
+exclude = [
+    "tests",
+    "docs",
+    "scripts",
+    "src/bqemulator/grpc_api/proto",
+    # Repository implementations inherit semantics from CatalogRepository
+    # (documented on the protocol). Duplicating docstrings is noise.
+    "src/bqemulator/catalog/memory_repository.py",
+    "src/bqemulator/catalog/duckdb_repository.py",
+    # Middleware dispatch methods implement starlette's BaseHTTPMiddleware
+    # contract — the method docstring lives on the base class.
+    "src/bqemulator/api/middleware.py",
+]
+verbose = 1
+quiet = false
+color = true
+
+# ---------------------------------------------------------------------------
+# Bandit — security lint
+# ---------------------------------------------------------------------------
+
+[tool.bandit]
+exclude_dirs = ["tests", "docs", "scripts"]
+skips = [
+    "B101",  # assert — used in tests
+    "B104",  # 0.0.0.0 bind — only in testcontainers helper
+    "B108",  # hardcoded /tmp — extract job fallback; only used when no dest URI provided
+    "B608",  # dynamic SQL — only uses internal constants (CATALOG_SCHEMA etc.), never user input
+]
+
+# ---------------------------------------------------------------------------
+# Vulture — dead code
+# ---------------------------------------------------------------------------
+
+[tool.vulture]
+paths = ["src/bqemulator"]
+min_confidence = 80
+ignore_decorators = ["@app.*", "@router.*", "@pytest.fixture"]
+ignore_names = ["*Command", "*Request", "*Response"]
+
+# ---------------------------------------------------------------------------
+# Mutmut — mutation testing (nightly)
+# ---------------------------------------------------------------------------
+#
+# Mutmut 3.x expects list-valued config and runs pytest internally
+# (the 2.x ``runner`` key is gone). The mutation tier is intentionally
+# scoped to fast, deterministic, high-coverage domain code; the
+# excluded paths each have an explicit rationale in
+# ``docs/adr/0026-mutation-tier-design-contract.md``.
+
+[tool.mutmut]
+# v1.0 pilot scope (see ADR 0026). The mutation tier intentionally
+# covers a curated set of pure-domain, deterministic modules with
+# strong unit-test coverage rather than the full source tree:
+#
+# * Catalogue: ``etag`` — deterministic hash; covered by
+#   ``tests/unit/catalog/test_etag.py``.
+# * SQL cache: ``cache`` — bounded LRU; covered by
+#   ``tests/unit/sql/test_cache.py``.
+# * Scripting front-end: ``lexer`` / ``frames`` / ``exceptions``
+#   / ``ast`` — pure Python state machines with full unit coverage in
+#   ``tests/unit/scripting/``.
+# * Jobs: ``error_mapper`` — DuckDB → BigQuery error envelope
+#   translator; covered by ``tests/unit/jobs/test_error_mapper.py``.
+# * Specialised types: ``interval`` / ``range_type`` — parsing /
+#   arithmetic; covered by ``tests/unit/types/``.
+#
+# Broader scope (FastAPI routes, gRPC servicers, SQL rule registry,
+# storage engine) is intentionally deferred to v1.0.x — those modules
+# either run through integration / e2e tiers (slow per-mutant) or
+# wrap third-party APIs whose mutants are mostly equivalent. ADR 0026
+# locks the closure pathway.
+paths_to_mutate = [
+    "src/bqemulator/catalog/etag.py",
+    "src/bqemulator/sql/cache.py",
+    "src/bqemulator/scripting/lexer.py",
+    "src/bqemulator/scripting/frames.py",
+    "src/bqemulator/scripting/exceptions.py",
+    "src/bqemulator/scripting/ast.py",
+    "src/bqemulator/jobs/error_mapper.py",
+    "src/bqemulator/types/interval.py",
+    "src/bqemulator/types/range_type.py",
+]
+# Test selection is narrowed to the files that directly cover the
+# pilot modules. Running the full ``tests/unit/`` suite under mutmut
+# is both slower (~38 s per mutant before early exit) and fragile —
+# a handful of unit tests exercise real subprocess / structlog code
+# paths that interact badly with mutmut 3.x's stdout-capture context
+# on Python 3.14 (``ValueError: I/O operation on closed file``).
+# Restricting test selection to the directly-relevant files avoids
+# both costs without changing what a killed mutant proves.
+tests_dir = [
+    "tests/unit/catalog/test_etag.py",
+    "tests/unit/sql/test_cache.py",
+    "tests/unit/scripting/test_lexer.py",
+    "tests/unit/scripting/test_frames.py",
+    "tests/unit/scripting/test_exceptions.py",
+    "tests/unit/scripting/test_parser.py",
+    "tests/unit/scripting/test_interpreter.py",
+    "tests/unit/jobs/test_error_mapper.py",
+    "tests/unit/types/test_interval.py",
+    "tests/unit/types/test_range_type.py",
+]
+# Mutmut 3.x copies only ``paths_to_mutate`` files into ``mutants/``;
+# the rest of the package would be missing from ``sys.path`` and
+# pytest collection would fail with ``ModuleNotFoundError``. The full
+# ``src/bqemulator/`` tree is also-copied so the package is importable
+# while mutation is still scoped to the curated list above. ``scripts/``
+# is also-copied because a handful of unit tests import the recorder
+# script via ``importlib`` to validate its contract.
+also_copy = ["src/bqemulator/", "scripts/"]
+# ``mutate_only_covered_lines`` would otherwise run pytest under
+# coverage.py to gather per-line coverage before mutating; on
+# Python 3.14 that interacts badly with DuckDB's C-extension submodule
+# registration, causing ``_duckdb._sqltypes`` to fail to resolve.
+# The pilot scope is intentionally narrow + high-coverage, so the
+# value of pre-filtering uncovered lines is small relative to the
+# Python-3.14 compatibility hazard.
+mutate_only_covered_lines = false

@@ -1,0 +1,4 @@
+SELECT id, event
+FROM `${DATASET}.events_*`
+WHERE _TABLE_SUFFIX = '20240102'
+ORDER BY id

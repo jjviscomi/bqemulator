@@ -1,0 +1,1 @@
+CREATE OR REPLACE TABLE `${DATASET}.only_a_table` (id INT64);

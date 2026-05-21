@@ -1,0 +1,88 @@
+{
+  "fixture_version": 2,
+  "bigquery": {
+    "project": "your-bigquery-project",
+    "job_id": "0935588b-b5af-44c2-90e1-7f4c4ceb229b",
+    "location": "US",
+    "total_bytes_processed": 676,
+    "total_bytes_billed": 115343360,
+    "duration_ms": 1605
+  },
+  "schema": [
+    {
+      "name": "channel",
+      "type": "STRING",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "id",
+      "type": "STRING",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "sales",
+      "type": "NUMERIC",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "returns_amt",
+      "type": "NUMERIC",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "profit",
+      "type": "NUMERIC",
+      "mode": "NULLABLE"
+    }
+  ],
+  "rows": [
+    {
+      "channel": "catalog channel",
+      "id": "catalog_pageC001",
+      "sales": "50",
+      "returns_amt": "5",
+      "profit": "9"
+    },
+    {
+      "channel": "catalog channel",
+      "id": "catalog_pageC002",
+      "sales": "70",
+      "returns_amt": "0",
+      "profit": "14"
+    },
+    {
+      "channel": "store channel",
+      "id": "storeS001",
+      "sales": "180",
+      "returns_amt": "20",
+      "profit": "30"
+    },
+    {
+      "channel": "store channel",
+      "id": "storeS002",
+      "sales": "120",
+      "returns_amt": "0",
+      "profit": "25"
+    },
+    {
+      "channel": "web channel",
+      "id": "web_siteW001",
+      "sales": "60",
+      "returns_amt": "8",
+      "profit": "10"
+    },
+    {
+      "channel": "web channel",
+      "id": "web_siteW002",
+      "sales": "80",
+      "returns_amt": "0",
+      "profit": "16"
+    }
+  ],
+  "row_count": 6,
+  "duration_class": "medium",
+  "job_metadata": {
+    "cache_hit": false,
+    "statement_type": "SELECT"
+  }
+}

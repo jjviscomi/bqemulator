@@ -1,0 +1,194 @@
+# Byte-compiled / cached
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+# Distribution / packaging
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# PyInstaller
+*.manifest
+*.spec
+
+# Installer logs
+pip-log.txt
+pip-delete-this-directory.txt
+
+# Unit test / coverage
+htmlcov/
+.tox/
+.nox/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+*.py,cover
+.hypothesis/
+.pytest_cache/
+cover/
+.benchmarks/
+.mutmut-cache
+# Mutmut 3.x: working directory with mutated copies of the source tree.
+mutants/
+
+# Type checking
+.mypy_cache/
+.dmypy.json
+dmypy.json
+.pyre/
+.pytype/
+
+# Linting cache
+.ruff_cache/
+
+# Translations
+*.mo
+*.pot
+
+# Django / Flask stuff (safety)
+*.log
+local_settings.py
+db.sqlite3
+db.sqlite3-journal
+instance/
+.webassets-cache
+
+# Scrapy stuff
+.scrapy
+
+# Sphinx documentation
+docs/_build/
+site/
+
+# PyBuilder
+target/
+
+# Jupyter Notebook
+.ipynb_checkpoints
+
+# IPython
+profile_default/
+ipython_config.py
+
+# pyenv / poetry / pip tooling
+.python-version
+.venv/
+venv/
+env/
+ENV/
+env.bak/
+venv.bak/
+Pipfile.lock
+poetry.lock
+.pdm-python
+.pdm.toml
+__pypackages__/
+
+# Environment variables
+.env
+.env.local
+.env.*.local
+
+# IDE / editor
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Docker
+*.pid
+
+# DuckDB
+*.duckdb
+*.duckdb.wal
+*.duckdb.tmp
+bqemulator.duckdb*
+
+# bqemulator runtime data
+/data/
+/tmp-data/
+.bqemu.toml
+.bqemulator/
+
+# Generated proto stubs — committed, but local regen artifacts ignored
+src/bqemulator/grpc_api/proto/*_pb2_grpc.pyi
+
+# Release artifacts
+*.whl
+*.tar.gz
+
+# Docs site
+/site/
+
+# Mkdocs strict build artifacts
+.cache/
+
+# Test artifacts
+test-results/
+test-reports/
+.pytest-reports/
+# Per-tier junit artifacts (chaos, perf, differential, conformance ad-hoc)
+conformance.xml
+differential-results.xml
+
+# Secrets / credentials
+*.pem
+*.key
+credentials.json
+service-account*.json
+
+# bq CLI test sandbox: cached BigQuery v2 discovery doc (~550 KB)
+# fetched once per session by tests/e2e/bq_cli_client/bq_runner.py.
+# Set BQEMU_BQ_DISCOVERY_FILE to pre-stage a copy.
+tests/e2e/bq_cli_client/discovery.json
+
+# Local-only developer scratch: session-handoff notes, internal planning
+# docs, mid-build status trackers. Not part of the public repo.
+.dev/
+
+.claude/
+
+# Node.js (example projects under docs/examples/nodejs/)
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+
+# Java/Scala/sbt (example projects under docs/examples/java/)
+*.class
+# Maven + dbt + PyBuilder target/ already covered above.
+project/target/
+project/project/
+.bsp/
+.bloop/
+.metals/
+
+# Go (example projects under docs/examples/go/)
+# Go's tooling does not write into the workspace by default; nothing to add.
+
+# dbt
+dbt_packages/
+logs/

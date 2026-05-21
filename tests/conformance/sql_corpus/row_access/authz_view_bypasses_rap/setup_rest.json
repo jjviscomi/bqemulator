@@ -1,0 +1,57 @@
+[
+  {
+    "method": "POST",
+    "path": "/bigquery/v2/projects/${PROJECT}/datasets",
+    "body": {
+      "datasetReference": {
+        "projectId": "${PROJECT}",
+        "datasetId": "${DATASET_ID}_views"
+      },
+      "location": "US"
+    }
+  },
+  {
+    "method": "POST",
+    "path": "/bigquery/v2/projects/${PROJECT}/datasets/${DATASET_ID}_views/tables",
+    "body": {
+      "tableReference": {
+        "projectId": "${PROJECT}",
+        "datasetId": "${DATASET_ID}_views",
+        "tableId": "public_orders"
+      },
+      "view": {
+        "query": "SELECT id, country FROM `${PROJECT}.${DATASET_ID}.orders`",
+        "useLegacySql": false
+      }
+    }
+  },
+  {
+    "method": "POST",
+    "path": "/bigquery/v2/projects/${PROJECT}/datasets/${DATASET_ID}/tables/orders/rowAccessPolicies",
+    "body": {
+      "rowAccessPolicyReference": {
+        "projectId": "${PROJECT}",
+        "datasetId": "${DATASET_ID}",
+        "tableId": "orders",
+        "policyId": "us_only_for_other"
+      },
+      "filterPredicate": "country = 'US'",
+      "grantees": ["${OTHER_PRINCIPAL}"]
+    }
+  },
+  {
+    "method": "PATCH",
+    "path": "/bigquery/v2/projects/${PROJECT}/datasets/${DATASET_ID}",
+    "body": {
+      "access": [
+        {
+          "view": {
+            "projectId": "${PROJECT}",
+            "datasetId": "${DATASET_ID}_views",
+            "tableId": "public_orders"
+          }
+        }
+      ]
+    }
+  }
+]

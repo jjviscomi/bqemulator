@@ -1,0 +1,35 @@
+{
+  "fixture_version": 1,
+  "bigquery": {
+    "project": "your-bigquery-project",
+    "job_id": "2616c8f1-418d-4cd6-84d2-5f84cd559bf6",
+    "location": "US",
+    "total_bytes_processed": 71,
+    "total_bytes_billed": 10485760,
+    "duration_ms": 690
+  },
+  "schema": [
+    {
+      "name": "order_id",
+      "type": "INTEGER",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "customer",
+      "type": "STRING",
+      "mode": "NULLABLE"
+    }
+  ],
+  "rows": [
+    {
+      "order_id": 1,
+      "customer": "Alice"
+    },
+    {
+      "order_id": 3,
+      "customer": "Alice"
+    }
+  ],
+  "row_count": 2,
+  "duration_class": "fast"
+}

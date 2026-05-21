@@ -1,0 +1,5 @@
+SELECT kind, COUNT(*) AS n
+FROM `${DATASET}.events`
+GROUP BY kind
+HAVING COUNT(*) > 9999
+ORDER BY kind

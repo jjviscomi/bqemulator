@@ -1,0 +1,25 @@
+{
+  "fixture_version": 1,
+  "bigquery": {
+    "project": "your-bigquery-project",
+    "job_id": "1716f1f3-02a6-4ef4-a9bf-a1af631bfe9e",
+    "location": "US",
+    "total_bytes_processed": 0,
+    "total_bytes_billed": 0,
+    "duration_ms": 528
+  },
+  "schema": [
+    {
+      "name": "overlaps",
+      "type": "BOOLEAN",
+      "mode": "NULLABLE"
+    }
+  ],
+  "rows": [
+    {
+      "overlaps": false
+    }
+  ],
+  "row_count": 1,
+  "duration_class": "fast"
+}

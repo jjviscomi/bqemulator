@@ -1,0 +1,19 @@
+{
+  "fixture_version": 2,
+  "bigquery": {
+    "project": "your-bigquery-project",
+    "job_id": null,
+    "location": "US",
+    "total_bytes_processed": 0,
+    "total_bytes_billed": 0,
+    "duration_ms": 546
+  },
+  "error": {
+    "reason": "invalidQuery",
+    "location": "query",
+    "http_status": 400,
+    "message_pattern": "No\\ matching\\ signature\\ for\\ operator\\ =\\ for\\ argument\\ types:\\ STRING,\\ INT64\\\n\\ \\ Signature:\\ T1\\ =\\ T1\\\n\\ \\ \\ \\ Unable\\ to\\ find\\ common\\ supertype\\ for\\ templated\\ argument\\ <T1>\\\n\\ \\ \\ \\ \\ \\ Input\\ types\\ for\\ <T1>:\\ \\{INT64,\\ STRING\\}\\ at\\ \\[\\d+:\\d+\\]",
+    "message_sample": "No matching signature for operator = for argument types: STRING, INT64\n  Signature: T1 = T1\n    Unable to find common supertype for templated argument <T1>\n      Input types for <T1>: {INT64, STRING} at [3:94]"
+  },
+  "duration_class": "fast"
+}

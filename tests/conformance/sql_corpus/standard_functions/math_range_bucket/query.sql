@@ -1,0 +1,1 @@
+SELECT RANGE_BUCKET(15, [10, 20, 30]) AS bucket

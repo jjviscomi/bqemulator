@@ -1,0 +1,4 @@
+{
+  "X-Bqemu-Caller": "${PRINCIPAL}",
+  "X-Bqemu-Groups": "${GROUP}"
+}

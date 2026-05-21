@@ -1,0 +1,25 @@
+{
+  "fixture_version": 1,
+  "bigquery": {
+    "project": "your-bigquery-project",
+    "job_id": "98d369e8-3eb9-42a6-aee3-67885b10b2a0",
+    "location": "US",
+    "total_bytes_processed": 0,
+    "total_bytes_billed": 0,
+    "duration_ms": 1010
+  },
+  "schema": [
+    {
+      "name": "d",
+      "type": "DATETIME",
+      "mode": "NULLABLE"
+    }
+  ],
+  "rows": [
+    {
+      "d": "2024-01-15T12:34:56.789000"
+    }
+  ],
+  "row_count": 1,
+  "duration_class": "medium"
+}

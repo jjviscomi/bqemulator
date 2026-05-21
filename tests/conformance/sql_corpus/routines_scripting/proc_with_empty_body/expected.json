@@ -1,0 +1,28 @@
+{
+  "fixture_version": 2,
+  "bigquery": {
+    "project": "your-bigquery-project",
+    "job_id": "3ed03ff2-8565-4207-b334-3833ace05e8c",
+    "location": "US",
+    "total_bytes_processed": 0,
+    "total_bytes_billed": 0,
+    "duration_ms": 2069
+  },
+  "schema": [
+    {
+      "name": "sentinel",
+      "type": "INTEGER",
+      "mode": "NULLABLE"
+    }
+  ],
+  "rows": [
+    {
+      "sentinel": 1
+    }
+  ],
+  "row_count": 1,
+  "duration_class": "medium",
+  "job_metadata": {
+    "statement_type": "SCRIPT"
+  }
+}

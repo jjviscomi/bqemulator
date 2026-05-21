@@ -1,0 +1,33 @@
+[
+  {
+    "method": "POST",
+    "path": "/upload/bigquery/v2/projects/${PROJECT}/jobs?uploadType=resumable",
+    "headers": {
+      "Content-Type": "application/json; charset=UTF-8"
+    },
+    "body": {
+      "configuration": {
+        "load": {
+          "destinationTable": {
+            "projectId": "${PROJECT}",
+            "datasetId": "${DATASET_ID}",
+            "tableId": "tbl"
+          },
+          "sourceFormat": "CSV"
+        }
+      }
+    },
+    "capture": {
+      "UPLOAD_ID": "header:X-GUploader-UploadID"
+    }
+  },
+  {
+    "method": "PUT",
+    "path": "/upload/bigquery/v2/projects/${PROJECT}/jobs?upload_id=${UPLOAD_ID}",
+    "headers": {
+      "Content-Type": "text/csv",
+      "Content-Range": "bytes 0-9/100"
+    },
+    "body_bin": "first_chunk.bin"
+  }
+]

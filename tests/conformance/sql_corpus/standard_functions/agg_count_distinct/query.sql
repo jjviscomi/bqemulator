@@ -1,0 +1,1 @@
+SELECT COUNT(DISTINCT label) AS n FROM `${DATASET}.nums`

@@ -1,0 +1,5 @@
+CREATE OR REPLACE TABLE `${DATASET}.users` (
+  id INT64 NOT NULL,
+  name STRING,
+  email STRING
+);

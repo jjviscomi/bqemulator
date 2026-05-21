@@ -1,0 +1,27 @@
+{
+  "fixture_version": 1,
+  "bigquery": {
+    "project": "your-bigquery-project",
+    "job_id": "2eb2f798-c00f-4730-9d5b-25e5deb3ee34",
+    "location": "US",
+    "total_bytes_processed": 0,
+    "total_bytes_billed": 0,
+    "duration_ms": 493
+  },
+  "schema": [
+    {
+      "name": "parts",
+      "type": "STRING",
+      "mode": "REPEATED"
+    }
+  ],
+  "rows": [
+    {
+      "parts": [
+        "ab"
+      ]
+    }
+  ],
+  "row_count": 1,
+  "duration_class": "fast"
+}

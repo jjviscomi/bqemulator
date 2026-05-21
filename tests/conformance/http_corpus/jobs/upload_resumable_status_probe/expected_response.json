@@ -1,0 +1,10 @@
+{
+  "fixture_version": 1,
+  "source": "hand-authored-emulator-baseline",
+  "note": "Hand-authored. Status probe via Content-Range: bytes */N returns 308 with Range: bytes=0-9 (the 10-byte first chunk that was uploaded in setup).",
+  "http_status": 308,
+  "headers": {
+    "range": "bytes=0-9"
+  },
+  "body": ""
+}

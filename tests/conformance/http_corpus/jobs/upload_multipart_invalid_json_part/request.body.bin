@@ -1,0 +1,11 @@
+--===bqemu-fixture-boundary===
+Content-Type: application/json; charset=UTF-8
+
+{not-valid-json}
+--===bqemu-fixture-boundary===
+Content-Type: text/csv
+
+id,name
+1,a
+
+--===bqemu-fixture-boundary===--

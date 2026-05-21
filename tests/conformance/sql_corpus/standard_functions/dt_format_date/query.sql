@@ -1,0 +1,1 @@
+SELECT FORMAT_DATE('%Y/%m/%d', DATE '2024-01-15') AS s

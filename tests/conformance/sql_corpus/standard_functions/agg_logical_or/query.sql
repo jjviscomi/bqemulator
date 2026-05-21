@@ -1,0 +1,1 @@
+SELECT LOGICAL_OR(n > 3) AS b FROM `${DATASET}.nums`

@@ -1,0 +1,1 @@
+SELECT @ts AS ts

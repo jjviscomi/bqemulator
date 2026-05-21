@@ -1,0 +1,22 @@
+{
+  "fixture_version": 1,
+  "bigquery": {
+    "project": "your-bigquery-project",
+    "location": "US"
+  },
+  "calls": [
+    {
+      "method": "BigQueryWrite.CreateWriteStream",
+      "status": "OK",
+      "response": {
+        "name": "<*>",
+        "type_": "COMMITTED",
+        "create_time": "<*>",
+        "commit_time": "<*>",
+        "table_schema": "<*>",
+        "write_mode": "WRITE_MODE_UNSPECIFIED",
+        "location": ""
+      }
+    }
+  ]
+}

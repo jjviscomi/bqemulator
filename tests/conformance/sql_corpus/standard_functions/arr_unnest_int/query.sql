@@ -1,0 +1,1 @@
+SELECT x FROM UNNEST([1, 2, 3]) AS x ORDER BY x

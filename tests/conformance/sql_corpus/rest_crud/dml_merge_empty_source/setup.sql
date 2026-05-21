@@ -1,0 +1,3 @@
+CREATE OR REPLACE TABLE `${DATASET}.target` (id INT64, v STRING);
+INSERT INTO `${DATASET}.target` (id, v) VALUES (1, "a"), (2, "b");
+CREATE OR REPLACE TABLE `${DATASET}.source` (id INT64, v STRING);

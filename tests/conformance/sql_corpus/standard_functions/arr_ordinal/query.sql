@@ -1,0 +1,1 @@
+SELECT [10, 20, 30][ORDINAL(1)] AS v

@@ -1,0 +1,1 @@
+SELECT SOUNDEX('Robert') AS x

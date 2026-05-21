@@ -1,0 +1,1 @@
+SELECT JSON_TYPE(PARSE_JSON('{"a": 1}')) AS t

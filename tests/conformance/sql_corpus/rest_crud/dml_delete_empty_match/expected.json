@@ -1,0 +1,28 @@
+{
+  "fixture_version": 2,
+  "bigquery": {
+    "project": "your-bigquery-project",
+    "job_id": "0eb00cf1-04f2-481c-98b6-c1ae1323b93f",
+    "location": "US",
+    "total_bytes_processed": 72,
+    "total_bytes_billed": 10485760,
+    "duration_ms": 3964
+  },
+  "schema": [
+    {
+      "name": "remaining",
+      "type": "INTEGER",
+      "mode": "NULLABLE"
+    }
+  ],
+  "rows": [
+    {
+      "remaining": 3
+    }
+  ],
+  "row_count": 1,
+  "duration_class": "medium",
+  "job_metadata": {
+    "statement_type": "SCRIPT"
+  }
+}

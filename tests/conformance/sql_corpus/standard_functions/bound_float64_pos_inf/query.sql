@@ -1,0 +1,1 @@
+SELECT CAST('Infinity' AS FLOAT64) AS x

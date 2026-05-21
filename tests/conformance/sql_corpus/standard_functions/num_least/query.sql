@@ -1,0 +1,1 @@
+SELECT LEAST(1, 5, 3) AS x

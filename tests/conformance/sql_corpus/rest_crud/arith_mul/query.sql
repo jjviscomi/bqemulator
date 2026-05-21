@@ -1,0 +1,1 @@
+SELECT 6 * 7 AS n

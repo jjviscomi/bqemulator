@@ -1,0 +1,1 @@
+SELECT TRUNC(3.7) AS x

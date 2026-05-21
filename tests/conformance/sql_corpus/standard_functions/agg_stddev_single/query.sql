@@ -1,0 +1,1 @@
+SELECT STDDEV(x) AS s FROM `${DATASET}.nums`

@@ -1,0 +1,118 @@
+name: Mutation
+
+# Mutation tier — runs mutmut against the configured modules and
+# compares the live mutation score to the committed baseline at
+# ``tests/mutation/baseline.json``. Fails when the score drops more
+# than the configured threshold below the baseline — the v1.0 ship
+# criterion documented in ADR 0026 and v1-confidence-plan workstream
+# P4.a.
+#
+# === Trigger policy: manual only (workflow_dispatch) ===
+#
+# This workflow is intentionally NOT scheduled and NOT auto-triggered
+# on push or pull_request. The gating / cadence decision is deferred
+# until after the project's GitHub repo is set up and there is real
+# PR traffic to characterise runtime, flakiness, and runner-cost
+# trade-offs against. Until then, an operator runs this workflow via
+# the GitHub Actions "Run workflow" button (or
+# `gh workflow run mutation`).
+#
+# Candidate future triggers, evaluated post-setup:
+#   - per-PR scoped run (mutate only changed files + their dependents)
+#     plus periodic full-suite sweep
+#   - nightly full-suite schedule
+#   - release-gate-only
+#
+# Mutation testing is the one tier in this project where "too slow
+# for per-PR" is a real constraint (each mutant = one full test run).
+# PR-scoping mitigates but does not eliminate the cost; the post-setup
+# evaluation should weigh runtime against the false-negative cost of
+# letting mutants survive between sweeps.
+#
+# The surviving-mutant detail (``mutants/mutmut-cicd-stats.json``)
+# is uploaded as a CI artefact for triage; the committed baseline
+# is the canonical reference for the regression gate.
+#
+# Recording a fresh baseline is a deliberate operator action,
+# documented in the Makefile target ``test-mutation-baseline``:
+#
+#     make test-mutation-baseline
+#
+# Then review ``tests/mutation/baseline.json`` and open a PR. The
+# workflow below NEVER autosaves to the committed baseline; it only
+# *compares* against the committed version.
+
+on:
+  workflow_dispatch:
+    inputs:
+      max-regression:
+        description: "Maximum allowed score drop in percentage points."
+        required: false
+        default: "2.0"
+      record-baseline:
+        description: "Record a new baseline (uploaded as artefact for operator commit) instead of running the regression gate."
+        required: false
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: mutation-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  mutation:
+    name: Mutation tier (manual)
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+      - name: Install dev deps
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[dev,all]"
+      - name: Sanity-check committed baseline is present (skipped when recording)
+        if: ${{ inputs.record-baseline != true }}
+        run: |
+          baseline=tests/mutation/baseline.json
+          if [ ! -f "$baseline" ] ; then
+              echo "::error file=$baseline::Committed baseline missing — run this workflow with \`record-baseline=true\` (workflow_dispatch) to record one, then commit the uploaded artefact."
+              exit 1
+          fi
+          python -c "import json; b = json.load(open('$baseline')); print(f'baseline score: {b[\"score\"]}%')"
+      - name: Run mutation tier
+        run: |
+          mutmut run
+          mutmut export-cicd-stats
+      - name: Compare against baseline (fails on >${{ inputs.max-regression || '2.0' }}pp regression)
+        if: ${{ inputs.record-baseline != true }}
+        run: |
+          python scripts/check_mutation_baseline.py \
+              --max-regression "${{ inputs.max-regression || '2.0' }}"
+      - name: Record new baseline (dispatch-only)
+        if: ${{ inputs.record-baseline == true }}
+        run: |
+          python scripts/check_mutation_baseline.py --update-baseline
+          echo "Recorded new baseline. Download the \`mutation-baseline\` artefact and commit \`tests/mutation/baseline.json\` to land it."
+      - name: Upload recorded baseline (dispatch-only)
+        if: ${{ inputs.record-baseline == true }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: mutation-baseline
+          path: tests/mutation/baseline.json
+          if-no-files-found: error
+      - name: Upload surviving-mutant detail (always)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: mutation-stats
+          path: |
+            mutants/mutmut-cicd-stats.json
+            mutants/mutmut-stats.json
+          if-no-files-found: warn

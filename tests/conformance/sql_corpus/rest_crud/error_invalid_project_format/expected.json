@@ -1,0 +1,19 @@
+{
+  "fixture_version": 2,
+  "bigquery": {
+    "project": "your-bigquery-project",
+    "job_id": null,
+    "location": "US",
+    "total_bytes_processed": 0,
+    "total_bytes_billed": 0,
+    "duration_ms": 423
+  },
+  "error": {
+    "reason": "accessDenied",
+    "location": null,
+    "http_status": 403,
+    "message_pattern": "Access\\ Denied:\\ Table\\ invalid\\-\\-project\\-\\-id:any_dataset\\.any_table:\\ User\\ does\\ not\\ have\\ permission\\ to\\ query\\ table\\ invalid\\-\\-project\\-\\-id:any_dataset\\.any_table,\\ or\\ perhaps\\ it\\ does\\ not\\ exist\\.",
+    "message_sample": "Access Denied: Table invalid--project--id:any_dataset.any_table: User does not have permission to query table invalid--project--id:any_dataset.any_table, or perhaps it does not exist."
+  },
+  "duration_class": "fast"
+}

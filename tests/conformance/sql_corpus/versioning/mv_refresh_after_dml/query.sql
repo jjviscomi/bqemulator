@@ -1,0 +1,5 @@
+CREATE MATERIALIZED VIEW `${DATASET}.mv`
+AS SELECT label, COUNT(*) AS n FROM `${DATASET}.t` GROUP BY label;
+INSERT INTO `${DATASET}.t` VALUES (3, "a"), (4, "b"), (5, "c"), (6, "a");
+CALL BQ.REFRESH_MATERIALIZED_VIEW("${DATASET}.mv");
+SELECT label, n FROM `${DATASET}.mv` ORDER BY label

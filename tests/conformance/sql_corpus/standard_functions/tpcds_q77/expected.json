@@ -1,0 +1,116 @@
+{
+  "fixture_version": 2,
+  "bigquery": {
+    "project": "your-bigquery-project",
+    "job_id": "eb04c788-a461-4ed5-889d-2e7d9e83f2b3",
+    "location": "US",
+    "total_bytes_processed": 632,
+    "total_bytes_billed": 94371840,
+    "duration_ms": 959
+  },
+  "schema": [
+    {
+      "name": "channel",
+      "type": "STRING",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "id",
+      "type": "INTEGER",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "sales",
+      "type": "NUMERIC",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "returns_amt",
+      "type": "NUMERIC",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "profit",
+      "type": "NUMERIC",
+      "mode": "NULLABLE"
+    }
+  ],
+  "rows": [
+    {
+      "channel": null,
+      "id": null,
+      "sales": "560",
+      "returns_amt": "46",
+      "profit": "101"
+    },
+    {
+      "channel": "catalog channel",
+      "id": null,
+      "sales": "120",
+      "returns_amt": "10",
+      "profit": "22"
+    },
+    {
+      "channel": "catalog channel",
+      "id": 1,
+      "sales": "50",
+      "returns_amt": "5",
+      "profit": "9"
+    },
+    {
+      "channel": "catalog channel",
+      "id": 2,
+      "sales": "70",
+      "returns_amt": "5",
+      "profit": "13"
+    },
+    {
+      "channel": "store channel",
+      "id": null,
+      "sales": "300",
+      "returns_amt": "20",
+      "profit": "55"
+    },
+    {
+      "channel": "store channel",
+      "id": 1,
+      "sales": "180",
+      "returns_amt": "20",
+      "profit": "30"
+    },
+    {
+      "channel": "store channel",
+      "id": 2,
+      "sales": "120",
+      "returns_amt": "0",
+      "profit": "25"
+    },
+    {
+      "channel": "web channel",
+      "id": null,
+      "sales": "140",
+      "returns_amt": "16",
+      "profit": "24"
+    },
+    {
+      "channel": "web channel",
+      "id": 1,
+      "sales": "60",
+      "returns_amt": "8",
+      "profit": "10"
+    },
+    {
+      "channel": "web channel",
+      "id": 2,
+      "sales": "80",
+      "returns_amt": "8",
+      "profit": "14"
+    }
+  ],
+  "row_count": 10,
+  "duration_class": "fast",
+  "job_metadata": {
+    "cache_hit": false,
+    "statement_type": "SELECT"
+  }
+}

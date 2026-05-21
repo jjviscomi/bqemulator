@@ -1,0 +1,25 @@
+{
+  "fixture_version": 1,
+  "bigquery": {
+    "project": "your-bigquery-project",
+    "job_id": "83b1b25b-9dc3-4134-8732-3dcb60226c1f",
+    "location": "US",
+    "total_bytes_processed": 0,
+    "total_bytes_billed": 0,
+    "duration_ms": 580
+  },
+  "schema": [
+    {
+      "name": "missing",
+      "type": "BOOLEAN",
+      "mode": "NULLABLE"
+    }
+  ],
+  "rows": [
+    {
+      "missing": true
+    }
+  ],
+  "row_count": 1,
+  "duration_class": "fast"
+}

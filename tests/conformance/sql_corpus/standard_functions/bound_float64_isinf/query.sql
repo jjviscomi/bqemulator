@@ -1,0 +1,1 @@
+SELECT IS_INF(CAST('Infinity' AS FLOAT64)) AS b

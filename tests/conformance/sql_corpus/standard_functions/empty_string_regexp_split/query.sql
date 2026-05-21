@@ -1,0 +1,1 @@
+SELECT REGEXP_EXTRACT_ALL('', r'\w+') AS parts

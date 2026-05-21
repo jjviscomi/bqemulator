@@ -1,0 +1,1 @@
+SELECT REGEXP_EXTRACT_ALL('a1 b2 c3', r'[0-9]+') AS m

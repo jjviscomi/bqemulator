@@ -1,0 +1,1 @@
+SELECT SIGN(5) AS x

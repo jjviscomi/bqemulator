@@ -1,0 +1,43 @@
+{
+  "fixture_version": 1,
+  "bigquery": {
+    "project": "your-bigquery-project",
+    "job_id": "93e0242d-6f1d-4ea0-99be-ec5f3724a66f",
+    "location": "US",
+    "total_bytes_processed": 309,
+    "total_bytes_billed": 10485760,
+    "duration_ms": 743
+  },
+  "schema": [
+    {
+      "name": "user_id",
+      "type": "INTEGER",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "first_purchase",
+      "type": "TIMESTAMP",
+      "mode": "NULLABLE"
+    }
+  ],
+  "rows": [
+    {
+      "user_id": 1,
+      "first_purchase": "2024-01-15T09:10:00+00:00"
+    },
+    {
+      "user_id": 2,
+      "first_purchase": "2024-01-15T10:20:00+00:00"
+    },
+    {
+      "user_id": 4,
+      "first_purchase": "2024-01-16T08:00:00+00:00"
+    },
+    {
+      "user_id": 5,
+      "first_purchase": "2024-01-16T09:05:00+00:00"
+    }
+  ],
+  "row_count": 4,
+  "duration_class": "fast"
+}

@@ -1,0 +1,1 @@
+SELECT TIME(12, 30, 45) AS t

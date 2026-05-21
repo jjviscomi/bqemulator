@@ -1,0 +1,1 @@
+WITH x AS (SELECT a FROM t), y AS (SELECT a + 1 AS a FROM x) SELECT * FROM y

@@ -1,0 +1,1 @@
+CREATE OR REPLACE TABLE `${DATASET}.for_accumulator` (label STRING, doubled INT64);

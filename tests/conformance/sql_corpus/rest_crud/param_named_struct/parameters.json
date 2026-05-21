@@ -1,0 +1,16 @@
+{
+  "mode": "named",
+  "parameters": [
+    {
+      "name": "profile",
+      "type": {
+        "type": "STRUCT",
+        "structTypes": [
+          {"name": "name", "type": "STRING"},
+          {"name": "age", "type": "INT64"}
+        ]
+      },
+      "value": {"name": "Alice", "age": 30}
+    }
+  ]
+}

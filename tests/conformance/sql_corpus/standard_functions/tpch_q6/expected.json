@@ -1,0 +1,25 @@
+{
+  "fixture_version": 1,
+  "bigquery": {
+    "project": "your-bigquery-project",
+    "job_id": "241c02d6-0252-4b16-ac04-6d297d89a92a",
+    "location": "US",
+    "total_bytes_processed": 504,
+    "total_bytes_billed": 10485760,
+    "duration_ms": 554
+  },
+  "schema": [
+    {
+      "name": "revenue",
+      "type": "NUMERIC",
+      "mode": "NULLABLE"
+    }
+  ],
+  "rows": [
+    {
+      "revenue": "26.5"
+    }
+  ],
+  "row_count": 1,
+  "duration_class": "fast"
+}

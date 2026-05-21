@@ -1,0 +1,6 @@
+{
+  "mode": "named",
+  "parameters": [
+    {"name": "n", "type": "INT64", "value": 42}
+  ]
+}

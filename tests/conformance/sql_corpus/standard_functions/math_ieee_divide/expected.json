@@ -1,0 +1,31 @@
+{
+  "fixture_version": 1,
+  "bigquery": {
+    "project": "your-bigquery-project",
+    "job_id": "656cc7a3-d354-4dc7-8cd3-ef955cb4190f",
+    "location": "US",
+    "total_bytes_processed": 0,
+    "total_bytes_billed": 0,
+    "duration_ms": 861
+  },
+  "schema": [
+    {
+      "name": "x",
+      "type": "FLOAT",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "is_inf",
+      "type": "BOOLEAN",
+      "mode": "NULLABLE"
+    }
+  ],
+  "rows": [
+    {
+      "x": Infinity,
+      "is_inf": true
+    }
+  ],
+  "row_count": 1,
+  "duration_class": "fast"
+}

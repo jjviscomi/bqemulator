@@ -1,0 +1,1 @@
+SELECT ROUND(1/SIN(1), 6) AS x

@@ -1,0 +1,1 @@
+SELECT REGEXP_EXTRACT('abc123', r'[0-9]+') AS m

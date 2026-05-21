@@ -1,0 +1,20 @@
+{
+  "fixture_version": 2,
+  "bigquery": {
+    "project": "your-bigquery-project",
+    "job_id": "e365ddd7-2d5b-4d13-b841-b1b36be0565f",
+    "location": "US",
+    "total_bytes_processed": 64,
+    "total_bytes_billed": 10485760,
+    "duration_ms": 2904
+  },
+  "schema": [],
+  "rows": [],
+  "row_count": 0,
+  "duration_class": "medium",
+  "job_metadata": {
+    "cache_hit": false,
+    "statement_type": "DELETE",
+    "num_dml_affected_rows": 2
+  }
+}

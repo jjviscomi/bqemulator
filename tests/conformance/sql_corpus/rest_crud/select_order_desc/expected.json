@@ -1,0 +1,37 @@
+{
+  "fixture_version": 1,
+  "bigquery": {
+    "project": "your-bigquery-project",
+    "job_id": "932a7b74-e9e2-4ea0-876c-38386f74c5fe",
+    "location": "US",
+    "total_bytes_processed": 40,
+    "total_bytes_billed": 10485760,
+    "duration_ms": 618
+  },
+  "schema": [
+    {
+      "name": "order_id",
+      "type": "INTEGER",
+      "mode": "NULLABLE"
+    }
+  ],
+  "rows": [
+    {
+      "order_id": 5
+    },
+    {
+      "order_id": 4
+    },
+    {
+      "order_id": 3
+    },
+    {
+      "order_id": 2
+    },
+    {
+      "order_id": 1
+    }
+  ],
+  "row_count": 5,
+  "duration_class": "fast"
+}

@@ -1,0 +1,1 @@
+SELECT DIV(10, 3) AS x

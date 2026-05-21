@@ -1,0 +1,31 @@
+{
+  "fixture_version": 2,
+  "bigquery": {
+    "project": "your-bigquery-project",
+    "job_id": "019c99fc-4de6-455b-bb46-79ad96d3df66",
+    "location": "US",
+    "total_bytes_processed": 0,
+    "total_bytes_billed": 0,
+    "duration_ms": 678
+  },
+  "schema": [
+    {
+      "name": "name",
+      "type": "STRING",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "age",
+      "type": "INTEGER",
+      "mode": "NULLABLE"
+    }
+  ],
+  "rows": [
+    {
+      "name": "Alice",
+      "age": 30
+    }
+  ],
+  "row_count": 1,
+  "duration_class": "fast"
+}

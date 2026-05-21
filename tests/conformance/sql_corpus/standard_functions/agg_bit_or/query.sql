@@ -1,0 +1,1 @@
+SELECT BIT_OR(n) AS b FROM `${DATASET}.nums`

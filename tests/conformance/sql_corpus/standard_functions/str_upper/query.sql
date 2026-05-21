@@ -1,0 +1,1 @@
+SELECT UPPER('Hello') AS s

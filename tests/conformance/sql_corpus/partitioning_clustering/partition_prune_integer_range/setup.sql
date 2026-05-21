@@ -1,0 +1,3 @@
+CREATE OR REPLACE TABLE `${DATASET}.ingest_count` (id INT64)
+PARTITION BY _PARTITIONDATE;
+INSERT INTO `${DATASET}.ingest_count` (id) VALUES (1), (2), (3), (4), (5);

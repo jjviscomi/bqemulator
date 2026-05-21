@@ -1,0 +1,1 @@
+SELECT PARSE_TIME('%H:%M:%S', '12:34:56') AS t

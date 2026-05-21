@@ -1,0 +1,2 @@
+TRUNCATE TABLE `${DATASET}.orders`;
+SELECT COUNT(*) AS n FROM `${DATASET}.orders`

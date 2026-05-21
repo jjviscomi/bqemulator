@@ -1,0 +1,97 @@
+{
+  "fixture_version": 1,
+  "bigquery": {
+    "project": "your-bigquery-project",
+    "job_id": "660e7a59-f4cf-4a32-87e4-f4241649aa07",
+    "location": "US",
+    "total_bytes_processed": 146,
+    "total_bytes_billed": 10485760,
+    "duration_ms": 2195
+  },
+  "schema": [
+    {
+      "name": "user_id",
+      "type": "STRING",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "region",
+      "type": "STRING",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "active",
+      "type": "RANGE",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "session_range",
+      "type": "RANGE",
+      "mode": "NULLABLE"
+    }
+  ],
+  "rows": [
+    {
+      "user_id": "alice",
+      "region": "NORTH",
+      "active": {
+        "start": "2024-01-01",
+        "end": "2024-01-03"
+      },
+      "session_range": {
+        "start": "2024-01-01",
+        "end": "2024-01-05"
+      }
+    },
+    {
+      "user_id": "alice",
+      "region": "NORTH",
+      "active": {
+        "start": "2024-01-03",
+        "end": "2024-01-05"
+      },
+      "session_range": {
+        "start": "2024-01-01",
+        "end": "2024-01-05"
+      }
+    },
+    {
+      "user_id": "alice",
+      "region": "SOUTH",
+      "active": {
+        "start": "2024-01-04",
+        "end": "2024-01-06"
+      },
+      "session_range": {
+        "start": "2024-01-04",
+        "end": "2024-01-06"
+      }
+    },
+    {
+      "user_id": "bob",
+      "region": "NORTH",
+      "active": {
+        "start": "2024-01-02",
+        "end": "2024-01-04"
+      },
+      "session_range": {
+        "start": "2024-01-02",
+        "end": "2024-01-04"
+      }
+    },
+    {
+      "user_id": "bob",
+      "region": "NORTH",
+      "active": {
+        "start": "2024-01-10",
+        "end": "2024-01-12"
+      },
+      "session_range": {
+        "start": "2024-01-10",
+        "end": "2024-01-12"
+      }
+    }
+  ],
+  "row_count": 5,
+  "duration_class": "medium"
+}

@@ -1,0 +1,25 @@
+{
+  "fixture_version": 1,
+  "bigquery": {
+    "project": "your-bigquery-project",
+    "job_id": "abb39320-6567-4233-8640-882237808d8f",
+    "location": "US",
+    "total_bytes_processed": 160,
+    "total_bytes_billed": 10485760,
+    "duration_ms": 700
+  },
+  "schema": [
+    {
+      "name": "r",
+      "type": "FLOAT",
+      "mode": "NULLABLE"
+    }
+  ],
+  "rows": [
+    {
+      "r": 0.99988
+    }
+  ],
+  "row_count": 1,
+  "duration_class": "fast"
+}

@@ -1,0 +1,1 @@
+SELECT IS_INF(1.0) AS b

@@ -1,0 +1,1 @@
+SELECT STRUCT(1 AS x, 'a' AS y) AS s

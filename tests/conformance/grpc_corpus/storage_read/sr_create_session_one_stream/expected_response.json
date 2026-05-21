@@ -1,0 +1,53 @@
+{
+  "fixture_version": 1,
+  "bigquery": {
+    "project": "your-bigquery-project",
+    "location": "US"
+  },
+  "calls": [
+    {
+      "method": "BigQueryRead.CreateReadSession",
+      "status": "OK",
+      "response": {
+        "name": "<*>",
+        "expire_time": "<*>",
+        "data_format": "ARROW",
+        "arrow_schema": {
+          "serialized_schema": "<*>"
+        },
+        "table": "projects/${PROJECT}/datasets/${DATASET_ID}/tables/read_data",
+        "streams": [
+          {
+            "name": "<*>"
+          }
+        ],
+        "estimated_total_bytes_scanned": "<*>",
+        "estimated_row_count": "<*>",
+        "estimated_total_physical_file_size": "<*>",
+        "trace_id": "<*>"
+      }
+    },
+    {
+      "method": "BigQueryRead.ReadRows",
+      "status": "OK",
+      "responses": [
+        {
+          "stats": {
+            "progress": {
+              "at_response_end": "<*>",
+              "at_response_start": "<*>"
+            }
+          },
+          "arrow_record_batch": {
+            "serialized_record_batch": "<*>",
+            "row_count": "0"
+          },
+          "row_count": "10",
+          "arrow_schema": {
+            "serialized_schema": "<*>"
+          }
+        }
+      ]
+    }
+  ]
+}

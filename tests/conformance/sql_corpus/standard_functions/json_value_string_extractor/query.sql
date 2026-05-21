@@ -1,0 +1,1 @@
+SELECT STRING(PARSE_JSON('"hello"')) AS s

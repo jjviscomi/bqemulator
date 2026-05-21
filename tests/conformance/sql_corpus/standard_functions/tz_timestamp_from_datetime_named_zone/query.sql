@@ -1,0 +1,1 @@
+SELECT TIMESTAMP(DATETIME '2024-01-15 12:00:00', 'America/New_York') AS ts

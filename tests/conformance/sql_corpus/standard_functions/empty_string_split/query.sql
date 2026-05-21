@@ -1,0 +1,1 @@
+SELECT SPLIT('', ',') AS parts

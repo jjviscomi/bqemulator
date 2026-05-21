@@ -1,0 +1,1 @@
+SELECT SIGN(0) AS x

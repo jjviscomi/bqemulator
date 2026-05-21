@@ -1,0 +1,1 @@
+SELECT COUNTIF(n > 2) AS n FROM `${DATASET}.nums`

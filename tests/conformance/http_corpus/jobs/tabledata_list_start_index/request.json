@@ -1,0 +1,4 @@
+{
+  "method": "GET",
+  "path": "/bigquery/v2/projects/${PROJECT}/datasets/${DATASET_ID}/tables/tbl/data?startIndex=2&maxResults=1"
+}

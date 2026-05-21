@@ -1,0 +1,1 @@
+SELECT EXP(1.0) AS x

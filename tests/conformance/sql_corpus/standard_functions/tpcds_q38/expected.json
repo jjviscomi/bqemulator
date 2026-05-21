@@ -1,0 +1,29 @@
+{
+  "fixture_version": 2,
+  "bigquery": {
+    "project": "your-bigquery-project",
+    "job_id": "bb91825e-2191-4046-a6b9-19e3b48f2f0b",
+    "location": "US",
+    "total_bytes_processed": 305,
+    "total_bytes_billed": 52428800,
+    "duration_ms": 882
+  },
+  "schema": [
+    {
+      "name": "num_customers",
+      "type": "INTEGER",
+      "mode": "NULLABLE"
+    }
+  ],
+  "rows": [
+    {
+      "num_customers": 2
+    }
+  ],
+  "row_count": 1,
+  "duration_class": "fast",
+  "job_metadata": {
+    "cache_hit": false,
+    "statement_type": "SELECT"
+  }
+}

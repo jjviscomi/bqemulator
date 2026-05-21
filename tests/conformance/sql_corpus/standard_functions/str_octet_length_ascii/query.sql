@@ -1,0 +1,1 @@
+SELECT OCTET_LENGTH('hello') AS n

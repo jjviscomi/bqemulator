@@ -1,0 +1,2 @@
+CREATE OR REPLACE TABLE `${DATASET}.orders` AS
+SELECT 1 AS id, 'US' AS country;

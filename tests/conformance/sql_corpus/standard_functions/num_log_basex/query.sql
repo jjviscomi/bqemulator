@@ -1,0 +1,1 @@
+SELECT LOG(100.0, 10.0) AS x

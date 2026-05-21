@@ -1,0 +1,31 @@
+{
+  "fixture_version": 2,
+  "bigquery": {
+    "project": "your-bigquery-project",
+    "job_id": "ed21b772-2e20-4ef5-9db6-424ab1de6750",
+    "location": "US",
+    "total_bytes_processed": 0,
+    "total_bytes_billed": 0,
+    "duration_ms": 922
+  },
+  "schema": [
+    {
+      "name": "zero_case",
+      "type": "INTEGER",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "pos_case",
+      "type": "INTEGER",
+      "mode": "NULLABLE"
+    }
+  ],
+  "rows": [
+    {
+      "zero_case": null,
+      "pos_case": 5
+    }
+  ],
+  "row_count": 1,
+  "duration_class": "fast"
+}

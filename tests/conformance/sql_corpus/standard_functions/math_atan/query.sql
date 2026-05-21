@@ -1,0 +1,1 @@
+SELECT ROUND(ATAN(1), 12) AS x

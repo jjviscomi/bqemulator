@@ -1,0 +1,11 @@
+{
+  "method": "POST",
+  "path": "/bigquery/v2/projects/${PROJECT}/datasets/${DATASET_ID}/tables/tbl/insertAll",
+  "body": {
+    "skipInvalidRows": true,
+    "rows": [
+      {"json": {"n": 1}},
+      {"json": {"n": "not-a-number"}}
+    ]
+  }
+}

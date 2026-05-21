@@ -1,0 +1,38 @@
+{
+  "fixture_version": 1,
+  "bigquery": {
+    "project": "your-bigquery-project",
+    "location": "US"
+  },
+  "http_status": 200,
+  "headers": {
+    "content-type": "application/json"
+  },
+  "body": {
+    "kind": "bigquery#jobCancelResponse",
+    "job": {
+      "kind": "bigquery#job",
+      "etag": "<*>",
+      "id": "<*>",
+      "selfLink": "<*>",
+      "configuration": {
+        "query": {
+          "query": "SELECT 99 AS x",
+          "destinationTable": "<*>",
+          "writeDisposition": "<*>",
+          "priority": "<*>",
+          "useLegacySql": "<*>"
+        },
+        "jobType": "<*>"
+      },
+      "jobReference": {
+        "projectId": "<*>",
+        "jobId": "<*>",
+        "location": "<*>"
+      },
+      "statistics": "<*>",
+      "status": "<*>",
+      "jobCreationReason": "<*>"
+    }
+  }
+}

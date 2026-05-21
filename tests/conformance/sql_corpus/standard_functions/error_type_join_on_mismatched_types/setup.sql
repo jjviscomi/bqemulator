@@ -1,0 +1,4 @@
+CREATE OR REPLACE TABLE `${DATASET}.t_str` (k STRING);
+CREATE OR REPLACE TABLE `${DATASET}.t_int` (k INT64);
+INSERT INTO `${DATASET}.t_str` (k) VALUES ('not_an_int');
+INSERT INTO `${DATASET}.t_int` (k) VALUES (1);

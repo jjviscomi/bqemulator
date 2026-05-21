@@ -1,0 +1,67 @@
+{
+  "fixture_version": 1,
+  "bigquery": {
+    "project": "your-bigquery-project",
+    "job_id": "e4255424-8606-49ed-a64d-b69d92ad4aca",
+    "location": "US",
+    "total_bytes_processed": 40,
+    "total_bytes_billed": 10485760,
+    "duration_ms": 687
+  },
+  "schema": [
+    {
+      "name": "order_id",
+      "type": "INTEGER",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "region",
+      "type": "STRING",
+      "mode": "NULLABLE"
+    }
+  ],
+  "rows": [
+    {
+      "order_id": 1,
+      "region": "NORTH"
+    },
+    {
+      "order_id": 1,
+      "region": "SOUTH"
+    },
+    {
+      "order_id": 2,
+      "region": "NORTH"
+    },
+    {
+      "order_id": 2,
+      "region": "SOUTH"
+    },
+    {
+      "order_id": 3,
+      "region": "NORTH"
+    },
+    {
+      "order_id": 3,
+      "region": "SOUTH"
+    },
+    {
+      "order_id": 4,
+      "region": "NORTH"
+    },
+    {
+      "order_id": 4,
+      "region": "SOUTH"
+    },
+    {
+      "order_id": 5,
+      "region": "NORTH"
+    },
+    {
+      "order_id": 5,
+      "region": "SOUTH"
+    }
+  ],
+  "row_count": 10,
+  "duration_class": "fast"
+}

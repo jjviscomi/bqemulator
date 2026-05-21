@@ -1,0 +1,54 @@
+{
+  "fixture_version": 1,
+  "bigquery": {
+    "project": "your-bigquery-project",
+    "location": "US"
+  },
+  "calls": [
+    {
+      "method": "BigQueryRead.CreateReadSession",
+      "status": "OK",
+      "response": {
+        "name": "<*>",
+        "data_format": "AVRO",
+        "avro_schema": {
+          "schema": "<*>"
+        },
+        "table": "projects/${PROJECT}/datasets/${DATASET_ID}/tables/avro_projection",
+        "streams": [
+          {
+            "name": "<*>"
+          }
+        ],
+        "estimated_total_bytes_scanned": "<*>",
+        "read_options": {
+          "selected_fields": [
+            "a",
+            "c"
+          ]
+        }
+      }
+    },
+    {
+      "method": "BigQueryRead.ReadRows",
+      "status": "OK",
+      "responses": [
+        {
+          "stats": {
+            "progress": {
+              "at_response_end": "<*>",
+              "at_response_start": "<*>"
+            }
+          },
+          "avro_rows": {
+            "serialized_binary_rows": "<*>"
+          },
+          "row_count": "3",
+          "avro_schema": {
+            "schema": "<*>"
+          }
+        }
+      ]
+    }
+  ]
+}

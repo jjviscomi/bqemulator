@@ -1,0 +1,6 @@
+CREATE OR REPLACE TABLE `${DATASET}.events` (
+  session_id INT64,
+  r RANGE<DATE>
+);
+INSERT INTO `${DATASET}.events` VALUES
+  (1, RANGE<DATE> '[2024-01-01, 2024-01-05)');

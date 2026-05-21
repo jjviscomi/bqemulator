@@ -1,0 +1,8 @@
+SELECT user_id, duration, session_range
+FROM RANGE_SESSIONIZE(
+  TABLE `${DATASET}.events`,
+  'duration',
+  ['user_id'],
+  'MEETS'
+)
+ORDER BY user_id, duration

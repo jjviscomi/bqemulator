@@ -1,0 +1,40 @@
+{
+  "fixture_version": 2,
+  "bigquery": {
+    "project": "your-bigquery-project",
+    "job_id": "b2f596e8-02de-48b6-a687-1157cb77b3ac",
+    "location": "US",
+    "total_bytes_processed": 2971,
+    "total_bytes_billed": 52428800,
+    "duration_ms": 1031
+  },
+  "schema": [
+    {
+      "name": "supp_nation",
+      "type": "STRING",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "cust_nation",
+      "type": "STRING",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "l_year",
+      "type": "INTEGER",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "revenue",
+      "type": "NUMERIC",
+      "mode": "NULLABLE"
+    }
+  ],
+  "rows": [],
+  "row_count": 0,
+  "duration_class": "medium",
+  "job_metadata": {
+    "cache_hit": false,
+    "statement_type": "SELECT"
+  }
+}

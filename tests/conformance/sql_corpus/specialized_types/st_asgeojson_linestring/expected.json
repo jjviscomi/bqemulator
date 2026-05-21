@@ -1,0 +1,25 @@
+{
+  "fixture_version": 2,
+  "bigquery": {
+    "project": "your-bigquery-project",
+    "job_id": "6d11752f-de96-4cd2-8ce0-e06b1dc1d99b",
+    "location": "US",
+    "total_bytes_processed": 0,
+    "total_bytes_billed": 0,
+    "duration_ms": 721
+  },
+  "schema": [
+    {
+      "name": "gj",
+      "type": "STRING",
+      "mode": "NULLABLE"
+    }
+  ],
+  "rows": [
+    {
+      "gj": "{ \"type\": \"LineString\", \"coordinates\": [ [0, 0], [1, 1], [1.49988573656168, 1.5000570914792], [2, 2] ] } "
+    }
+  ],
+  "row_count": 1,
+  "duration_class": "fast"
+}

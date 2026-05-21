@@ -1,0 +1,1 @@
+SELECT TO_BASE32(b'') AS x

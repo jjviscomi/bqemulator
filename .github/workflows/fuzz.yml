@@ -1,0 +1,104 @@
+name: Fuzz
+
+# Fuzz tier — Atheris coverage-guided fuzzing of the three highest-
+# attack-surface translator-input boundaries: the BigQuery → DuckDB
+# SQL translator, the dynamic-protobuf row deserialiser used by the
+# Storage Write API, and the Arrow ↔ BigQuery REST JSON row bridge
+# (plus the Arrow IPC deserialiser). Each harness runs for up to
+# 10 minutes; a single crash fails the job.
+#
+# Design contract: ADR 0031.
+# Workstream: v1-confidence-plan P3.c (elevated to must-have
+# 2026-05-19 by the conformance-depth audit).
+#
+# === Trigger policy: manual only (workflow_dispatch) ===
+#
+# This workflow is intentionally NOT scheduled and NOT auto-triggered
+# on push or pull_request. The gating / cadence decision is deferred
+# until after the project's GitHub repo is set up and there is real
+# PR traffic to characterise runtime, flakiness, and runner-cost
+# trade-offs against. Until then, an operator runs this workflow via
+# the GitHub Actions "Run workflow" button (or
+# `gh workflow run fuzz`).
+#
+# This matches the policy chaos.yml, perf.yml, mutation.yml, and
+# differential.yml adopted in P8.e / P8.f.
+#
+# Candidate future triggers, evaluated post-setup:
+#   - nightly schedule — natural fit; fuzzing is the canonical
+#     "find crashes between releases" tier and a 30-minute job is
+#     too slow for per-PR
+#   - release-gate-only — cheapest cadence; weakest coverage
+#   - per-PR gate — almost certainly too slow at 30 minutes/run,
+#     listed for completeness
+#
+# Running locally:
+#
+#     make test-fuzz
+#
+# (each harness runs for 60s locally vs 600s in CI). Note: Atheris
+# 3.0.0 supports Python 3.11/3.12/3.13. The dev-box's 3.14 does
+# NOT work — set up a 3.13 venv before invoking the local target.
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: fuzz-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  fuzz:
+    name: Fuzz tier (manual)
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          # Atheris 3.0.0 supports Python 3.11/3.12/3.13. 3.13 matches
+          # the leading edge of the per-PR matrix in ci.yml; bump to
+          # 3.14 when Atheris ships support. The version is documented
+          # in ADR 0031 §2 (tool choice).
+          python-version: "3.13"
+          cache: pip
+      - name: Install dev deps + atheris
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[dev,all]"
+          # Atheris is intentionally NOT a project dev dep — it's
+          # CPython-build-tied and unsupported on the dev-box's 3.14.
+          # Installing it here keeps it in the fuzz-only environment.
+          pip install 'atheris>=3.0'
+      - name: Run SQL translator harness (10 min)
+        run: |
+          python fuzz/fuzz_sql_translator.py \
+              -max_total_time=600 \
+              -artifact_prefix=fuzz-artifacts/sql-translator/ \
+              fuzz/corpus/sql_translator
+      - name: Run dynamic-proto harness (10 min)
+        run: |
+          python fuzz/fuzz_dyn_proto.py \
+              -max_total_time=600 \
+              -artifact_prefix=fuzz-artifacts/dyn-proto/ \
+              fuzz/corpus/dyn_proto
+      - name: Run Arrow bridge harness (10 min)
+        run: |
+          python fuzz/fuzz_arrow_bridge.py \
+              -max_total_time=600 \
+              -artifact_prefix=fuzz-artifacts/arrow-bridge/ \
+              fuzz/corpus/arrow_bridge
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          # Atheris's libFuzzer writes the reproducer input as
+          # ``crash-<sha1>`` (and ``leak-<sha1>``, ``timeout-<sha1>``,
+          # ``oom-<sha1>``) into the configured `artifact_prefix`
+          # directory. Uploading the entire prefix tree lets the
+          # operator triage every escape from the contract.
+          name: fuzz-artifacts
+          path: fuzz-artifacts/
+          if-no-files-found: warn

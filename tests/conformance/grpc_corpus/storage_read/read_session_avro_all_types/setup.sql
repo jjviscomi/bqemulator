@@ -1,0 +1,19 @@
+CREATE OR REPLACE TABLE `${DATASET}.avro_alltypes` (
+  i INT64,
+  f FLOAT64,
+  s STRING,
+  b BOOL,
+  n NUMERIC,
+  d DATE,
+  ts TIMESTAMP
+);
+
+INSERT INTO `${DATASET}.avro_alltypes` VALUES (
+  42,
+  3.14159,
+  'hello',
+  TRUE,
+  NUMERIC '123.456789012',
+  DATE '2026-05-20',
+  TIMESTAMP '2026-05-20 12:34:56 UTC'
+);

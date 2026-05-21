@@ -1,0 +1,1 @@
+SELECT PARSE_DATETIME('%Y-%m-%d %H:%M:%S', '2024-01-15 12:30:45') AS d

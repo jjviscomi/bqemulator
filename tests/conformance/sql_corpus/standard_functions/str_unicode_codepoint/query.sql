@@ -1,0 +1,1 @@
+SELECT UNICODE('é') AS x

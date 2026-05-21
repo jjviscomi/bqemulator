@@ -1,0 +1,1 @@
+SELECT FLOOR(3.7) AS x

@@ -1,0 +1,1 @@
+CREATE OR REPLACE TABLE `${DATASET}.tx_target` (id INT64, label STRING);

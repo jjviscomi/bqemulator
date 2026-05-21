@@ -1,0 +1,1 @@
+SELECT LOWER('CAFÉ') AS s

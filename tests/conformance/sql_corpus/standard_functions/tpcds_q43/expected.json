@@ -1,0 +1,88 @@
+{
+  "fixture_version": 2,
+  "bigquery": {
+    "project": "your-bigquery-project",
+    "job_id": "2b8f8e69-05d6-4b74-be6b-f749b51bde23",
+    "location": "US",
+    "total_bytes_processed": 712,
+    "total_bytes_billed": 31457280,
+    "duration_ms": 763
+  },
+  "schema": [
+    {
+      "name": "s_store_name",
+      "type": "STRING",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "s_store_id",
+      "type": "STRING",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "sun_sales",
+      "type": "NUMERIC",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "mon_sales",
+      "type": "NUMERIC",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "tue_sales",
+      "type": "NUMERIC",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "wed_sales",
+      "type": "NUMERIC",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "thu_sales",
+      "type": "NUMERIC",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "fri_sales",
+      "type": "NUMERIC",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "sat_sales",
+      "type": "NUMERIC",
+      "mode": "NULLABLE"
+    }
+  ],
+  "rows": [
+    {
+      "s_store_name": "Store Alpha",
+      "s_store_id": "S001",
+      "sun_sales": "100",
+      "mon_sales": "80",
+      "tue_sales": "60",
+      "wed_sales": "70",
+      "thu_sales": "90",
+      "fri_sales": "110",
+      "sat_sales": "120"
+    },
+    {
+      "s_store_name": "Store Beta",
+      "s_store_id": "S002",
+      "sun_sales": "50",
+      "mon_sales": "40",
+      "tue_sales": null,
+      "wed_sales": null,
+      "thu_sales": null,
+      "fri_sales": null,
+      "sat_sales": "30"
+    }
+  ],
+  "row_count": 2,
+  "duration_class": "fast",
+  "job_metadata": {
+    "cache_hit": false,
+    "statement_type": "SELECT"
+  }
+}

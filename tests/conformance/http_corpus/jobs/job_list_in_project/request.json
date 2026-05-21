@@ -1,0 +1,4 @@
+{
+  "method": "GET",
+  "path": "/bigquery/v2/projects/${PROJECT}/jobs?maxResults=1&stateFilter=done&projection=minimal"
+}

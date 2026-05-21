@@ -1,0 +1,1 @@
+CREATE OR REPLACE TABLE `${DATASET}.empty_t` (id INT64, v STRING);

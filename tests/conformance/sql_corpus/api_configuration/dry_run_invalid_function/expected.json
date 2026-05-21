@@ -1,0 +1,19 @@
+{
+  "fixture_version": 2,
+  "bigquery": {
+    "project": "your-bigquery-project",
+    "job_id": null,
+    "location": "US",
+    "total_bytes_processed": 0,
+    "total_bytes_billed": 0,
+    "duration_ms": 188
+  },
+  "error": {
+    "reason": "invalidQuery",
+    "location": "q",
+    "http_status": 400,
+    "message_pattern": "Function\\ not\\ found:\\ BQEMU_NONEXISTENT_FUNCTION\\ at\\ \\[\\d+:\\d+\\]",
+    "message_sample": "Function not found: BQEMU_NONEXISTENT_FUNCTION at [1:8]"
+  },
+  "duration_class": "fast"
+}

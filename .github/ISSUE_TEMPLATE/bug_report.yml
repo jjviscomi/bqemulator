@@ -1,0 +1,72 @@
+name: Bug report
+description: File a bug about bqemulator
+title: "[bug]: "
+labels: [bug, triage]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for filing a bug report. Please fill out the fields below so we
+        can reproduce and fix it quickly.
+  - type: input
+    id: version
+    attributes:
+      label: bqemulator version
+      description: Output of `bqemulator --version`
+      placeholder: 0.1.0
+    validations:
+      required: true
+  - type: input
+    id: python-version
+    attributes:
+      label: Python version
+      description: Output of `python --version`
+      placeholder: "3.11.8"
+    validations:
+      required: true
+  - type: input
+    id: client-library
+    attributes:
+      label: Client library + version
+      description: Which BigQuery client library are you using? (Python / Node / Go / Java / other)
+      placeholder: "google-cloud-bigquery 3.19.0"
+    validations:
+      required: true
+  - type: dropdown
+    id: mode
+    attributes:
+      label: Emulator mode
+      options:
+        - ephemeral (in-memory)
+        - persistent (file)
+        - docker container
+    validations:
+      required: true
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened?
+      description: Describe the observed behavior and what you expected.
+    validations:
+      required: true
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Minimal reproduction
+      description: A self-contained snippet (SQL or code) that reproduces the issue.
+      render: python
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: Emulator logs
+      description: Paste relevant lines from emulator logs. Run with `--log-level=debug` for more detail.
+      render: shell
+  - type: checkboxes
+    id: terms
+    attributes:
+      label: Code of Conduct
+      options:
+        - label: I agree to follow this project's Code of Conduct
+          required: true

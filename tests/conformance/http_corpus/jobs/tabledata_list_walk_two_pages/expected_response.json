@@ -1,0 +1,25 @@
+{
+  "fixture_version": 1,
+  "bigquery": {
+    "project": "your-bigquery-project",
+    "location": "US"
+  },
+  "http_status": 200,
+  "headers": {
+    "content-type": "application/json"
+  },
+  "body": {
+    "kind": "bigquery#tableDataList",
+    "etag": "<*>",
+    "totalRows": "2",
+    "rows": [
+      {
+        "f": [
+          {
+            "v": "2"
+          }
+        ]
+      }
+    ]
+  }
+}

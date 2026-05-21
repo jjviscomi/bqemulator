@@ -1,0 +1,82 @@
+name: Differential
+
+# Differential tier — re-runs each conformance fixture with its
+# setup data perturbed (row-order reversed, value-shifted,
+# schema-reordered) and asserts the emulator's output still matches
+# BigQuery's recorded baseline after the canonical sort. Catches
+# emulator logic that accidentally depends on the specific recorded
+# data layout rather than on the SQL semantics — the
+# "fixture-specific-shortcut" bug class.
+#
+# Design contract: ADR 0028 (to be written as part of P8.f).
+# Workstream: v1-confidence-plan P8.f.
+#
+# === Trigger policy: manual only (workflow_dispatch) ===
+#
+# This workflow is intentionally NOT scheduled and NOT auto-triggered
+# on push or pull_request. The gating / cadence decision is deferred
+# until after the project's GitHub repo is set up and there is real
+# PR traffic to characterise runtime, flakiness, and runner-cost
+# trade-offs against. Until then, an operator runs this workflow via
+# the GitHub Actions "Run workflow" button (or
+# `gh workflow run differential`).
+#
+# Candidate future triggers, evaluated post-setup:
+#   - per-PR gate (push + pull_request on main) — the perturbation
+#     pass should be approximately the same wall-clock as the
+#     existing conformance suite (~60-100s for ~1141 SQL fixtures)
+#     because it just rewrites setup.sql before running. Cheap
+#     enough to plausibly land in per-PR.
+#   - nightly schedule — cheaper per-PR but bugs ship to main before
+#     detection
+#   - release-gate-only
+#
+# Initial scope (P8.f): row-order perturbation A only. Perturbations
+# B (value-shift) and C (schema-reorder) require operator BigQuery
+# time to re-record perturbed-sibling fixtures and are deferred to
+# v1.0.x.
+#
+# Running locally (after P8.f lands the Makefile target):
+#
+#     make test-differential
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: differential-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  differential:
+    name: Differential tier (manual)
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+      - name: Install dev deps
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[dev,all]"
+      - name: Run differential suite
+        run: |
+          # P8.f wires `make test-differential` to a runner at
+          # tests/conformance/test_corpus_row_order_perturbed.py.
+          # Until P8.f lands, this step is expected to fail with
+          # "no such target" — that signals the workflow file is
+          # ready but the runner is not implemented yet.
+          make test-differential
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: differential-results
+          path: |
+            differential-results.xml
+          if-no-files-found: warn

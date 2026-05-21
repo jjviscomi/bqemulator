@@ -1,0 +1,1 @@
+SELECT UPPER('') AS s

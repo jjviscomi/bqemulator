@@ -1,0 +1,3 @@
+CREATE OR REPLACE TABLE `${DATASET}.t` AS
+  SELECT 1 AS id, "a" AS label UNION ALL
+  SELECT 2, "b";

@@ -1,0 +1,1 @@
+SELECT LAX_BOOL(PARSE_JSON('true')) AS b

@@ -1,0 +1,27 @@
+{
+  "fixture_version": 1,
+  "bigquery": {
+    "project": "your-bigquery-project",
+    "location": "US"
+  },
+  "http_status": 200,
+  "headers": {
+    "content-type": "application/json"
+  },
+  "body": {
+    "kind": "bigquery#tableDataInsertAllResponse",
+    "insertErrors": [
+      {
+        "index": 1,
+        "errors": [
+          {
+            "reason": "invalid",
+            "location": "n",
+            "debugInfo": "",
+            "message": "Cannot convert value to integer (bad value): not-a-number"
+          }
+        ]
+      }
+    ]
+  }
+}

@@ -1,0 +1,1 @@
+SELECT MOD(CAST(NULL AS INT64), 3) AS m_x_null, MOD(10, CAST(NULL AS INT64)) AS m_y_null

@@ -1,0 +1,65 @@
+{
+  "fixture_version": 1,
+  "bigquery": {
+    "project": "your-bigquery-project",
+    "job_id": "ef1aa0f7-7b00-40b2-9a34-cd0c8221ecfd",
+    "location": "US",
+    "total_bytes_processed": 309,
+    "total_bytes_billed": 10485760,
+    "duration_ms": 655
+  },
+  "schema": [
+    {
+      "name": "user_id",
+      "type": "INTEGER",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "events",
+      "type": "STRING",
+      "mode": "REPEATED"
+    }
+  ],
+  "rows": [
+    {
+      "user_id": 1,
+      "events": [
+        "view",
+        "click",
+        "purchase"
+      ]
+    },
+    {
+      "user_id": 2,
+      "events": [
+        "view",
+        "view",
+        "click",
+        "purchase"
+      ]
+    },
+    {
+      "user_id": 3,
+      "events": [
+        "view",
+        "click"
+      ]
+    },
+    {
+      "user_id": 4,
+      "events": [
+        "purchase"
+      ]
+    },
+    {
+      "user_id": 5,
+      "events": [
+        "view",
+        "purchase",
+        "purchase"
+      ]
+    }
+  ],
+  "row_count": 5,
+  "duration_class": "fast"
+}

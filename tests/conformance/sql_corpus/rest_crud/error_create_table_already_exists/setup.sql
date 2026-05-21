@@ -1,0 +1,1 @@
+CREATE TABLE `${DATASET}.t_dup` (x INT64);

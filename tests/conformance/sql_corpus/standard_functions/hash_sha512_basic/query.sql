@@ -1,0 +1,1 @@
+SELECT TO_HEX(SHA512('hello')) AS h

@@ -1,0 +1,228 @@
+site_name: bqemulator
+site_description: Local emulator for Google BigQuery
+site_url: https://jjviscomi.github.io/bqemulator/
+repo_url: https://github.com/jjviscomi/bqemulator
+repo_name: jjviscomi/bqemulator
+edit_uri: edit/main/docs/
+copyright: Apache 2.0
+
+theme:
+  name: material
+  features:
+    - content.action.edit
+    - content.action.view
+    - content.code.copy
+    - content.code.annotate
+    - content.tabs.link
+    - navigation.indexes
+    - navigation.instant
+    - navigation.sections
+    - navigation.tabs
+    - navigation.top
+    - navigation.tracking
+    - search.highlight
+    - search.share
+    - search.suggest
+    - toc.follow
+  palette:
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      primary: indigo
+      accent: indigo
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      primary: indigo
+      accent: indigo
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
+  icon:
+    repo: fontawesome/brands/github
+
+extra:
+  version:
+    provider: mike
+    default: latest
+
+markdown_extensions:
+  - admonition
+  - attr_list
+  - def_list
+  - footnotes
+  - md_in_html
+  - tables
+  - toc:
+      permalink: true
+  - pymdownx.arithmatex:
+      generic: true
+  - pymdownx.betterem
+  - pymdownx.caret
+  - pymdownx.details
+  - pymdownx.emoji
+  - pymdownx.highlight:
+      anchor_linenums: true
+      line_spans: __span
+      pygments_lang_class: true
+  - pymdownx.inlinehilite
+  - pymdownx.keys
+  - pymdownx.mark
+  - pymdownx.smartsymbols
+  - pymdownx.snippets
+  - pymdownx.superfences
+  - pymdownx.tabbed:
+      alternate_style: true
+  - pymdownx.tasklist:
+      custom_checkbox: true
+  - pymdownx.tilde
+
+plugins:
+  - search
+  - mkdocstrings:
+      default_handler: python
+      handlers:
+        python:
+          paths: [src]
+          options:
+            docstring_style: google
+            members_order: source
+            show_source: true
+            show_signature_annotations: true
+            show_root_heading: true
+            separate_signature: true
+            line_length: 88
+
+nav:
+  - Home: index.md
+  - Getting started: getting-started.md
+  - Quickstart:
+      - Python: quickstart/python.md
+      - Node.js: quickstart/nodejs.md
+      - Go: quickstart/go.md
+      - Java: quickstart/java.md
+      - pytest: quickstart/pytest.md
+      - docker-compose: quickstart/docker-compose.md
+      - Testcontainers: quickstart/testcontainers.md
+  - Guides:
+      - Loading data: guides/loading-data.md
+      - Loading from local files: guides/loading-from-local-files.md
+      - Querying: guides/querying.md
+      - Query parameters: guides/query-parameters.md
+      - Streaming inserts: guides/streaming-inserts.md
+      - Storage API: guides/storage-api.md
+      - Routines and UDFs: guides/routines-udfs.md
+      - Scripting: guides/scripting.md
+      - Partitioning and clustering: guides/partitioning-clustering.md
+      - Time travel and snapshots: guides/time-travel.md
+      - Materialized views: guides/materialized-views.md
+      - Row access policies: guides/row-access-policies.md
+      - Authorized views: guides/authorized-views.md
+      - INFORMATION_SCHEMA views: guides/information-schema.md
+      - GEOGRAPHY and spatial: guides/geography-spatial.md
+      - RANGE types: guides/range-types.md
+      - INTERVAL arithmetic: guides/interval-arithmetic.md
+      - Import from a real project: guides/import-from-real-project.md
+      - Admin endpoints: guides/admin-endpoints.md
+      - Backup and restore: guides/backup-restore.md
+      - Conformance corpus: guides/conformance-corpus.md
+      - CI/CD patterns: guides/ci-cd-patterns.md
+      - dbt integration: guides/dbt-integration.md
+      - Airflow integration: guides/airflow-integration.md
+      - Spark integration: guides/spark-integration.md
+      - Using the bq CLI: guides/using-bq-cli.md
+      - Observability: guides/observability.md
+  - Reference:
+      - Compatibility matrix: reference/compatibility-matrix.md
+      - Conformance coverage matrix: reference/conformance-coverage-matrix.md
+      - API configuration coverage matrix: reference/api-configuration-coverage-matrix.md
+      - SQL function mapping: reference/sql-function-mapping.md
+      - API coverage: reference/api-coverage.md
+      - Configuration: reference/configuration.md
+      - CLI: reference/cli.md
+      - Out of scope: reference/out-of-scope.md
+      - Gap analysis: reference/gap-analysis.md
+      - Troubleshooting: reference/troubleshooting.md
+  - Architecture:
+      - Overview: architecture/overview.md
+      - Storage model: architecture/storage-model.md
+      - SQL translation: architecture/sql-translation.md
+      - Jobs lifecycle: architecture/jobs-lifecycle.md
+      - Storage Read API: architecture/storage-read-api.md
+      - Storage Write API: architecture/storage-write-api.md
+      - Scripting: architecture/scripting.md
+      - UDFs: architecture/udfs.md
+      - Versioning and snapshots: architecture/versioning-and-snapshots.md
+      - Row access policies: architecture/row-access-policies.md
+      - Specialized types: architecture/specialized-types.md
+      - Admin and import/export: architecture/admin-and-import-export.md
+      - Observability: architecture/observability.md
+      - Testing strategy: architecture/testing-strategy.md
+      - Conformance tier: architecture/conformance-tier.md
+      - Contributing:
+          - Dev environment: architecture/contributing/dev-environment.md
+          - Release process: architecture/contributing/release-process.md
+          - Adding SQL functions: architecture/contributing/adding-sql-functions.md
+          - Adding UDF runtimes: architecture/contributing/adding-udf-runtimes.md
+          - Adding conformance cases: architecture/contributing/adding-conformance-cases.md
+          - Debugging: architecture/contributing/debugging.md
+  - ADRs:
+      - "0001 Use DuckDB": adr/0001-use-duckdb.md
+      - "0002 Python over Go/Rust": adr/0002-python-over-go-rust.md
+      - "0003 SQLGlot for translation": adr/0003-sqlglot-for-translation.md
+      - "0004 Hexagonal architecture": adr/0004-hexagonal-architecture.md
+      - "0005 FastAPI + grpc.aio single process": adr/0005-fastapi-grpcaio-single-process.md
+      - "0006 Catalog in DuckDB reserved schema": adr/0006-catalog-in-reserved-schema.md
+      - "0007 pytest fixture as DX": adr/0007-pytest-fixture-as-dx.md
+      - "0008 Snapshot Storage Read API": adr/0008-snapshot-storage-read-api.md
+      - "0009 Snapshot-layer time travel": adr/0009-snapshot-layer-time-travel.md
+      - "0010 mini-racer for JS UDFs": adr/0010-py-mini-racer-for-js-udfs.md
+      - "0011 Tree-walking scripting interpreter": adr/0011-tree-walking-scripting-interpreter.md
+      - "0012 BigQuery ML out of scope": adr/0012-bqml-out-of-scope.md
+      - "0013 Storage Write API strategies": adr/0013-write-api-strategies.md
+      - "0014 UDF materialization strategy": adr/0014-udf-materialization-strategy.md
+      - "0015 Scripting execution model": adr/0015-scripting-execution-model.md
+      - "0016 Snapshot time semantics": adr/0016-snapshot-time-semantics.md
+      - "0017 Materialized-view refresh": adr/0017-materialized-view-refresh.md
+      - "0018 Caller identity + row-access enforcement": adr/0018-caller-identity-and-row-access-enforcement.md
+      - "0019 Specialized types (GEOGRAPHY / RANGE / INTERVAL)": adr/0019-specialized-types.md
+      - "0020 Admin endpoints + import/export + backup format": adr/0020-admin-import-export.md
+      - "0021 Chaos-tier design contract": adr/0021-chaos-tier-design-contract.md
+      - "0022 Conformance corpus design": adr/0022-conformance-corpus-design.md
+      - "0023 Conformance divergence baseline": adr/0023-conformance-divergence-baseline.md
+      - "0024 HLL_COUNT support strategy": adr/0024-hll-count-support-strategy.md
+      - "0025 Perf-tier design contract": adr/0025-perf-tier-design-contract.md
+      - "0026 Mutation-tier design contract": adr/0026-mutation-tier-design-contract.md
+      - "0027 Load/Extract Avro+ORC": adr/0027-load-extract-avro-orc.md
+      - "0028 Differential-tier design contract": adr/0028-differential-tier-design-contract.md
+      - "0029 Upload host endpoints": adr/0029-upload-host-endpoints.md
+      - "0030 Storage Read Avro output format": adr/0030-storage-read-avro-format.md
+      - "0031 Fuzz-tier design contract": adr/0031-fuzz-tier-design-contract.md
+      - "0032 bq CLI as a fifth conformance client": adr/0032-bq-cli-conformance-client.md
+  - RFCs: rfcs/README.md
+  - Examples:
+      - Overview: examples/README.md
+      - bq CLI quickstart: examples/bq-cli-quickstart/README.md
+      - Local file load: examples/local-file-load/README.md
+      - Python:
+          - pytest integration: examples/python/pytest-integration/README.md
+          - dbt local: examples/python/dbt-local/README.md
+          - Airflow DAG test: examples/python/airflow-dag-test/README.md
+          - PySpark + BigQuery: examples/python/pyspark-bigquery/README.md
+      - Node.js:
+          - NestJS app: examples/nodejs/nestjs-app/README.md
+          - Cloud Run local: examples/nodejs/cloud-run-local/README.md
+      - Go:
+          - Beam pipeline: examples/go/beam-pipeline/README.md
+          - Dataflow local: examples/go/dataflow-local/README.md
+      - Java/Scala:
+          - Spring Boot: examples/java/spring-boot/README.md
+          - Scio: examples/java/scio/README.md
+      - Compose:
+          - Full stack: examples/docker-compose/full-stack/README.md
+      - CI recipes:
+          - GitHub Actions: examples/ci-recipes/github-actions/README.md
+          - GitLab CI: examples/ci-recipes/gitlab-ci/README.md
+          - CircleCI: examples/ci-recipes/circleci/README.md
+  - API reference: api.md

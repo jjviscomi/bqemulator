@@ -1,0 +1,31 @@
+{
+  "fixture_version": 1,
+  "bigquery": {
+    "project": "your-bigquery-project",
+    "job_id": "2ae64964-52f3-4f4e-8297-9a34eba59fae",
+    "location": "US",
+    "total_bytes_processed": 16,
+    "total_bytes_billed": 10485760,
+    "duration_ms": 716
+  },
+  "schema": [
+    {
+      "name": "id",
+      "type": "INTEGER",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "order_date",
+      "type": "DATE",
+      "mode": "NULLABLE"
+    }
+  ],
+  "rows": [
+    {
+      "id": 4,
+      "order_date": "2024-02-01"
+    }
+  ],
+  "row_count": 1,
+  "duration_class": "fast"
+}

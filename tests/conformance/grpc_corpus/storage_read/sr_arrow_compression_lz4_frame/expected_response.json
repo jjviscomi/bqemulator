@@ -1,0 +1,39 @@
+{
+  "fixture_version": 1,
+  "bigquery": {
+    "project": "your-bigquery-project",
+    "location": "US"
+  },
+  "calls": [
+    {
+      "method": "BigQueryRead.CreateReadSession",
+      "status": "OK",
+      "response": {
+        "name": "<*>",
+        "expire_time": "<*>",
+        "data_format": "ARROW",
+        "arrow_schema": {
+          "serialized_schema": "<*>"
+        },
+        "table": "projects/${PROJECT}/datasets/${DATASET_ID}/tables/read_data",
+        "read_options": {
+          "arrow_serialization_options": {
+            "buffer_compression": "LZ4_FRAME",
+            "picos_timestamp_precision": "PICOS_TIMESTAMP_PRECISION_UNSPECIFIED"
+          },
+          "selected_fields": [],
+          "row_restriction": ""
+        },
+        "streams": [
+          {
+            "name": "<*>"
+          }
+        ],
+        "estimated_total_bytes_scanned": "<*>",
+        "estimated_row_count": "<*>",
+        "estimated_total_physical_file_size": "<*>",
+        "trace_id": "<*>"
+      }
+    }
+  ]
+}

@@ -1,0 +1,8 @@
+{
+  "method": "POST",
+  "path": "/upload/bigquery/v2/projects/${PROJECT}/jobs?uploadType=multipart",
+  "headers": {
+    "Content-Type": "application/octet-stream"
+  },
+  "body_bin": "request.body.bin"
+}

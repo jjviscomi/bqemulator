@@ -1,0 +1,9 @@
+{
+  "method": "POST",
+  "path": "/bigquery/v2/projects/${PROJECT}/queries",
+  "body": {
+    "query": "SELECT n FROM UNNEST(GENERATE_ARRAY(1, 100)) AS n ORDER BY n",
+    "useLegacySql": false,
+    "maxResults": 25
+  }
+}

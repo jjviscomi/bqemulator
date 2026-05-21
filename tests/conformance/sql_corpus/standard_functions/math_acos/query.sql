@@ -1,0 +1,1 @@
+SELECT ROUND(ACOS(1), 12) AS x

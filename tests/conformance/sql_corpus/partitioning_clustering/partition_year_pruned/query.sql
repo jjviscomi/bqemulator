@@ -1,0 +1,3 @@
+SELECT id FROM `${DATASET}.yearly_log`
+WHERE EXTRACT(YEAR FROM log_date) = 2024
+ORDER BY id

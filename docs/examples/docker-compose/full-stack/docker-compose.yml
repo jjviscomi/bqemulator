@@ -1,0 +1,60 @@
+services:
+  bqemulator:
+    image: ${BQEMU_IMAGE:-ghcr.io/jjviscomi/bqemulator:dev}
+    container_name: bqemu-full-stack-emu
+    environment:
+      BQEMU_REST_HOST: 0.0.0.0
+      BQEMU_GRPC_HOST: 0.0.0.0
+      BQEMU_ADMIN_ENABLED: "1"
+      BQEMU_METRICS_ENABLED: "1"
+    ports:
+      - "9050:9050"
+      - "9060:9060"
+    healthcheck:
+      test: ["CMD", "curl", "-sf", "http://localhost:9050/healthz"]
+      interval: 2s
+      timeout: 2s
+      retries: 30
+
+  app:
+    build: ./app
+    container_name: bqemu-full-stack-app
+    environment:
+      BQEMU_REST_URL: http://bqemulator:9050
+      BQ_PROJECT: bqemu-demo
+      BQ_DATASET: full_stack_demo
+    ports:
+      - "8080:8080"
+    depends_on:
+      bqemulator:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-sf", "http://localhost:8080/healthz"]
+      interval: 2s
+      timeout: 2s
+      retries: 15
+
+  prometheus:
+    image: prom/prometheus:v2.51.2
+    container_name: bqemu-full-stack-prom
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+    ports:
+      - "9090:9090"
+    depends_on:
+      bqemulator:
+        condition: service_healthy
+
+  grafana:
+    image: grafana/grafana:10.4.2
+    container_name: bqemu-full-stack-grafana
+    environment:
+      GF_SECURITY_ADMIN_USER: admin
+      GF_SECURITY_ADMIN_PASSWORD: admin
+      GF_AUTH_ANONYMOUS_ENABLED: "true"
+    volumes:
+      - ./grafana/provisioning:/etc/grafana/provisioning:ro
+    ports:
+      - "3000:3000"
+    depends_on:
+      - prometheus

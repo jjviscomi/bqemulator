@@ -1,0 +1,1 @@
+SELECT LENGTH('á') AS n

@@ -1,0 +1,1 @@
+SELECT CAST(NULL AS INT64) AS a, 'second' AS b

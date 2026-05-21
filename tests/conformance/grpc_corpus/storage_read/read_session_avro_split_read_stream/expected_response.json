@@ -1,0 +1,39 @@
+{
+  "fixture_version": 1,
+  "bigquery": {
+    "project": "your-bigquery-project",
+    "location": "US"
+  },
+  "calls": [
+    {
+      "method": "BigQueryRead.CreateReadSession",
+      "status": "OK",
+      "response": {
+        "name": "<*>",
+        "data_format": "AVRO",
+        "avro_schema": {
+          "schema": "<*>"
+        },
+        "table": "projects/${PROJECT}/datasets/${DATASET_ID}/tables/avro_split",
+        "streams": [
+          {
+            "name": "<*>"
+          }
+        ],
+        "estimated_total_bytes_scanned": "<*>"
+      }
+    },
+    {
+      "method": "BigQueryRead.SplitReadStream",
+      "status": "OK",
+      "response": {
+        "primary_stream": {
+          "name": "<*>"
+        },
+        "remainder_stream": {
+          "name": "<*>"
+        }
+      }
+    }
+  ]
+}

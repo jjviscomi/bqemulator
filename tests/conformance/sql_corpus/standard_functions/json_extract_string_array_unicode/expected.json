@@ -1,0 +1,29 @@
+{
+  "fixture_version": 2,
+  "bigquery": {
+    "project": "your-bigquery-project",
+    "job_id": "2f42d908-db23-4894-ab23-cf7bec7994cd",
+    "location": "US",
+    "total_bytes_processed": 0,
+    "total_bytes_billed": 0,
+    "duration_ms": 593
+  },
+  "schema": [
+    {
+      "name": "v",
+      "type": "STRING",
+      "mode": "REPEATED"
+    }
+  ],
+  "rows": [
+    {
+      "v": [
+        "caf\u00e9",
+        "na\u00efve",
+        "\u00fcber"
+      ]
+    }
+  ],
+  "row_count": 1,
+  "duration_class": "fast"
+}

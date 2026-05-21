@@ -1,0 +1,43 @@
+CREATE OR REPLACE TABLE `${DATASET}.region` (r_regionkey INT64, r_name STRING);
+INSERT INTO `${DATASET}.region` VALUES (0, "AMERICA"), (1, "EUROPE"), (2, "ASIA");
+
+CREATE OR REPLACE TABLE `${DATASET}.nation` (n_nationkey INT64, n_regionkey INT64, n_name STRING);
+INSERT INTO `${DATASET}.nation` VALUES
+  (1, 0, "UNITED STATES"), (2, 0, "CANADA"),
+  (3, 1, "GERMANY"), (4, 1, "FRANCE"),
+  (5, 2, "JAPAN"), (6, 2, "CHINA");
+
+CREATE OR REPLACE TABLE `${DATASET}.customer` (c_custkey INT64, c_nationkey INT64, c_name STRING, c_mktsegment STRING);
+INSERT INTO `${DATASET}.customer` VALUES
+  (1, 1, "Cust#1", "BUILDING"),  (2, 1, "Cust#2", "AUTOMOBILE"),
+  (3, 3, "Cust#3", "MACHINERY"), (4, 5, "Cust#4", "BUILDING"),
+  (5, 6, "Cust#5", "FURNITURE"), (6, 2, "Cust#6", "BUILDING"),
+  (7, 4, "Cust#7", "BUILDING");
+
+CREATE OR REPLACE TABLE `${DATASET}.orders` (o_orderkey INT64, o_custkey INT64, o_orderdate DATE, o_orderpriority STRING, o_totalprice NUMERIC);
+INSERT INTO `${DATASET}.orders` VALUES
+  (1, 1, DATE "1995-01-15", "1-URGENT",    NUMERIC "1000.00"),
+  (2, 1, DATE "1995-02-15", "2-HIGH",      NUMERIC "1200.00"),
+  (3, 2, DATE "1995-03-15", "3-MEDIUM",    NUMERIC  "800.00"),
+  (4, 3, DATE "1995-04-15", "1-URGENT",    NUMERIC "1500.00"),
+  (5, 4, DATE "1995-05-15", "4-NOT SPECIFIED", NUMERIC "950.00"),
+  (6, 5, DATE "1995-06-15", "2-HIGH",      NUMERIC "1100.00"),
+  (7, 6, DATE "1995-07-15", "1-URGENT",    NUMERIC "1300.00"),
+  (8, 7, DATE "1995-08-15", "3-MEDIUM",    NUMERIC  "700.00");
+
+CREATE OR REPLACE TABLE `${DATASET}.lineitem` (
+  l_orderkey INT64, l_linenumber INT64,
+  l_quantity NUMERIC, l_extendedprice NUMERIC, l_discount NUMERIC, l_tax NUMERIC,
+  l_returnflag STRING, l_linestatus STRING,
+  l_shipdate DATE, l_commitdate DATE, l_receiptdate DATE
+);
+INSERT INTO `${DATASET}.lineitem` VALUES
+  (1, 1, NUMERIC "10", NUMERIC "100.00", NUMERIC "0.05", NUMERIC "0.08", "N", "O", DATE "1995-01-20", DATE "1995-01-25", DATE "1995-01-22"),
+  (1, 2, NUMERIC  "5", NUMERIC  "50.00", NUMERIC "0.00", NUMERIC "0.08", "N", "O", DATE "1995-01-21", DATE "1995-01-26", DATE "1995-01-24"),
+  (2, 1, NUMERIC "20", NUMERIC "200.00", NUMERIC "0.10", NUMERIC "0.05", "R", "F", DATE "1995-02-20", DATE "1995-02-25", DATE "1995-02-22"),
+  (3, 1, NUMERIC  "8", NUMERIC  "80.00", NUMERIC "0.02", NUMERIC "0.05", "A", "F", DATE "1995-03-20", DATE "1995-03-25", DATE "1995-03-22"),
+  (4, 1, NUMERIC "15", NUMERIC "150.00", NUMERIC "0.05", NUMERIC "0.08", "N", "O", DATE "1995-04-20", DATE "1995-04-25", DATE "1995-04-22"),
+  (5, 1, NUMERIC "12", NUMERIC "120.00", NUMERIC "0.00", NUMERIC "0.05", "N", "O", DATE "1995-05-20", DATE "1995-05-25", DATE "1995-05-22"),
+  (6, 1, NUMERIC "11", NUMERIC "110.00", NUMERIC "0.03", NUMERIC "0.08", "R", "F", DATE "1995-06-20", DATE "1995-06-25", DATE "1995-06-22"),
+  (7, 1, NUMERIC "13", NUMERIC "130.00", NUMERIC "0.07", NUMERIC "0.05", "N", "O", DATE "1995-07-20", DATE "1995-07-25", DATE "1995-07-22"),
+  (8, 1, NUMERIC  "7", NUMERIC  "70.00", NUMERIC "0.00", NUMERIC "0.08", "N", "O", DATE "1995-08-20", DATE "1995-08-25", DATE "1995-08-22");

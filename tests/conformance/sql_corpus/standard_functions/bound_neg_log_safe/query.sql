@@ -1,0 +1,1 @@
+SELECT SAFE.LN(-1) AS x

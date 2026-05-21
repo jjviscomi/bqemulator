@@ -1,0 +1,5 @@
+{
+  "connection_properties": [
+    {"key": "session_id", "value": "bqemu-nonexistent-session-1234"}
+  ]
+}

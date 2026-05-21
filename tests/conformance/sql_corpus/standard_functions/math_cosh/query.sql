@@ -1,0 +1,1 @@
+SELECT ROUND(COSH(0), 12) AS x

@@ -1,0 +1,1 @@
+SELECT JSON_EXTRACT_SCALAR('{"a": 42}', '$.a') AS v

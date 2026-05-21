@@ -1,0 +1,57 @@
+{
+  "fixture_version": 1,
+  "bigquery": {
+    "project": "your-bigquery-project",
+    "job_id": "112e5a18-54b0-4933-a477-87fd560847ff",
+    "location": "US",
+    "total_bytes_processed": 151,
+    "total_bytes_billed": 10485760,
+    "duration_ms": 1126
+  },
+  "schema": [
+    {
+      "name": "order_id",
+      "type": "INTEGER",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "customer",
+      "type": "STRING",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "next_amount",
+      "type": "NUMERIC",
+      "mode": "NULLABLE"
+    }
+  ],
+  "rows": [
+    {
+      "order_id": 1,
+      "customer": "Alice",
+      "next_amount": "75"
+    },
+    {
+      "order_id": 2,
+      "customer": "Bob",
+      "next_amount": "50"
+    },
+    {
+      "order_id": 3,
+      "customer": "Alice",
+      "next_amount": null
+    },
+    {
+      "order_id": 4,
+      "customer": "Carol",
+      "next_amount": null
+    },
+    {
+      "order_id": 5,
+      "customer": "Bob",
+      "next_amount": null
+    }
+  ],
+  "row_count": 5,
+  "duration_class": "medium"
+}

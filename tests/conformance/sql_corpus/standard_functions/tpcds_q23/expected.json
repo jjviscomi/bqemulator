@@ -1,0 +1,29 @@
+{
+  "fixture_version": 2,
+  "bigquery": {
+    "project": "your-bigquery-project",
+    "job_id": "7ce4bd45-8ad5-474b-b756-d0c64605d86e",
+    "location": "US",
+    "total_bytes_processed": 1658,
+    "total_bytes_billed": 62914560,
+    "duration_ms": 1180
+  },
+  "schema": [
+    {
+      "name": "sum_sales",
+      "type": "NUMERIC",
+      "mode": "NULLABLE"
+    }
+  ],
+  "rows": [
+    {
+      "sum_sales": "90"
+    }
+  ],
+  "row_count": 1,
+  "duration_class": "medium",
+  "job_metadata": {
+    "cache_hit": false,
+    "statement_type": "SELECT"
+  }
+}

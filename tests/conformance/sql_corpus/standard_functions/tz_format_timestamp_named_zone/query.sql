@@ -1,0 +1,1 @@
+SELECT FORMAT_TIMESTAMP('%Y-%m-%d %H:%M:%S %Ez', TIMESTAMP '2024-01-15 12:00:00+00', 'America/New_York') AS s

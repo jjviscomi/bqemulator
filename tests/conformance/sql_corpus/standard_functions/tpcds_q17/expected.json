@@ -1,0 +1,113 @@
+{
+  "fixture_version": 2,
+  "bigquery": {
+    "project": "your-bigquery-project",
+    "job_id": "1819c9b5-3efd-4938-a17d-185d8e08355a",
+    "location": "US",
+    "total_bytes_processed": 797,
+    "total_bytes_billed": 62914560,
+    "duration_ms": 1062
+  },
+  "schema": [
+    {
+      "name": "i_item_id",
+      "type": "STRING",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "i_item_desc",
+      "type": "STRING",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "s_state",
+      "type": "STRING",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "store_sales_quantitycount",
+      "type": "INTEGER",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "store_sales_quantityave",
+      "type": "FLOAT",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "store_sales_quantitystdev",
+      "type": "FLOAT",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "store_sales_quantitycov",
+      "type": "FLOAT",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "store_returns_quantitycount",
+      "type": "INTEGER",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "store_returns_quantityave",
+      "type": "FLOAT",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "store_returns_quantitystdev",
+      "type": "FLOAT",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "store_returns_quantitycov",
+      "type": "FLOAT",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "catalog_sales_quantitycount",
+      "type": "INTEGER",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "catalog_sales_quantityave",
+      "type": "FLOAT",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "catalog_sales_quantitystdev",
+      "type": "FLOAT",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "catalog_sales_quantitycov",
+      "type": "FLOAT",
+      "mode": "NULLABLE"
+    }
+  ],
+  "rows": [
+    {
+      "i_item_id": "AAAA1",
+      "i_item_desc": "Item One",
+      "s_state": "TN",
+      "store_sales_quantitycount": 1,
+      "store_sales_quantityave": 5.0,
+      "store_sales_quantitystdev": null,
+      "store_sales_quantitycov": null,
+      "store_returns_quantitycount": 1,
+      "store_returns_quantityave": 1.0,
+      "store_returns_quantitystdev": null,
+      "store_returns_quantitycov": null,
+      "catalog_sales_quantitycount": 1,
+      "catalog_sales_quantityave": 3.0,
+      "catalog_sales_quantitystdev": null,
+      "catalog_sales_quantitycov": null
+    }
+  ],
+  "row_count": 1,
+  "duration_class": "medium",
+  "job_metadata": {
+    "cache_hit": false,
+    "statement_type": "SELECT"
+  }
+}

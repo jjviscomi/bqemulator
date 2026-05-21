@@ -1,0 +1,1 @@
+SELECT TO_JSON_STRING(STRUCT(1 AS a, 'b' AS b)) AS s

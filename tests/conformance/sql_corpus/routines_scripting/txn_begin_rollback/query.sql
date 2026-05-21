@@ -1,0 +1,5 @@
+BEGIN TRANSACTION;
+INSERT INTO `${DATASET}`.ledger (id, amount) VALUES (2, 200);
+INSERT INTO `${DATASET}`.ledger (id, amount) VALUES (3, 300);
+ROLLBACK TRANSACTION;
+SELECT id, amount FROM `${DATASET}`.ledger ORDER BY id

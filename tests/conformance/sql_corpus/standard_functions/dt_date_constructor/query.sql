@@ -1,0 +1,1 @@
+SELECT DATE(2024, 1, 15) AS d

@@ -1,0 +1,1 @@
+CREATE OR REPLACE TABLE `${DATASET}`.target (id INT64, label STRING);

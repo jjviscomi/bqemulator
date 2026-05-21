@@ -1,0 +1,107 @@
+{
+  "fixture_version": 2,
+  "bigquery": {
+    "project": "your-bigquery-project",
+    "job_id": "7afe8129-ceb3-456e-8b72-e35a8c49f5cb",
+    "location": "US",
+    "total_bytes_processed": 791,
+    "total_bytes_billed": 83886080,
+    "duration_ms": 917
+  },
+  "schema": [
+    {
+      "name": "prev_year",
+      "type": "INTEGER",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "year",
+      "type": "INTEGER",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "i_brand_id",
+      "type": "INTEGER",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "i_class_id",
+      "type": "INTEGER",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "i_category_id",
+      "type": "INTEGER",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "i_manufact_id",
+      "type": "INTEGER",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "prev_yr_cnt",
+      "type": "INTEGER",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "curr_yr_cnt",
+      "type": "INTEGER",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "sales_cnt_diff",
+      "type": "INTEGER",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "sales_amt_diff",
+      "type": "NUMERIC",
+      "mode": "NULLABLE"
+    }
+  ],
+  "rows": [
+    {
+      "prev_year": 2001,
+      "year": 2002,
+      "i_brand_id": 102,
+      "i_class_id": 1,
+      "i_category_id": 1,
+      "i_manufact_id": 11,
+      "prev_yr_cnt": 10,
+      "curr_yr_cnt": 4,
+      "sales_cnt_diff": -6,
+      "sales_amt_diff": "-60"
+    },
+    {
+      "prev_year": 2001,
+      "year": 2002,
+      "i_brand_id": 101,
+      "i_class_id": 1,
+      "i_category_id": 1,
+      "i_manufact_id": 11,
+      "prev_yr_cnt": 27,
+      "curr_yr_cnt": 23,
+      "sales_cnt_diff": -4,
+      "sales_amt_diff": "-40"
+    },
+    {
+      "prev_year": 2001,
+      "year": 2002,
+      "i_brand_id": 103,
+      "i_class_id": 2,
+      "i_category_id": 1,
+      "i_manufact_id": 12,
+      "prev_yr_cnt": 3,
+      "curr_yr_cnt": 2,
+      "sales_cnt_diff": -1,
+      "sales_amt_diff": "-10"
+    }
+  ],
+  "row_count": 3,
+  "duration_class": "fast",
+  "job_metadata": {
+    "cache_hit": false,
+    "statement_type": "SELECT"
+  }
+}

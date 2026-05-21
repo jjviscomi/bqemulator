@@ -1,0 +1,4 @@
+CREATE OR REPLACE VIEW `${DATASET}.v_basic`
+AS SELECT id, s FROM `${DATASET}.t` WHERE id <= 2;
+
+SELECT id, s FROM `${DATASET}.v_basic` ORDER BY id

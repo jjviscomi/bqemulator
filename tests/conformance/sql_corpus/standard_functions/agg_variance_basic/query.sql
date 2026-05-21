@@ -1,0 +1,1 @@
+SELECT ROUND(VARIANCE(x), 6) AS v FROM `${DATASET}.nums`

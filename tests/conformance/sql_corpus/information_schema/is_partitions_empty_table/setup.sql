@@ -1,0 +1,3 @@
+CREATE OR REPLACE TABLE `${DATASET}.p_empty`
+(dt DATE, value INT64)
+PARTITION BY dt;

@@ -1,0 +1,1 @@
+SELECT FARM_FINGERPRINT('hello') AS n

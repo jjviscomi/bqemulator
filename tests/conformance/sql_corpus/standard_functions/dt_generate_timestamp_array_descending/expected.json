@@ -1,0 +1,31 @@
+{
+  "fixture_version": 2,
+  "bigquery": {
+    "project": "your-bigquery-project",
+    "job_id": "d21b7cc4-e576-462b-8021-ec55c67229c2",
+    "location": "US",
+    "total_bytes_processed": 0,
+    "total_bytes_billed": 0,
+    "duration_ms": 879
+  },
+  "schema": [
+    {
+      "name": "ts",
+      "type": "TIMESTAMP",
+      "mode": "REPEATED"
+    }
+  ],
+  "rows": [
+    {
+      "ts": [
+        "2024-01-15T04:00:00+00:00",
+        "2024-01-15T03:00:00+00:00",
+        "2024-01-15T02:00:00+00:00",
+        "2024-01-15T01:00:00+00:00",
+        "2024-01-15T00:00:00+00:00"
+      ]
+    }
+  ],
+  "row_count": 1,
+  "duration_class": "fast"
+}

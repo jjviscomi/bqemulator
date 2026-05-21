@@ -1,0 +1,10 @@
+{
+  "fixture_version": 1,
+  "source": "hand-authored-emulator-baseline",
+  "note": "Hand-authored. Initiation phase of a resumable upload. Server returns 200 OK + empty body + Location/X-GUploader-UploadID headers. Real BQ emits the same shape.",
+  "http_status": 200,
+  "headers": {
+    "x-guploader-uploadid": "<*>"
+  },
+  "body": ""
+}

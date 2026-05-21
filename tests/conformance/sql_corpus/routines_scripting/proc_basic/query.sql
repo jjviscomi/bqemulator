@@ -1,0 +1,5 @@
+CREATE OR REPLACE PROCEDURE `${DATASET}`.p_basic()
+BEGIN
+  SELECT 7 AS answer;
+END;
+CALL `${DATASET}`.p_basic()

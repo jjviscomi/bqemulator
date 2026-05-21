@@ -1,0 +1,1 @@
+SELECT SAFE.SQRT(-1) AS x

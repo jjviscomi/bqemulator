@@ -1,0 +1,2 @@
+DELETE FROM `${DATASET}.orders` WHERE TRUE;
+SELECT COUNT(*) AS n FROM `${DATASET}.orders`

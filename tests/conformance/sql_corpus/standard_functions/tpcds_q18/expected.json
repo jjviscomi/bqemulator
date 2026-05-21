@@ -1,0 +1,245 @@
+{
+  "fixture_version": 2,
+  "bigquery": {
+    "project": "your-bigquery-project",
+    "job_id": "3b115449-68a3-4686-927a-1a4d57fb6fd5",
+    "location": "US",
+    "total_bytes_processed": 861,
+    "total_bytes_billed": 62914560,
+    "duration_ms": 881
+  },
+  "schema": [
+    {
+      "name": "i_item_id",
+      "type": "STRING",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "ca_country",
+      "type": "STRING",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "ca_state",
+      "type": "STRING",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "ca_county",
+      "type": "STRING",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "agg1",
+      "type": "NUMERIC",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "agg2",
+      "type": "NUMERIC",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "agg3",
+      "type": "NUMERIC",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "agg4",
+      "type": "NUMERIC",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "agg5",
+      "type": "NUMERIC",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "agg6",
+      "type": "NUMERIC",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "agg7",
+      "type": "NUMERIC",
+      "mode": "NULLABLE"
+    }
+  ],
+  "rows": [
+    {
+      "i_item_id": null,
+      "ca_country": null,
+      "ca_state": null,
+      "ca_county": null,
+      "agg1": "3",
+      "agg2": "15",
+      "agg3": "0.5",
+      "agg4": "14.5",
+      "agg5": "3",
+      "agg6": "1968.333333333",
+      "agg7": "3.666666667"
+    },
+    {
+      "i_item_id": "AAAA1",
+      "ca_country": null,
+      "ca_state": null,
+      "ca_county": null,
+      "agg1": "3",
+      "agg2": "10",
+      "agg3": "0.5",
+      "agg4": "9.5",
+      "agg5": "2",
+      "agg6": "1970",
+      "agg7": "1"
+    },
+    {
+      "i_item_id": "AAAA2",
+      "ca_country": null,
+      "ca_state": null,
+      "ca_county": null,
+      "agg1": "5",
+      "agg2": "15",
+      "agg3": "1",
+      "agg4": "14",
+      "agg5": "3",
+      "agg6": "1970",
+      "agg7": "1"
+    },
+    {
+      "i_item_id": "AAAA3",
+      "ca_country": null,
+      "ca_state": null,
+      "ca_county": null,
+      "agg1": "1",
+      "agg2": "20",
+      "agg3": "0",
+      "agg4": "20",
+      "agg5": "4",
+      "agg6": "1965",
+      "agg7": "9"
+    },
+    {
+      "i_item_id": "AAAA1",
+      "ca_country": "United States",
+      "ca_state": null,
+      "ca_county": null,
+      "agg1": "3",
+      "agg2": "10",
+      "agg3": "0.5",
+      "agg4": "9.5",
+      "agg5": "2",
+      "agg6": "1970",
+      "agg7": "1"
+    },
+    {
+      "i_item_id": "AAAA2",
+      "ca_country": "United States",
+      "ca_state": null,
+      "ca_county": null,
+      "agg1": "5",
+      "agg2": "15",
+      "agg3": "1",
+      "agg4": "14",
+      "agg5": "3",
+      "agg6": "1970",
+      "agg7": "1"
+    },
+    {
+      "i_item_id": "AAAA3",
+      "ca_country": "United States",
+      "ca_state": null,
+      "ca_county": null,
+      "agg1": "1",
+      "agg2": "20",
+      "agg3": "0",
+      "agg4": "20",
+      "agg5": "4",
+      "agg6": "1965",
+      "agg7": "9"
+    },
+    {
+      "i_item_id": "AAAA1",
+      "ca_country": "United States",
+      "ca_state": "TN",
+      "ca_county": null,
+      "agg1": "3",
+      "agg2": "10",
+      "agg3": "0.5",
+      "agg4": "9.5",
+      "agg5": "2",
+      "agg6": "1970",
+      "agg7": "1"
+    },
+    {
+      "i_item_id": "AAAA2",
+      "ca_country": "United States",
+      "ca_state": "TN",
+      "ca_county": null,
+      "agg1": "5",
+      "agg2": "15",
+      "agg3": "1",
+      "agg4": "14",
+      "agg5": "3",
+      "agg6": "1970",
+      "agg7": "1"
+    },
+    {
+      "i_item_id": "AAAA3",
+      "ca_country": "United States",
+      "ca_state": "TN",
+      "ca_county": null,
+      "agg1": "1",
+      "agg2": "20",
+      "agg3": "0",
+      "agg4": "20",
+      "agg5": "4",
+      "agg6": "1965",
+      "agg7": "9"
+    },
+    {
+      "i_item_id": "AAAA3",
+      "ca_country": "United States",
+      "ca_state": "TN",
+      "ca_county": "Franklin Parish",
+      "agg1": "1",
+      "agg2": "20",
+      "agg3": "0",
+      "agg4": "20",
+      "agg5": "4",
+      "agg6": "1965",
+      "agg7": "9"
+    },
+    {
+      "i_item_id": "AAAA1",
+      "ca_country": "United States",
+      "ca_state": "TN",
+      "ca_county": "Williamson County",
+      "agg1": "3",
+      "agg2": "10",
+      "agg3": "0.5",
+      "agg4": "9.5",
+      "agg5": "2",
+      "agg6": "1970",
+      "agg7": "1"
+    },
+    {
+      "i_item_id": "AAAA2",
+      "ca_country": "United States",
+      "ca_state": "TN",
+      "ca_county": "Williamson County",
+      "agg1": "5",
+      "agg2": "15",
+      "agg3": "1",
+      "agg4": "14",
+      "agg5": "3",
+      "agg6": "1970",
+      "agg7": "1"
+    }
+  ],
+  "row_count": 13,
+  "duration_class": "fast",
+  "job_metadata": {
+    "cache_hit": false,
+    "statement_type": "SELECT"
+  }
+}

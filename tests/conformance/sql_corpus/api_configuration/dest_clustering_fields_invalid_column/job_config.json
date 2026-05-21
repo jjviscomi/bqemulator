@@ -1,0 +1,5 @@
+{
+  "destination": "${PROJECT}.${DATASET_ID}.target",
+  "write_disposition": "WRITE_TRUNCATE",
+  "clustering_fields": ["nonexistent_column"]
+}

@@ -1,0 +1,57 @@
+[
+  {
+    "method": "POST",
+    "path": "/bigquery/v2/projects/${PROJECT}/datasets",
+    "body": {
+      "datasetReference": {
+        "projectId": "${PROJECT}",
+        "datasetId": "${DATASET_ID}_views"
+      },
+      "location": "US"
+    }
+  },
+  {
+    "method": "POST",
+    "path": "/bigquery/v2/projects/${PROJECT}/datasets/${DATASET_ID}_views/tables",
+    "body": {
+      "tableReference": {
+        "projectId": "${PROJECT}",
+        "datasetId": "${DATASET_ID}_views",
+        "tableId": "public_summary"
+      },
+      "view": {
+        "query": "SELECT country, COUNT(*) AS row_count, SUM(amount) AS total FROM `${PROJECT}.${DATASET_ID}.orders` GROUP BY country",
+        "useLegacySql": false
+      }
+    }
+  },
+  {
+    "method": "POST",
+    "path": "/bigquery/v2/projects/${PROJECT}/datasets/${DATASET_ID}/tables/orders/rowAccessPolicies",
+    "body": {
+      "rowAccessPolicyReference": {
+        "projectId": "${PROJECT}",
+        "datasetId": "${DATASET_ID}",
+        "tableId": "orders",
+        "policyId": "blocks_everyone_else"
+      },
+      "filterPredicate": "country = 'US'",
+      "grantees": ["${OTHER_PRINCIPAL}"]
+    }
+  },
+  {
+    "method": "PATCH",
+    "path": "/bigquery/v2/projects/${PROJECT}/datasets/${DATASET_ID}",
+    "body": {
+      "access": [
+        {
+          "view": {
+            "projectId": "${PROJECT}",
+            "datasetId": "${DATASET_ID}_views",
+            "tableId": "public_summary"
+          }
+        }
+      ]
+    }
+  }
+]

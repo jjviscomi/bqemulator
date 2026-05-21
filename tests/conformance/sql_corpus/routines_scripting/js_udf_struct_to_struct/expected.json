@@ -1,0 +1,40 @@
+{
+  "fixture_version": 2,
+  "bigquery": {
+    "project": "your-bigquery-project",
+    "job_id": "81466361-19bf-4648-8e62-15e94f10f32b",
+    "location": "US",
+    "total_bytes_processed": 0,
+    "total_bytes_billed": 0,
+    "duration_ms": 800
+  },
+  "schema": [
+    {
+      "name": "swapped",
+      "type": "RECORD",
+      "mode": "NULLABLE",
+      "fields": [
+        {
+          "name": "a",
+          "type": "INTEGER",
+          "mode": "NULLABLE"
+        },
+        {
+          "name": "b",
+          "type": "STRING",
+          "mode": "NULLABLE"
+        }
+      ]
+    }
+  ],
+  "rows": [
+    {
+      "swapped": {
+        "a": 70,
+        "b": "hi!"
+      }
+    }
+  ],
+  "row_count": 1,
+  "duration_class": "fast"
+}

@@ -1,0 +1,9 @@
+[
+  {
+    "method": "GET",
+    "path": "/bigquery/v2/projects/${PROJECT}/datasets/${DATASET_ID}/tables/tbl/data?maxResults=1",
+    "capture": {
+      "PAGE_TOKEN": "pageToken"
+    }
+  }
+]

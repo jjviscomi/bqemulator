@@ -1,0 +1,103 @@
+{
+  "fixture_version": 1,
+  "bigquery": {
+    "project": "your-bigquery-project",
+    "job_id": "be68613b-1ec2-4058-9723-da7d9507a2d1",
+    "location": "US",
+    "total_bytes_processed": 702,
+    "total_bytes_billed": 10485760,
+    "duration_ms": 700
+  },
+  "schema": [
+    {
+      "name": "l_returnflag",
+      "type": "STRING",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "l_linestatus",
+      "type": "STRING",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "sum_qty",
+      "type": "NUMERIC",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "sum_base_price",
+      "type": "NUMERIC",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "sum_disc_price",
+      "type": "NUMERIC",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "sum_charge",
+      "type": "NUMERIC",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "avg_qty",
+      "type": "NUMERIC",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "avg_price",
+      "type": "NUMERIC",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "avg_disc",
+      "type": "NUMERIC",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "count_order",
+      "type": "INTEGER",
+      "mode": "NULLABLE"
+    }
+  ],
+  "rows": [
+    {
+      "l_returnflag": "A",
+      "l_linestatus": "F",
+      "sum_qty": "8",
+      "sum_base_price": "80",
+      "sum_disc_price": "78.4",
+      "sum_charge": "82.32",
+      "avg_qty": "8",
+      "avg_price": "80",
+      "avg_disc": "0.02",
+      "count_order": 1
+    },
+    {
+      "l_returnflag": "N",
+      "l_linestatus": "O",
+      "sum_qty": "62",
+      "sum_base_price": "620",
+      "sum_disc_price": "598.4",
+      "sum_charge": "639.045",
+      "avg_qty": "10.3333",
+      "avg_price": "103.3333",
+      "avg_disc": "0.0283",
+      "count_order": 6
+    },
+    {
+      "l_returnflag": "R",
+      "l_linestatus": "F",
+      "sum_qty": "31",
+      "sum_base_price": "310",
+      "sum_disc_price": "286.7",
+      "sum_charge": "304.236",
+      "avg_qty": "15.5",
+      "avg_price": "155",
+      "avg_disc": "0.065",
+      "count_order": 2
+    }
+  ],
+  "row_count": 3,
+  "duration_class": "fast"
+}

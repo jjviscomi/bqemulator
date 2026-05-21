@@ -1,0 +1,4 @@
+{
+  "method": "DELETE",
+  "path": "/bigquery/v2/projects/${PROJECT}/jobs/${JOB_ID}/delete"
+}

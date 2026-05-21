@@ -1,0 +1,1 @@
+SELECT BIT_COUNT(7) AS popcnt

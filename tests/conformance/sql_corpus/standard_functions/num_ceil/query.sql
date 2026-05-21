@@ -1,0 +1,1 @@
+SELECT CEIL(3.2) AS x

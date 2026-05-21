@@ -1,0 +1,140 @@
+{
+  "version": 1,
+  "arch": "darwin-arm64",
+  "recorded_at": "2026-05-19T05:57:58Z",
+  "benchmarks": [
+    {
+      "name": "tests/perf/test_cold_start.py::test_cold_start_to_healthz",
+      "median": 1.540125707630068,
+      "stddev": 0.21934542487872735,
+      "rounds": 41,
+      "unit": "seconds"
+    },
+    {
+      "name": "tests/perf/test_insert_all_throughput.py::test_insert_all_throughput[1]",
+      "median": 0.0021856455132365227,
+      "stddev": 0.000279555148837193,
+      "rounds": 12,
+      "unit": "seconds"
+    },
+    {
+      "name": "tests/perf/test_insert_all_throughput.py::test_insert_all_throughput[10]",
+      "median": 0.002103061880916357,
+      "stddev": 0.00011901393588097323,
+      "rounds": 402,
+      "unit": "seconds"
+    },
+    {
+      "name": "tests/perf/test_insert_all_throughput.py::test_insert_all_throughput[100]",
+      "median": 0.0034814588725566864,
+      "stddev": 0.0013396116145960567,
+      "rounds": 331,
+      "unit": "seconds"
+    },
+    {
+      "name": "tests/perf/test_insert_all_throughput.py::test_insert_all_throughput[1000]",
+      "median": 0.010183291975408792,
+      "stddev": 0.0019567526906199176,
+      "rounds": 117,
+      "unit": "seconds"
+    },
+    {
+      "name": "tests/perf/test_query_latency.py::test_tpch_query_latency[Q1]",
+      "median": 0.0122361253015697,
+      "stddev": 0.0002260763206876177,
+      "rounds": 21,
+      "unit": "seconds"
+    },
+    {
+      "name": "tests/perf/test_query_latency.py::test_tpch_query_latency[Q3]",
+      "median": 0.014731041621416807,
+      "stddev": 0.003856033996037819,
+      "rounds": 38,
+      "unit": "seconds"
+    },
+    {
+      "name": "tests/perf/test_query_latency.py::test_tpch_query_latency[Q5]",
+      "median": 0.014214207883924246,
+      "stddev": 0.0032914288301195385,
+      "rounds": 61,
+      "unit": "seconds"
+    },
+    {
+      "name": "tests/perf/test_query_latency.py::test_tpch_query_latency[Q6]",
+      "median": 0.00851064594462514,
+      "stddev": 0.002387550511139197,
+      "rounds": 108,
+      "unit": "seconds"
+    },
+    {
+      "name": "tests/perf/test_query_latency.py::test_tpch_query_latency[Q10]",
+      "median": 0.01393239595927298,
+      "stddev": 0.00343316281799911,
+      "rounds": 64,
+      "unit": "seconds"
+    },
+    {
+      "name": "tests/perf/test_storage_read_throughput.py::test_storage_read_arrow_throughput",
+      "median": 0.006232291925698519,
+      "stddev": 0.0004722887376659118,
+      "rounds": 54,
+      "unit": "seconds"
+    },
+    {
+      "name": "tests/perf/test_storage_write_throughput.py::test_storage_write_throughput[arrow-DEFAULT]",
+      "median": 0.005908416351303458,
+      "stddev": 0.0021057026493816544,
+      "rounds": 234,
+      "unit": "seconds"
+    },
+    {
+      "name": "tests/perf/test_storage_write_throughput.py::test_storage_write_throughput[arrow-COMMITTED]",
+      "median": 0.0018138331361114979,
+      "stddev": 9.709217690060145e-05,
+      "rounds": 100,
+      "unit": "seconds"
+    },
+    {
+      "name": "tests/perf/test_storage_write_throughput.py::test_storage_write_throughput[arrow-PENDING]",
+      "median": 0.002594791818410158,
+      "stddev": 0.00011011567138572165,
+      "rounds": 93,
+      "unit": "seconds"
+    },
+    {
+      "name": "tests/perf/test_storage_write_throughput.py::test_storage_write_throughput[arrow-BUFFERED]",
+      "median": 0.0018040831200778484,
+      "stddev": 0.00046185957464193827,
+      "rounds": 551,
+      "unit": "seconds"
+    },
+    {
+      "name": "tests/perf/test_storage_write_throughput.py::test_storage_write_throughput[proto-DEFAULT]",
+      "median": 0.009988020407035947,
+      "stddev": 0.0009161301563342356,
+      "rounds": 78,
+      "unit": "seconds"
+    },
+    {
+      "name": "tests/perf/test_storage_write_throughput.py::test_storage_write_throughput[proto-COMMITTED]",
+      "median": 0.005204542074352503,
+      "stddev": 0.00016060499201918642,
+      "rounds": 91,
+      "unit": "seconds"
+    },
+    {
+      "name": "tests/perf/test_storage_write_throughput.py::test_storage_write_throughput[proto-PENDING]",
+      "median": 0.0059427497908473015,
+      "stddev": 0.00028517186772978416,
+      "rounds": 89,
+      "unit": "seconds"
+    },
+    {
+      "name": "tests/perf/test_storage_write_throughput.py::test_storage_write_throughput[proto-BUFFERED]",
+      "median": 0.005213041789829731,
+      "stddev": 0.00011994848664085238,
+      "rounds": 193,
+      "unit": "seconds"
+    }
+  ]
+}

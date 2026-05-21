@@ -1,0 +1,1 @@
+ALTER TABLE `${DATASET}.t_never_created` ADD COLUMN x INT64

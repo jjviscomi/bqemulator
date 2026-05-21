@@ -1,0 +1,5 @@
+{
+  "destination": "${PROJECT}.${DATASET_ID}.nonexistent_target",
+  "create_disposition": "CREATE_NEVER",
+  "write_disposition": "WRITE_APPEND"
+}

@@ -1,0 +1,131 @@
+{
+  "fixture_version": 2,
+  "bigquery": {
+    "project": "your-bigquery-project",
+    "job_id": "0d75025f-a18c-4fa8-9277-57c7d2f93a47",
+    "location": "US",
+    "total_bytes_processed": 616,
+    "total_bytes_billed": 10485760,
+    "duration_ms": 792
+  },
+  "schema": [
+    {
+      "name": "b1_lp",
+      "type": "NUMERIC",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "b1_cnt",
+      "type": "INTEGER",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "b1_cntd",
+      "type": "INTEGER",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "b2_lp",
+      "type": "NUMERIC",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "b2_cnt",
+      "type": "INTEGER",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "b2_cntd",
+      "type": "INTEGER",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "b3_lp",
+      "type": "NUMERIC",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "b3_cnt",
+      "type": "INTEGER",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "b3_cntd",
+      "type": "INTEGER",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "b4_lp",
+      "type": "NUMERIC",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "b4_cnt",
+      "type": "INTEGER",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "b4_cntd",
+      "type": "INTEGER",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "b5_lp",
+      "type": "NUMERIC",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "b5_cnt",
+      "type": "INTEGER",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "b5_cntd",
+      "type": "INTEGER",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "b6_lp",
+      "type": "NUMERIC",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "b6_cnt",
+      "type": "INTEGER",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "b6_cntd",
+      "type": "INTEGER",
+      "mode": "NULLABLE"
+    }
+  ],
+  "rows": [
+    {
+      "b1_lp": "17.666666667",
+      "b1_cnt": 3,
+      "b1_cntd": 3,
+      "b2_lp": "97.5",
+      "b2_cnt": 2,
+      "b2_cntd": 2,
+      "b3_lp": null,
+      "b3_cnt": 0,
+      "b3_cntd": 0,
+      "b4_lp": null,
+      "b4_cnt": 0,
+      "b4_cntd": 0,
+      "b5_lp": "85",
+      "b5_cnt": 1,
+      "b5_cntd": 1,
+      "b6_lp": null,
+      "b6_cnt": 0,
+      "b6_cntd": 0
+    }
+  ],
+  "row_count": 1,
+  "duration_class": "fast",
+  "job_metadata": {
+    "cache_hit": false,
+    "statement_type": "SELECT"
+  }
+}

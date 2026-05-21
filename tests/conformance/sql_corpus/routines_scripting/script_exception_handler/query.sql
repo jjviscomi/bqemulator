@@ -1,0 +1,7 @@
+DECLARE outcome STRING DEFAULT 'ok';
+BEGIN
+  EXECUTE IMMEDIATE 'SELECT 1 / 0';
+EXCEPTION WHEN ERROR THEN
+  SET outcome = 'caught';
+END;
+SELECT outcome

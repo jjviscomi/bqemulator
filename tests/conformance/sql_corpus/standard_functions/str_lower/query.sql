@@ -1,0 +1,1 @@
+SELECT LOWER('Hello') AS s

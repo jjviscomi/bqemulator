@@ -1,0 +1,25 @@
+{
+  "fixture_version": 1,
+  "calls": [
+    {
+      "method": "BigQueryRead.CreateReadSession",
+      "request": {
+        "parent": "projects/${PROJECT}",
+        "read_session": {
+          "table": "projects/${PROJECT}/datasets/${DATASET_ID}/tables/avro_alltypes",
+          "data_format": "AVRO"
+        },
+        "max_stream_count": 1
+      },
+      "capture": {
+        "STREAM_NAME": "streams.0.name"
+      }
+    },
+    {
+      "method": "BigQueryRead.ReadRows",
+      "request": {
+        "read_stream": "${STREAM_NAME}"
+      }
+    }
+  ]
+}

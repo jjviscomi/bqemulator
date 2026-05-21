@@ -1,0 +1,7 @@
+CREATE OR REPLACE TABLE `${DATASET}.orders` AS
+SELECT 1 AS id, 'US' AS country UNION ALL
+SELECT 2, 'EU' UNION ALL
+SELECT 3, 'JP';
+
+INSERT INTO `${DATASET}.orders` (id, country)
+VALUES (4, 'US'), (5, 'CA');

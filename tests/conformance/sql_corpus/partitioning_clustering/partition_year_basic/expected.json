@@ -1,0 +1,39 @@
+{
+  "fixture_version": 1,
+  "bigquery": {
+    "project": "your-bigquery-project",
+    "job_id": "c98e1ca8-7f8a-4ff6-972a-eb88d2f0df6a",
+    "location": "US",
+    "total_bytes_processed": 48,
+    "total_bytes_billed": 10485760,
+    "duration_ms": 770
+  },
+  "schema": [
+    {
+      "name": "id",
+      "type": "INTEGER",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "log_date",
+      "type": "DATE",
+      "mode": "NULLABLE"
+    }
+  ],
+  "rows": [
+    {
+      "id": 1,
+      "log_date": "2022-06-15"
+    },
+    {
+      "id": 2,
+      "log_date": "2023-06-15"
+    },
+    {
+      "id": 3,
+      "log_date": "2024-06-15"
+    }
+  ],
+  "row_count": 3,
+  "duration_class": "fast"
+}

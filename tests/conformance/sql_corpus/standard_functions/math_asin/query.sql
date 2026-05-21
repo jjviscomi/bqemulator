@@ -1,0 +1,1 @@
+SELECT ROUND(ASIN(1), 12) AS x

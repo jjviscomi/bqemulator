@@ -1,0 +1,17 @@
+{
+  "method": "POST",
+  "path": "/bigquery/v2/projects/${PROJECT}/jobs",
+  "body": {
+    "configuration": {
+      "extract": {
+        "sourceTable": {
+          "projectId": "${PROJECT}",
+          "datasetId": "${DATASET_ID}",
+          "tableId": "src"
+        },
+        "destinationUris": ["gs://${GCS_BUCKET}/g1/extract_avro_basic.avro"],
+        "destinationFormat": "AVRO"
+      }
+    }
+  }
+}

@@ -1,0 +1,5 @@
+CREATE OR REPLACE TABLE `${DATASET}.base_t` (id INT64);
+INSERT INTO `${DATASET}.base_t` (id) VALUES (1), (2), (3);
+CREATE OR REPLACE VIEW `${DATASET}.v_active` AS
+  SELECT id FROM `${DATASET}.base_t` WHERE id > 1;
+DROP VIEW `${DATASET}.v_active`;

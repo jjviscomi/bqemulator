@@ -1,0 +1,35 @@
+{
+  "fixture_version": 2,
+  "bigquery": {
+    "project": "your-bigquery-project",
+    "job_id": "f7b01851-230b-43b3-9ded-dec01370b23d",
+    "location": "US",
+    "total_bytes_processed": 4011,
+    "total_bytes_billed": 73400320,
+    "duration_ms": 845
+  },
+  "schema": [
+    {
+      "name": "o_year",
+      "type": "INTEGER",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "mkt_share",
+      "type": "NUMERIC",
+      "mode": "NULLABLE"
+    }
+  ],
+  "rows": [
+    {
+      "o_year": 1995,
+      "mkt_share": "1"
+    }
+  ],
+  "row_count": 1,
+  "duration_class": "fast",
+  "job_metadata": {
+    "cache_hit": false,
+    "statement_type": "SELECT"
+  }
+}

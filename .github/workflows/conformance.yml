@@ -1,0 +1,65 @@
+name: Conformance (ad-hoc)
+
+# Ad-hoc / manual dispatch of the conformance corpus runner.
+#
+# === Primary gating is in ci.yml ===
+#
+# The conformance corpus is the project's primary parity-with-BigQuery
+# guarantee and runs on every PR + push to main via the `conformance`
+# job in `.github/workflows/ci.yml`. That per-PR gate is the
+# release-blocker check; a failure there means a regression must be
+# resolved before merge.
+#
+# This file exists for the orthogonal use case where an operator wants
+# to dispatch the conformance suite manually against a specific branch
+# *without* running the full CI matrix. The canonical example is right
+# after a recording session — the operator has new `expected.json`
+# files committed on a feature branch and wants to verify the
+# emulator-side replay before opening the PR. Dispatch this workflow
+# against the feature branch via:
+#
+#     gh workflow run conformance --ref <branch>
+#
+# or the GitHub Actions "Run workflow" button.
+#
+# === Recording is a local-only operator action ===
+#
+# Re-recording the baselines is a deliberate *local* action gated on
+# real BigQuery credentials, never run from CI:
+#
+#     export GOOGLE_APPLICATION_CREDENTIALS=/path/to/sa-key.json
+#     python scripts/record_conformance_fixtures.py \
+#         --project <bq-project> --location US
+#     # review the diff, commit the new expected.json files, open a PR
+#
+# Keeping recording out of CI removes the need for a stored GCP secret
+# in the repo and prevents an automated drift-fixer from silently
+# overwriting baselines.
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  conformance:
+    name: Replay corpus against in-process emulator
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+      - run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[dev,all]"
+      - name: Run conformance corpus (offline; no BigQuery creds needed)
+        run: pytest tests/conformance -m conformance --junit-xml=conformance.xml
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: conformance-results
+          path: conformance.xml

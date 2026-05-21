@@ -1,0 +1,4 @@
+CREATE SNAPSHOT TABLE `${DATASET}.t_snap` CLONE `${DATASET}.t`;
+DELETE FROM `${DATASET}.t` WHERE id IN (2, 3);
+INSERT INTO `${DATASET}.t` VALUES (5, "e"), (6, "f");
+SELECT id, label FROM `${DATASET}.t_snap` ORDER BY id

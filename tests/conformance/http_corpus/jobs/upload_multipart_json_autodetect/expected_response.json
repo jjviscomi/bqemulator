@@ -1,0 +1,40 @@
+{
+  "fixture_version": 1,
+  "source": "hand-authored-emulator-baseline",
+  "note": "Hand-authored against the in-process emulator. Re-record from real BigQuery once operator credentials are available. Verifies the multipart upload path accepts NEWLINE_DELIMITED_JSON with autodetect=true.",
+  "http_status": 200,
+  "headers": {
+    "content-type": "application/json"
+  },
+  "body": {
+    "kind": "bigquery#job",
+    "id": "<*>",
+    "etag": "<*>",
+    "jobReference": {
+      "projectId": "<*>",
+      "jobId": "<*>",
+      "location": "<*>"
+    },
+    "configuration": {
+      "load": {
+        "destinationTable": {
+          "projectId": "<*>",
+          "datasetId": "<*>",
+          "tableId": "tbl"
+        },
+        "sourceFormat": "NEWLINE_DELIMITED_JSON",
+        "writeDisposition": "WRITE_TRUNCATE",
+        "autodetect": true,
+        "sourceUris": "<*>"
+      }
+    },
+    "status": {
+      "state": "DONE"
+    },
+    "statistics": {
+      "load": {
+        "outputRows": "2"
+      }
+    }
+  }
+}

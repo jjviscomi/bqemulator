@@ -1,0 +1,90 @@
+name: Performance
+
+# Tier 6 performance suite. Compares every benchmark's median to the
+# committed tests/perf/baselines/linux-x86_64.json and fails if any
+# single benchmark has regressed by more than 10%. See
+# docs/adr/0025-perf-tier-design-contract.md for the design contract.
+#
+# === Trigger policy: manual only (workflow_dispatch) ===
+#
+# This workflow is intentionally NOT scheduled and NOT auto-triggered
+# on push or pull_request. The gating / cadence decision is deferred
+# until after the project's GitHub repo is set up and there is real
+# PR traffic to characterise runtime, flakiness, and runner-cost
+# trade-offs against. Until then, an operator runs this workflow via
+# the GitHub Actions "Run workflow" button (or `gh workflow run perf`).
+#
+# Candidate future triggers, evaluated post-setup:
+#   - per-PR gate (push + pull_request on main) — fast feedback, but
+#     adds ~10 min to every PR's CI
+#   - nightly schedule — cheaper per-PR, but bugs ship to main before
+#     detection; weak signal/action loop
+#   - release-gate-only — runs once per release branch cut
+#
+# Recording a new baseline is a deliberate local action — operator
+# runs:
+#
+#     pytest tests/perf --benchmark-save=linux-x86_64
+#     python scripts/normalize_perf_baseline.py \
+#         .benchmarks/Linux-CPython-3.11-64bit/<latest>.json \
+#         tests/perf/baselines/linux-x86_64.json
+#
+# Then opens a PR. The workflow below does NOT autosave to the
+# committed baseline; it only compares against the committed version.
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: perf-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  perf:
+    name: Performance benchmarks (Tier 6)
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+      - name: Install dev deps
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[dev,all]"
+      - name: Build container image (used by cold-start scenario)
+        run: |
+          # Cold-start needs the image present locally — pulled by the
+          # test from `ghcr.io/jjviscomi/bqemulator:dev`. Building here
+          # mirrors what `make test-perf` would do locally.
+          docker build -t ghcr.io/jjviscomi/bqemulator:dev .
+      - name: Run perf suite with comparison gate (>10% regression fails)
+        run: |
+          baseline=tests/perf/baselines/linux-x86_64.json
+          if [ ! -f "$baseline" ] ; then
+              echo "::error file=$baseline::Committed baseline missing — record one and commit before re-running"
+              exit 1
+          fi
+          # pytest-benchmark's --benchmark-compare-fail expects the
+          # autosave directory layout; we copy the committed baseline
+          # into the expected location so the comparison runs against
+          # the version that landed through review.
+          mkdir -p .benchmarks/Linux-CPython-3.11-64bit
+          cp "$baseline" .benchmarks/Linux-CPython-3.11-64bit/0001_committed-baseline.json
+          pytest tests/perf -m perf \
+              --benchmark-only \
+              --benchmark-compare=0001_committed-baseline \
+              --benchmark-compare-fail=median:10% \
+              --junit-xml=perf-results.xml
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: perf-results
+          path: |
+            perf-results.xml
+            .benchmarks/

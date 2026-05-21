@@ -1,0 +1,6 @@
+WITH RECURSIVE counter AS (
+  SELECT 1 AS n
+  UNION ALL
+  SELECT n + 1 FROM counter WHERE n < 5
+)
+SELECT n FROM counter ORDER BY n

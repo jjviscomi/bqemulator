@@ -1,0 +1,1 @@
+SELECT ARRAY_TO_STRING(['a', CAST(NULL AS STRING), 'c'], ',', 'NA') AS s

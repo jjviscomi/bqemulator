@@ -1,0 +1,2 @@
+DECLARE v INT64 DEFAULT 42;
+SELECT v AS session_var;

@@ -1,0 +1,1 @@
+SELECT id FROM `${DATASET}.empty_t` ORDER BY id LIMIT 0

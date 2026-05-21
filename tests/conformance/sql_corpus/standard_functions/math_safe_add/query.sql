@@ -1,0 +1,1 @@
+SELECT SAFE_ADD(1, 2) AS x

@@ -1,0 +1,1 @@
+SELECT @amt AS amt

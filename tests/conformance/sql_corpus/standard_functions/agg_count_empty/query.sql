@@ -1,0 +1,1 @@
+SELECT COUNT(*) AS n FROM `${DATASET}.empty_t`

@@ -1,0 +1,101 @@
+{
+  "fixture_version": 2,
+  "bigquery": {
+    "project": "your-bigquery-project",
+    "job_id": "407136c1-ec2f-46eb-8361-5c864c4ddabf",
+    "location": "US",
+    "total_bytes_processed": 3653,
+    "total_bytes_billed": 52428800,
+    "duration_ms": 1072
+  },
+  "schema": [
+    {
+      "name": "s_acctbal",
+      "type": "NUMERIC",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "s_name",
+      "type": "STRING",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "n_name",
+      "type": "STRING",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "p_partkey",
+      "type": "INTEGER",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "p_mfgr",
+      "type": "STRING",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "s_address",
+      "type": "STRING",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "s_phone",
+      "type": "STRING",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "s_comment",
+      "type": "STRING",
+      "mode": "NULLABLE"
+    }
+  ],
+  "rows": [
+    {
+      "s_acctbal": "5755.94",
+      "s_name": "Supplier#000000001",
+      "n_name": "FRANCE",
+      "p_partkey": 2,
+      "p_mfgr": "Manufacturer#2",
+      "s_address": "47 Sycamore Lane",
+      "s_phone": "16-101-010-0001",
+      "s_comment": "each slyly above the careful"
+    },
+    {
+      "s_acctbal": "5755.94",
+      "s_name": "Supplier#000000001",
+      "n_name": "FRANCE",
+      "p_partkey": 13,
+      "p_mfgr": "Manufacturer#2",
+      "s_address": "47 Sycamore Lane",
+      "s_phone": "16-101-010-0001",
+      "s_comment": "each slyly above the careful"
+    },
+    {
+      "s_acctbal": "4032.68",
+      "s_name": "Supplier#000000002",
+      "n_name": "GERMANY",
+      "p_partkey": 1,
+      "p_mfgr": "Manufacturer#1",
+      "s_address": "89 Birch Road",
+      "s_phone": "17-202-020-0002",
+      "s_comment": "furiously regular ideas"
+    },
+    {
+      "s_acctbal": "4032.68",
+      "s_name": "Supplier#000000002",
+      "n_name": "GERMANY",
+      "p_partkey": 10,
+      "p_mfgr": "Manufacturer#3",
+      "s_address": "89 Birch Road",
+      "s_phone": "17-202-020-0002",
+      "s_comment": "furiously regular ideas"
+    }
+  ],
+  "row_count": 4,
+  "duration_class": "medium",
+  "job_metadata": {
+    "cache_hit": false,
+    "statement_type": "SELECT"
+  }
+}

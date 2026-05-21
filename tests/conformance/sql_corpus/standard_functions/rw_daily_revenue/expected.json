@@ -1,0 +1,35 @@
+{
+  "fixture_version": 1,
+  "bigquery": {
+    "project": "your-bigquery-project",
+    "job_id": "7712970c-7e7a-4ff5-ad15-01cccaef5dae",
+    "location": "US",
+    "total_bytes_processed": 413,
+    "total_bytes_billed": 10485760,
+    "duration_ms": 1063
+  },
+  "schema": [
+    {
+      "name": "day",
+      "type": "DATE",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "revenue",
+      "type": "NUMERIC",
+      "mode": "NULLABLE"
+    }
+  ],
+  "rows": [
+    {
+      "day": "2024-01-15",
+      "revenue": "125"
+    },
+    {
+      "day": "2024-01-16",
+      "revenue": "195"
+    }
+  ],
+  "row_count": 2,
+  "duration_class": "medium"
+}

@@ -1,0 +1,9 @@
+{
+  "method": "PUT",
+  "path": "/upload/bigquery/v2/projects/${PROJECT}/jobs?upload_id=aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+  "headers": {
+    "Content-Type": "text/csv",
+    "Content-Range": "bytes 0-2/3"
+  },
+  "body_bin": "request.body.bin"
+}

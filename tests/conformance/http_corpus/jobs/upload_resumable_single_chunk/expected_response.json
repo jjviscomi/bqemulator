@@ -1,0 +1,40 @@
+{
+  "fixture_version": 1,
+  "source": "hand-authored-emulator-baseline",
+  "note": "Hand-authored. Resumable upload: initiate (setup) \u2192 single PUT covering the whole file (canonical). Verifies the load runs and returns the Job resource with status.state=DONE on the final chunk.",
+  "http_status": 200,
+  "headers": {
+    "content-type": "application/json"
+  },
+  "body": {
+    "kind": "bigquery#job",
+    "id": "<*>",
+    "etag": "<*>",
+    "jobReference": {
+      "projectId": "<*>",
+      "jobId": "<*>",
+      "location": "<*>"
+    },
+    "configuration": {
+      "load": {
+        "destinationTable": {
+          "projectId": "<*>",
+          "datasetId": "<*>",
+          "tableId": "tbl"
+        },
+        "sourceFormat": "CSV",
+        "writeDisposition": "WRITE_TRUNCATE",
+        "skipLeadingRows": 1,
+        "sourceUris": "<*>"
+      }
+    },
+    "status": {
+      "state": "DONE"
+    },
+    "statistics": {
+      "load": {
+        "outputRows": "2"
+      }
+    }
+  }
+}

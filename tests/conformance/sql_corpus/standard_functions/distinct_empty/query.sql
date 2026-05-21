@@ -1,0 +1,1 @@
+SELECT DISTINCT v FROM `${DATASET}.empty_t`

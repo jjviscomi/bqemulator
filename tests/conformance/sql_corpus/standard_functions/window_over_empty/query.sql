@@ -1,0 +1,1 @@
+SELECT id, ROW_NUMBER() OVER (ORDER BY id) AS rn FROM `${DATASET}.empty_t`

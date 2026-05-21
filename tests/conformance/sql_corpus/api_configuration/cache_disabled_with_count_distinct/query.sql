@@ -1,0 +1,1 @@
+SELECT COUNT(DISTINCT n) AS distinct_n FROM UNNEST([1, 2, 2, 3, 3, 3]) AS n

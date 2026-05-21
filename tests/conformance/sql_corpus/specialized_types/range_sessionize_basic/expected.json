@@ -1,0 +1,65 @@
+{
+  "fixture_version": 1,
+  "bigquery": {
+    "project": "your-bigquery-project",
+    "job_id": "bedeb103-e47f-43b5-87f5-3c79152187db",
+    "location": "US",
+    "total_bytes_processed": 69,
+    "total_bytes_billed": 10485760,
+    "duration_ms": 1639
+  },
+  "schema": [
+    {
+      "name": "user_id",
+      "type": "STRING",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "duration",
+      "type": "RANGE",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "session_range",
+      "type": "RANGE",
+      "mode": "NULLABLE"
+    }
+  ],
+  "rows": [
+    {
+      "user_id": "alice",
+      "duration": {
+        "start": "2024-01-01",
+        "end": "2024-01-03"
+      },
+      "session_range": {
+        "start": "2024-01-01",
+        "end": "2024-01-05"
+      }
+    },
+    {
+      "user_id": "alice",
+      "duration": {
+        "start": "2024-01-03",
+        "end": "2024-01-05"
+      },
+      "session_range": {
+        "start": "2024-01-01",
+        "end": "2024-01-05"
+      }
+    },
+    {
+      "user_id": "alice",
+      "duration": {
+        "start": "2024-01-10",
+        "end": "2024-01-12"
+      },
+      "session_range": {
+        "start": "2024-01-10",
+        "end": "2024-01-12"
+      }
+    }
+  ],
+  "row_count": 3,
+  "duration_class": "medium"
+}

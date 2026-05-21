@@ -1,0 +1,16 @@
+{
+  "fixture_version": 1,
+  "source": "hand-authored-emulator-baseline",
+  "note": "Hand-authored. Verifies that a PUT to an unknown upload_id (well-formed but never created) surfaces 404 notFound.",
+  "http_status": 404,
+  "headers": {
+    "content-type": "application/json"
+  },
+  "body": {
+    "error": {
+      "code": 404,
+      "message": "<*>",
+      "status": "NOT_FOUND"
+    }
+  }
+}

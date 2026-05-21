@@ -1,0 +1,2 @@
+CREATE TABLE `${DATASET}.tbl_one` (a INT64);
+CREATE TABLE `${DATASET}.tbl_two` (b STRING);

@@ -1,0 +1,8 @@
+CREATE OR REPLACE TABLE `${DATASET}.avro_multi` (
+  id INT64,
+  payload STRING
+);
+
+INSERT INTO `${DATASET}.avro_multi`
+SELECT id, CONCAT('row_', CAST(id AS STRING))
+FROM UNNEST(GENERATE_ARRAY(1, 20)) AS id;

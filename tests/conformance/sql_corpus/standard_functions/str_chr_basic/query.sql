@@ -1,0 +1,1 @@
+SELECT CHR(65) AS s

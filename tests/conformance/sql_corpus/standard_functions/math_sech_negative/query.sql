@@ -1,0 +1,1 @@
+SELECT ROUND(SECH(-2.0), 6) AS x

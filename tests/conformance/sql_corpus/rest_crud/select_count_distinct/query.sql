@@ -1,0 +1,1 @@
+SELECT COUNT(DISTINCT customer) AS n FROM `${DATASET}.orders`
