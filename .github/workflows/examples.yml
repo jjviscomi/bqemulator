@@ -129,7 +129,7 @@ jobs:
     needs: build-image
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v8
         with: { name: bqemu-image, path: /tmp }
       - run: docker load -i /tmp/bqemu.tar
       - uses: actions/setup-node@v6
@@ -147,7 +147,7 @@ jobs:
     needs: build-image
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v8
         with: { name: bqemu-image, path: /tmp }
       - run: docker load -i /tmp/bqemu.tar
       - uses: actions/setup-node@v6
@@ -164,7 +164,7 @@ jobs:
     needs: build-image
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v8
         with: { name: bqemu-image, path: /tmp }
       - run: docker load -i /tmp/bqemu.tar
       - uses: actions/setup-java@v4
@@ -184,7 +184,7 @@ jobs:
     needs: build-image
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v8
         with: { name: bqemu-image, path: /tmp }
       - run: docker load -i /tmp/bqemu.tar
       - uses: actions/setup-java@v4
@@ -206,7 +206,7 @@ jobs:
     needs: build-image
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v8
         with: { name: bqemu-image, path: /tmp }
       - run: docker load -i /tmp/bqemu.tar
       - uses: actions/setup-go@v5
@@ -223,7 +223,7 @@ jobs:
     needs: build-image
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v8
         with: { name: bqemu-image, path: /tmp }
       - run: docker load -i /tmp/bqemu.tar
       - uses: actions/setup-go@v5
@@ -240,7 +240,7 @@ jobs:
     needs: build-image
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v8
         with: { name: bqemu-image, path: /tmp }
       - run: docker load -i /tmp/bqemu.tar
       - uses: actions/setup-python@v5
