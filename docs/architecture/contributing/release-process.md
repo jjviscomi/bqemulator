@@ -30,9 +30,9 @@ All three scripts emit distinct exit codes per failure mode so
 ```bash
 # 1. Branch off main and stage the README "Project status" flip
 #    (rc → final, ⚪ → ✅ on PyPI + GHCR rows) as the FIRST commit:
-git checkout -b release/v0.2.0
+git checkout -b release/vX.Y.Z
 $EDITOR README.md
-git add README.md && git commit -m 'docs(release): flip README to v0.2.0 final'
+git add README.md && git commit -m 'docs(release): flip README to vX.Y.Z final'
 
 # 2. Preview the release (no files touched, no git state changed):
 python scripts/release.py --dry-run --next minor
@@ -48,9 +48,9 @@ make release NEXT=minor
 
 # 5. After squash-merge, reconcile the tag onto the merged commit:
 git checkout main && git pull --ff-only
-git tag -d v0.2.0
-git tag -a v0.2.0 -m v0.2.0
-git push origin v0.2.0
+git tag -d vX.Y.Z
+git tag -a vX.Y.Z -m vX.Y.Z
+git push origin vX.Y.Z
 
 # 6. .github/workflows/release.yml fires on the tag push.
 ```
