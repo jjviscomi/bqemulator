@@ -22,7 +22,11 @@ lazy val root = (project in file("."))
       "ch.qos.logback" % "logback-classic" % "1.4.14" % Runtime,
       "com.spotify" %% "scio-test" % scioVersion % Test,
       "org.scalatest" %% "scalatest" % "3.2.18" % Test,
-      "org.testcontainers" % "testcontainers" % "1.19.7" % Test
+      // ``testcontainers`` 1.19.x ships docker-java 1.32 which only
+      // talks to docker daemon API < 1.40 — modern Docker Desktop
+      // (27+) returns ``client version 1.32 is too old``. 1.20.x
+      // bundles the newer docker-java that handles current daemons.
+      "org.testcontainers" % "testcontainers" % "1.20.4" % Test
     ),
     dependencyOverrides ++= Seq(
       "com.fasterxml.jackson.core" % "jackson-core" % jacksonVersion,
@@ -31,5 +35,19 @@ lazy val root = (project in file("."))
       "com.fasterxml.jackson.module" %% "jackson-module-scala" % jacksonVersion
     ),
     Test / parallelExecution := false,
-    Test / fork := true
+    Test / fork := true,
+    // Beam Java BigQueryIO's write path uses the official Java
+    // ``google-cloud-bigquery`` client internally, which reads
+    // ``BIGQUERY_EMULATOR_HOST`` from the *process* environment when
+    // the client is built. ``System.getenv`` is immutable after JVM
+    // start, so the env var has to be present on the forked test JVM
+    // before it boots — which is exactly what ``Test / envVars``
+    // configures. Pair this with the fixed host port the spec binds
+    // for the container (``BqemuContainer`` in
+    // ``CustomersPipelineSpec``), so the JVM-start env var and the
+    // container's actual listener agree. Override per-developer via
+    // ``BQEMU_TEST_HOST_PORT=NNNN sbt test`` if 9099 is taken.
+    Test / envVars := Map(
+      "BIGQUERY_EMULATOR_HOST" -> s"localhost:${sys.env.getOrElse("BQEMU_TEST_HOST_PORT", "9099")}"
+    )
   )

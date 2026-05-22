@@ -20,6 +20,24 @@ section and adds the release date.
 
 ## [Unreleased]
 
+### Fixed
+
+- **scio example end-to-end Beam BigQueryIO routing** (#17). The
+  ``CustomersPipelineSpec`` only verified container wiring because
+  Beam Java BigQueryIO ignores ``--bigQueryEndpoint`` for its write
+  path — the internal write client always targets
+  ``https://bigquery.googleapis.com/``. Restored the end-to-end
+  assertion by binding the testcontainer on a fixed host port
+  (``9099`` by default, override via ``BQEMU_TEST_HOST_PORT``) and
+  setting ``BIGQUERY_EMULATOR_HOST`` via sbt's
+  ``Test / envVars`` — applied at fork time, so the env var is
+  present on the forked JVM before any BigQuery class loads. The
+  spec now runs ``CustomersPipeline.run`` end-to-end, verifies the 3
+  rows write succeeded, and confirms a read-back via
+  ``jobs.query`` returns ``COUNT(*) = 3``. Bumped
+  ``testcontainers`` 1.19.7 → 1.20.4 in the example's ``build.sbt``
+  for docker-daemon compatibility.
+
 ## [1.0.0] — 2026-05-22
 
 ### Added
