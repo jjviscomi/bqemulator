@@ -56,7 +56,15 @@ class CustomersPipelineSpec extends AnyFlatSpec with Matchers {
       // Bound the *connect* and per-request blocking time so a stalled
       // container / NAT misconfig in CI fails fast instead of hanging
       // until the runner times out (per CodeRabbit feedback).
+      //
+      // Pin HTTP/1.1 explicitly — Java 17's HttpClient defaults to
+      // ``HTTP_2`` and tries an h2c upgrade even on plaintext
+      // ``http://``. uvicorn / h11 only speaks HTTP/1.1 and bounces
+      // the negotiation with ``400 Invalid HTTP request received``,
+      // which surfaces here as a baffling 400 on a perfectly valid
+      // POST body.
       val client = HttpClient.newBuilder()
+        .version(HttpClient.Version.HTTP_1_1)
         .connectTimeout(Duration.ofSeconds(10))
         .build()
       val timeout = Duration.ofSeconds(30)

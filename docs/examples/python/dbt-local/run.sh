@@ -53,6 +53,25 @@ fi
 
 cd "$(dirname "$0")"
 
+# Pre-create the three datasets dbt will need before any model runs.
+# dbt-bigquery's ``adapter.create_schema`` path normally takes care of
+# this against real BigQuery, but its emulator code path emits raw
+# ``CREATE SCHEMA \`proj\`.\`ds\``` SQL DDL — that path creates the
+# DuckDB schema but does *not* register the dataset in bqemulator's
+# catalog, which is what the load-job (seed) endpoint queries. Without
+# the catalog entry, the seed step fails with
+# ``400 ... Not found: dataset:bqemu-demo.dbt_local_raw``.
+#
+# Mint each dataset via the REST API so the catalog and DuckDB both
+# know about it before any dbt step runs. ``--data`` is JSON; we omit
+# kind/etag since BigQuery accepts the minimal shape.
+for ds in dbt_local_raw dbt_local_staging dbt_local_marts; do
+    curl -sS -X POST "${EMU}/bigquery/v2/projects/${BQ_PROJECT}/datasets" \
+        -H "Content-Type: application/json" \
+        -d "{\"datasetReference\":{\"projectId\":\"${BQ_PROJECT}\",\"datasetId\":\"${ds}\"},\"location\":\"US\"}" \
+        -o /dev/null -w "[seed-dataset %{http_code}] ${ds}\n"
+done
+
 dbt deps --profiles-dir . || true
 dbt seed --profiles-dir . --target emulator
 dbt run --profiles-dir . --target emulator
