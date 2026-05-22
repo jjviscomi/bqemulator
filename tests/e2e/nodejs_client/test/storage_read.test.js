@@ -174,6 +174,21 @@ function decodeReadSessionStreams(buf) {
   return names;
 }
 
+// ReadSession.arrow_schema=8 (ArrowSchema).
+// ArrowSchema.serialized_schema=1 (bytes).
+function decodeReadSessionArrowSchema(buf) {
+  for (const [fn, wt, payload] of iterFields(buf)) {
+    if (fn === 8 && wt === 2) {
+      for (const [innerFn, innerWt, innerPayload] of iterFields(payload)) {
+        if (innerFn === 1 && innerWt === 2) {
+          return innerPayload;
+        }
+      }
+    }
+  }
+  return null;
+}
+
 // ReadRowsResponse: arrow_record_batch=4 (ArrowRecordBatch).
 // ArrowRecordBatch.serialized_record_batch=1 (bytes).
 function decodeReadRowsBatch(buf) {
@@ -224,8 +239,30 @@ describe("bqemulator Phase 4 Storage Read (Node.js via gRPC + Arrow IPC)", () =>
         streamNames.length >= 1,
         "CreateReadSession returned no streams",
       );
+      const schemaBytes = decodeReadSessionArrowSchema(sessionBytes);
+      assert.ok(schemaBytes, "CreateReadSession returned no arrow_schema");
 
       // ReadRows on the first stream.
+      //
+      // The emulator emits ``serialized_record_batch`` as a BARE Arrow
+      // IPC record-batch message (no schema-message prefix, no EOS
+      // marker) — that's the BigQuery contract; v1.0.0 was wrong and
+      // packed a full stream, fixed in #15. The schema travels on the
+      // session's ``arrow_schema.serialized_schema`` field (which we
+      // emit as a one-message stream with trailing EOS — same shape
+      // pyarrow's ``new_stream(schema).close()`` produces).
+      //
+      // ``apache-arrow`` JS's ``RecordBatchReader.from`` parses a full
+      // stream, not a bare message. To consume the new format with
+      // the stock JS API, synthesise a single-batch stream by
+      // concatenating the schema-stream bytes (minus their trailing
+      // EOS) + the batch message + an EOS marker.
+      const EOS_MARKER = Buffer.from([
+        0xff, 0xff, 0xff, 0xff, 0x00, 0x00, 0x00, 0x00,
+      ]);
+      // ``schemaBytes`` is ``[schema-msg][EOS]`` — strip the EOS.
+      const schemaOnly = schemaBytes.slice(0, schemaBytes.length - 8);
+
       let total = 0;
       await new Promise((resolve, reject) => {
         const stream = channel.makeServerStreamRequest(
@@ -238,10 +275,13 @@ describe("bqemulator Phase 4 Storage Read (Node.js via gRPC + Arrow IPC)", () =>
         stream.on("data", (buf) => {
           const batchBytes = decodeReadRowsBatch(buf);
           if (!batchBytes || batchBytes.length === 0) return;
-          // The emulator serializes each batch as a self-contained
-          // Arrow IPC stream (schema header + record batch).
+          const synthetic = Buffer.concat([
+            schemaOnly,
+            batchBytes,
+            EOS_MARKER,
+          ]);
           const reader = apacheArrow.RecordBatchReader.from(
-            new Uint8Array(batchBytes),
+            new Uint8Array(synthetic),
           );
           for (const recordBatch of reader) {
             total += recordBatch.numRows;
