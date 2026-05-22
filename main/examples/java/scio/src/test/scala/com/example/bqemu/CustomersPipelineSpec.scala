@@ -22,23 +22,46 @@ class BqemuContainer(image: DockerImageName)
 
 class CustomersPipelineSpec extends AnyFlatSpec with Matchers {
 
-  // KNOWN LIMITATION: Beam Java BigQueryIO does not honour the
-  // ``--bigQueryEndpoint`` flag for the *write* path — that option is
-  // restricted to internal preflight validators. The Java BQ client
-  // *does* honour the ``BIGQUERY_EMULATOR_HOST`` env var, but it has
-  // to be present on the JVM that runs the pipeline (not just on the
-  // container), and we don't know the testcontainer-mapped port
-  // until after the JVM is already alive. The result: actually
-  // running ``CustomersPipeline.run`` from this test routes writes to
-  // ``https://bigquery.googleapis.com/...`` and 404s.
+  // KNOWN LIMITATION (issue #17): running ``CustomersPipeline.run``
+  // end-to-end against bqemulator is harder than a single flag /
+  // env-var fix. v1.0.1 investigated three routes and surfaced the
+  // following constraints; all three would need to land together
+  // before this spec can flip to an end-to-end ``written shouldBe
+  // 3L`` assertion:
   //
-  // Until upstream Scio / Beam grows a per-call endpoint override
-  // (tracked for v1.0.1 follow-up), this spec verifies the
-  // *wiring* — container starts, REST API is reachable, dataset
-  // creation works — which is the part bqemulator owns. The
-  // CustomersPipeline source remains as documentation for users who
-  // will run it against either real BigQuery or a long-lived
-  // bqemulator with a stable port.
+  // 1. **Endpoint routing.** ``--bigQueryEndpoint=http://host:port``
+  //    DOES wire through to the Apiary ``Bigquery`` client's
+  //    ``rootUrl`` (verified locally — auth-failure stacks confirm
+  //    the override applied). But ``BIGQUERY_EMULATOR_HOST`` (which
+  //    the cloud-style ``com.google.cloud.bigquery.BigQuery`` client
+  //    honours) has to be set on the JVM at fork time, before any
+  //    BQ class loads — sbt's ``Test / envVars`` can do this with a
+  //    fixed host port, but the next two issues still bite.
+  //
+  // 2. **Auth.** Beam still invokes ``OAuth2Credentials.refresh()``
+  //    at request time even when ``--bigQueryEndpoint`` is set, so
+  //    the redirected HTTP call never fires — auth refresh against
+  //    ``oauth2.googleapis.com`` 400s before the redirect happens.
+  //    ``--gcpCredentialFactoryClass=...NoopCredentialFactory`` is
+  //    the documented escape hatch but doesn't fully suppress the
+  //    discovery chain when application-default credentials exist
+  //    on the host (gcloud SDK auto-detects them past the flag).
+  //
+  // 3. **Batch-load path needs GCS.** ``BigQueryIO.Write`` defaults
+  //    to ``BATCH_LOADS`` for bounded pipelines, which stages rows
+  //    to GCS before issuing a BigQuery LOAD job. The emulator
+  //    doesn't expose a GCS-compatible shim Beam can stage to;
+  //    forcing ``Method.STREAMING_INSERTS`` would bypass GCS but
+  //    requires changing the ``CustomersPipeline`` source and
+  //    pulls in a different routing branch in BigQueryIO.
+  //
+  // For v1.0.1 this spec stays at the wiring-only smoke (container
+  // starts, REST API is reachable, dataset creation works — the
+  // bqemulator-owned part of the contract). The CustomersPipeline
+  // source itself is unchanged and remains accurate documentation
+  // for users running it against real BigQuery (Dataflow) or a
+  // long-lived bqemulator on a stable port + a real GCS bucket.
+  // Issue #17 stays open with the findings above scoped to v1.0.2+.
 
   "bqemulator" should "expose a working BigQuery REST surface that Scio could target" in {
     val image = sys.env.getOrElse("BQEMU_IMAGE", "ghcr.io/jjviscomi/bqemulator:dev")
