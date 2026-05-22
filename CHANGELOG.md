@@ -139,3 +139,39 @@ section and adds the release date.
   carry sigstore attestations.
 - **GHCR image signing** via keyless cosign with GitHub OIDC certificate
   identity.
+
+### Known limitations (deferred to v1.0.1)
+
+These ship as documented caveats on the affected example projects.
+None affect the core emulator surface.
+
+- **Storage Read API IPC bytes layout** — bqemulator packs the full
+  Arrow IPC stream (schema framing + batches) into
+  `ReadRowsResponse.arrow_record_batch.serialized_record_batch`
+  rather than a single record-batch IPC message; the schema lives
+  separately on `ReadSession.arrow_schema`. The
+  `google-cloud-bigquery-storage` client's high-level
+  `reader.to_arrow(session)` trips
+  `Expected IPC message of type record batch but got schema`. The
+  `python/pyspark-bigquery` example iterates raw responses through
+  `pa.ipc.open_stream` as a workaround. Tracked in
+  [#15](https://github.com/jjviscomi/bqemulator/issues/15).
+- **dbt-bigquery pinned to `>=1.9,<1.10`** — dbt-bigquery 1.10
+  introduced a DDL-emission regression that produces a malformed
+  two-part identifier
+  (``CREATE SCHEMA "{project}__{dataset}_{custom_schema}".""``) that
+  bqemulator's SQLGlot parser rejects. The `python/dbt-local`
+  example carries the pin and reflects the constraint in its README.
+  Tracked in [#16](https://github.com/jjviscomi/bqemulator/issues/16).
+- **Scio test exercises wiring only** — Beam Java BigQueryIO does
+  not honour `--bigQueryEndpoint` for the *write* path (that flag
+  only gates internal preflight validators); the Java BQ client
+  *does* honour `BIGQUERY_EMULATOR_HOST`, but it must be visible to
+  the JVM before the first BQ class loads, which is impossible
+  when the testcontainer port is allocated at runtime. The
+  `java/scio` example's spec asserts the wiring bqemulator owns
+  (container up, REST API reachable, dataset creation works); the
+  `CustomersPipeline.run` source itself remains production-ready
+  for users running against real BigQuery or a long-lived
+  bqemulator with a stable port. Tracked in
+  [#17](https://github.com/jjviscomi/bqemulator/issues/17).

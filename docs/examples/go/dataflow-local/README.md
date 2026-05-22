@@ -24,7 +24,7 @@ preferences.
 
 ```
 go.mod
-main.go                 — binary entry point
+cmd/run/main.go         — binary entry point (`go run ./cmd/run`)
 etl.go                  — Transform + Sink helpers (testable)
 etl_test.go             — table-driven tests + end-to-end against emulator
 ```
@@ -43,3 +43,8 @@ Requires Docker + Go 1.22+.
   separated from BigQuery I/O.
 - `etl_test.go` includes both unit tests and one end-to-end test
   driven by Testcontainers — keeping the fast and slow gates distinct.
+- `option.WithEndpoint(...)` is passed the **full base URL**
+  (`http://host:port/bigquery/v2/`), not just the host. The Google
+  Cloud Go BQ client treats `WithEndpoint` as the full base — it
+  replaces the generated `/bigquery/v2/` prefix outright, unlike the
+  Python client which appends.

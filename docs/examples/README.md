@@ -13,12 +13,12 @@ not drift.
 
 ## Python integrations
 
-| Path | What it demonstrates |
-|---|---|
-| [`python/pytest-integration/`](python/pytest-integration/README.md) | Flask app + pytest fixture (`bqemu_client`) |
-| [`python/dbt-local/`](python/dbt-local/README.md) | `dbt build` against emulator (seed + model + tests) |
-| [`python/airflow-dag-test/`](python/airflow-dag-test/README.md) | `BigQueryInsertJobOperator` DAG via `dag.test()` |
-| [`python/pyspark-bigquery/`](python/pyspark-bigquery/README.md) | PySpark `DataFrame` from Storage Read (Arrow) |
+| Path | What it demonstrates | Known caveats |
+|---|---|---|
+| [`python/pytest-integration/`](python/pytest-integration/README.md) | Flask app + pytest fixture (`bqemu_client`) | — |
+| [`python/dbt-local/`](python/dbt-local/README.md) | `dbt build` against emulator (seed + model + tests) | Pinned to `dbt-bigquery >=1.9,<1.10` — see [#16](https://github.com/jjviscomi/bqemulator/issues/16) |
+| [`python/airflow-dag-test/`](python/airflow-dag-test/README.md) | `BigQueryInsertJobOperator` DAG via `dag.test()` | Monkey-patches `google.auth.default` to return `AnonymousCredentials` so the BQ hook skips JWT grant |
+| [`python/pyspark-bigquery/`](python/pyspark-bigquery/README.md) | PySpark `DataFrame` from Storage Read (Arrow) | Iterates `ReadRowsResponse` by hand instead of `reader.to_arrow(session)` — see [#15](https://github.com/jjviscomi/bqemulator/issues/15) |
 
 ## Node.js / TypeScript integrations
 
@@ -36,10 +36,10 @@ not drift.
 
 ## Java / Scala integrations
 
-| Path | What it demonstrates |
-|---|---|
-| [`java/spring-boot/`](java/spring-boot/README.md) | Spring Boot repository + Testcontainers integration test |
-| [`java/scio/`](java/scio/README.md) | Spotify Scio (Scala-on-Beam) pipeline + ScalaTest |
+| Path | What it demonstrates | Known caveats |
+|---|---|---|
+| [`java/spring-boot/`](java/spring-boot/README.md) | Spring Boot repository + Testcontainers integration test | — |
+| [`java/scio/`](java/scio/README.md) | Spotify Scio (Scala-on-Beam) pipeline + ScalaTest | Test asserts the *wiring* (container up, REST API reachable). The end-to-end `CustomersPipeline.run` is parked behind [#17](https://github.com/jjviscomi/bqemulator/issues/17) — Beam Java BigQueryIO can't be pointed at a dynamic-port emulator from inside the test JVM. The pipeline source itself is production-ready. |
 
 ## Compose stacks
 
