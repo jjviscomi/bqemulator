@@ -1,0 +1,28 @@
+services:
+  bqemulator:
+    image: ${BQEMU_IMAGE:-ghcr.io/jjviscomi/bqemulator:dev}
+    environment:
+      BQEMU_REST_HOST: 0.0.0.0
+      BQEMU_GRPC_HOST: 0.0.0.0
+      BQEMU_ADMIN_ENABLED: "1"
+    ports:
+      - "9050:9050"
+      - "9060:9060"
+    healthcheck:
+      test: ["CMD", "curl", "-sf", "http://localhost:9050/healthz"]
+      interval: 1s
+      timeout: 2s
+      retries: 30
+
+  service:
+    build: .
+    environment:
+      PORT: "8080"
+      BQ_PROJECT: bqemu-demo
+      BQ_DATASET: cr_demo
+      BQEMU_REST_URL: http://bqemulator:9050
+    ports:
+      - "8080:8080"
+    depends_on:
+      bqemulator:
+        condition: service_healthy

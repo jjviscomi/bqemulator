@@ -1,0 +1,5 @@
+pyspark>=3.5,<4.0
+google-cloud-bigquery>=3.20,<4.0
+google-cloud-bigquery-storage>=2.24,<3.0
+pyarrow>=14.0,<18.0
+pandas>=2.0,<3.0

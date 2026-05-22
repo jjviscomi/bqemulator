@@ -1,0 +1,6047 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="Local emulator for Google BigQuery">
+      
+      
+      
+        <link rel="canonical" href="https://jjviscomi.github.io/bqemulator/main/reference/gap-analysis/">
+      
+      
+        <link rel="prev" href="../out-of-scope/">
+      
+      
+        <link rel="next" href="../troubleshooting/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.6">
+    
+    
+      
+        <title>Gap analysis - bqemulator</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/stylesheets/main.484c7ddc.min.css">
+      
+        
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/_mkdocstrings.css">
+    
+    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#emulator-vs-bigquery-gap-analysis" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+      <div data-md-color-scheme="default" data-md-component="outdated" hidden>
+        
+      </div>
+    
+    
+      
+
+<header class="md-header" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="../.." title="bqemulator" class="md-header__button md-logo" aria-label="bqemulator" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            bqemulator
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Gap analysis
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: light)" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a4 4 0 0 0-4 4 4 4 0 0 0 4 4 4 4 0 0 0 4-4 4 4 0 0 0-4-4m0 10a6 6 0 0 1-6-6 6 6 0 0 1 6-6 6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: dark)" data-md-color-scheme="slate" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 18c-.89 0-1.74-.2-2.5-.55C11.56 16.5 13 14.42 13 12s-1.44-4.5-3.5-5.45C10.26 6.2 11.11 6 12 6a6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+          <a href="javascript:void(0)" class="md-search__icon md-icon" title="Share" aria-label="Share" data-clipboard data-clipboard-text="" data-md-component="search-share" tabindex="-1">
+            
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9a3 3 0 0 0-3 3 3 3 0 0 0 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.15c-.05.21-.08.43-.08.66 0 1.61 1.31 2.91 2.92 2.91s2.92-1.3 2.92-2.91A2.92 2.92 0 0 0 18 16.08"/></svg>
+          </a>
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+        <div class="md-search__suggest" data-md-component="search-suggest"></div>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/jjviscomi/bqemulator" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M173.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6m-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3m44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9M252.8 8C114.1 8 8 113.3 8 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C436.2 457.8 504 362.9 504 252 504 113.3 391.5 8 252.8 8M105.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1m-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7m32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1m-11.4-14.7c-1.6 1-1.6 3.6 0 5.9s4.3 3.3 5.6 2.3c1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2"/></svg>
+  </div>
+  <div class="md-source__repository">
+    jjviscomi/bqemulator
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+            
+<nav class="md-tabs" aria-label="Tabs" data-md-component="tabs">
+  <div class="md-grid">
+    <ul class="md-tabs__list">
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../.." class="md-tabs__link">
+        
+  
+  
+    
+  
+  Home
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../getting-started/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Getting started
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../quickstart/python/" class="md-tabs__link">
+          
+  
+  
+    
+  
+  Quickstart
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../guides/loading-data/" class="md-tabs__link">
+          
+  
+  
+    
+  
+  Guides
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+    
+  
+  
+    
+    
+      <li class="md-tabs__item md-tabs__item--active">
+        <a href="../compatibility-matrix/" class="md-tabs__link">
+          
+  
+  
+    
+  
+  Reference
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../architecture/overview/" class="md-tabs__link">
+          
+  
+  
+    
+  
+  Architecture
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../adr/0001-use-duckdb/" class="md-tabs__link">
+          
+  
+  
+    
+  
+  ADRs
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../rfcs/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  RFCs
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../examples/" class="md-tabs__link">
+          
+  
+  
+    
+  
+  Examples
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../api/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  API reference
+
+      </a>
+    </li>
+  
+
+      
+    </ul>
+  </div>
+</nav>
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+  
+
+
+<nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../.." title="bqemulator" class="md-nav__button md-logo" aria-label="bqemulator" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    bqemulator
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/jjviscomi/bqemulator" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M173.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6m-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3m44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9M252.8 8C114.1 8 8 113.3 8 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C436.2 457.8 504 362.9 504 252 504 113.3 391.5 8 252.8 8M105.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1m-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7m32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1m-11.4-14.7c-1.6 1-1.6 3.6 0 5.9s4.3 3.3 5.6 2.3c1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2"/></svg>
+  </div>
+  <div class="md-source__repository">
+    jjviscomi/bqemulator
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../.." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Home
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../getting-started/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Getting started
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Quickstart
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Quickstart
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../quickstart/python/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Python
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../quickstart/nodejs/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Node.js
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../quickstart/go/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Go
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../quickstart/java/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Java
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../quickstart/pytest/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    pytest
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../quickstart/docker-compose/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    docker-compose
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../quickstart/testcontainers/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Testcontainers
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Guides
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Guides
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../guides/loading-data/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Loading data
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../guides/loading-from-local-files/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Loading from local files
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../guides/querying/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Querying
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../guides/query-parameters/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Query parameters
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../guides/streaming-inserts/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Streaming inserts
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../guides/storage-api/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Storage API
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../guides/routines-udfs/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Routines and UDFs
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../guides/scripting/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Scripting
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../guides/partitioning-clustering/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Partitioning and clustering
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../guides/time-travel/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Time travel and snapshots
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../guides/materialized-views/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Materialized views
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../guides/row-access-policies/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Row access policies
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../guides/authorized-views/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Authorized views
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../guides/information-schema/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    INFORMATION_SCHEMA views
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../guides/geography-spatial/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    GEOGRAPHY and spatial
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../guides/range-types/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    RANGE types
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../guides/interval-arithmetic/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    INTERVAL arithmetic
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../guides/import-from-real-project/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Import from a real project
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../guides/admin-endpoints/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Admin endpoints
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../guides/backup-restore/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Backup and restore
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../guides/conformance-corpus/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Conformance corpus
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../guides/ci-cd-patterns/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    CI/CD patterns
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../guides/dbt-integration/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    dbt integration
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../guides/airflow-integration/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Airflow integration
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../guides/spark-integration/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Spark integration
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../guides/using-bq-cli/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Using the bq CLI
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../guides/observability/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Observability
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+        
+        
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Reference
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_5">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Reference
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../compatibility-matrix/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Compatibility matrix
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../conformance-coverage-matrix/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Conformance coverage matrix
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api-configuration-coverage-matrix/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    API configuration coverage matrix
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../sql-function-mapping/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    SQL function mapping
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api-coverage/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    API coverage
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../configuration/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Configuration
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../cli/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    CLI
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../out-of-scope/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Out of scope
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Gap analysis
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Gap analysis
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#at-a-glance" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        At a glance
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#1-adr-0023-runtime-behavioural-divergences-0-open-entries-all-closed" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. ADR 0023 — Runtime behavioural divergences (0 open entries — all closed)
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="1. ADR 0023 — Runtime behavioural divergences (0 open entries — all closed)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#bucket-a-repeated-row-wire-format-shape-closed" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Bucket A — REPEATED-row wire-format shape — ✅ Closed
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#bucket-b-numeric-type-promotion-float64-numeric-closed" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Bucket B — Numeric type promotion FLOAT64 ↔ NUMERIC — ✅ Closed
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#bucket-c-wildcard-table-expansion-closed" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Bucket C — Wildcard table expansion — ✅ Closed
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#bucket-d-unqualified-routine-reference-closed" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Bucket D — Unqualified routine reference — ✅ Closed
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#bucket-e-multi-statement-scripting-column-naming-closed" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Bucket E — Multi-statement scripting column naming — ✅ Closed
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#bucket-f-multi-statement-ddl-extra-row-surface-closed" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Bucket F — Multi-statement DDL extra-row surface — ✅ Closed
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#bucket-g-range-interval-wire-format-closed" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Bucket G — RANGE / INTERVAL wire format — ✅ Closed
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#bucket-h-geography-wkt-whitespace-closed" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Bucket H — GEOGRAPHY WKT whitespace — ✅ Closed
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#bucket-i-standard-function-semantic-differences-closed" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Bucket I — Standard-function semantic differences — ✅ Closed
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#bucket-j-emulator-side-missing-function-translation-closed" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Bucket J — Emulator-side missing function translation — ✅ Closed
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#adr-0019-spheroidal-vs-planar-geography-8-fixtures-permanent-v10-divergence" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ADR 0019 — Spheroidal-vs-planar GEOGRAPHY (8 fixtures, permanent v1.0 divergence)
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#2-locked-v10-exclusions-out-of-scopemd" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. Locked v1.0 exclusions (out-of-scope.md)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#3-conformance-coverage-gaps-works-but-not-in-the-corpus" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. Conformance-coverage gaps (works, but not in the corpus)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#4-bottom-line" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4. Bottom line
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../troubleshooting/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Troubleshooting
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_6" >
+        
+          
+          <label class="md-nav__link" for="__nav_6" id="__nav_6_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Architecture
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_6_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_6">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Architecture
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../architecture/overview/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Overview
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../architecture/storage-model/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Storage model
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../architecture/sql-translation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    SQL translation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../architecture/jobs-lifecycle/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Jobs lifecycle
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../architecture/storage-read-api/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Storage Read API
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../architecture/storage-write-api/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Storage Write API
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../architecture/scripting/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Scripting
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../architecture/udfs/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    UDFs
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../architecture/versioning-and-snapshots/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Versioning and snapshots
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../architecture/row-access-policies/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Row access policies
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../architecture/specialized-types/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Specialized types
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../architecture/admin-and-import-export/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Admin and import/export
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../architecture/observability/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Observability
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../architecture/testing-strategy/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Testing strategy
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../architecture/conformance-tier/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Conformance tier
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_6_16" >
+        
+          
+          <label class="md-nav__link" for="__nav_6_16" id="__nav_6_16_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Contributing
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_6_16_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_6_16">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Contributing
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../architecture/contributing/dev-environment/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Dev environment
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../architecture/contributing/release-process/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Release process
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../architecture/contributing/adding-sql-functions/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Adding SQL functions
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../architecture/contributing/adding-udf-runtimes/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Adding UDF runtimes
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../architecture/contributing/adding-conformance-cases/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Adding conformance cases
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../architecture/contributing/debugging/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Debugging
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_7" >
+        
+          
+          <label class="md-nav__link" for="__nav_7" id="__nav_7_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADRs
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_7_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_7">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    ADRs
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../adr/0001-use-duckdb/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0001 Use DuckDB
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../adr/0002-python-over-go-rust/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0002 Python over Go/Rust
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../adr/0003-sqlglot-for-translation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0003 SQLGlot for translation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../adr/0004-hexagonal-architecture/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0004 Hexagonal architecture
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../adr/0005-fastapi-grpcaio-single-process/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0005 FastAPI + grpc.aio single process
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../adr/0006-catalog-in-reserved-schema/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0006 Catalog in DuckDB reserved schema
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../adr/0007-pytest-fixture-as-dx/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0007 pytest fixture as DX
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../adr/0008-snapshot-storage-read-api/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0008 Snapshot Storage Read API
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../adr/0009-snapshot-layer-time-travel/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0009 Snapshot-layer time travel
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../adr/0010-py-mini-racer-for-js-udfs/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0010 mini-racer for JS UDFs
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../adr/0011-tree-walking-scripting-interpreter/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0011 Tree-walking scripting interpreter
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../adr/0012-bqml-out-of-scope/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0012 BigQuery ML out of scope
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../adr/0013-write-api-strategies/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0013 Storage Write API strategies
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../adr/0014-udf-materialization-strategy/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0014 UDF materialization strategy
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../adr/0015-scripting-execution-model/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0015 Scripting execution model
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../adr/0016-snapshot-time-semantics/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0016 Snapshot time semantics
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../adr/0017-materialized-view-refresh/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0017 Materialized-view refresh
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../adr/0018-caller-identity-and-row-access-enforcement/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0018 Caller identity + row-access enforcement
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../adr/0019-specialized-types/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0019 Specialized types (GEOGRAPHY / RANGE / INTERVAL)
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../adr/0020-admin-import-export/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0020 Admin endpoints + import/export + backup format
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../adr/0021-chaos-tier-design-contract/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0021 Chaos-tier design contract
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../adr/0022-conformance-corpus-design/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0022 Conformance corpus design
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../adr/0023-conformance-divergence-baseline/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0023 Conformance divergence baseline
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../adr/0024-hll-count-support-strategy/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0024 HLL_COUNT support strategy
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../adr/0025-perf-tier-design-contract/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0025 Perf-tier design contract
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../adr/0026-mutation-tier-design-contract/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0026 Mutation-tier design contract
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../adr/0027-load-extract-avro-orc/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0027 Load/Extract Avro+ORC
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../adr/0028-differential-tier-design-contract/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0028 Differential-tier design contract
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../adr/0029-upload-host-endpoints/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0029 Upload host endpoints
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../adr/0030-storage-read-avro-format/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0030 Storage Read Avro output format
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../adr/0031-fuzz-tier-design-contract/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0031 Fuzz-tier design contract
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../adr/0032-bq-cli-conformance-client/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0032 bq CLI as a fifth conformance client
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../rfcs/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    RFCs
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+          
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_9" >
+        
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="../../examples/" class="md-nav__link ">
+              
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Examples
+  
+
+    
+  </span>
+  
+  
+
+            </a>
+            
+              
+              <label class="md-nav__link " for="__nav_9" id="__nav_9_label" tabindex="0">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_9_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_9">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Examples
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../examples/bq-cli-quickstart/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    bq CLI quickstart
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../examples/local-file-load/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Local file load
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+      
+        
+          
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_9_4" >
+        
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="../../examples/python/pytest-integration/" class="md-nav__link ">
+              
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Python
+  
+
+    
+  </span>
+  
+  
+
+            </a>
+            
+              
+              <label class="md-nav__link " for="__nav_9_4" id="__nav_9_4_label" tabindex="0">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_9_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_9_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Python
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../examples/python/dbt-local/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    dbt local
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../examples/python/airflow-dag-test/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Airflow DAG test
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../examples/python/pyspark-bigquery/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    PySpark + BigQuery
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+      
+        
+          
+        
+      
+        
+      
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_9_5" >
+        
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="../../examples/nodejs/nestjs-app/" class="md-nav__link ">
+              
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Node.js
+  
+
+    
+  </span>
+  
+  
+
+            </a>
+            
+              
+              <label class="md-nav__link " for="__nav_9_5" id="__nav_9_5_label" tabindex="0">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_9_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_9_5">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Node.js
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../examples/nodejs/cloud-run-local/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Cloud Run local
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+      
+        
+          
+        
+      
+        
+      
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_9_6" >
+        
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="../../examples/go/beam-pipeline/" class="md-nav__link ">
+              
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Go
+  
+
+    
+  </span>
+  
+  
+
+            </a>
+            
+              
+              <label class="md-nav__link " for="__nav_9_6" id="__nav_9_6_label" tabindex="0">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_9_6_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_9_6">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Go
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../examples/go/dataflow-local/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Dataflow local
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+      
+        
+          
+        
+      
+        
+      
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_9_7" >
+        
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="../../examples/java/spring-boot/" class="md-nav__link ">
+              
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Java/Scala
+  
+
+    
+  </span>
+  
+  
+
+            </a>
+            
+              
+              <label class="md-nav__link " for="__nav_9_7" id="__nav_9_7_label" tabindex="0">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_9_7_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_9_7">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Java/Scala
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../examples/java/scio/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Scio
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+      
+        
+          
+        
+      
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_9_8" >
+        
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="../../examples/docker-compose/full-stack/" class="md-nav__link ">
+              
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Compose
+  
+
+    
+  </span>
+  
+  
+
+            </a>
+            
+          </div>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_9_8_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_9_8">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Compose
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+      
+        
+          
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_9_9" >
+        
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="../../examples/ci-recipes/github-actions/" class="md-nav__link ">
+              
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    CI recipes
+  
+
+    
+  </span>
+  
+  
+
+            </a>
+            
+              
+              <label class="md-nav__link " for="__nav_9_9" id="__nav_9_9_label" tabindex="0">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_9_9_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_9_9">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    CI recipes
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../examples/ci-recipes/gitlab-ci/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    GitLab CI
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../examples/ci-recipes/circleci/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    CircleCI
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    API reference
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#at-a-glance" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        At a glance
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#1-adr-0023-runtime-behavioural-divergences-0-open-entries-all-closed" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. ADR 0023 — Runtime behavioural divergences (0 open entries — all closed)
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="1. ADR 0023 — Runtime behavioural divergences (0 open entries — all closed)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#bucket-a-repeated-row-wire-format-shape-closed" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Bucket A — REPEATED-row wire-format shape — ✅ Closed
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#bucket-b-numeric-type-promotion-float64-numeric-closed" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Bucket B — Numeric type promotion FLOAT64 ↔ NUMERIC — ✅ Closed
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#bucket-c-wildcard-table-expansion-closed" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Bucket C — Wildcard table expansion — ✅ Closed
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#bucket-d-unqualified-routine-reference-closed" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Bucket D — Unqualified routine reference — ✅ Closed
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#bucket-e-multi-statement-scripting-column-naming-closed" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Bucket E — Multi-statement scripting column naming — ✅ Closed
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#bucket-f-multi-statement-ddl-extra-row-surface-closed" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Bucket F — Multi-statement DDL extra-row surface — ✅ Closed
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#bucket-g-range-interval-wire-format-closed" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Bucket G — RANGE / INTERVAL wire format — ✅ Closed
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#bucket-h-geography-wkt-whitespace-closed" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Bucket H — GEOGRAPHY WKT whitespace — ✅ Closed
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#bucket-i-standard-function-semantic-differences-closed" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Bucket I — Standard-function semantic differences — ✅ Closed
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#bucket-j-emulator-side-missing-function-translation-closed" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Bucket J — Emulator-side missing function translation — ✅ Closed
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#adr-0019-spheroidal-vs-planar-geography-8-fixtures-permanent-v10-divergence" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ADR 0019 — Spheroidal-vs-planar GEOGRAPHY (8 fixtures, permanent v1.0 divergence)
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#2-locked-v10-exclusions-out-of-scopemd" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. Locked v1.0 exclusions (out-of-scope.md)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#3-conformance-coverage-gaps-works-but-not-in-the-corpus" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. Conformance-coverage gaps (works, but not in the corpus)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#4-bottom-line" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4. Bottom line
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+    <a href="https://github.com/jjviscomi/bqemulator/edit/main/docs/reference/gap-analysis.md" title="Edit this page" class="md-content__button md-icon" rel="edit">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M10 20H6V4h7v5h5v3.1l2-2V8l-6-6H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h4zm10.2-7c.1 0 .3.1.4.2l1.3 1.3c.2.2.2.6 0 .8l-1 1-2.1-2.1 1-1c.1-.1.2-.2.4-.2m0 3.9L14.1 23H12v-2.1l6.1-6.1z"/></svg>
+    </a>
+  
+  
+    
+      
+    
+    <a href="https://github.com/jjviscomi/bqemulator/raw/main/docs/reference/gap-analysis.md" title="View source of this page" class="md-content__button md-icon">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M17 18c.56 0 1 .44 1 1s-.44 1-1 1-1-.44-1-1 .44-1 1-1m0-3c-2.73 0-5.06 1.66-6 4 .94 2.34 3.27 4 6 4s5.06-1.66 6-4c-.94-2.34-3.27-4-6-4m0 6.5a2.5 2.5 0 0 1-2.5-2.5 2.5 2.5 0 0 1 2.5-2.5 2.5 2.5 0 0 1 2.5 2.5 2.5 2.5 0 0 1-2.5 2.5M9.27 20H6V4h7v5h5v4.07c.7.08 1.36.25 2 .49V8l-6-6H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h4.5a8.2 8.2 0 0 1-1.23-2"/></svg>
+    </a>
+  
+
+
+<h1 id="emulator-vs-bigquery-gap-analysis">Emulator-vs-BigQuery gap analysis<a class="headerlink" href="#emulator-vs-bigquery-gap-analysis" title="Permanent link">&para;</a></h1>
+<p>Comprehensive catalogue of every known difference between bqemulator
+and real Google BigQuery. Sources, in priority order:</p>
+<ol>
+<li><strong><a href="https://github.com/jjviscomi/bqemulator/blob/main/tests/conformance/divergences.py"><code>tests/conformance/divergences.py</code></a></strong> — <strong>15 fixtures</strong> pinned to <code>xfail(strict=True)</code>
+   (was 199 at slice-2 close). Every remaining entry is rooted in
+   either <a href="../../adr/0019-specialized-types/">ADR 0019</a>
+   (spheroidal-vs-planar) or <a href="../out-of-scope/">out-of-scope.md</a>.
+   <strong>All ten ADR 0023 buckets (A–J) and the three reconsidered
+   scope expansions (#15 / #17 / #18) closed by.</strong> The
+   → v1-confidence-plan workstreams (P2.a–g,
+   P3.a, P3.b, P4.a, P7.a–c) closed every remaining
+   closure-eligible divergence; the surviving 15 are permanent
+   design decisions with no v1.0 closure plan.</li>
+<li><strong><a href="../out-of-scope/"><code>out-of-scope.md</code></a></strong> — <strong>19 features</strong> explicitly excluded from
+   v1.0.0 with rationale. Growth since slice-2:</li>
+<li>+<code>BIGNUMERIC literals with &gt; 28 integer digits</code> (Bucket I close).</li>
+<li>+<code>HLL sketch binary format (HLL_COUNT.INIT / MERGE_PARTIAL)</code>
+   (session #3b,; ADR 0024).</li>
+<li>+<code>DBSCAN clustering (ST_CLUSTERDBSCAN)</code> (session #3d).</li>
+<li>2 sections removed by P7.c — <code>#ingestion-time-partition-pseudo-columns</code>
+   and <code>#st_maxdistance-not-yet-implemented</code> — once narrow translator
+   rules closed those gaps.</li>
+<li><strong>Untested-in-conformance surfaces</strong> — capabilities the emulator
+   ships but the conformance corpus doesn't yet exercise (because
+   they aren't SQL, are non-deterministic, or are exercised in
+   adjacent tiers).</li>
+</ol>
+<p>A "gap" in this document means <em>anything</em> a user might rely on in
+real BigQuery that the emulator does not currently provide
+identically. The catalogue is intentionally exhaustive — most
+entries have a small, named closure path; a few are permanent v1.0
+exclusions.</p>
+<h2 id="at-a-glance">At a glance<a class="headerlink" href="#at-a-glance" title="Permanent link">&para;</a></h2>
+<table>
+<thead>
+<tr>
+<th>Source</th>
+<th>Count</th>
+<th>What it is</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>ADR 0023 divergence buckets A–J</strong></td>
+<td><strong>0 fixtures</strong> (was 194 at slice-2 close; all ten buckets A–J closed)</td>
+<td>Documented runtime behavioural deltas surfaced by the slice-2 conformance corpus. Each had a root cause and a slice-named closure plan; all have now landed.</td>
+</tr>
+<tr>
+<td><strong>ADR 0019 spheroidal GEOGRAPHY</strong></td>
+<td><strong>11 fixtures</strong></td>
+<td>Permanent v1.0 divergence (S2-sphere semantics for the helper rules vs planar / no-spherical fallback for the rest). The 3 remaining buffer fixtures from P2.g + 8 pre-existing surfaces (4 <code>st_asgeojson_*</code> interpolation, <code>st_centroid_polygon</code>, <code>st_intersection_polygons</code>, <code>st_buffer_continental</code>, <code>st_asbinary_point</code>).</td>
+</tr>
+<tr>
+<td><strong>ADR 0024 HLL++ sketch binary format</strong></td>
+<td><strong>2 fixtures</strong></td>
+<td><code>agg_hll_count_init_basic</code> + <code>agg_hll_count_merge_partial_basic</code> — BigQuery's HLL++ sketch BYTES format is undocumented. The 2 sibling EXTRACT/MERGE surfaces pass cleanly via <code>COUNT(DISTINCT)</code>.</td>
+</tr>
+<tr>
+<td><strong><code>out-of-scope.md</code> locked exclusions (fixture-bearing)</strong></td>
+<td><strong>2 fixtures</strong></td>
+<td><code>bound_bignumeric_max</code> (DuckDB DECIMAL(38) cap on 39-integer-digit literals; <code>out-of-scope.md#bignumeric-literals-with-39-integer-digits</code>) + <code>row_access/caller_information_schema_visibility</code> (IAM-fundamental; <code>out-of-scope.md#iam-enforcement</code>).</td>
+</tr>
+<tr>
+<td><strong><code>out-of-scope.md</code> locked exclusions (no-fixture)</strong></td>
+<td><strong>17 features</strong></td>
+<td>Surfaces explicitly excluded from v1.0 with rationale but with no corpus fixture (BQML, BI Engine, billing, scheduling, multi-region, etc.).</td>
+</tr>
+<tr>
+<td><strong>Conformance coverage gaps</strong></td>
+<td><strong>~12 surfaces</strong></td>
+<td>Shipped emulator features not yet exercised by the conformance corpus (covered in other test tiers).</td>
+</tr>
+</tbody>
+</table>
+<p>Total <strong>15</strong> documented runtime divergences (was 199 at slice-2
+close) — 11 ADR 0019 spheroidal + 2 ADR 0024 HLL++ + 2
+out-of-scope.md fixture-bearing entries — plus <strong>19</strong> total
+locked exclusions in <code>out-of-scope.md</code> (17 no-fixture + 2
+fixture-bearing) + ~12 untested-in-conformance surfaces.</p>
+<h2 id="1-adr-0023-runtime-behavioural-divergences-0-open-entries-all-closed">1. ADR 0023 — Runtime behavioural divergences (0 open entries — all closed)<a class="headerlink" href="#1-adr-0023-runtime-behavioural-divergences-0-open-entries-all-closed" title="Permanent link">&para;</a></h2>
+<p>Each bucket has full root-cause analysis in
+<a href="../../adr/0023-conformance-divergence-baseline/">ADR 0023</a>; per-fixture rationale strings live in
+<code>divergences.py</code>. Summary:</p>
+<h3 id="bucket-a-repeated-row-wire-format-shape-closed">Bucket A — REPEATED-row wire-format shape — ✅ Closed<a class="headerlink" href="#bucket-a-repeated-row-wire-format-shape-closed" title="Permanent link">&para;</a></h3>
+<ul>
+<li><strong>Status</strong>: closed in the parity-closure session
+  (16 direct XPASSes + 8 incidental closures from buckets I/J;
+  6 stragglers re-categorised — <code>generate_range_array_date</code> → G,
+  <code>agg_array_agg_ordered</code>, <code>json_lax_{bool,int64,string}</code> → J,
+  <code>json_to_json_array</code> → I).</li>
+<li><strong>Symptom (historical)</strong>: any fixture with a <code>REPEATED</code> (array)
+  column triggered
+  <code>TypeError: list indices must be integers or slices, not str</code>
+  deep in the <code>google-cloud-bigquery</code> row deserialiser.</li>
+<li><strong>Root cause (historical)</strong>: the REST schema renderer in
+  <code>bqemulator.jobs.executor.build_response_schema</code> produced
+  <code>{type: "RECORD", mode: "NULLABLE"}</code> for Arrow list-typed
+  columns; BigQuery's wire shape is
+  <code>{type: &lt;element_type&gt;, mode: "REPEATED"}</code>. Secondary bug: NULL
+  Arrow values for REPEATED columns rendered as <code>null</code> instead of
+  <code>[]</code>.</li>
+<li><strong>Closure</strong>: schema-and-row renderer change in
+  <code>src/bqemulator/jobs/executor.py</code> (build_response_schema)
+  and <code>src/bqemulator/storage/arrow_bridge.py</code> (_format_bq_value).
+  See ADR 0023 §1.A closure note for full details.</li>
+</ul>
+<h3 id="bucket-b-numeric-type-promotion-float64-numeric-closed">Bucket B — Numeric type promotion FLOAT64 ↔ NUMERIC — ✅ Closed<a class="headerlink" href="#bucket-b-numeric-type-promotion-float64-numeric-closed" title="Permanent link">&para;</a></h3>
+<ul>
+<li><strong>Status</strong>: closed in the parity-closure session (all
+  22 fixtures moved from XFAIL to PASS, plus 12 incidental
+  XPASSes across Buckets H and I).</li>
+<li><strong>Historical symptom</strong>: schema-level type mismatch
+  (<code>expected='NUMERIC' actual='FLOAT'</code> or reverse), and <code>Conversion
+  Error</code> for wide-NUMERIC literals exceeding DuckDB's default
+  <code>DECIMAL(18, 3)</code>.</li>
+<li><strong>Historical root cause</strong>: BigQuery's literal-type inference
+  treats a decimal-looking literal (<code>3.25</code>) as FLOAT64; DuckDB
+  treats it as DECIMAL. Same drift for aggregates over NUMERIC:
+  BigQuery keeps NUMERIC; DuckDB's <code>AVG</code> always promotes to
+  DOUBLE. <code>SUM(BIGINT)</code> and <code>COUNT_IF</code> promote to HUGEINT
+  which Arrow encoded as decimal128(38, 0) and the renderer
+  surfaced as NUMERIC. <code>SIGN(INT)</code> returns TINYINT (Arrow int8)
+  which fell through to the STRING fallback. <code>DATE_TRUNC(date,
+  QUARTER/WEEK)</code> returned TIMESTAMP instead of DATE, and WEEK
+  truncated to Monday rather than the BigQuery-default Sunday.
+  <code>PARSE_NUMERIC</code> and <code>PARSE_BIGNUMERIC</code> had no DuckDB
+  analogue. <code>BIGNUMERIC '…'</code> typed literals lacked a rewrite
+  path that preserved the BIGNUMERIC type tag without sacrificing
+  integer-digit capacity.</li>
+<li><strong>Fixtures closed</strong>: <code>select_float64_literal</code>,
+  <code>select_bignumeric_literal</code>, <code>select_avg</code>, <code>select_count_if</code>,
+  <code>agg_countif</code>, <code>agg_sum_int</code>, <code>num_round</code>,
+  <code>num_round_decimals</code>, <code>num_ceil</code>, <code>num_floor</code>, <code>num_trunc</code>,
+  <code>num_sign_{pos,neg,zero}</code>, <code>parse_numeric_basic</code>,
+  <code>parse_bignumeric_basic</code>, <code>dt_date_trunc_quarter</code>,
+  <code>dt_date_trunc_week</code>, <code>math_round_half_away</code>, <code>math_round_neg</code>,
+  <code>rw_window_rows_between</code>, <code>tpch_q1</code>.</li>
+<li><strong>Closure approach</strong>: seven coordinated translator fixes plus a
+  new catalog-schema-aware <code>annotate_types</code> pass. (1) A new
+  <code>src/bqemulator/sql/rewriter/decimal_literals.py</code> rewrites bare
+  decimal literals (<code>3.25</code>) to scientific notation (<code>3.25e0</code>) so
+  DuckDB types them as DOUBLE. (2) <code>_arrow_type_to_bq_type</code> in
+  <code>src/bqemulator/jobs/executor.py</code> widens to every integer
+  width via <code>pa.types.is_integer</code> (fixes TINYINT from
+  <code>SIGN(INT)</code>); the decimal branch inspects Arrow scale and
+  routes DECIMAL with <code>scale &gt; 9</code> to BIGNUMERIC. (3) The
+  <code>_resolve_bq_type</code> override reads <code>bqemu.duckdb_type</code>
+  metadata and surfaces HUGEINT as INTEGER. (4) New SQLGlot
+  rules in <code>src/bqemulator/sql/rules/iso_date_parts.py</code> handle
+  <code>DATE_TRUNC(date, QUARTER)</code> (cast to DATE) and
+  <code>DATE_TRUNC(date, WEEK)</code> (Sunday-start truncation via
+  <code>CAST(d - INTERVAL DAYOFWEEK(d) DAY AS DATE)</code>). (5) A new
+  <code>src/bqemulator/sql/rules/numeric_types.py</code> adds PARSE_NUMERIC
+  (<code>CAST AS DECIMAL(38, 9)</code>) and PARSE_BIGNUMERIC
+  (UDF-routed) rules. (6) A new <code>bqemu_to_bignumeric</code> Python
+  UDF in <code>src/bqemulator/sql/builtin_udfs.py</code> returns
+  <code>DECIMAL(38, 10)</code> so the scale-marker rule fires; the
+  pre-translator at
+  <code>src/bqemulator/sql/rewriter/numeric_literals.py</code> is now
+  scale-aware (≥ 10 fractional digits → direct CAST, ≤ 9 →
+  UDF). (7) A new <code>src/bqemulator/sql/catalog_schema.py</code> helper
+  builds a per-table schema dict; the executor passes it to
+  <code>SQLTranslator.translate(bq_sql, schema=…)</code> and the
+  translator runs <code>qualify</code> + <code>annotate_types</code> so the new
+  <code>AvgDecimalRule</code> in
+  <code>src/bqemulator/sql/rules/aggregate_types.py</code> can wrap
+  <code>AVG(decimal_col)</code> in <code>CAST AS DECIMAL(38, 9)</code>. Windowed
+  forms dispatch on the parent <code>Window</code> so the cast surrounds
+  the entire <code>AVG(…) OVER (…)</code> expression. See ADR 0023 §1.B
+  closure note for full details.</li>
+<li><strong>Incidental closures</strong>: <code>st_geogfromtext_multipoint</code>,
+  <code>st_isring_line</code>, <code>st_npoints_line</code>,
+  <code>st_numpoints_polygon</code>, <code>st_pointn_line</code> (Bucket H —
+  narrow-width integer renderer fix), and
+  <code>agg_bit_count_scalar</code>, <code>agg_sum_empty</code>,
+  <code>agg_sum_null_col</code>, <code>empty_array_aggsum</code>,
+  <code>rw_case_in_aggregate</code>, <code>rw_session_count</code>,
+  <code>str_regexp_instr</code> (Bucket I — HUGEINT / narrow-integer
+  renderer fix).</li>
+</ul>
+<h3 id="bucket-c-wildcard-table-expansion-closed">Bucket C — Wildcard table expansion — ✅ Closed<a class="headerlink" href="#bucket-c-wildcard-table-expansion-closed" title="Permanent link">&para;</a></h3>
+<ul>
+<li><strong>Status</strong>: closed in the parity-closure session
+  (all 8 fixtures XPASSed and were removed from
+  <code>divergences.py</code>).</li>
+<li><strong>Symptom (historical)</strong>: <code>FROM \</code><dataset>.events_<em>`<code>failed
+  with</code>Catalog Error: Table with name events_</em> does not exist`.</li>
+<li><strong>Root cause (historical)</strong>: the original wildcard-rewriter
+  predicate looked only at the trailing identifier shape and did
+  not engage when the reference was fully-qualified with a project</li>
+<li>dataset prefix (conformance fixtures expand
+   <code>${DATASET}.events_*</code> to <code>&lt;project&gt;.&lt;temp&gt;.events_*</code>).
+   Compounding factors surfaced in the closure: <code>re.search</code>
+   expanded only the first wildcard in a query (so self-joins
+   failed), the catalog cache never sees DDL-created shards (so
+   even the 2-part fix would have returned an empty match set),
+   and DuckDB does not dedupe duplicate column names on a
+   self-join's projection.</li>
+<li><strong>Closure</strong>: widened the wildcard-expander predicate in
+  <code>src/bqemulator/sql/rewriter/wildcard_expander.py</code> to match
+  every BigQuery reference shape (1-/2-/3-part, with or without
+  backticks, hyphenated project ids via <code>[\w-]</code>), switched the
+  expander to <code>re.sub</code> so every occurrence expands (preserving
+  any explicit <code>AS &lt;alias&gt;</code> to avoid double-aliasing the
+  synthetic UNION-ALL subquery), added a
+  <code>CatalogRepository.list_storage_tables</code> method that
+  introspects DuckDB's <code>information_schema</code> so DDL-created shards
+  surface (<code>MemoryCatalogRepository</code> accepts an optional engine
+  so ephemeral-mode servers can answer the storage query without
+  a <code>DuckDBCatalogRepository</code> upgrade), and taught the REST
+  schema renderer (<code>build_response_schema</code> in
+  <code>src/bqemulator/jobs/executor.py</code>) to dedupe column names with
+  a <code>_&lt;n&gt;</code> suffix so self-joins match BigQuery's wire-format
+  guarantee. See ADR 0023 §1.C closure note for full details.</li>
+</ul>
+<h3 id="bucket-d-unqualified-routine-reference-closed">Bucket D — Unqualified routine reference — ✅ Closed<a class="headerlink" href="#bucket-d-unqualified-routine-reference-closed" title="Permanent link">&para;</a></h3>
+<ul>
+<li><strong>Status</strong>: closed in the parity-closure session (all
+  4 fixtures moved from XFAIL to PASS).</li>
+<li><strong>Historical symptom</strong>: <code>CREATE TEMP FUNCTION foo(...); SELECT
+  foo(...)</code> failed with <code>Routine reference must have 2 or 3 parts:
+  foo</code>.</li>
+<li><strong>Historical root cause</strong>: emulator's routine resolver required
+  a fully <code>project.dataset.routine</code> reference. BigQuery resolves
+  single-part identifiers against the script's local scope.</li>
+<li><strong>Fixtures closed</strong>: <code>sql_udf_int_to_int</code>, <code>sql_udf_string_param</code>,
+  <code>sql_udf_returns_array</code>, <code>sql_udf_returns_struct</code>.</li>
+<li><strong>Closure approach</strong>: added a script-local TEMP-function
+  registry (<code>src/bqemulator/udf/temp_registry.py</code>). Each
+  <code>ScriptInterpreter</code> instance owns one for the lifetime of one
+  script's <code>run()</code>. <code>CREATE TEMP FUNCTION foo(...)</code> with a
+  single-part identifier routes through
+  <code>_exec_create_temp_function</code>, materialises the routine under a
+  registry-unique synthetic dataset (<code>_bqemu_temp_&lt;uuid-hex&gt;</code>),
+  and remembers the bare name → <code>RoutineMeta</code> mapping.
+  <code>_resolve_ref</code> checks the registry first for single-part refs
+  (ADR 0023 §1.D local-scope lookup pass); <code>_run_query</code> and its
+  parameterised siblings rewrite bare <code>foo(args)</code> to the
+  qualified flat name before the rest of the SQL pipeline runs;
+  <code>run</code> drops every materialised TEMP macro in a <code>finally</code> arm so
+  TEMP functions never leak into the catalog nor across script
+  invocations. See ADR 0023 §1.D closure note for full details.</li>
+</ul>
+<h3 id="bucket-e-multi-statement-scripting-column-naming-closed">Bucket E — Multi-statement scripting column naming — ✅ Closed<a class="headerlink" href="#bucket-e-multi-statement-scripting-column-naming-closed" title="Permanent link">&para;</a></h3>
+<ul>
+<li><strong>Status</strong>: closed in the parity-closure session
+  (1 direct XPASS — <code>script_if_then</code>; 1 reclassified to Bucket I —
+  <code>script_exception_handler</code> — because its expected
+  <code>outcome='caught'</code> value depends on <code>SELECT 1 / 0</code> raising, but
+  DuckDB returns <code>Inf</code> for a zero divisor so the script's
+  EXCEPTION handler never fires).</li>
+<li><strong>Symptom (historical)</strong>: a multi-statement script's final SELECT
+  returned the result with a placeholder column name (<code>$1</code>,
+  <code>_col0</code>) instead of the inferred BigQuery name.</li>
+<li><strong>Root cause (historical)</strong>: the scripting interpreter's
+  <code>_rewrite_vars_to_params</code> replaced bare script-variable
+  references with bound parameters; BigQuery's "single identifier
+  → use as column name" inference was erased and DuckDB returned
+  <code>$1</code> as the column name.</li>
+<li><strong>Closure</strong>: scripting interpreter's <code>_rewrite_vars_to_params</code>
+  in <code>src/bqemulator/scripting/interpreter.py</code> now wraps the
+  placeholder in an <code>Alias</code> when the column is a top-level SELECT
+  projection (predicate: <code>isinstance(col.parent, exp.Select) and
+  col.arg_key == "expressions"</code>). Regression coverage:
+  <code>tests/unit/scripting/test_interpreter.py</code>
+  (<code>TestProjectionNameInference</code> — 4 cases). See ADR 0023 §1.E
+  closure note for full details.</li>
+</ul>
+<h3 id="bucket-f-multi-statement-ddl-extra-row-surface-closed">Bucket F — Multi-statement DDL extra-row surface — ✅ Closed<a class="headerlink" href="#bucket-f-multi-statement-ddl-extra-row-surface-closed" title="Permanent link">&para;</a></h3>
+<ul>
+<li><strong>Status</strong>: closed in the parity-closure session
+  (all 3 originally-pinned fixtures moved from XFAIL to PASS:
+  <code>clone_basic</code>, <code>mv_basic</code>, <code>snapshot_basic</code>).</li>
+<li><strong>Symptom (historical)</strong>: <code>CREATE SNAPSHOT/CLONE/MV...;
+  SELECT...</code> failed under the emulator — DuckDB rejected the
+  versioning-DDL syntax with a parser error before the trailing
+  SELECT could run. The original symptom statement
+  ("extra rows") was a polite simplification of the actual
+  outcome.</li>
+<li><strong>Root cause (historical)</strong>: the scripting interpreter sent
+  every statement through the standard translator → DuckDB
+  pipeline. Versioning DDL never reached the matching
+  <code>SnapshotTableManager</code> / <code>CloneManager</code> /
+  <code>MaterializedViewManager</code>. The top-level executor's
+  <code>_maybe_run_versioning_ddl</code> did fire for multi-statement
+  scripts, but the MV regex's lazy <code>.+?\s*;?\s*$</code> match
+  greedy-crossed statement boundaries. Compounding: setup tables
+  created via SQL DDL never updated the catalog cache, so even a
+  correct dispatch would have 404-ed at the manager's
+  <code>catalog.get_table(source_table)</code> precondition.</li>
+<li><strong>Closure</strong>: three coordinated parts — per-statement
+  versioning-DDL dispatch in <code>ScriptInterpreter._exec_sql</code>, a
+  single-statement gate on <code>execute_query_job</code>'s
+  <code>_maybe_run_versioning_ddl</code> fast path, and a new
+  <code>src/bqemulator/catalog/ddl_sync.py</code> module that auto-registers
+  plain <code>CREATE [OR REPLACE] TABLE</code> outputs in the catalog. The
+  interpreter's <code>_exec_sql</code> also now only updates <code>_final_table</code>
+  when the executed statement is row-producing
+  (<code>isinstance(tree, exp.Query)</code>). Regression coverage:
+  <code>tests/unit/scripting/test_interpreter.py</code>
+  (<code>TestLastStatementWins</code> — 5 cases) and the new
+  <code>tests/unit/catalog/test_ddl_sync.py</code> (10 cases). See ADR 0023
+  §1.F closure note for full details.</li>
+</ul>
+<h3 id="bucket-g-range-interval-wire-format-closed">Bucket G — RANGE / INTERVAL wire format — ✅ Closed<a class="headerlink" href="#bucket-g-range-interval-wire-format-closed" title="Permanent link">&para;</a></h3>
+<ul>
+<li><strong>Status</strong>: closed in the parity-closure session (all
+  20 originally-pinned fixtures moved from XFAIL to PASS, plus 1
+  incidental Bucket I closure — <code>specialized_types/interval_zero</code>).</li>
+<li><strong>Historical symptom</strong>: schema or value serialisation diverged
+  for RANGE-typed and INTERVAL-typed columns. DuckDB didn't parse
+  <code>RANGE&lt;DATE&gt;</code> literals (returned <code>Parser Error: Expected a
+  constant as type modifier</code>); INTERVAL canonical string
+  formatting reached the wire under the STRING fallback because
+  <code>_arrow_type_to_bq_type</code> had no <code>pa.types.is_interval</code> branch,
+  so the BigQuery Python client treated the value as an opaque
+  string rather than a <code>relativedelta</code>. RANGE columns surfaced as
+  RECORD with nested <code>fields</code> rather than the
+  <code>{type: "RANGE", rangeElementType}</code> shape with the
+  <code>[start, end)</code> wire-format cell string.</li>
+<li><strong>Historical fixtures</strong> (all 20): <code>range_contains_no</code>,
+  <code>range_contains_yes</code>, <code>range_overlaps_no</code>, <code>range_overlaps_yes</code>,
+  <code>range_intersect_basic</code>, <code>range_intersects_empty</code>,
+  <code>range_date_literal</code>, <code>range_datetime_literal</code>,
+  <code>range_timestamp_literal</code>, <code>range_ends_with_inf</code>,
+  <code>range_starts_with_inf</code>, <code>range_array_aggregate</code>,
+  <code>range_equality_check</code>, <code>generate_range_array_date</code>
+  (re-categorised from Bucket A),
+  <code>interval_day_to_second</code>, <code>interval_year_to_month</code>,
+  <code>justify_days_basic</code>, <code>justify_hours_basic</code>,
+  <code>justify_interval_basic</code>, <code>make_interval_basic</code>.</li>
+<li><strong>Closure</strong>: three coordinated fixes — a pre-translator pass in
+  <code>src/bqemulator/sql/rewriter/specialized_types.py</code> that rewrites
+  <code>Cast(literal, RANGE&lt;T&gt;)</code> to
+  <code>STRUCT(CAST(&lt;start&gt; AS T) AS start, CAST(&lt;end&gt; AS T) AS end)</code>;
+  a shared <code>detect_range_element</code> helper in
+  <code>src/bqemulator/types/range_type.py</code> that drives the REST schema
+  renderer (<code>_maybe_range_schema_entry</code>) and the row renderer
+  (<code>_bq_range_metadata</code>) so RANGE columns surface on the wire as
+  <code>{type: "RANGE", mode, rangeElementType: {type: T}}</code> with the
+  canonical <code>[start, end)</code> cell string; and an
+  <code>is_interval(arrow_type) → "INTERVAL"</code> branch in
+  <code>_arrow_type_to_bq_type</code>. The <code>GenerateRangeArrayRule</code> gained
+  type-preserving casts and end-clipping via
+  <code>LEAST(x + step, rng."end")</code>. Regression coverage:
+  <code>tests/unit/sql/test_specialized_types_rewriter.py</code>
+  (<code>TestRangeLiteralRewrite</code> — 7 cases),
+  <code>tests/unit/types/test_range_type.py</code> (<code>TestDetectRangeElement</code>
+  — 12 cases), <code>tests/unit/api/test_arrow_type_to_bq.py</code>
+  (<code>TestRangeSchemaEntry</code> — 4 cases + INTERVAL parametrisation),
+  <code>tests/unit/storage/test_arrow_bridge.py</code>
+  (<code>TestArrowToBqRowsRangeWireFormat</code> — 7 cases), and updated
+  <code>tests/unit/sql/rules/test_range_rules.py</code> <code>TestGenerateRangeArray</code>
+  (DATE-preserving + end-clipping). See ADR 0023 §1.G closure note
+  for full details.</li>
+</ul>
+<h3 id="bucket-h-geography-wkt-whitespace-closed">Bucket H — GEOGRAPHY WKT whitespace — ✅ Closed<a class="headerlink" href="#bucket-h-geography-wkt-whitespace-closed" title="Permanent link">&para;</a></h3>
+<ul>
+<li><strong>Status</strong>: closed in the parity-closure session.
+  Option H.1 (comparison-helper extension) selected over H.2
+  (DuckDB-spatial upstream patch). ADR 0022 §3 gained a WKT-shaped
+  STRING sub-rule under the STRING tolerance contract; a 6-line
+  extension to <code>tests/conformance/_comparison.py</code>'s
+  <code>_compare_scalar</code> wires the sub-rule in. 7 direct XPASSes:
+  <code>st_astext_point</code>, <code>st_geogfromtext_point</code>,
+  <code>st_geogfromtext_linestring</code>, <code>st_geogfromtext_polygon</code>,
+  <code>st_geogfromwkb_point</code>, <code>st_geogfromgeojson_point</code>,
+  <code>st_geogpoint</code>. 4 fixtures reclassified rather than closed:
+  3 small-scale spheroidal entries (<code>st_centroid_polygon</code>,
+  <code>st_intersection_polygons</code>, <code>st_dwithin_no</code>) shifted under
+  ADR 0019 because the divergence is geometric value drift, not
+  stringification; 1 GeoJSON-formatting entry
+  (<code>st_asgeojson_point</code>) initially shifted to
+  <code>out-of-scope.md#geojson-output-formatting</code>, then closed the
+  same day via scope-expansion #18 (a
+  <code>StAsGeoJsonStringTypeRule</code> SQL rule + ADR 0022 §3 JSON-shaped
+  STRING amendment).</li>
+<li><strong>Symptom (historical)</strong>: <code>ST_ASTEXT</code> and related stringifying
+  functions returned WKT with <code>POINT (1 2)</code> (extra space) where
+  BigQuery emits <code>POINT(1 2)</code>. Different from ADR 0019
+  spheroidal-vs-planar — this is a <em>formatting</em> divergence on the
+  string output.</li>
+<li><strong>Root cause (historical)</strong>: DuckDB-spatial's WKT formatter
+  inserts a space between the geometry-type keyword and the
+  opening paren; BigQuery's does not. The comparison helper
+  normalised WKT for cells declared <code>GEOGRAPHY</code>, but <code>ST_ASTEXT</code>
+  returns <code>STRING</code> (not GEOGRAPHY) — so the helper applied
+  STRING's exact-equality rule and reported a mismatch.</li>
+<li><strong>Fix</strong>: a STRING-typed cell whose value matches the anchored
+  regex
+  <code>^(POINT|LINESTRING|POLYGON|MULTIPOINT|MULTILINESTRING|MULTIPOLYGON|GEOMETRYCOLLECTION)\s*\(</code>
+  (case-insensitive) routes through the existing <code>_normalise_wkt</code>
+  helper before equality comparison. Both sides must match the
+  WKT shape to trigger the rule so one-sided drift still
+  surfaces as a real mismatch. Regression coverage in a new
+  <code>tests/unit/conformance/test_comparison_wkt_string.py</code> (20
+  unit cases). The slice-2-close count was 23; the 
+  Bucket B closure removed 5 (<code>st_geogfromtext_multipoint</code>,
+  <code>st_isring_line</code>, <code>st_npoints_line</code>, <code>st_numpoints_polygon</code>,
+  <code>st_pointn_line</code> — narrow-width integer types the widened
+  Arrow→BigQuery type-mapper now surfaces as INTEGER); the
+  Bucket I closure removed 7 more
+  (<code>st_geometrytype_linestring</code>, <code>st_geometrytype_point</code>,
+  <code>st_geometrytype_polygon</code>, <code>st_geometrytype_multipoint</code>,
+  <code>st_convexhull_points</code>, <code>st_envelope_polygon</code>,
+  <code>st_makepolygon_from_ring</code> — closed by the new
+  <code>StGeometryTypeBqNameRule</code>). The Bucket H session handled the
+  final 11 (7 direct + 4 reclassified). Net registry delta:
+  18 → 11.</li>
+</ul>
+<h3 id="bucket-i-standard-function-semantic-differences-closed">Bucket I — Standard-function semantic differences — ✅ Closed<a class="headerlink" href="#bucket-i-standard-function-semantic-differences-closed" title="Permanent link">&para;</a></h3>
+<ul>
+<li><strong>Status</strong>: closed in the parity-closure session
+  (36 direct Bucket I XPASSes — the 36 includes <code>null_date_add</code>,
+  which XPASSed early in the I-a run when the <code>DATE_ADD</code>-cast
+  pre-translate fired on its NULL-operand shape — plus 7
+  incidental Bucket H XPASSes via the new
+  <code>StGeometryTypeBqNameRule</code>; 2 Bucket I fixtures originally
+  pinned to permanent <code>out-of-scope.md</code> entries:
+  <code>bound_bignumeric_max</code> (DuckDB DECIMAL(38) cap; remains pinned)
+  and <code>script_exception_handler</code> (div/0 raise — reconsidered the
+  same day as scope-expansion #17 and closed via the new
+  <code>division_by_zero</code> pre-translator)). All 38 originally-pinned
+  Bucket I entries triaged.</li>
+<li><strong>Symptom (historical)</strong>: heterogeneous function-level
+  divergences in DATE / FORMAT / PARSE / JSON / STRUCT / hash /
+  string / boundary / Unicode / GEOGRAPHY type-name spaces.</li>
+<li><strong>Root causes (historical)</strong>: DuckDB widens DATE arithmetic to
+  TIMESTAMP; DuckDB's day-of-week is 0-indexed (Sun=0) vs
+  BigQuery's 1-indexed (Sun=1); DuckDB's WEEK is ISO 8601 vs
+  BigQuery's Sunday-start Gregorian; SQLGlot collapses TO_JSON and
+  TO_JSON_STRING to the same DuckDB SQL; SQLGlot drops the
+  <code>occurrence</code> argument from 4-arg INSTR; DuckDB's UPPER doesn't
+  apply the ß → SS Unicode case-fold; DuckDB's FARM_FINGERPRINT
+  Python stand-in used SHA-256; DuckDB's ST_GeometryType returns
+  uppercase WKT names where BigQuery returns <code>ST_&lt;PascalCase&gt;</code>;
+  and float-precision drift in
+  <code>int(ts.timestamp() * 1_000_000)</code> blew up at the 
+  TIMESTAMP boundary.</li>
+<li><strong>Fix</strong>: four new pre-translator rewriter modules
+  (<code>rewriter/datetime_helpers.py</code>, <code>rewriter/json_helpers.py</code>,
+  <code>rewriter/struct_helpers.py</code>, <code>rewriter/safe_helpers.py</code>) +
+  a 4-arg-INSTR extension to the existing
+  <code>rewriter/string_helpers.py</code> + one new post-translate rule
+  module (<code>rules/datetime_semantics.py</code>, ten rules:
+  <code>ExtractDateFromTimestampRule</code>, <code>ExtractDayofweekRule</code>,
+  <code>ExtractWeekSundayStartRule</code>, <code>ConcatStringTypeRule</code>,
+  <code>ApproxCountDistinctExactRule</code>, <code>ApproxQuantilesDiscreteRule</code>,
+  <code>FormatPrintfRule</code>, <code>ParseTimeRule</code>, <code>JsonTypeLowerRule</code>,
+  <code>ParseTimestampUtcRule</code>) + a <code>StGeometryTypeBqNameRule</code> added
+  to <code>rules/spatial.py</code> + an <code>UpperUnicodeRule</code> added to
+  <code>rules/string_helpers.py</code> + a generalised
+  <code>DateTruncCalendarUnitRule</code> (DAY/MONTH/QUARTER/YEAR) in
+  <code>rules/iso_date_parts.py</code> + three builtin Python UDF changes in
+  <code>builtin_udfs.py</code> (a bit-exact pure-Python port of FarmHash
+  <code>Fingerprint64</code> <em>replaces</em> the prior SHA-256 stand-in, plus two
+  new helpers <code>bqemu_upper_unicode</code> and <code>bqemu_instr_occurrence</code>)</li>
+<li>an <code>arrow_bridge.py</code> TIMESTAMP renderer switch from
+   <code>int(ts.timestamp() * 1_000_000)</code> to integer <code>timedelta</code>
+   arithmetic + an <code>information_schema.py</code> rewriter switch of
+   <code>_ts_literal</code> from <code>TIMESTAMP_MILLIS(N)</code> to a typed
+   <code>TIMESTAMP '... UTC'</code> literal so it sidesteps the new
+   datetime-helpers pre-translate. 77 new unit cases under
+   <code>tests/unit/sql/rules/test_datetime_semantics.py</code>,
+   <code>tests/unit/sql/rewriter/test_datetime_helpers.py</code>,
+   <code>tests/unit/sql/rewriter/test_bucket_i_helpers.py</code>,
+   <code>tests/unit/sql/test_builtin_udfs_bucket_i.py</code>, and
+   <code>tests/unit/sql/rules/test_spatial.py::TestStGeometryTypeBqName</code>.
+   See <a href="../../adr/0023-conformance-divergence-baseline/">ADR 0023 §1.I closure block</a>
+   for the per-sub-session detail.</li>
+</ul>
+<h3 id="bucket-j-emulator-side-missing-function-translation-closed">Bucket J — Emulator-side missing function translation — ✅ Closed<a class="headerlink" href="#bucket-j-emulator-side-missing-function-translation-closed" title="Permanent link">&para;</a></h3>
+<ul>
+<li><strong>Status</strong>: closed in the parity-closure session
+  (41 direct XPASSes + 3 J→I cascades + 2 incidental Bucket I
+  closures: <code>bound_numeric_min</code>, <code>json_parse_basic</code>). All 44
+  originally-pinned Bucket J entries triaged.</li>
+<li><strong>Symptom (historical)</strong>: any query that called a BigQuery
+  builtin without a SQLGlot translation rule to a DuckDB
+  equivalent failed with <code>Catalog Error: Scalar Function with
+  name X does not exist!</code>.</li>
+<li><strong>Root cause (historical)</strong>: the SQLGlot transpiler shipped
+  translations for the BigQuery functions exercised in Phases
+  1–10; functions outside that path never got a rule.</li>
+<li><strong>Fix</strong>: four new SQLGlot rule modules (<code>json_helpers.py</code>,
+  <code>iso_date_parts.py</code>, <code>string_helpers.py</code>, <code>misc_helpers.py</code>)</li>
+<li>a SAFE-arithmetic expansion of <code>safe_math.py</code> + three new
+   pre-translator rewriters (<code>rewriter/string_helpers.py</code>,
+   <code>rewriter/aggregate_variants.py</code>,
+   <code>rewriter/numeric_literals.py</code>) + a new
+   <code>sql/builtin_udfs.py</code> registering Python-helper UDFs at
+   <code>DuckDBEngine.start</code> + a <code>bqemu.duckdb_type</code> field-metadata
+   override on <code>fetch_arrow</code> so JSON-typed columns surface on the
+   REST wire as <code>type: "JSON"</code> instead of the Arrow-derived
+   <code>STRING</code>. 75 new unit cases under <code>tests/unit/sql/rules/</code>
+   cover every rule + pre-rewriter path against a live DuckDB
+   connection.</li>
+<li><strong>Cascade</strong>: 3 Bucket J entries cascaded into Bucket I once
+  their functions became invocable but the value still diverged
+  from real BigQuery — <code>agg_approx_quantiles</code> (APPROX_QUANTILE
+  algorithm difference), <code>math_rand_ish_deterministic</code>
+  (FARM_FINGERPRINT bit-pattern mismatch — the Python helper
+  uses SHA-256), <code>bound_bignumeric_max</code> (39-integer-digit
+  BIGNUMERIC literal exceeds DuckDB's DECIMAL(38, …) cap). Two
+  unrelated Bucket I entries incidentally XPASSed: <code>bound_numeric_min</code>
+  and <code>json_parse_basic</code>. Net registry delta: 159 → 116.</li>
+</ul>
+<h3 id="adr-0019-spheroidal-vs-planar-geography-8-fixtures-permanent-v10-divergence">ADR 0019 — Spheroidal-vs-planar GEOGRAPHY (8 fixtures, permanent v1.0 divergence)<a class="headerlink" href="#adr-0019-spheroidal-vs-planar-geography-8-fixtures-permanent-v10-divergence" title="Permanent link">&para;</a></h3>
+<p>Continental scale (5 fixtures, pinned since slice-2):</p>
+<ul>
+<li><code>st_distance_continental</code>, <code>st_area_continental</code>,
+  <code>st_length_continental</code>, <code>st_perimeter_continental</code>,
+  <code>st_buffer_continental</code>.</li>
+</ul>
+<p>Small-scale reclassified from Bucket H (3 fixtures):</p>
+<ul>
+<li><code>st_centroid_polygon</code> — planar centroid sits at exactly
+  <code>(2, 2)</code> for the unit-square test; the spheroidal centroid is
+  <code>(2.00000000000004, 2.00040218892024)</code>.</li>
+<li><code>st_intersection_polygons</code> — planar straight-edge intersection
+  vs spheroidal geodesic-edge intersection (bulges by ~1.2e-3
+  degrees).</li>
+<li>
+<p><code>st_dwithin_no</code> — planar Euclidean distance over the
+  <code>(0, 0) ↔ (0, 90)</code> pair is 90 coordinate units where the
+  spheroidal distance is ~10⁷ metres; the 100-metre threshold
+  falls on the opposite side of each.</p>
+</li>
+<li>
+<p><strong>Root cause</strong>: BigQuery's GEOGRAPHY is spheroidal (WGS-84
+  ellipsoid); DuckDB-spatial is planar (Cartesian). At continental
+  scales the numeric results diverge by 0.1–10% depending on
+  geometry; at smaller scales the divergence shows up in <em>derived</em>
+  shape outputs (centroid offset, intersection bulge, distance
+  threshold flip).</p>
+</li>
+<li>
+<p><strong>Closure</strong>: would require shipping s2geometry or shapely +
+  projection code. Permanently out of scope for v1.0
+  (see <a href="../out-of-scope/#spheroidal-geometry-on-geography"><code>out-of-scope.md#spheroidal-geometry-on-geography</code></a>).</p>
+</li>
+</ul>
+<h2 id="2-locked-v10-exclusions-out-of-scopemd">2. Locked v1.0 exclusions (<code>out-of-scope.md</code>)<a class="headerlink" href="#2-locked-v10-exclusions-out-of-scopemd" title="Permanent link">&para;</a></h2>
+<p>These are explicitly <em>not</em> implemented and not planned for v1.0.
+Each has a documented rationale and (where applicable) a
+documented workaround.</p>
+<table>
+<thead>
+<tr>
+<th>Feature</th>
+<th>Reason</th>
+<th>Workaround</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>BigQuery ML</strong> (<code>CREATE MODEL</code>, <code>ML.PREDICT</code>, <code>ML.EVALUATE</code>, <code>ML.FORECAST</code>, <code>ML.GENERATE_*</code>, all model types)</td>
+<td>Comparable in size to the rest of the emulator. See <a href="../../adr/0012-bqml-out-of-scope/">ADR 0012</a>. Only Models <em>resource CRUD</em> (metadata) is supported.</td>
+<td>Run ML training/inference outside the emulator.</td>
+</tr>
+<tr>
+<td><strong>BI Engine</strong></td>
+<td>Performance optimisation with no observable semantic effect; irrelevant for a local single-process emulator.</td>
+<td>N/A — queries return the same results, just without the in-memory acceleration tier.</td>
+</tr>
+<tr>
+<td><strong>Reservations / assignments / capacity commitments</strong></td>
+<td>Billing-plane concepts; emulator has no billing.</td>
+<td>N/A.</td>
+</tr>
+<tr>
+<td><strong>Slot and byte-billing simulation</strong></td>
+<td>No local analog.</td>
+<td><code>dryRun</code> requests still return a best-effort <code>totalBytesProcessed</code> estimate from catalog statistics.</td>
+</tr>
+<tr>
+<td><strong>Data Transfer Service</strong></td>
+<td>Dozens of separate connector integrations.</td>
+<td>Use external schedulers.</td>
+</tr>
+<tr>
+<td><strong>Scheduled queries</strong></td>
+<td>Scheduling plane, not SQL semantics.</td>
+<td>Use local cron / CI scheduler against the emulator.</td>
+</tr>
+<tr>
+<td><strong>Cloud Logging / Cloud Monitoring integration</strong></td>
+<td>Emulator exposes its own Prometheus + OpenTelemetry.</td>
+<td>Wire those to your own observability stack.</td>
+</tr>
+<tr>
+<td><strong>Cross-region replication</strong></td>
+<td>No geographic model.</td>
+<td>N/A.</td>
+</tr>
+<tr>
+<td><strong>IAM enforcement</strong></td>
+<td>Emulator is an integration-test target, not an authorisation gateway. Policies are <em>stored and returned</em> via REST so client code that round-trips them works; they are <em>not enforced</em>. Row-access policies, by contrast, ARE enforced.</td>
+<td>Test enforcement against real BigQuery in a separate stage.</td>
+</tr>
+<tr>
+<td><strong>Durable Storage Write API stream state</strong></td>
+<td>Streams are in-memory only. Restarting the emulator drops in-flight PENDING/BUFFERED rows. See <a href="../../adr/0013-write-api-strategies/">ADR 0013</a>.</td>
+<td>Retry-with-offset on COMMITTED streams within a single process lifetime.</td>
+</tr>
+<tr>
+<td><strong>Storage Write API <code>updated_schema</code> propagation</strong></td>
+<td>Emulator doesn't yet support ALTER TABLE on active tables across concurrent writers.</td>
+<td>Use writer-supplied <code>writer_schema</code> as authoritative.</td>
+</tr>
+<tr>
+<td><strong>Storage Write API <code>trace_id</code> and <code>missing_value_interpretations</code></strong></td>
+<td>Diagnostic-only fields; no row-persistence effect.</td>
+<td>N/A. Could be revisited if community asks.</td>
+</tr>
+<tr>
+<td><strong>Online backup of a running emulator</strong></td>
+<td>Requires WAL-aware filesystem or a write surface on the admin router. Both are larger than the v1.0 charter. See <a href="../../adr/0020-admin-import-export/">ADR 0020</a>.</td>
+<td>Run on a CoW filesystem (btrfs/ZFS/Docker volume snapshot) and snapshot the volume; or stop → backup → restore.</td>
+</tr>
+<tr>
+<td><strong><code>PersistenceMode.IMPORT</code> enum value</strong></td>
+<td>Live schema sync would double the credential surface and add an ongoing dependency on the real BigQuery REST API — incompatible with offline test environments.</td>
+<td>One-shot <code>bqemulator import --from-project=…</code> then <code>persistence_mode=PERSISTENT</code>.</td>
+</tr>
+<tr>
+<td><strong><code>RANGE_SESSIONIZE</code></strong> (♻️ reconsidered — scheduled for v1.0 closure)</td>
+<td>TVF that rewrites a FROM-clause table reference; the emulator's rewriter pipeline operated on expressions until the Bucket J closure expanded the rewriter machinery. With that machinery in place the closure is bounded; resume prompt at <a href="https://github.com/jjviscomi/bqemulator/blob/main/.resume-prompt-range-sessionize.md"><code>.resume-prompt-range-sessionize.md</code></a>.</td>
+<td>Express sessionisation with <code>LAG()</code> + running sum of session-boundary indicators (full snippet in <code>out-of-scope.md</code>). Replaced by direct support when the scope-expansion lands.</td>
+</tr>
+<tr>
+<td><strong>BIGNUMERIC literals with &gt; 28 integer digits</strong> (added from Bucket I closure)</td>
+<td>DuckDB's widest <code>DECIMAL</code> is <code>DECIMAL(38, s)</code> — 38 total digits, where BigQuery's BIGNUMERIC holds 38 integer + 38 fractional. Matching the full range would require bundling a wide-decimal library or replacing DuckDB.</td>
+<td>Stay within DuckDB's <code>DECIMAL(38, s)</code> range. The <code>standard_functions/bound_bignumeric_max</code> conformance fixture is the only entry that exercises this corner.</td>
+</tr>
+<tr>
+<td><strong>Spheroidal geometry on GEOGRAPHY</strong></td>
+<td>DuckDB-spatial is planar. Spheroidal correctness would require s2geometry or shapely + projection code.</td>
+<td>Validate spatial <em>shape</em> in CI; validate spatial <em>correctness</em> against real BQ in a separate stage.</td>
+</tr>
+</tbody>
+</table>
+<h2 id="3-conformance-coverage-gaps-works-but-not-in-the-corpus">3. Conformance-coverage gaps (works, but not in the corpus)<a class="headerlink" href="#3-conformance-coverage-gaps-works-but-not-in-the-corpus" title="Permanent link">&para;</a></h2>
+<p>The following emulator surfaces work — exercised by unit /
+property / integration / E2E tiers — but the conformance corpus
+does not yet test them. This is not "the emulator doesn't support
+it"; this is "we don't have a recorded-against-real-BQ baseline
+for it". Adding these would extend the corpus beyond pure SQL.</p>
+<table>
+<thead>
+<tr>
+<th>Surface</th>
+<th>Where it's tested today</th>
+<th>Why not in conformance</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>JS UDFs</strong> (<code>CREATE TEMP FUNCTION... LANGUAGE js</code>)</td>
+<td>Unit, integration (<code>tests/integration/test_udf*.py</code>)</td>
+<td>Gated on <code>[udf-js]</code> extra (<code>mini-racer</code>); deterministic enough to record but no fixtures yet authored.</td>
+</tr>
+<tr>
+<td><strong>TVFs</strong> (table-valued functions)</td>
+<td>Unit, integration</td>
+<td>No fixtures authored yet.</td>
+</tr>
+<tr>
+<td><strong>Storage Read API</strong> (gRPC <code>BigQueryRead</code>)</td>
+<td>Integration, E2E (<code>test_storage_read_*</code>)</td>
+<td>Non-SQL surface; conformance is the SQL tier.</td>
+</tr>
+<tr>
+<td><strong>Storage Write API</strong> (gRPC <code>BigQueryWrite</code>, 4 stream types)</td>
+<td>Integration, E2E (<code>test_storage_write_*</code>)</td>
+<td>Non-SQL surface.</td>
+</tr>
+<tr>
+<td><strong>Load jobs</strong> (CSV/NDJSON/Parquet → table)</td>
+<td>Integration, E2E</td>
+<td>Non-SQL surface; not deterministic across CSV/JSON parser variations.</td>
+</tr>
+<tr>
+<td><strong>Extract jobs</strong> (table → CSV/JSON/Parquet)</td>
+<td>Integration, E2E</td>
+<td>Same — non-SQL surface.</td>
+</tr>
+<tr>
+<td><strong>Copy jobs</strong> (INSERT INTO target SELECT FROM source)</td>
+<td>Integration</td>
+<td>Could be added; haven't been.</td>
+</tr>
+<tr>
+<td><strong><code>tabledata.insertAll</code></strong> (streaming inserts)</td>
+<td>Integration, E2E</td>
+<td>Non-SQL HTTP endpoint.</td>
+</tr>
+<tr>
+<td><strong>Row-access-policy enforcement</strong></td>
+<td>Integration (<code>tests/integration/test_row_access_*</code>)</td>
+<td>RAP creation is <code>INSERT INTO INFORMATION_SCHEMA</code> style metadata — doesn't have a clean conformance shape against real BQ without an org-level setup.</td>
+</tr>
+<tr>
+<td><strong>Authorized-view delegation</strong></td>
+<td>Integration</td>
+<td>Same — metadata-bound.</td>
+</tr>
+<tr>
+<td><strong>Time-travel</strong> (<code>FOR SYSTEM_TIME AS OF...</code>)</td>
+<td>Integration (<code>tests/integration/test_time_travel.py</code>)</td>
+<td>Deliberately excluded by <a href="../../adr/0022-conformance-corpus-design/">ADR 0022 §1.2</a> — non-deterministic baselines.</td>
+</tr>
+<tr>
+<td><strong>MV refresh</strong></td>
+<td>Integration, chaos</td>
+<td>Multi-step + time-dependent.</td>
+</tr>
+<tr>
+<td><strong>BEGIN/COMMIT/ROLLBACK transactions</strong></td>
+<td>Integration</td>
+<td>Few fixtures authored; multi-statement edge cases.</td>
+</tr>
+<tr>
+<td><strong>Session variables (<code>SET...</code>)</strong></td>
+<td>Integration</td>
+<td>Session state — non-replayable.</td>
+</tr>
+<tr>
+<td><strong><code>CREATE PROCEDURE</code></strong></td>
+<td>Integration</td>
+<td>Larger scripting surface; underrepresented in corpus.</td>
+</tr>
+<tr>
+<td><strong>Query parameters</strong> (positional <code>?</code> / named <code>@p</code>)</td>
+<td>Integration</td>
+<td>Conformance currently submits queries as plain strings; would need parameter-bound fixtures.</td>
+</tr>
+<tr>
+<td><strong><code>dryRun</code> cost estimation</strong></td>
+<td>Integration</td>
+<td>Best-effort estimate diverges from real BQ by design.</td>
+</tr>
+<tr>
+<td><strong>Job lifecycle</strong> (cancel, list, get)</td>
+<td>Integration, E2E</td>
+<td>Non-SQL HTTP endpoints.</td>
+</tr>
+<tr>
+<td><strong>Query result pagination</strong></td>
+<td>Integration, E2E</td>
+<td>Non-SQL HTTP endpoint.</td>
+</tr>
+<tr>
+<td><strong>Error-message-shape parity</strong></td>
+<td>✅ <strong>Conformance (via P3.a)</strong></td>
+<td>Conformance now compares BigQuery's exact <code>reason</code> / <code>location</code> / <code>http_status</code> / <code>message</code> for fixtures with an <code>error</code> envelope. ADR 0022 §3 <code>Error parity</code> documents the contract; 20 error-shape fixtures recorded against real BigQuery; emulator-side error renderer rewritten (new <code>jobs/error_mapper.py</code>) to match BQ's wire format. All 20 fixtures pass with zero divergences pinned.</td>
+</tr>
+</tbody>
+</table>
+<h2 id="4-bottom-line">4. Bottom line<a class="headerlink" href="#4-bottom-line" title="Permanent link">&para;</a></h2>
+<table>
+<thead>
+<tr>
+<th>Question</th>
+<th>Answer</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Does the emulator pass a recorded BigQuery baseline on every fixture we expect it to match?</td>
+<td><strong>Yes — 655 / 655 (100%)</strong> of non-divergent fixtures pass (was 442/442 at slice-2 close; +24 from Bucket A, +8 from Bucket C, +4 from Bucket D, and +1 from Bucket E, all; +3 from Bucket F, +43 from Bucket J, +34 from Bucket B, and +21 from Bucket G; +43 from Bucket I, +7 from Bucket H, +1 from scope-expansion #18 GeoJSON, +1 from scope-expansion #17 strict div/0, +3 from scope-expansion #15 RANGE_SESSIONIZE — three new fixtures recorded — and <strong>+20 from P3.a error-message-shape parity</strong> — all).</td>
+</tr>
+<tr>
+<td>How many divergences are documented?</td>
+<td><strong>9 fixtures total</strong> — 8 spheroidal-vs-planar from ADR 0019 (5 continental + 3 small-scale reclassified from Bucket H) + 1 Bucket I out-of-scope entry (<code>bound_bignumeric_max</code> for DuckDB's <code>DECIMAL(38)</code> cap, pinned in <code>out-of-scope.md</code>). Each entry is rooted in an ADR-anchored rationale.</td>
+</tr>
+<tr>
+<td>How many features are <em>permanently</em> excluded from v1.0?</td>
+<td><strong>16</strong> locked exclusions in <code>out-of-scope.md</code> (was 17 at the Bucket I close; the same-day scope-expansion #15 closure of <code>RANGE_SESSIONIZE</code> brought it to 16. The short-lived strict div/0 entry was added by the Bucket I closure and removed the same day by scope-expansion #17; the short-lived GeoJSON output formatting entry was added by the Bucket H closure and removed the same day by scope-expansion #18, so both netted zero).</td>
+</tr>
+<tr>
+<td>How many divergences have a clear closure path?</td>
+<td><strong>0 of 9</strong> — all 9 remaining divergences are permanent v1.0 entries (8 ADR 0019 spheroidal + 1 BIGNUMERIC out-of-scope).</td>
+</tr>
+<tr>
+<td>Are there <em>undocumented</em> gaps?</td>
+<td>The conformance corpus surfaces what it can see — it tests 1018 distinct PASS fixtures (985 SQL + 28 HTTP + 20 gRPC - 15 XFAILs = 1018) plus 15 documented divergences across the 1033-fixture corpus. Untested-in-conformance surfaces (Section 3) work in the emulator and pass other test tiers; they have not been recorded against real BigQuery, so subtle wire-format or value drift in those surfaces would not be caught by conformance today.</td>
+</tr>
+</tbody>
+</table>
+<p>The corpus and this gap analysis are <em>living documents</em>: future
+slices close buckets, remove entries from <code>divergences.py</code>, and
+shrink ADR 0023. All ten ADR 0023 buckets (A–J) are now closed;
+the residual <strong>15 entries</strong> are a stable mix of permanent design
+divergences — 11 ADR 0019 spheroidal, 2 ADR 0024 HLL++, 1 IAM-
+fundamental, 1 BIGNUMERIC &gt; 28 digits. No closure-eligible
+divergence remains for v1.0.</p>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+  <script>var tabs=__md_get("__tabs");if(Array.isArray(tabs))e:for(var set of document.querySelectorAll(".tabbed-set")){var labels=set.querySelector(".tabbed-labels");for(var tab of tabs)for(var label of labels.getElementsByTagName("label"))if(label.innerText.trim()===tab){var input=document.getElementById(label.htmlFor);input.checked=!0;continue e}}</script>
+
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+    <div class="md-copyright__highlight">
+      Apache 2.0
+    </div>
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["content.action.edit", "content.action.view", "content.code.copy", "content.code.annotate", "content.tabs.link", "navigation.indexes", "navigation.instant", "navigation.sections", "navigation.tabs", "navigation.top", "navigation.tracking", "search.highlight", "search.share", "search.suggest", "toc.follow"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": {"default": "latest", "provider": "mike"}}</script>
+    
+    
+      <script src="../../assets/javascripts/bundle.79ae519e.min.js"></script>
+      
+    
+  </body>
+</html>

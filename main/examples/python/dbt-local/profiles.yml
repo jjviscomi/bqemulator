@@ -1,0 +1,12 @@
+bqemulator_dbt_local:
+  target: emulator
+  outputs:
+    emulator:
+      type: bigquery
+      method: oauth
+      project: "{{ env_var('BQ_PROJECT', 'bqemu-demo') }}"
+      dataset: dbt_local
+      location: US
+      threads: 1
+      timeout_seconds: 60
+      priority: interactive
