@@ -28,21 +28,31 @@ All three scripts emit distinct exit codes per failure mode so
 ## Quick reference
 
 ```bash
-# 1. Preview the release (no files touched, no git state changed):
+# 1. Branch off main and stage the README "Project status" flip
+#    (rc → final, ⚪ → ✅ on PyPI + GHCR rows) as the FIRST commit:
+git checkout -b release/v0.2.0
+$EDITOR README.md
+git add README.md && git commit -m 'docs(release): flip README to v0.2.0 final'
+
+# 2. Preview the release (no files touched, no git state changed):
 python scripts/release.py --dry-run --next minor
 # or
 make release-dry-run NEXT=minor
 
-# 2. Apply the release (runs make verify, mutates files, commits, tags):
+# 3. Apply the release (runs make verify, mutates files, commits, tags):
 python scripts/release.py --apply --next minor
 # or
 make release NEXT=minor
 
-# 3. Inspect + push:
-git show v0.2.0
-git push origin main v0.2.0
+# 4. Push branch + open the PR; CI gates the release commit.
 
-# 4. .github/workflows/release.yml fires on the tag push.
+# 5. After squash-merge, reconcile the tag onto the merged commit:
+git checkout main && git pull --ff-only
+git tag -d v0.2.0
+git tag -a v0.2.0 -m v0.2.0
+git push origin v0.2.0
+
+# 6. .github/workflows/release.yml fires on the tag push.
 ```
 
 The orchestrator's hard preconditions (every one of which aborts with
@@ -85,7 +95,18 @@ a dedicated exit code):
    Treat the doc sweep as part of the release contract, not as an
    afterthought.
 
-3. **Branch off `main`.** Conventional name: `release/vX.Y.Z`.
+3. **Branch off `main` and stage the README flip.** Conventional
+   branch name: `release/vX.Y.Z`. The **first commit on this
+   branch** flips the README "Project status" wording from
+   `vX.Y.Z-rc` / "staged on `main`" prose to factual
+   "at **vX.Y.Z** — the initial production-stable release"
+   wording, and promotes the ⚪ PyPI + GHCR maturity rows to ✅
+   with the actual `pip install` / `docker pull` commands. The
+   bump commit created by the orchestrator (step 6) stacks on
+   top, and squash-merge collapses both into a single commit on
+   `main`. See the [README "Project status" flip](#readme-project-status-flip-folded-into-the-release-pr)
+   subsection at the bottom of this section for the
+   chicken-and-egg rationale.
 
 4. **Dry-run the release locally.**
 
@@ -130,12 +151,32 @@ a dedicated exit code):
    The full gate chain must be green. CODEOWNERS approval rules apply.
 
 8. **Merge to `main`.** Squash-merge per the repo convention.
+   **Note:** squash-merge produces a new commit SHA on `main`
+   that subsumes every commit on the release branch — including
+   the orchestrator's `release: bump to vX.Y.Z` commit. The
+   annotated tag created in step 6 still points to the
+   unmerged release-branch commit, which is no longer reachable
+   from `main` after the merge. Step 9 reconciles the tag.
 
-9. **Push the tag.**
+9. **Reconcile and push the tag.** Re-create the tag on the
+   merged commit before publishing it, otherwise `release.yml`
+   builds the wheel from a commit that isn't on `main`:
 
     ```bash
-    git push origin main vX.Y.Z
+    git checkout main
+    git pull --ff-only origin main
+    git tag -d vX.Y.Z              # remove the orphaned local tag
+    git tag -a vX.Y.Z -m vX.Y.Z    # re-annotate on the squash-merge commit
+    git push origin vX.Y.Z          # publish the tag
     ```
+
+    The orchestrator created the tag as `git tag -a vX.Y.Z -m vX.Y.Z`
+    (annotation is intentionally just the tag name — `release.yml`
+    pulls release-note content from `CHANGELOG.md` separately), so
+    re-creating it is byte-equivalent. When
+    `git config commit.gpgsign true` is set globally, the
+    re-created tag is signed automatically; the orchestrator
+    does not force `-s`.
 
     Pushing the tag fires
     [`.github/workflows/release.yml`](https://github.com/jjviscomi/bqemulator/blob/main/.github/workflows/release.yml),
@@ -167,10 +208,15 @@ release shipped a chicken-and-egg gap: the release commit
 referenced a `vX.Y.Z-rc` README, and a follow-up PR had to land
 with the same release notes to flip ⚪ → ✅. v1.0.0 collapsed the
 two into a single PR; the convention since is to do the README
-flip **before** running the orchestrator, so the bump commit and
-the wording flip land in the same merge:
+flip **before** running the orchestrator (step 3), so the bump
+commit and the wording flip land in the same merge.
 
-| File | What to flip (in the release branch, before `make release`) |
+The actionable list of strings to flip is the inverse of step 2's
+pre-release sweep — the entries below can only be true after the
+publish workflows finish, but we now write them in the release
+commit anyway:
+
+| File | What to flip (release branch, first commit, before `make release`) |
 |---|---|
 | [`README.md`](https://github.com/jjviscomi/bqemulator/blob/main/README.md) — "Project status" header | `vX.Y.Z-rc` / "staged on `main`" prose → factual "at **vX.Y.Z** — the initial production-stable release" wording. |
 | [`README.md`](https://github.com/jjviscomi/bqemulator/blob/main/README.md) — "Maturity signals" rows | ⚪ "PyPI publish — wired and waiting on the tag push" → ✅ with the actual `pip install` / `docker pull` command. |
@@ -178,7 +224,7 @@ the wording flip land in the same merge:
 The trade-off is explicit: the README now claims the artefacts
 exist a few minutes **before** the publish workflows finish.
 That window closes within roughly 5–10 min of pushing the tag
-(release.yml + docker.yml end-to-end). The convention is to
+(`release.yml` + `docker.yml` end-to-end). The convention is to
 verify the artefacts (`pip install`, `docker pull`, cosign
 verification) right after the tag push — if a workflow fails,
 the next commit on `main` is the README revert, not a separate
