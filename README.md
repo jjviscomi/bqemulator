@@ -10,16 +10,16 @@ DuckDB-backed, SQLGlot-powered, and tested against the real service. Point the o
 [![E2E](https://github.com/jjviscomi/bqemulator/actions/workflows/e2e.yml/badge.svg)](https://github.com/jjviscomi/bqemulator/actions/workflows/e2e.yml)
 [![Conformance](https://github.com/jjviscomi/bqemulator/actions/workflows/conformance.yml/badge.svg)](https://github.com/jjviscomi/bqemulator/actions/workflows/conformance.yml)
 [![Docs](https://github.com/jjviscomi/bqemulator/actions/workflows/docs.yml/badge.svg)](https://jjviscomi.github.io/bqemulator/)
-[![PyPI](https://img.shields.io/pypi/v/bqemulator.svg)](https://pypi.org/project/bqemulator/)
-[![Python](https://img.shields.io/pypi/pyversions/bqemulator.svg)](https://pypi.org/project/bqemulator/)
+[![PyPI](https://img.shields.io/pypi/v/bqemulator.svg?cacheSeconds=300)](https://pypi.org/project/bqemulator/)
+[![Python](https://img.shields.io/pypi/pyversions/bqemulator.svg?cacheSeconds=300)](https://pypi.org/project/bqemulator/)
 [![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](LICENSE)
 [![Ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json)](https://github.com/astral-sh/ruff)
 [![Checked with mypy](https://www.mypy-lang.org/static/mypy_badge.svg)](https://mypy-lang.org/)
 
 [**Documentation**](https://jjviscomi.github.io/bqemulator/)
- · [**Quickstart**](https://jjviscomi.github.io/bqemulator/getting-started/)
+ · [**Quickstart**](https://jjviscomi.github.io/bqemulator/latest/getting-started/)
  · [**Examples**](docs/examples/)
- · [**Compatibility matrix**](https://jjviscomi.github.io/bqemulator/reference/compatibility-matrix/)
+ · [**Compatibility matrix**](https://jjviscomi.github.io/bqemulator/latest/reference/compatibility-matrix/)
  · [**Changelog**](CHANGELOG.md)
 
 </div>
@@ -73,7 +73,7 @@ Docker:
 docker run --rm -p 9050:9050 -p 9060:9060 ghcr.io/jjviscomi/bqemulator:latest
 ```
 
-Both `pip` and the published image bundle the same emulator. The image exposes REST on `9050` and gRPC on `9060` by default — see [configuration reference](https://jjviscomi.github.io/bqemulator/reference/configuration/) to change them.
+Both `pip` and the published image bundle the same emulator. The image exposes REST on `9050` and gRPC on `9060` by default — see [configuration reference](https://jjviscomi.github.io/bqemulator/latest/reference/configuration/) to change them.
 
 > **Windows users:** install [Docker Desktop for Windows](https://www.docker.com/products/docker-desktop/) with the WSL2 backend (default since Docker Desktop 4.x); the published Linux image runs natively under WSL2 with no Windows-specific configuration. Native Windows-container variants of the image are explicitly out of scope for v1.0 — see [docs/reference/out-of-scope.md#native-windows-containers](docs/reference/out-of-scope.md) for the rationale.
 
@@ -123,7 +123,7 @@ def test_orders_table(bqemu_client: bigquery.Client) -> None:
     # ... your test ...
 ```
 
-The `bqemu_server` fixture is session-scoped (one emulator per test session); the `bqemu_client` fixture is function-scoped and returns a pre-configured `bigquery.Client`. See the [pytest fixture guide](https://jjviscomi.github.io/bqemulator/quickstart/pytest/) and the [`python/pytest-integration`](docs/examples/python/pytest-integration/) example for a complete Flask app with integration tests.
+The `bqemu_server` fixture is session-scoped (one emulator per test session); the `bqemu_client` fixture is function-scoped and returns a pre-configured `bigquery.Client`. See the [pytest fixture guide](https://jjviscomi.github.io/bqemulator/latest/quickstart/pytest/) and the [`python/pytest-integration`](docs/examples/python/pytest-integration/) example for a complete Flask app with integration tests.
 
 ### Node.js
 
@@ -139,7 +139,7 @@ const bq = new BigQuery({
 await bq.createDataset('sales');
 ```
 
-See the [Node.js quickstart](https://jjviscomi.github.io/bqemulator/quickstart/nodejs/) and the [`nodejs/nestjs-app`](docs/examples/nodejs/nestjs-app/) example.
+See the [Node.js quickstart](https://jjviscomi.github.io/bqemulator/latest/quickstart/nodejs/) and the [`nodejs/nestjs-app`](docs/examples/nodejs/nestjs-app/) example.
 
 ### Go
 
@@ -151,7 +151,7 @@ client, _ := bigquery.NewClient(
 )
 ```
 
-See the [Go quickstart](https://jjviscomi.github.io/bqemulator/quickstart/go/) and the [`go/beam-pipeline`](docs/examples/go/beam-pipeline/) example.
+See the [Go quickstart](https://jjviscomi.github.io/bqemulator/latest/quickstart/go/) and the [`go/beam-pipeline`](docs/examples/go/beam-pipeline/) example.
 
 ### Java
 
@@ -164,7 +164,7 @@ BigQuery bq = BigQueryOptions.newBuilder()
     .getService();
 ```
 
-See the [Java quickstart](https://jjviscomi.github.io/bqemulator/quickstart/java/) and the [`java/spring-boot`](docs/examples/java/spring-boot/) example.
+See the [Java quickstart](https://jjviscomi.github.io/bqemulator/latest/quickstart/java/) and the [`java/spring-boot`](docs/examples/java/spring-boot/) example.
 
 ### `bq` CLI
 
@@ -174,7 +174,7 @@ bq --api=http://localhost:9050 \
    query --use_legacy_sql=false 'SELECT 1 AS n'
 ```
 
-See the [`bq` CLI guide](https://jjviscomi.github.io/bqemulator/guides/using-bq-cli/) and the [`bq-cli-quickstart`](docs/examples/bq-cli-quickstart/) example.
+See the [`bq` CLI guide](https://jjviscomi.github.io/bqemulator/latest/guides/using-bq-cli/) and the [`bq-cli-quickstart`](docs/examples/bq-cli-quickstart/) example.
 
 ### docker-compose
 
@@ -202,7 +202,7 @@ See the [`docker-compose/full-stack`](docs/examples/docker-compose/full-stack/) 
 
 `bqemulator` is at **v1.0.0** — the initial production-stable
 release. SemVer applies: breaking changes ship only in MAJOR,
-deprecations live ≥2 MINOR or 6 months. The [compatibility matrix](https://jjviscomi.github.io/bqemulator/reference/compatibility-matrix/) is auto-generated from the conformance corpus on every CI run; the [conformance coverage matrix](https://jjviscomi.github.io/bqemulator/reference/conformance-coverage-matrix/) breaks down support by surface item.
+deprecations live ≥2 MINOR or 6 months. The [compatibility matrix](https://jjviscomi.github.io/bqemulator/latest/reference/compatibility-matrix/) is auto-generated from the conformance corpus on every CI run; the [conformance coverage matrix](https://jjviscomi.github.io/bqemulator/latest/reference/conformance-coverage-matrix/) breaks down support by surface item.
 
 | Surface | Status |
 |---|---|
@@ -240,12 +240,12 @@ We follow a **no-deferral principle**: features either ship complete or are excl
 
 The full documentation lives at **[jjviscomi.github.io/bqemulator](https://jjviscomi.github.io/bqemulator/)**. Key entry points:
 
-- [**Getting started**](https://jjviscomi.github.io/bqemulator/getting-started/) — your first ten minutes.
-- [**Per-language quickstarts**](https://jjviscomi.github.io/bqemulator/quickstart/python/) — Python · Node.js · Go · Java · pytest · docker-compose · Testcontainers.
-- [**Guides**](https://jjviscomi.github.io/bqemulator/guides/loading-data/) — loading data, querying, streaming inserts, Storage API, UDFs, scripting, partitioning, time travel, materialized views, row access policies, dbt, Airflow, Spark, the `bq` CLI, observability, and more.
-- [**Reference**](https://jjviscomi.github.io/bqemulator/reference/configuration/) — configuration, CLI, REST coverage, SQL function mapping, compatibility matrix, conformance coverage matrix, out-of-scope catalogue, troubleshooting.
-- [**Architecture**](https://jjviscomi.github.io/bqemulator/architecture/overview/) — hexagonal architecture, storage model, SQL translation, jobs lifecycle, Storage Read/Write API design, scripting, UDFs, versioning, row access, specialized types, observability, testing strategy, conformance tier.
-- [**ADRs**](https://jjviscomi.github.io/bqemulator/adr/0001-use-duckdb/) — 32 Architecture Decision Records documenting every non-obvious design choice.
+- [**Getting started**](https://jjviscomi.github.io/bqemulator/latest/getting-started/) — your first ten minutes.
+- [**Per-language quickstarts**](https://jjviscomi.github.io/bqemulator/latest/quickstart/python/) — Python · Node.js · Go · Java · pytest · docker-compose · Testcontainers.
+- [**Guides**](https://jjviscomi.github.io/bqemulator/latest/guides/loading-data/) — loading data, querying, streaming inserts, Storage API, UDFs, scripting, partitioning, time travel, materialized views, row access policies, dbt, Airflow, Spark, the `bq` CLI, observability, and more.
+- [**Reference**](https://jjviscomi.github.io/bqemulator/latest/reference/configuration/) — configuration, CLI, REST coverage, SQL function mapping, compatibility matrix, conformance coverage matrix, out-of-scope catalogue, troubleshooting.
+- [**Architecture**](https://jjviscomi.github.io/bqemulator/latest/architecture/overview/) — hexagonal architecture, storage model, SQL translation, jobs lifecycle, Storage Read/Write API design, scripting, UDFs, versioning, row access, specialized types, observability, testing strategy, conformance tier.
+- [**ADRs**](https://jjviscomi.github.io/bqemulator/latest/adr/0001-use-duckdb/) — 32 Architecture Decision Records documenting every non-obvious design choice.
 
 ## Examples
 
