@@ -117,7 +117,10 @@ def _rewrite_table_node(table_node: object, project_id: str) -> bool:
     # the TVF flattening path.
     if not table_name and not is_tvf and (catalog or db):
         return _rewrite_schema_only_ref(
-            table_node, project_id, catalog, db,
+            table_node,
+            project_id,
+            catalog,
+            db,
         )
     if catalog:
         _rewrite_three_part(table_node, this_node, catalog, db, table_name, is_tvf=is_tvf)
