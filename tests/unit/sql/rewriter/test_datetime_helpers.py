@@ -230,9 +230,7 @@ class TestNoModificationPath:
 class TestAlreadyCastAsDate:
     """A pre-existing ``CAST(DATE_ADD(...) AS DATE)`` is not double-wrapped."""
 
-    def test_hand_written_cast_skipped(
-        self, t: SQLTranslator, con: duckdb.DuckDBPyConnection
-    ) -> None:
+    def test_hand_written_cast_skipped(self) -> None:
         """Hand-written CAST(DATE_ADD(...) AS DATE) is left as a single cast."""
         sql = "SELECT CAST(DATE_ADD(DATE '2024-01-15', INTERVAL 7 DAY) AS DATE) AS d"
         out = rewrite_datetime_helpers(sql)
