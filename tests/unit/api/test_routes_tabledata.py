@@ -140,9 +140,7 @@ class TestListPagination:
         c.post(
             "/bigquery/v2/projects/p/datasets/td/tables/items/insertAll",
             json={
-                "rows": [
-                    {"json": {"id": i, "label": f"r{i}"}} for i in range(5)
-                ],
+                "rows": [{"json": {"id": i, "label": f"r{i}"}} for i in range(5)],
             },
         )
         # First page: maxResults=2 → expect pageToken to be set in response.
@@ -434,9 +432,7 @@ class TestSchemaBuilderBranches:
             name="addr",
             type="RECORD",
             mode="NULLABLE",
-            fields=(
-                TableFieldSchema(name="loc", type="GEOGRAPHY", mode="NULLABLE"),
-            ),
+            fields=(TableFieldSchema(name="loc", type="GEOGRAPHY", mode="NULLABLE"),),
         )
         assert _has_geography_column([nested]) is True
 

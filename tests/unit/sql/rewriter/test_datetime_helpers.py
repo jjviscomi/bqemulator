@@ -262,10 +262,7 @@ class TestTimestampMicrosMillisMixed:
         # TIMESTAMP_MICROS triggers the rewriter pass; TIMESTAMP_SECONDS
         # produces a UnixToTime node with scale=None which falls to
         # the line-144 continue branch.
-        sql = (
-            "SELECT TIMESTAMP_MICROS(1705320000000000) AS m, "
-            "TIMESTAMP_SECONDS(1705320000) AS s"
-        )
+        sql = "SELECT TIMESTAMP_MICROS(1705320000000000) AS m, TIMESTAMP_SECONDS(1705320000) AS s"
         result = t.translate(sql)
         assert isinstance(result, Ok)
         # Both columns should land as TIMESTAMPTZ — the MICROS one via
@@ -322,4 +319,3 @@ class TestNameHelper:
     def test_var_returns_name(self) -> None:
         """A Var node falls through to the ``node.name`` branch."""
         assert _name(exp.Var(this="WEEK")) == "WEEK"
-
