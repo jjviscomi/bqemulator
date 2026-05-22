@@ -1325,7 +1325,35 @@ async def insert_job(  # noqa: PLR0915 — linear job-type dispatch + async erro
         )
 
     ctx.catalog.upsert_job(job_meta)
+    # Merge any executor-enriched configuration (e.g. the
+    # ``destinationTable`` populated by ``_build_query_configuration``
+    # in ``jobs.executor``) over the request's original config so
+    # client-side fields (``useLegacySql``, ``defaultDataset``, etc.)
+    # survive while the executor's additions still reach the wire.
+    _merge_executor_config(config, job_meta.configuration)
     return _build_job_response(project_id, job_id, job_meta, config)
+
+
+def _merge_executor_config(
+    request_config: dict[str, Any],
+    executor_config: dict[str, Any] | None,
+) -> None:
+    """Overlay executor-set ``configuration`` keys onto the request's config.
+
+    Currently only the ``query.destinationTable`` slot is propagated —
+    the executor sets this for every successful QUERY job so REST
+    clients that fetch the destination metadata post-execution (e.g.
+    dbt-bigquery's ``client.get_table(query_job.destination)``) see a
+    real ref instead of ``None``. Mutates ``request_config`` in place.
+    """
+    if not executor_config:
+        return
+    exec_query = executor_config.get("query") or {}
+    dest = exec_query.get("destinationTable")
+    if not dest:
+        return
+    request_query = request_config.setdefault("query", {})
+    request_query.setdefault("destinationTable", dest)
 
 
 # ---------------------------------------------------------------------------

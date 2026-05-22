@@ -291,11 +291,66 @@ def get_table(
     table_id: str,
     ctx: _Ctx,
 ) -> dict[str, Any]:
-    """Get a table by ID."""
+    """Get a table by ID.
+
+    Includes a fast path for anonymous query-result tables under the
+    reserved ``_bqemu_anonymous`` dataset — these are not registered
+    in the catalog; we synthesise the response from ``JOB_RESULTS``
+    so dbt-bigquery's post-execution
+    ``client.get_table(query_job.destination)`` call has a real
+    ``num_rows`` to read for ``SELECT``-style queries.
+    """
+    if dataset_id == "_bqemu_anonymous" and table_id.startswith("anon"):
+        return _anonymous_result_table_to_rest(project_id, dataset_id, table_id)
     t = ctx.catalog.get_table(project_id, dataset_id, table_id)
     if t is None:
         raise resource_not_found(ResourceRef("table", project_id, dataset_id, table_id))
     return _table_to_rest(t)
+
+
+#: Length of a UUID-4 hex string with hyphens stripped (``32``). Used
+#: by :func:`_anonymous_result_table_to_rest` to decide whether to
+#: re-insert hyphens before looking the job up in ``JOB_RESULTS``.
+_UUID_HEX_LEN = 32
+
+
+def _anonymous_result_table_to_rest(
+    project_id: str,
+    dataset_id: str,
+    table_id: str,
+) -> dict[str, Any]:
+    """Synthesise a table-resource response for an anonymous query result.
+
+    The ``table_id`` carries the job-id with hyphens stripped (see
+    :func:`bqemulator.jobs.executor._build_query_configuration`); we
+    look the rows up directly in
+    :data:`bqemulator.jobs.executor.JOB_RESULTS` (a dict keyed by the
+    original job-id).
+    """
+    from bqemulator.jobs.executor import JOB_RESULTS, JOB_SCHEMAS
+
+    # ``table_id`` is ``anon<job_id with hyphens removed>``; rebuild
+    # the canonical job-id form by inserting hyphens at UUID positions.
+    flat = table_id.removeprefix("anon")
+    job_id = flat
+    if len(flat) == _UUID_HEX_LEN:
+        job_id = f"{flat[0:8]}-{flat[8:12]}-{flat[12:16]}-{flat[16:20]}-{flat[20:32]}"
+
+    arrow_table = JOB_RESULTS.get(job_id)
+    schema_fields = JOB_SCHEMAS.get(job_id) or []
+    num_rows = arrow_table.num_rows if arrow_table is not None else 0
+    return {
+        "kind": "bigquery#table",
+        "id": f"{project_id}:{dataset_id}.{table_id}",
+        "tableReference": {
+            "projectId": project_id,
+            "datasetId": dataset_id,
+            "tableId": table_id,
+        },
+        "type": "TABLE",
+        "numRows": str(num_rows),
+        "schema": {"fields": list(schema_fields)},
+    }
 
 
 @router.patch("/projects/{project_id}/datasets/{dataset_id}/tables/{table_id}")

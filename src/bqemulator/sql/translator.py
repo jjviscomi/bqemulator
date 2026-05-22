@@ -27,6 +27,9 @@ from bqemulator.domain.result import Err, Ok, Result
 from bqemulator.observability.logging_ import get_logger
 from bqemulator.sql.errors import sql_parse_error, sql_unsupported
 from bqemulator.sql.rewriter.aggregate_variants import rewrite_aggregate_variants
+from bqemulator.sql.rewriter.alter_table_set_options import (
+    rewrite_alter_table_set_options,
+)
 from bqemulator.sql.rewriter.collate_specifier import rewrite_collate_specifier
 from bqemulator.sql.rewriter.create_table_schema_ctas import (
     rewrite_create_table_schema_ctas,
@@ -119,6 +122,17 @@ class SQLTranslator:
         for kw in _UNSUPPORTED_KEYWORDS:
             if kw in upper:
                 return Err(sql_unsupported(kw))
+
+        # 1b. ``ALTER TABLE ... SET OPTIONS(...)`` no-op. SQLGlot's
+        #     BigQuery → DuckDB transpile drops the ``OPTIONS(...)``
+        #     clause and emits the truncated ``ALTER TABLE "..." SET``
+        #     which DuckDB rejects with ``syntax error at end of
+        #     input``. dbt-bigquery emits this at the tail of every
+        #     ``dbt seed`` / ``dbt run``. bqemulator doesn't model
+        #     table-level option metadata yet, so collapse to a
+        #     trivially-successful ``SELECT 1`` and let the job
+        #     state-machine report success.
+        bq_sql = rewrite_alter_table_set_options(bq_sql)
 
         # 2-pre-pre. CTAS-with-schema decomposition. BigQuery accepts
         #    ``CREATE [OR REPLACE] TABLE x (schema) AS SELECT …`` in a
