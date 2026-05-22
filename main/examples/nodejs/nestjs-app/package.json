@@ -10,15 +10,15 @@
   },
   "dependencies": {
     "@google-cloud/bigquery": "^7.5.0",
-    "@nestjs/common": "^11.0.0",
-    "@nestjs/core": "^11.1.23",
-    "@nestjs/platform-express": "^11.1.23",
+    "@nestjs/common": "^10.3.0",
+    "@nestjs/core": "^10.3.0",
+    "@nestjs/platform-express": "^10.3.0",
     "google-auth-library": "^9.0.0",
     "reflect-metadata": "^0.2.1",
     "rxjs": "^7.8.1"
   },
   "devDependencies": {
-    "@nestjs/testing": "^11.1.23",
+    "@nestjs/testing": "^10.3.0",
     "@types/jest": "^29.5.11",
     "@types/node": "^20.10.0",
     "@types/supertest": "^6.0.2",
