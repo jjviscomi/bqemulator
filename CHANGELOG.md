@@ -20,23 +20,25 @@ section and adds the release date.
 
 ## [Unreleased]
 
-### Fixed
+### Changed
 
-- **scio example end-to-end Beam BigQueryIO routing** (#17). The
-  ``CustomersPipelineSpec`` only verified container wiring because
-  Beam Java BigQueryIO ignores ``--bigQueryEndpoint`` for its write
-  path — the internal write client always targets
-  ``https://bigquery.googleapis.com/``. Restored the end-to-end
-  assertion by binding the testcontainer on a fixed host port
-  (``9099`` by default, override via ``BQEMU_TEST_HOST_PORT``) and
-  setting ``BIGQUERY_EMULATOR_HOST`` via sbt's
-  ``Test / envVars`` — applied at fork time, so the env var is
-  present on the forked JVM before any BigQuery class loads. The
-  spec now runs ``CustomersPipeline.run`` end-to-end, verifies the 3
-  rows write succeeded, and confirms a read-back via
-  ``jobs.query`` returns ``COUNT(*) = 3``. Bumped
-  ``testcontainers`` 1.19.7 → 1.20.4 in the example's ``build.sbt``
-  for docker-daemon compatibility.
+- **scio example: testcontainers bump + #17 investigation notes.**
+  Bumped ``testcontainers`` 1.19.7 → 1.20.4 in the scio example's
+  ``build.sbt`` — the older docker-java 1.32 client doesn't talk to
+  Docker 27+ (modern Docker Desktop returns ``client version 1.32 is
+  too old``). The end-to-end Beam BigQueryIO routing attempted under
+  issue #17 turned out to be deeper than a single flag/env-var fix
+  — ``--bigQueryEndpoint`` does override the Apiary ``Bigquery``
+  client's ``rootUrl``, but Beam's ``BigQueryIO.Write`` defaults to
+  the ``BATCH_LOADS`` method which stages rows to GCS before
+  invoking a BigQuery LOAD job (no GCS-compatible shim in the
+  emulator), and Beam's auth refresh fires before the redirected
+  HTTP call so ``OAuth2Credentials.refresh()`` 400s against
+  ``oauth2.googleapis.com`` even with
+  ``--gcpCredentialFactoryClass=NoopCredentialFactory``. The
+  ``CustomersPipelineSpec`` stays at the wiring-only smoke for
+  v1.0.1; the full set of constraints is captured in the spec's
+  header comment and tracked on issue #17 for v1.0.2+.
 
 ## [1.0.0] — 2026-05-22
 

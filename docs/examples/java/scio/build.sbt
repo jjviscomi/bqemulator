@@ -35,19 +35,5 @@ lazy val root = (project in file("."))
       "com.fasterxml.jackson.module" %% "jackson-module-scala" % jacksonVersion
     ),
     Test / parallelExecution := false,
-    Test / fork := true,
-    // Beam Java BigQueryIO's write path uses the official Java
-    // ``google-cloud-bigquery`` client internally, which reads
-    // ``BIGQUERY_EMULATOR_HOST`` from the *process* environment when
-    // the client is built. ``System.getenv`` is immutable after JVM
-    // start, so the env var has to be present on the forked test JVM
-    // before it boots — which is exactly what ``Test / envVars``
-    // configures. Pair this with the fixed host port the spec binds
-    // for the container (``BqemuContainer`` in
-    // ``CustomersPipelineSpec``), so the JVM-start env var and the
-    // container's actual listener agree. Override per-developer via
-    // ``BQEMU_TEST_HOST_PORT=NNNN sbt test`` if 9099 is taken.
-    Test / envVars := Map(
-      "BIGQUERY_EMULATOR_HOST" -> s"localhost:${sys.env.getOrElse("BQEMU_TEST_HOST_PORT", "9099")}"
-    )
+    Test / fork := true
   )
