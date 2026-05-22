@@ -23,14 +23,14 @@ Pairs with the [dbt integration guide](../../../guides/dbt-integration.md).
 
 ## Version compatibility
 
-The example pins `dbt-bigquery >=1.9,<1.10`. dbt-bigquery **1.10**
-introduced a DDL-emission regression that produces a malformed
-two-part identifier
-(``CREATE SCHEMA "{project}__{dataset}_{custom_schema}"."" ``) which
-bqemulator's SQLGlot parser rejects. Tracked in
-[#16](https://github.com/jjviscomi/bqemulator/issues/16) — we'll
-drop the 1.10 cap once upstream lands a fix or v1.0.1 patches the
-parser.
+The example tracks `dbt-bigquery >=1.9,<1.11`. Both 1.9 and 1.10
+emit `CREATE SCHEMA \`proj\`.\`ds\`` two-part identifiers; the
+bqemulator table-rewriter collapses those into a single
+`"proj__ds"` schema (matching what every other rewriter path
+emits) so the SQL reaches DuckDB cleanly. Earlier passes mistakenly
+pinned to `<1.10` chasing what looked like a dbt regression — the
+actual cause was bqemulator's rewriter producing `"proj__ds".""`
+with an empty trailing identifier.
 
 ## Layout
 

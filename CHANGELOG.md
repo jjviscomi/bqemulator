@@ -156,13 +156,6 @@ None affect the core emulator surface.
   `python/pyspark-bigquery` example iterates raw responses through
   `pa.ipc.open_stream` as a workaround. Tracked in
   [#15](https://github.com/jjviscomi/bqemulator/issues/15).
-- **dbt-bigquery pinned to `>=1.9,<1.10`** — dbt-bigquery 1.10
-  introduced a DDL-emission regression that produces a malformed
-  two-part identifier
-  (``CREATE SCHEMA "{project}__{dataset}_{custom_schema}".""``) that
-  bqemulator's SQLGlot parser rejects. The `python/dbt-local`
-  example carries the pin and reflects the constraint in its README.
-  Tracked in [#16](https://github.com/jjviscomi/bqemulator/issues/16).
 - **Scio test exercises wiring only** — Beam Java BigQueryIO does
   not honour `--bigQueryEndpoint` for the *write* path (that flag
   only gates internal preflight validators); the Java BQ client

@@ -99,6 +99,26 @@ def _rewrite_table_node(table_node: object, project_id: str) -> bool:
     if db and not is_tvf and not _BQ_DATASET_RE.match(db):
         _raise_invalid_dataset_id(db, table_name)
 
+    # Schema-only references (``CREATE SCHEMA proj.ds`` /
+    # ``DROP SCHEMA proj.ds``) parse as ``Table(catalog=proj, db=ds,
+    # this=Identifier(""))`` in SQLGlot's AST — there is no table
+    # part. Without this short-circuit the three-part rewriter
+    # produces ``"proj__ds".""`` (empty trailing identifier) which
+    # DuckDB rejects with ``zero-length delimited identifier``.
+    # For two-part schema refs (``CREATE SCHEMA ds``) DuckDB's
+    # parser folds the catalog+db into the bare schema slot, and
+    # dbt-bigquery's ``CREATE SCHEMA IF NOT EXISTS \`proj\`.\`ds\``
+    # is the path that surfaces this.
+    #
+    # TVF call-sites also produce an empty ``table_name`` because
+    # ``this`` is an :class:`exp.Anonymous` (function call) rather
+    # than an :class:`exp.Identifier`. Skip the schema-only branch
+    # in that case and let the two/three-part rewriter route through
+    # the TVF flattening path.
+    if not table_name and not is_tvf and (catalog or db):
+        return _rewrite_schema_only_ref(
+            table_node, project_id, catalog, db,
+        )
     if catalog:
         _rewrite_three_part(table_node, this_node, catalog, db, table_name, is_tvf=is_tvf)
         return True
@@ -107,6 +127,34 @@ def _rewrite_table_node(table_node: object, project_id: str) -> bool:
         return True
     # Bare table names are left as-is — they resolve via DuckDB's search_path.
     return False
+
+
+def _rewrite_schema_only_ref(
+    table_node: object,
+    project_id: str,
+    catalog: str,
+    db: str,
+) -> bool:
+    """Rewrite a ``CREATE SCHEMA`` / ``DROP SCHEMA`` two-part target.
+
+    Collapses ``catalog.db`` (or ``project.db`` for two-part shapes)
+    into a single ``"project__dataset"`` identifier with **no**
+    trailing ``.""``. The result is a valid DuckDB schema name that
+    matches what every other rewriter path emits for the same
+    ``(project, dataset)`` pair.
+    """
+    from sqlglot import exp
+
+    assert isinstance(table_node, exp.Table)  # noqa: S101
+    proj = catalog or project_id
+    target_db = db or catalog
+    if not target_db:
+        return False
+    new_schema = f"{proj}__{target_db}"
+    table_node.set("catalog", None)
+    table_node.set("db", None)
+    table_node.set("this", exp.Identifier(this=new_schema, quoted=True))
+    return True
 
 
 def _raise_invalid_dataset_id(dataset_id: str, table_id: str) -> None:

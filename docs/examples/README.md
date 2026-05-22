@@ -16,7 +16,7 @@ not drift.
 | Path | What it demonstrates | Known caveats |
 |---|---|---|
 | [`python/pytest-integration/`](python/pytest-integration/README.md) | Flask app + pytest fixture (`bqemu_client`) | — |
-| [`python/dbt-local/`](python/dbt-local/README.md) | `dbt build` against emulator (seed + model + tests) | Pinned to `dbt-bigquery >=1.9,<1.10` — see [#16](https://github.com/jjviscomi/bqemulator/issues/16) |
+| [`python/dbt-local/`](python/dbt-local/README.md) | `dbt build` against emulator (seed + model + tests) | — |
 | [`python/airflow-dag-test/`](python/airflow-dag-test/README.md) | `BigQueryInsertJobOperator` DAG via `dag.test()` | Monkey-patches `google.auth.default` to return `AnonymousCredentials` so the BQ hook skips JWT grant |
 | [`python/pyspark-bigquery/`](python/pyspark-bigquery/README.md) | PySpark `DataFrame` from Storage Read (Arrow) | Iterates `ReadRowsResponse` by hand instead of `reader.to_arrow(session)` — see [#15](https://github.com/jjviscomi/bqemulator/issues/15) |
 

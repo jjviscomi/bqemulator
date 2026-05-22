@@ -4,14 +4,12 @@ Status: shipped (runnable example in `docs/examples/python/dbt-local/`).
 
 ## Version compatibility
 
-dbt-bigquery **1.9.x** is the pinned target. **1.10** introduced a
-DDL-emission regression — `CREATE SCHEMA` against an emulator gets
-serialised as
-`CREATE SCHEMA "{project}__{dataset}_{custom_schema}".""` (database
-holds the full triple, schema is empty), which is malformed SQL and
-bqemulator's parser rejects. Tracked for cleanup in
-[#16](https://github.com/jjviscomi/bqemulator/issues/16); v1.0.0
-ships with the example pinned to `>=1.9,<1.10`.
+Both dbt-bigquery **1.9.x** and **1.10.x** work. bqemulator's SQL
+table-rewriter collapses dbt's `CREATE SCHEMA \`proj\`.\`ds\``
+two-part identifiers into a single `"proj__ds"` schema; earlier
+v1.0 release candidates produced `"proj__ds".""` with an empty
+trailing identifier and DuckDB rejected the SQL with
+`zero-length delimited identifier`.
 
 ## Profile
 

@@ -2,6 +2,7 @@ package com.example.bqemu
 
 import java.net.URI
 import java.net.http.{HttpClient, HttpRequest, HttpResponse}
+import java.time.Duration
 
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
@@ -52,11 +53,21 @@ class CustomersPipelineSpec extends AnyFlatSpec with Matchers {
     container.start()
     try {
       val rest = s"http://${container.getHost}:${container.getMappedPort(9050)}"
-      val client = HttpClient.newHttpClient()
+      // Bound the *connect* and per-request blocking time so a stalled
+      // container / NAT misconfig in CI fails fast instead of hanging
+      // until the runner times out (per CodeRabbit feedback).
+      val client = HttpClient.newBuilder()
+        .connectTimeout(Duration.ofSeconds(10))
+        .build()
+      val timeout = Duration.ofSeconds(30)
 
       // 1. ``/healthz`` is reachable.
       val health = client.send(
-        HttpRequest.newBuilder().uri(URI.create(s"$rest/healthz")).GET().build(),
+        HttpRequest.newBuilder()
+          .uri(URI.create(s"$rest/healthz"))
+          .timeout(timeout)
+          .GET()
+          .build(),
         HttpResponse.BodyHandlers.ofString()
       )
       health.statusCode() shouldBe 200
@@ -66,18 +77,22 @@ class CustomersPipelineSpec extends AnyFlatSpec with Matchers {
       val createDs = HttpRequest.newBuilder()
         .uri(URI.create(s"$rest/bigquery/v2/projects/bqemu-demo/datasets"))
         .header("Content-Type", "application/json")
+        .timeout(timeout)
         .POST(HttpRequest.BodyPublishers.ofString(
           """{"datasetReference":{"projectId":"bqemu-demo","datasetId":"scio_demo"},"location":"US"}"""
         ))
         .build()
       val createResp =
         client.send(createDs, HttpResponse.BodyHandlers.ofString())
-      Set(200, 201, 409) should contain(createResp.statusCode())
+      withClue(s"create-dataset failed: ${createResp.statusCode()} ${createResp.body()}") {
+        Set(200, 201, 409) should contain(createResp.statusCode())
+      }
 
       // 3. The dataset shows up on the listing endpoint.
       val list = client.send(
         HttpRequest.newBuilder()
           .uri(URI.create(s"$rest/bigquery/v2/projects/bqemu-demo/datasets"))
+          .timeout(timeout)
           .GET()
           .build(),
         HttpResponse.BodyHandlers.ofString()
