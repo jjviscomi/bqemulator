@@ -104,6 +104,13 @@ def test_extract_to_local_json(
     dest_uri = f"gs://{bucket}/{object_name}"
     host_file = bqemu_gcs_root_host / bucket / object_name
     host_file.parent.mkdir(parents=True, exist_ok=True)
+    # World-writable so the container's non-root ``bqemu`` user (uid
+    # 1000) can write the extracted object into this host-side bucket
+    # dir. macOS Docker Desktop's filesystem virtualization papers
+    # over the host-user vs container-user gap; Linux Docker honours
+    # native bind-mount permissions, so the host-created dir needs an
+    # explicit ``0o777`` for the container write to succeed.
+    host_file.parent.chmod(0o777)
     if host_file.exists():
         host_file.unlink()
     try:

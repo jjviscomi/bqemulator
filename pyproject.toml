@@ -462,6 +462,15 @@ filterwarnings = [
 source_pkgs = ["bqemulator"]
 branch = true
 parallel = true
+# The ``bqemu_server`` pytest fixture runs the FastAPI app on a
+# background asyncio loop inside ``ThreadedEmulator``; coverage.py's
+# default tracer only follows the main thread, so without this setting
+# every request handler executed by an integration test goes
+# unmeasured. Adding ``thread`` (the bqemu_server thread) restores the
+# expected coverage signal — CI saw a ~1.7-point shortfall before
+# this change because integration tests run on a single-threaded
+# loop on macOS dev machines via a slightly different code path.
+concurrency = ["thread"]
 omit = [
     "*/bqemulator/__main__.py",
     "*/bqemulator/grpc_api/proto/*",
