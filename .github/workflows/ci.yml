@@ -36,7 +36,13 @@ jobs:
       - name: Bandit
         run: bandit -c pyproject.toml -r src -ll
       - name: pip-audit
-        run: pip-audit
+        # Honor ``.pip-audit-ignore`` (the same filter ``make lint`` uses
+        # locally). Each line that starts with ``PYSEC-`` / ``CVE-`` /
+        # ``GHSA-`` becomes a ``--ignore-vuln`` flag — rationale for
+        # every advisory ID lives next to the entry in that file.
+        run: |
+          awk '/^(PYSEC|CVE|GHSA)-/ {printf "--ignore-vuln %s\n", $1}' \
+            .pip-audit-ignore | xargs pip-audit
       - name: Interrogate (docstring coverage)
         run: interrogate src
       - name: Typos

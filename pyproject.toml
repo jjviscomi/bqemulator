@@ -437,6 +437,14 @@ filterwarnings = [
     # upstream.
     "ignore::DeprecationWarning:ctypes",
     "ignore::DeprecationWarning:py_mini_racer.*",
+    # ``importlib.metadata.EntryPoints`` emits a ``SelectableGroups dict
+    # interface is deprecated`` warning on Python 3.11–3.13 when an
+    # upstream dependency (typically iterating entry points through
+    # the legacy dict shape) calls into the deprecated path. Python 3.14
+    # removed the deprecated interface entirely so the warning self-
+    # resolves there. Match by message so we don't have to enumerate
+    # every emission module along the deprecation chain.
+    "ignore:SelectableGroups dict interface is deprecated:DeprecationWarning",
 ]
 
 [tool.coverage.run]
