@@ -93,8 +93,30 @@ def _read_arrow_via_storage(grpc_endpoint: str) -> pa.Table:
             max_stream_count=1,
         )
         stream = session.streams[0].name
+        # NOTE: ``reader.to_arrow(session)`` assumes
+        # ``ArrowRecordBatch.serialized_record_batch`` carries only a
+        # single record-batch IPC message — that's the real BigQuery
+        # wire format. bqemulator currently packs the *full* Arrow IPC
+        # stream (schema framing + batches) into that field, so the
+        # client's ``pyarrow.ipc.read_record_batch`` call trips
+        # ``Expected IPC message of type record batch but got
+        # schema``. Iterate the responses by hand and use
+        # ``pa.ipc.open_stream`` (which is happy with full IPC
+        # streams) so the example still demonstrates Storage Read
+        # against the emulator. Tracked for cleanup in v1.0.1: the
+        # server should emit just the record-batch message and
+        # publish the schema via ``ReadSession.arrow_schema``.
         reader = storage.read_rows(stream)
-        return reader.to_arrow(session)
+        batches: list[pa.RecordBatch] = []
+        for response in reader:
+            payload = response.arrow_record_batch.serialized_record_batch
+            if not payload:
+                continue
+            with pa.ipc.open_stream(payload) as stream_reader:
+                batches.extend(stream_reader.read_all().to_batches())
+        if not batches:
+            return pa.table({})
+        return pa.Table.from_batches(batches)
     finally:
         storage.transport.close()
 
