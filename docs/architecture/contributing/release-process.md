@@ -72,7 +72,7 @@ a dedicated exit code):
    | File | What to update at a MAJOR / first-stable cut |
    |---|---|
    | [`pyproject.toml`](https://github.com/jjviscomi/bqemulator/blob/main/pyproject.toml) | `Development Status` classifier (e.g. `3 - Alpha` → `5 - Production/Stable` at v1.0.0). Python version classifiers must match the CI test matrix in [`ci.yml`](https://github.com/jjviscomi/bqemulator/blob/main/.github/workflows/ci.yml) — `pip install` users see this list on the PyPI page and on the `Python` shield in the README. |
-   | [`README.md`](https://github.com/jjviscomi/bqemulator/blob/main/README.md) — "Project status" section | Drop "pre-1.0" / "currently 0.x.y" language; promote any `⚪` maturity rows for things now shipped (PyPI publish, GHCR publish, etc.). |
+   | [`README.md`](https://github.com/jjviscomi/bqemulator/blob/main/README.md) — "Project status" section | Drop "pre-1.0" / "currently 0.x.y" language; promote any `⚪` maturity rows for things now shipped (PyPI publish, GHCR publish, etc.). **Land this on the release branch itself (first commit, before `make release`)** — see the "README 'Project status' flip" subsection below. The rest of this sweep can land in a separate pre-release housekeeping PR. |
    | [`README.md`](https://github.com/jjviscomi/bqemulator/blob/main/README.md) — "Conformance corpus depth" header | If the snapshot date is older than ~30 days, regenerate with `make coverage-matrix` and update the prose. |
    | [`docs/getting-started.md`](https://github.com/jjviscomi/bqemulator/blob/main/docs/getting-started.md) + [`docs/reference/cli.md`](https://github.com/jjviscomi/bqemulator/blob/main/docs/reference/cli.md) | Example outputs that hard-code a version string (`{"status":"ok","version":"0.1.0"}`, `bqemulator 0.1.0`). |
    | All four auto-generated reference docs ([`conformance-coverage-matrix`](https://github.com/jjviscomi/bqemulator/blob/main/docs/reference/conformance-coverage-matrix.md), [`compatibility-matrix`](https://github.com/jjviscomi/bqemulator/blob/main/docs/reference/compatibility-matrix.md), [`sql-function-mapping`](https://github.com/jjviscomi/bqemulator/blob/main/docs/reference/sql-function-mapping.md), [`api-coverage`](https://github.com/jjviscomi/bqemulator/blob/main/docs/reference/api-coverage.md)) | Run `make matrix coverage-matrix` and commit any diff. The umbrella `make matrix` covers compat-matrix + function-mapping + api-coverage in one call; `make coverage-matrix` is separate because it walks the conformance corpus. The Docs-drift CI gate runs the matching `--check` modes on every PR. |
@@ -158,16 +158,31 @@ a dedicated exit code):
     bqemulator version   # prints X.Y.Z
     ```
 
-11. **Post-release doc flip.** Open a follow-up PR (`docs/post-release-vX.Y.Z`) that flips every README claim which was *aspirational* during the release commit into *factual* now that the artefacts exist. The list is precisely the inverse of the step-2 sweep table — the entries that can only be true after the publish workflows finish:
+### README "Project status" flip (folded into the release PR)
 
-    | File | What to flip |
-    |---|---|
-    | [`README.md`](https://github.com/jjviscomi/bqemulator/blob/main/README.md) — "Project status" header | `vX.Y.Z-rc` / "staged on main" prose → factual "at **vX.Y.Z** — the initial production-stable release" wording. |
-    | [`README.md`](https://github.com/jjviscomi/bqemulator/blob/main/README.md) — "Maturity signals" rows | ⚪ "PyPI publish — wired and waiting on the tag push" → ✅ with the verified `pip install` command. Same flip for the GHCR row with the `docker pull` command. |
+Earlier iterations of this process kept the README's
+*aspirational-vs-factual* wording in a **separate post-release
+PR** that landed after step 10's smoke-tests. That meant every
+release shipped a chicken-and-egg gap: the release commit
+referenced a `vX.Y.Z-rc` README, and a follow-up PR had to land
+with the same release notes to flip ⚪ → ✅. v1.0.0 collapsed the
+two into a single PR; the convention since is to do the README
+flip **before** running the orchestrator, so the bump commit and
+the wording flip land in the same merge:
 
-    This split exists because step-2 pre-release strings (classifier bumps, example outputs that match what `bqemulator version` will print) become true the moment the release **commit** lands; the entries above become true only after the **artefacts** are confirmed published. Conflating them ships a README that lies about something it cannot verify yet — the post-release flip is what closes that window.
+| File | What to flip (in the release branch, before `make release`) |
+|---|---|
+| [`README.md`](https://github.com/jjviscomi/bqemulator/blob/main/README.md) — "Project status" header | `vX.Y.Z-rc` / "staged on `main`" prose → factual "at **vX.Y.Z** — the initial production-stable release" wording. |
+| [`README.md`](https://github.com/jjviscomi/bqemulator/blob/main/README.md) — "Maturity signals" rows | ⚪ "PyPI publish — wired and waiting on the tag push" → ✅ with the actual `pip install` / `docker pull` command. |
 
-    The post-release PR must include the actual smoke-test commands from step 10 rendered as proof — committers verify the artefacts exist by running them, not just by reading the workflow's "✓ success" badge.
+The trade-off is explicit: the README now claims the artefacts
+exist a few minutes **before** the publish workflows finish.
+That window closes within roughly 5–10 min of pushing the tag
+(release.yml + docker.yml end-to-end). The convention is to
+verify the artefacts (`pip install`, `docker pull`, cosign
+verification) right after the tag push — if a workflow fails,
+the next commit on `main` is the README revert, not a separate
+"flip" PR.
 
 ## CLI reference
 
