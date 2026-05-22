@@ -191,7 +191,7 @@ jobs:
         with:
           distribution: temurin
           java-version: "17"
-      - uses: coursier/setup-action@v1
+      - uses: coursier/setup-action@v3
         with:
           apps: sbt
       - name: make test
