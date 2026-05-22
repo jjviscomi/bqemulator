@@ -1,2 +1,7 @@
-dbt-core>=1.7,<1.9
-dbt-bigquery>=1.7,<1.9
+# dbt-bigquery 1.9+ vendors a protobuf 6.x-compatible gRPC stub. The
+# previous ``<1.9`` pin paired dbt's old protobuf-5 runtime with
+# bqemulator's protobuf-6 gencode and tripped the runtime-version
+# guard (``Detected incompatible Protobuf Gencode/Runtime versions``).
+dbt-core>=1.9,<1.11
+dbt-bigquery>=1.9,<1.11
+protobuf>=6.31

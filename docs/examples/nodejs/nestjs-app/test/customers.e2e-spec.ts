@@ -1,7 +1,8 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { INestApplication } from '@nestjs/common';
-import * as request from 'supertest';
-import { BigQuery } from '@google-cloud/bigquery';
+import request from 'supertest';
+import { BigQuery, BigQueryOptions } from '@google-cloud/bigquery';
+import { PassThroughClient } from 'google-auth-library';
 import { AppModule } from '../src/app.module';
 
 const REST_URL = process.env.BQEMU_REST_URL || 'http://localhost:9050';
@@ -16,7 +17,15 @@ describe('Customers (e2e) against bqemulator', () => {
     process.env.BQ_DATASET = DATASET;
     process.env.BQEMU_REST_URL = REST_URL;
 
-    bq = new BigQuery({ projectId: PROJECT, apiEndpoint: REST_URL, token: 'dummy' });
+    // PassThroughClient skips ADC entirely — the documented pattern for
+    // pointing the SDK at a local emulator. `BigQueryOptions.authClient` is
+    // typed against `JSONClient` so we widen via cast; runtime accepts any
+    // AuthClient (see @google-cloud/common ServiceOptions).
+    bq = new BigQuery({
+      projectId: PROJECT,
+      apiEndpoint: REST_URL,
+      authClient: new PassThroughClient(),
+    } as BigQueryOptions);
 
     // Seed a dataset + customers table with 3 rows.
     await bq.createDataset(DATASET, { location: 'US' });

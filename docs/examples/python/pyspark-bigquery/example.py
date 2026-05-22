@@ -66,10 +66,22 @@ def _seed(rest_url: str) -> None:
 
 
 def _read_arrow_via_storage(grpc_endpoint: str) -> pa.Table:
-    storage = bigquery_storage_v1.BigQueryReadClient(
-        credentials=AnonymousCredentials(),  # type: ignore[no-untyped-call]
-        client_options=ClientOptions(api_endpoint=grpc_endpoint),
+    # The emulator serves the Storage Read API over plaintext gRPC.
+    # The default ``BigQueryReadClient`` transport wraps every call in
+    # TLS, which fails the handshake against a plaintext endpoint
+    # (``SSL_ERROR_SSL: WRONG_VERSION_NUMBER``). Construct an insecure
+    # ``grpc.Channel`` explicitly and pass it via the transport.
+    import grpc
+    from google.cloud.bigquery_storage_v1.services.big_query_read import (
+        BigQueryReadAsyncClient,  # noqa: F401 — imported for transport.import side-effects
     )
+    from google.cloud.bigquery_storage_v1.services.big_query_read.transports import (
+        BigQueryReadGrpcTransport,
+    )
+
+    channel = grpc.insecure_channel(grpc_endpoint)
+    transport = BigQueryReadGrpcTransport(channel=channel)
+    storage = bigquery_storage_v1.BigQueryReadClient(transport=transport)
     try:
         read_session = ReadSession(
             table=f"projects/{PROJECT}/datasets/{DATASET}/tables/{TABLE}",

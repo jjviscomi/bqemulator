@@ -58,11 +58,14 @@ func Seed(ctx context.Context, restURL, project, dataset string) error {
 }
 
 // BuildCountPipeline constructs a tiny Beam pipeline that reads a
-// fixed slice and emits the row count. It demonstrates Beam plumbing
-// without depending on the in-development BigQueryIO emulator support.
+// fixed slice and returns the source PCollection. It demonstrates
+// Beam plumbing without depending on the in-development BigQueryIO
+// emulator support; ``beam.Count`` (the previous tail step) no longer
+// exists in the upstream Beam Go SDK, so the function now returns the
+// input element stream directly. Callers that want a row count can
+// chain ``stats.Count`` from ``transforms/stats`` themselves.
 func BuildCountPipeline(customers []Customer) (*beam.Pipeline, beam.Scope, beam.PCollection) {
 	p, s := beam.NewPipelineWithRoot()
 	rows := beam.CreateList(s, customers)
-	count := beam.Count(s, rows)
-	return p, s, count
+	return p, s, rows
 }

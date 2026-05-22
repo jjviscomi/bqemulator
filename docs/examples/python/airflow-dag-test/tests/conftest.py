@@ -29,6 +29,15 @@ def _airflow_home(tmp_path_factory: pytest.TempPathFactory) -> Iterator[None]:
     os.environ["AIRFLOW__CORE__DAGS_FOLDER"] = str(
         Path(__file__).resolve().parent.parent / "dags"
     )
+
+    # Airflow 2.8+ requires an initialised metadata DB before
+    # ``dag.test()`` can persist task-instance rows. Importing
+    # ``initdb`` here (rather than shelling out to the ``airflow``
+    # CLI) keeps the fixture self-contained.
+    from airflow.utils.db import initdb
+
+    initdb()
+
     yield
     if previous is None:
         os.environ.pop("AIRFLOW_HOME", None)
