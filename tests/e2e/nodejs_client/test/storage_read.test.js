@@ -174,11 +174,11 @@ function decodeReadSessionStreams(buf) {
   return names;
 }
 
-// ReadSession.arrow_schema=8 (ArrowSchema).
+// ReadSession.arrow_schema=5 (ArrowSchema, in the ``oneof schema`` block).
 // ArrowSchema.serialized_schema=1 (bytes).
 function decodeReadSessionArrowSchema(buf) {
   for (const [fn, wt, payload] of iterFields(buf)) {
-    if (fn === 8 && wt === 2) {
+    if (fn === 5 && wt === 2) {
       for (const [innerFn, innerWt, innerPayload] of iterFields(payload)) {
         if (innerFn === 1 && innerWt === 2) {
           return innerPayload;
