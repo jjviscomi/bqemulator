@@ -78,6 +78,17 @@ def _rewrite_table_node(table_node: object, project_id: str) -> bool:
     this_node = table_node.this
     is_tvf = isinstance(this_node, exp.Anonymous)
 
+    # BigQuery's backticked compound form ``\`proj.ds\``` is canonical
+    # for DDL like ``CREATE SCHEMA IF NOT EXISTS \`proj.ds\``` (the
+    # Airflow ``BigQueryInsertJobOperator`` example emits this shape).
+    # SQLGlot parses the whole back-ticked literal as a single
+    # identifier, which lands in ``db='proj.ds'`` without populating
+    # ``catalog``. Split it back into the canonical ``catalog`` / ``db``
+    # pair *before* the dataset-id validator below sees a dotted name
+    # and rejects it as invalid.
+    if db and "." in db and not catalog and not is_tvf:
+        catalog, _, db = db.partition(".")
+
     # Phase 7: leave references to bqemulator's *reserved* schemas
     # alone. The time-travel rewriter emits
     # ``_bqemulator_snapshots.<id>`` references that must reach
