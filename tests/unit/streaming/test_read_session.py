@@ -129,6 +129,25 @@ class TestSerializeArrowRecordBatch:
         with pytest.raises((OSError, pa.lib.ArrowInvalid)):
             pa.ipc.open_stream(msg_bytes).read_all()
 
+    def test_rejects_dictionary_encoded_batch(self) -> None:
+        """Dictionary-encoded columns cannot be encoded in the bare-message
+        contract — ``pa.ipc.read_record_batch(bytes, schema)`` requires a
+        populated ``DictionaryMemo`` to decode dict-encoded fields, and
+        the BigQuery Storage Read wire format has no channel for the
+        ``DictionaryBatch`` frames. Fail loudly at the producer.
+        """
+        # Build a batch with a dict-encoded column: pyarrow's writer
+        # would emit a ``DictionaryBatch`` message before the
+        # RecordBatch message in the IPC stream, and the bare-message
+        # output couldn't represent it. The producer must refuse.
+        dict_type = pa.dictionary(pa.int32(), pa.string())
+        batch = pa.RecordBatch.from_arrays(
+            [pa.array(["a", "b", "a", "c"]).dictionary_encode().cast(dict_type)],
+            schema=pa.schema([pa.field("category", dict_type)]),
+        )
+        with pytest.raises(ValueError, match="Dictionary-encoded columns"):
+            serialize_arrow_record_batch(batch)
+
 
 # Hypothesis strategies for the property test below. The repo
 # convention (cited by CodeRabbit on PR #31) is to use Hypothesis

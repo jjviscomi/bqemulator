@@ -270,18 +270,41 @@ def serialize_arrow_record_batch(batch: pa.RecordBatch) -> bytes:
     (low-level ``pa.ipc.write_message``) has signature drift between
     pyarrow 14.x and 17.x+ that we'd rather not chase.
 
-    Arrow IPC streaming permits ``DictionaryBatch`` messages between
-    the schema and the first ``RecordBatch`` when the batch carries
-    dictionary-encoded columns — pyarrow's writer emits one
-    DictionaryBatch per dict-encoded field. Naively grabbing the
-    *second* message would capture a dictionary, not the batch. The
-    loop below skips non-RecordBatch messages so callers always get
-    the actual batch payload back. (The current BigQuery Storage
-    Read wire format doesn't carry separate dictionary messages on
-    the wire — clients reconstruct dictionaries from the schema. If
-    we ever need to surface dictionaries we'd extend the protocol;
-    for now skipping them is the right defensive default.)
+    Dictionary-encoded columns are explicitly rejected. The
+    BigQuery Storage Read wire format only carries
+    ``ArrowSchema.serialized_schema`` and
+    ``ArrowRecordBatch.serialized_record_batch`` — there's no slot
+    for ``DictionaryBatch`` frames. pyarrow's
+    ``read_record_batch(bytes, schema)`` requires a populated
+    ``DictionaryMemo`` to decode dict-encoded fields, which the
+    bare-message contract can't provide; quietly stripping the
+    ``DictionaryBatch`` frames would produce a wire-format message
+    consumers can't decode. Raise ``ValueError`` at the producer
+    boundary so the misuse fails loudly. Real BigQuery doesn't
+    surface dict-encoded columns through Storage Read either —
+    if a future code path needs them, plumb a separate channel
+    for the dictionary frames or use a different wire format.
+
+    The loop below also skips any unexpected non-RecordBatch
+    message types pyarrow could emit (compression headers,
+    sentinel markers in future format versions, …) so the
+    function stays correct across pyarrow upgrades.
     """
+    # Refuse dict-encoded batches up front — see docstring.
+    # Using ``schema_field`` instead of ``field`` to avoid shadowing
+    # the ``dataclasses.field`` import at the top of the module.
+    for schema_field in batch.schema:
+        if pa.types.is_dictionary(schema_field.type):
+            raise ValueError(
+                f"Dictionary-encoded columns are not supported by"
+                f" the BigQuery Storage Read API serializer "
+                f"(column {schema_field.name!r} has type "
+                f"{schema_field.type}). The wire contract carries"
+                f" only the record-batch message, but pyarrow"
+                f" requires a DictionaryMemo to decode dict frames"
+                f" — that channel does not exist in the wire format."
+            )
+
     sink = pa.BufferOutputStream()
     writer = pa.ipc.new_stream(sink, batch.schema)  # type: ignore[no-untyped-call,unused-ignore]
     writer.write_batch(batch)
