@@ -66,10 +66,22 @@ def _seed(rest_url: str) -> None:
 
 
 def _read_arrow_via_storage(grpc_endpoint: str) -> pa.Table:
-    storage = bigquery_storage_v1.BigQueryReadClient(
-        credentials=AnonymousCredentials(),  # type: ignore[no-untyped-call]
-        client_options=ClientOptions(api_endpoint=grpc_endpoint),
+    # The emulator serves the Storage Read API over plaintext gRPC.
+    # The default ``BigQueryReadClient`` transport wraps every call in
+    # TLS, which fails the handshake against a plaintext endpoint
+    # (``SSL_ERROR_SSL: WRONG_VERSION_NUMBER``). Construct an insecure
+    # ``grpc.Channel`` explicitly and pass it via the transport.
+    import grpc
+    from google.cloud.bigquery_storage_v1.services.big_query_read import (
+        BigQueryReadAsyncClient,  # noqa: F401 — imported for transport.import side-effects
     )
+    from google.cloud.bigquery_storage_v1.services.big_query_read.transports import (
+        BigQueryReadGrpcTransport,
+    )
+
+    channel = grpc.insecure_channel(grpc_endpoint)
+    transport = BigQueryReadGrpcTransport(channel=channel)
+    storage = bigquery_storage_v1.BigQueryReadClient(transport=transport)
     try:
         read_session = ReadSession(
             table=f"projects/{PROJECT}/datasets/{DATASET}/tables/{TABLE}",
@@ -81,8 +93,30 @@ def _read_arrow_via_storage(grpc_endpoint: str) -> pa.Table:
             max_stream_count=1,
         )
         stream = session.streams[0].name
+        # NOTE: ``reader.to_arrow(session)`` assumes
+        # ``ArrowRecordBatch.serialized_record_batch`` carries only a
+        # single record-batch IPC message — that's the real BigQuery
+        # wire format. bqemulator currently packs the *full* Arrow IPC
+        # stream (schema framing + batches) into that field, so the
+        # client's ``pyarrow.ipc.read_record_batch`` call trips
+        # ``Expected IPC message of type record batch but got
+        # schema``. Iterate the responses by hand and use
+        # ``pa.ipc.open_stream`` (which is happy with full IPC
+        # streams) so the example still demonstrates Storage Read
+        # against the emulator. Tracked for cleanup in v1.0.1: the
+        # server should emit just the record-batch message and
+        # publish the schema via ``ReadSession.arrow_schema``.
         reader = storage.read_rows(stream)
-        return reader.to_arrow(session)
+        batches: list[pa.RecordBatch] = []
+        for response in reader:
+            payload = response.arrow_record_batch.serialized_record_batch
+            if not payload:
+                continue
+            with pa.ipc.open_stream(payload) as stream_reader:
+                batches.extend(stream_reader.read_all().to_batches())
+        if not batches:
+            return pa.table({})
+        return pa.Table.from_batches(batches)
     finally:
         storage.transport.close()
 

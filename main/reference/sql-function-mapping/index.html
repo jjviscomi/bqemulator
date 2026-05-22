@@ -5011,7 +5011,7 @@ table below maps each BigQuery view to its rewriter function.</p>
 </blockquote>
 <ul>
 <li><strong>Registered rules</strong>: 92 (13 rule modules)</li>
-<li><strong>Rewriter functions</strong>: 22 (22 rewriter modules; the INFORMATION_SCHEMA rewriter has its own hand-maintained per-view table below)</li>
+<li><strong>Rewriter functions</strong>: 23 (23 rewriter modules; the INFORMATION_SCHEMA rewriter has its own hand-maintained per-view table below)</li>
 </ul>
 <h3 id="translation-rules-post-transpile-ast-passes">Translation rules (post-transpile AST passes)<a class="headerlink" href="#translation-rules-post-transpile-ast-passes" title="Permanent link">&para;</a></h3>
 <table>
@@ -5720,6 +5720,12 @@ table below maps each BigQuery view to its rewriter function.</p>
 <td>Expand every wildcard table reference in <code>bq_sql</code></td>
 <td>—</td>
 <td><code>expand_wildcard_tables</code></td>
+</tr>
+<tr>
+<td>Other rewriter</td>
+<td>Return a no-op statement when <code>bq_sql</code> is <code>ALTER TABLE ... SET OPTIONS(...)</code></td>
+<td>—</td>
+<td><code>rewrite_alter_table_set_options</code></td>
 </tr>
 </tbody>
 </table>

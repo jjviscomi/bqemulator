@@ -4525,10 +4525,21 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#what-it-demonstrates" class="md-nav__link">
+  <a href="#known-limitation-beam-java-bigqueryio-doesnt-reach-the-emulator" class="md-nav__link">
     <span class="md-ellipsis">
       
-        What it demonstrates
+        Known limitation — Beam Java BigQueryIO doesn't reach the emulator
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#what-the-spec-exercises-v100" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        What the spec exercises (v1.0.0)
       
     </span>
   </a>
@@ -4868,10 +4879,21 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#what-it-demonstrates" class="md-nav__link">
+  <a href="#known-limitation-beam-java-bigqueryio-doesnt-reach-the-emulator" class="md-nav__link">
     <span class="md-ellipsis">
       
-        What it demonstrates
+        Known limitation — Beam Java BigQueryIO doesn't reach the emulator
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#what-the-spec-exercises-v100" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        What the spec exercises (v1.0.0)
       
     </span>
   </a>
@@ -4945,25 +4967,47 @@
 
 
 <h1 id="spotify-scio-pipeline-against-bqemulator">Spotify Scio pipeline against <code>bqemulator</code><a class="headerlink" href="#spotify-scio-pipeline-against-bqemulator" title="Permanent link">&para;</a></h1>
-<p>A minimal <a href="https://github.com/spotify/scio">Scio</a> pipeline that writes
-rows to <code>bqemulator</code> via the Storage Write API and reads them back via
-Storage Read.</p>
+<p>A minimal <a href="https://github.com/spotify/scio">Scio</a> pipeline that
+writes a customers table to BigQuery and reads it back. The Scala
+source under <code>src/main/scala/</code> is production-shaped — what you'd run
+against real BigQuery or Dataflow today.</p>
 <h2 id="why-this-matters">Why this matters<a class="headerlink" href="#why-this-matters" title="Permanent link">&para;</a></h2>
 <p>Scio is the canonical Scala-on-Beam idiom — most Beam-on-JVM workloads
 on Google's stack run through it. Targeting it against <code>bqemulator</code>
 means engineering teams can run the same job locally that they run in
 Dataflow, without spinning up a real BigQuery dataset.</p>
-<h2 id="what-it-demonstrates">What it demonstrates<a class="headerlink" href="#what-it-demonstrates" title="Permanent link">&para;</a></h2>
+<h2 id="known-limitation-beam-java-bigqueryio-doesnt-reach-the-emulator">Known limitation — Beam Java BigQueryIO doesn't reach the emulator<a class="headerlink" href="#known-limitation-beam-java-bigqueryio-doesnt-reach-the-emulator" title="Permanent link">&para;</a></h2>
+<p>Beam Java BigQueryIO <strong>does not honour <code>--bigQueryEndpoint</code> for the
+write path</strong> — that pipeline option only gates internal preflight
+validators (dataset-exists checks, schema lookups). The actual write
+goes through the official Java BigQuery client at its default base
+URL (<code>https://bigquery.googleapis.com/...</code>).</p>
+<p>The Java BQ client honours the <code>BIGQUERY_EMULATOR_HOST</code> env var, but
+it has to be visible to the JVM <strong>before the first BQ class loads</strong>.
+Testcontainers allocates the bqemulator port dynamically at runtime,
+so by the time we know the port the BQ classes are already wired to
+the real Google endpoint.</p>
+<p>The result: running <code>CustomersPipeline.run(args)</code> from inside the
+test JVM tries to write to real BigQuery and 404s without
+credentials. <strong>The pipeline itself is correct</strong> — point it at a
+long-lived bqemulator on a stable port (with <code>BIGQUERY_EMULATOR_HOST</code>
+exported before the JVM starts) and it runs end to end.</p>
+<p>Tracked for cleanup in
+<a href="https://github.com/jjviscomi/bqemulator/issues/17">#17</a> — Scio /
+Beam may grow a per-call endpoint override that lets the test set
+the endpoint after the container is up.</p>
+<h2 id="what-the-spec-exercises-v100">What the spec exercises (v1.0.0)<a class="headerlink" href="#what-the-spec-exercises-v100" title="Permanent link">&para;</a></h2>
+<p>Until #17 lands, the ScalaTest spec exercises the <strong>wiring</strong> that
+bqemulator owns and that Scio users actually depend on:</p>
 <ul>
-<li>A Beam pipeline written in Scala using Scio's
-  <code>BigQueryType</code>-free <code>tableRowJsonFile</code> and <code>BigQuery.writeTableRows</code>
-  idioms.</li>
-<li>Pointing the Beam BigQueryIO client at <code>bqemulator</code> by setting the
-  <code>bigQueryEndpoint</code> pipeline option (Beam's standard escape hatch for
-  non-Google BigQuery hosts).</li>
-<li>A ScalaTest spec that runs the pipeline on the <code>DirectRunner</code> against
-  <code>bqemulator</code>, started via Testcontainers.</li>
+<li>bqemulator container starts and <code>/healthz</code> returns <code>200</code>.</li>
+<li>Dataset creation via the REST surface succeeds (status in
+  <code>{200, 201, 409}</code> — 409 covers idempotent re-runs).</li>
+<li>The dataset shows up on the <code>/bigquery/v2/projects/{project}/datasets</code>
+  listing endpoint.</li>
 </ul>
+<p>The end-to-end <code>CustomersPipeline.run(args)</code> assertion will return to
+the spec once #17 is resolved.</p>
 <h2 id="layout">Layout<a class="headerlink" href="#layout" title="Permanent link">&para;</a></h2>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>build.sbt                                             — sbt build definition
 </span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>project/build.properties                              — sbt version pin
@@ -4977,10 +5021,12 @@ Dataflow, without spinning up a real BigQuery dataset.</p>
 emulator.</p>
 <h2 id="what-to-look-for">What to look for<a class="headerlink" href="#what-to-look-for" title="Permanent link">&para;</a></h2>
 <ul>
-<li>The pipeline body is the same code you'd run in production —
-  endpoint resolution is purely a <code>PipelineOptions</code> concern.</li>
-<li>We pin the Direct runner for reproducibility. Swapping to the
-  Dataflow runner is a CLI flag change with no source changes.</li>
+<li><code>build.sbt</code> holds the Jackson stack at <code>2.14.3</code> via
+  <code>dependencyOverrides</code>. Scio 0.14.4's Scala Jackson module is
+  pinned to 2.14.x; transitive deps drag in jackson-databind 2.16.x
+  and the runtime guard refuses to load against the mismatch.</li>
+<li><code>BqemuContainer</code> is a one-line subclass that resolves Scala 2's
+  <code>Nothing</code> self-type collapse on Java's <code>GenericContainer&lt;SELF&gt;</code>.</li>
 </ul>
 
 

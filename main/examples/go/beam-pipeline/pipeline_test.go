@@ -65,7 +65,7 @@ func TestPipelineAgainstEmulator(t *testing.T) {
 		{ID: 3, Name: "Carol"},
 	}
 	p, _, _ := pipeline.BuildCountPipeline(customers)
-	if err := direct.Execute(ctx, p); err != nil {
+	if _, err := direct.Execute(ctx, p); err != nil {
 		t.Fatalf("execute: %v", err)
 	}
 	// PipelineOptions wiring sanity check.

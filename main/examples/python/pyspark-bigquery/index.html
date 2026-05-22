@@ -4244,6 +4244,17 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#known-limitation-storage-read-ipc-bytes-layout" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Known limitation — Storage Read IPC bytes layout
+      
+    </span>
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -4911,6 +4922,17 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#known-limitation-storage-read-ipc-bytes-layout" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Known limitation — Storage Read IPC bytes layout
+      
+    </span>
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -4986,12 +5008,28 @@ pattern used in the <a href="../../../guides/storage-api/">Storage Read API guid
 </span></code></pre></div>
 <h2 id="what-to-look-for">What to look for<a class="headerlink" href="#what-to-look-for" title="Permanent link">&para;</a></h2>
 <ul>
-<li>The Storage Read client is constructed with
-  <code>client_options=ClientOptions(api_endpoint=grpc_endpoint)</code> pointing
-  at the emulator's gRPC port (not the REST port).</li>
+<li>The Storage Read client is constructed with a <code>BigQueryReadGrpcTransport</code>
+  wrapping an explicit <code>grpc.insecure_channel(...)</code> — bqemulator
+  serves the Storage Read API over plaintext gRPC, and the default
+  transport wraps every call in TLS (failing the handshake with
+  <code>SSL_ERROR_SSL: WRONG_VERSION_NUMBER</code>).</li>
 <li>Spark runs in local-master mode (<code>local[*]</code>) so the example is
   hermetic — no Hadoop/YARN cluster required.</li>
 </ul>
+<h2 id="known-limitation-storage-read-ipc-bytes-layout">Known limitation — Storage Read IPC bytes layout<a class="headerlink" href="#known-limitation-storage-read-ipc-bytes-layout" title="Permanent link">&para;</a></h2>
+<p>bqemulator currently packs the full Arrow IPC stream (schema framing
++ batches) into <code>ReadRowsResponse.arrow_record_batch.serialized_record_batch</code>
+instead of a single record-batch IPC message. The high-level
+<code>reader.to_arrow(session)</code> helper assumes the real-BigQuery shape
+(schema lives on <code>ReadSession.arrow_schema.serialized_schema</code>,
+batches travel on their own) and trips
+<code>Expected IPC message of type record batch but got schema</code>.</p>
+<p>The example works around this by iterating responses by hand and
+using <code>pyarrow.ipc.open_stream</code>, which accepts the full IPC stream
+that bqemulator emits. Tracked for cleanup in
+<a href="https://github.com/jjviscomi/bqemulator/issues/15">#15</a> — once the
+server emits the correct format the workaround disappears and the
+natural <code>reader.to_arrow(session)</code> call works out of the box.</p>
 
 
 

@@ -15,8 +15,12 @@ object CustomersPipeline {
 
   def run(args: Array[String]): Long = {
     val (sc, parsedArgs) = ContextAndArgs(args)
-    val project = parsedArgs("project")
-    val dataset = parsedArgs("dataset")
+    // ``--project`` is a Beam pipeline option (ScioContext consumes it
+    // before we ever see it), so reading it out of ``parsedArgs``
+    // throws ``Missing value for property 'project'``. Use namespaced
+    // arg names for the example's own settings.
+    val project = parsedArgs("bqProject")
+    val dataset = parsedArgs("bqDataset")
     val table   = s"$project:$dataset.customers"
 
     val schema = new TableSchema().setFields(List(

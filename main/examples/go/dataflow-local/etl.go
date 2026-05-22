@@ -63,7 +63,12 @@ func Sink(
 	client, err := bigquery.NewClient(
 		ctx,
 		project,
-		option.WithEndpoint(restURL),
+		// The Go BQ client treats ``WithEndpoint`` as the *full*
+		// base URL (it replaces the gen'd ``bigquery/v2/`` prefix
+		// outright), unlike the Python client which appends to it.
+		// Pass the prefixed URL so request paths come out as
+		// ``/bigquery/v2/projects/...`` against bqemulator.
+		option.WithEndpoint(restURL+"/bigquery/v2/"),
 		option.WithoutAuthentication(),
 	)
 	if err != nil {

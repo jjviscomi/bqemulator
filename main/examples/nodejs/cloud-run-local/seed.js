@@ -1,13 +1,20 @@
 'use strict';
 
 const { BigQuery } = require('@google-cloud/bigquery');
+const { PassThroughClient } = require('google-auth-library');
 
 const PROJECT = process.env.BQ_PROJECT || 'bqemu-demo';
 const DATASET = process.env.BQ_DATASET || 'cr_demo';
 const REST_URL = process.env.BQEMU_REST_URL || 'http://localhost:9050';
 
 async function main() {
-  const bq = new BigQuery({ projectId: PROJECT, apiEndpoint: REST_URL, token: 'dummy' });
+  // PassThroughClient skips ADC entirely — the documented pattern for
+  // pointing the SDK at a local emulator.
+  const bq = new BigQuery({
+    projectId: PROJECT,
+    apiEndpoint: REST_URL,
+    authClient: new PassThroughClient(),
+  });
   try {
     await bq.createDataset(DATASET, { location: 'US' });
   } catch (err) {

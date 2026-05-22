@@ -4,10 +4,13 @@
 set -euo pipefail
 
 URL="${SERVICE_URL:-http://localhost:8080/customers}"
+# Derive the healthz base from URL — referencing $SERVICE_URL directly
+# would trip `set -u` whenever the caller leaves it unset.
+BASE="${URL%/customers}"
 
 # Wait up to 30s for the service to come up.
 for _ in $(seq 1 60); do
-    if curl -sf "${SERVICE_URL%/customers}/healthz" >/dev/null 2>&1; then
+    if curl -sf "${BASE}/healthz" >/dev/null 2>&1; then
         break
     fi
     sleep 0.5

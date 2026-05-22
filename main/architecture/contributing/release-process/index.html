@@ -5124,6 +5124,58 @@ a dedicated exit code):</p>
    <code>Security</code>).</p>
 </li>
 <li>
+<p><strong>Pre-release doc sweep.</strong> The release orchestrator only mutates
+   <code>src/bqemulator/__version__</code> (via <code>bump_version.py</code>) and
+   <code>CHANGELOG.md</code> (via <code>changelog.py</code>). Every other version- or
+   maturity-bearing string is <strong>manual</strong> and must be checked once per
+   release. The audit:</p>
+</li>
+</ol>
+<table>
+<thead>
+<tr>
+<th>File</th>
+<th>What to update at a MAJOR / first-stable cut</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><a href="https://github.com/jjviscomi/bqemulator/blob/main/pyproject.toml"><code>pyproject.toml</code></a></td>
+<td><code>Development Status</code> classifier (e.g. <code>3 - Alpha</code> → <code>5 - Production/Stable</code> at v1.0.0). Python version classifiers must match the CI test matrix in <a href="https://github.com/jjviscomi/bqemulator/blob/main/.github/workflows/ci.yml"><code>ci.yml</code></a> — <code>pip install</code> users see this list on the PyPI page and on the <code>Python</code> shield in the README.</td>
+</tr>
+<tr>
+<td><a href="https://github.com/jjviscomi/bqemulator/blob/main/README.md"><code>README.md</code></a> — "Project status" section</td>
+<td>Drop "pre-1.0" / "currently 0.x.y" language; promote any <code>⚪</code> maturity rows for things now shipped (PyPI publish, GHCR publish, etc.).</td>
+</tr>
+<tr>
+<td><a href="https://github.com/jjviscomi/bqemulator/blob/main/README.md"><code>README.md</code></a> — "Conformance corpus depth" header</td>
+<td>If the snapshot date is older than ~30 days, regenerate with <code>make coverage-matrix</code> and update the prose.</td>
+</tr>
+<tr>
+<td><a href="https://github.com/jjviscomi/bqemulator/blob/main/docs/getting-started.md"><code>docs/getting-started.md</code></a> + <a href="https://github.com/jjviscomi/bqemulator/blob/main/docs/reference/cli.md"><code>docs/reference/cli.md</code></a></td>
+<td>Example outputs that hard-code a version string (<code>{"status":"ok","version":"0.1.0"}</code>, <code>bqemulator 0.1.0</code>).</td>
+</tr>
+<tr>
+<td>All four auto-generated reference docs (<a href="https://github.com/jjviscomi/bqemulator/blob/main/docs/reference/conformance-coverage-matrix.md"><code>conformance-coverage-matrix</code></a>, <a href="https://github.com/jjviscomi/bqemulator/blob/main/docs/reference/compatibility-matrix.md"><code>compatibility-matrix</code></a>, <a href="https://github.com/jjviscomi/bqemulator/blob/main/docs/reference/sql-function-mapping.md"><code>sql-function-mapping</code></a>, <a href="https://github.com/jjviscomi/bqemulator/blob/main/docs/reference/api-coverage.md"><code>api-coverage</code></a>)</td>
+<td>Run <code>make matrix coverage-matrix</code> and commit any diff. The umbrella <code>make matrix</code> covers compat-matrix + function-mapping + api-coverage in one call; <code>make coverage-matrix</code> is separate because it walks the conformance corpus. The Docs-drift CI gate runs the matching <code>--check</code> modes on every PR.</td>
+</tr>
+<tr>
+<td><a href="https://github.com/jjviscomi/bqemulator/blob/main/docs/reference/api-configuration-coverage-matrix.md"><code>docs/reference/api-configuration-coverage-matrix.md</code></a></td>
+<td>Manually-maintained audit doc (labelled "Audit dated" at the top — not auto-generated). Skim for new configuration knobs the release added; refresh the audit date if any new entry lands.</td>
+</tr>
+<tr>
+<td><code>.dev/STATUS.md</code>, <code>.dev/v1-confidence-plan.md</code></td>
+<td>Internal status trackers — update before any external version claim references them.</td>
+</tr>
+</tbody>
+</table>
+<p>Land this sweep as a pre-release housekeeping PR <strong>before</strong> running
+   the orchestrator. The orchestrator's <code>make verify</code> step won't catch
+   maturity drift; CI doesn't know your <code>Development Status</code> is stale.
+   Treat the doc sweep as part of the release contract, not as an
+   afterthought.</p>
+<ol>
+<li>
 <p><strong>Branch off <code>main</code>.</strong> Conventional name: <code>release/vX.Y.Z</code>.</p>
 </li>
 <li>
@@ -5150,7 +5202,7 @@ a dedicated exit code):</p>
 <p><strong>Apply the release.</strong></p>
 <div class="language-bash highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>python<span class="w"> </span>scripts/release.py<span class="w"> </span>--apply<span class="w"> </span>--next<span class="w"> </span>minor
 </span></code></pre></div>
-<p>This re-runs steps 1–3 of the dry-run for real, then:</p>
+<p>This re-runs steps 4–5 of the dry-run for real, then:</p>
 <ul>
 <li>Writes the new <code>__version__</code>.</li>
 <li>Rewrites <code>CHANGELOG.md</code> (<code>Unreleased</code> → <code>[X.Y.Z] — YYYY-MM-DD</code>).</li>
@@ -5193,6 +5245,29 @@ signatures.</p>
 </span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a>pip<span class="w"> </span>install<span class="w"> </span><span class="s2">&quot;bqemulator==X.Y.Z&quot;</span>
 </span><span id="__span-4-3"><a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a>bqemulator<span class="w"> </span>version<span class="w">   </span><span class="c1"># prints X.Y.Z</span>
 </span></code></pre></div>
+</li>
+<li>
+<p><strong>Post-release doc flip.</strong> Open a follow-up PR (<code>docs/post-release-vX.Y.Z</code>) that flips every README claim which was <em>aspirational</em> during the release commit into <em>factual</em> now that the artefacts exist. The list is precisely the inverse of the step-2 sweep table — the entries that can only be true after the publish workflows finish:</p>
+<table>
+<thead>
+<tr>
+<th>File</th>
+<th>What to flip</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><a href="https://github.com/jjviscomi/bqemulator/blob/main/README.md"><code>README.md</code></a> — "Project status" header</td>
+<td><code>vX.Y.Z-rc</code> / "staged on main" prose → factual "at <strong>vX.Y.Z</strong> — the initial production-stable release" wording.</td>
+</tr>
+<tr>
+<td><a href="https://github.com/jjviscomi/bqemulator/blob/main/README.md"><code>README.md</code></a> — "Maturity signals" rows</td>
+<td>⚪ "PyPI publish — wired and waiting on the tag push" → ✅ with the verified <code>pip install</code> command. Same flip for the GHCR row with the <code>docker pull</code> command.</td>
+</tr>
+</tbody>
+</table>
+<p>This split exists because step-2 pre-release strings (classifier bumps, example outputs that match what <code>bqemulator version</code> will print) become true the moment the release <strong>commit</strong> lands; the entries above become true only after the <strong>artefacts</strong> are confirmed published. Conflating them ships a README that lies about something it cannot verify yet — the post-release flip is what closes that window.</p>
+<p>The post-release PR must include the actual smoke-test commands from step 10 rendered as proof — committers verify the artefacts exist by running them, not just by reading the workflow's "✓ success" badge.</p>
 </li>
 </ol>
 <h2 id="cli-reference">CLI reference<a class="headerlink" href="#cli-reference" title="Permanent link">&para;</a></h2>

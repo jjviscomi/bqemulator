@@ -86,7 +86,7 @@ func TestSinkEndToEnd(t *testing.T) {
 	// Sanity-check: COUNT(*) returns 2.
 	client, err := bigquery.NewClient(
 		ctx, "bqemu-demo",
-		option.WithEndpoint(restURL),
+		option.WithEndpoint(restURL+"/bigquery/v2/"),
 		option.WithoutAuthentication(),
 	)
 	if err != nil {

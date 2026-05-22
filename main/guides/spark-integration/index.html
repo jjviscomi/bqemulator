@@ -1611,6 +1611,24 @@
         
       
       
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Spark integration
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
       <a href="./" class="md-nav__link md-nav__link--active">
         
   
@@ -1627,6 +1645,47 @@
   
 
       </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#known-limitation-storage-read-ipc-format" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Known limitation — Storage Read IPC format
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#plaintext-grpc" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Plaintext gRPC
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
       
     </li>
   
@@ -4738,6 +4797,36 @@
     
   
   
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#known-limitation-storage-read-ipc-format" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Known limitation — Storage Read IPC format
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#plaintext-grpc" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Plaintext gRPC
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
 </nav>
                   </div>
                 </div>
@@ -4770,7 +4859,7 @@
 
 
 <h1 id="apache-spark-integration">Apache Spark integration<a class="headerlink" href="#apache-spark-integration" title="Permanent link">&para;</a></h1>
-<p>Status: shipped (runnable example in <code>docs/examples/spark/pyspark-storage-api/</code>).</p>
+<p>Status: shipped (runnable example in <code>docs/examples/python/pyspark-bigquery/</code>).</p>
 <p>The <a href="https://github.com/GoogleCloudDataproc/spark-bigquery-connector">spark-bigquery-connector</a>
 uses the Storage Read API for high-throughput reads. Point it at the
 emulator:</p>
@@ -4787,6 +4876,49 @@ emulator:</p>
 </span></code></pre></div>
 <p>Storage Write API sink writes are equivalently configured. See the
 example project for a complete Spark job.</p>
+<h2 id="known-limitation-storage-read-ipc-format">Known limitation — Storage Read IPC format<a class="headerlink" href="#known-limitation-storage-read-ipc-format" title="Permanent link">&para;</a></h2>
+<p>bqemulator currently packs the full Arrow IPC stream (schema framing
++ batches) into <code>ReadRowsResponse.arrow_record_batch.serialized_record_batch</code>
+instead of a single record-batch IPC message. Real BigQuery sends just
+the record-batch bytes — the schema travels on
+<code>ReadSession.arrow_schema.serialized_schema</code>. The
+<code>google-cloud-bigquery-storage</code> client's high-level
+<code>reader.to_arrow(session)</code> helper assumes the real-BigQuery shape and
+trips <code>Expected IPC message of type record batch but got schema</code>.</p>
+<p>Workaround (used by the pyspark-bigquery example): iterate the
+responses by hand and use <code>pyarrow.ipc.open_stream</code>, which accepts
+the full IPC stream that bqemulator emits.</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="kn">import</span><span class="w"> </span><span class="nn">pyarrow</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pa</span>
+</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>
+</span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="n">batches</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">pa</span><span class="o">.</span><span class="n">RecordBatch</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+</span><span id="__span-1-4"><a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="k">for</span> <span class="n">response</span> <span class="ow">in</span> <span class="n">reader</span><span class="p">:</span>
+</span><span id="__span-1-5"><a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a>    <span class="n">payload</span> <span class="o">=</span> <span class="n">response</span><span class="o">.</span><span class="n">arrow_record_batch</span><span class="o">.</span><span class="n">serialized_record_batch</span>
+</span><span id="__span-1-6"><a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a>    <span class="k">if</span> <span class="ow">not</span> <span class="n">payload</span><span class="p">:</span>
+</span><span id="__span-1-7"><a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a>        <span class="k">continue</span>
+</span><span id="__span-1-8"><a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a>    <span class="k">with</span> <span class="n">pa</span><span class="o">.</span><span class="n">ipc</span><span class="o">.</span><span class="n">open_stream</span><span class="p">(</span><span class="n">payload</span><span class="p">)</span> <span class="k">as</span> <span class="n">stream_reader</span><span class="p">:</span>
+</span><span id="__span-1-9"><a id="__codelineno-1-9" name="__codelineno-1-9" href="#__codelineno-1-9"></a>        <span class="n">batches</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">stream_reader</span><span class="o">.</span><span class="n">read_all</span><span class="p">()</span><span class="o">.</span><span class="n">to_batches</span><span class="p">())</span>
+</span><span id="__span-1-10"><a id="__codelineno-1-10" name="__codelineno-1-10" href="#__codelineno-1-10"></a><span class="n">arrow_table</span> <span class="o">=</span> <span class="n">pa</span><span class="o">.</span><span class="n">Table</span><span class="o">.</span><span class="n">from_batches</span><span class="p">(</span><span class="n">batches</span><span class="p">)</span>
+</span></code></pre></div>
+<p>Tracked for cleanup in
+<a href="https://github.com/jjviscomi/bqemulator/issues/15">#15</a> — once the
+server emits the correct format the workaround disappears and
+<code>reader.to_arrow(session)</code> works out of the box.</p>
+<h2 id="plaintext-grpc">Plaintext gRPC<a class="headerlink" href="#plaintext-grpc" title="Permanent link">&para;</a></h2>
+<p>bqemulator serves the Storage Read API over plaintext gRPC. The
+default <code>BigQueryReadClient</code> transport wraps every call in TLS,
+which fails the handshake against a plaintext endpoint
+(<code>SSL_ERROR_SSL: WRONG_VERSION_NUMBER</code>). Construct an
+<code>grpc.insecure_channel</code> explicitly and pass it via the transport:</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="kn">import</span><span class="w"> </span><span class="nn">grpc</span>
+</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">google.cloud</span><span class="w"> </span><span class="kn">import</span> <span class="n">bigquery_storage_v1</span>
+</span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="kn">from</span><span class="w"> </span><span class="nn">google.cloud.bigquery_storage_v1.services.big_query_read.transports</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+</span><span id="__span-2-4"><a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a>    <span class="n">BigQueryReadGrpcTransport</span><span class="p">,</span>
+</span><span id="__span-2-5"><a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a><span class="p">)</span>
+</span><span id="__span-2-6"><a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a>
+</span><span id="__span-2-7"><a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a><span class="n">channel</span> <span class="o">=</span> <span class="n">grpc</span><span class="o">.</span><span class="n">insecure_channel</span><span class="p">(</span><span class="s2">&quot;localhost:9060&quot;</span><span class="p">)</span>
+</span><span id="__span-2-8"><a id="__codelineno-2-8" name="__codelineno-2-8" href="#__codelineno-2-8"></a><span class="n">transport</span> <span class="o">=</span> <span class="n">BigQueryReadGrpcTransport</span><span class="p">(</span><span class="n">channel</span><span class="o">=</span><span class="n">channel</span><span class="p">)</span>
+</span><span id="__span-2-9"><a id="__codelineno-2-9" name="__codelineno-2-9" href="#__codelineno-2-9"></a><span class="n">storage</span> <span class="o">=</span> <span class="n">bigquery_storage_v1</span><span class="o">.</span><span class="n">BigQueryReadClient</span><span class="p">(</span><span class="n">transport</span><span class="o">=</span><span class="n">transport</span><span class="p">)</span>
+</span></code></pre></div>
 
 
 

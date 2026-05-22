@@ -1939,10 +1939,10 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#rest-endpoints-registered" class="md-nav__link">
+  <a href="#rest-endpoints" class="md-nav__link">
     <span class="md-ellipsis">
       
-        REST endpoints registered
+        REST endpoints
       
     </span>
   </a>
@@ -1950,10 +1950,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#grpc-services-registered" class="md-nav__link">
+  <a href="#grpc-services" class="md-nav__link">
     <span class="md-ellipsis">
       
-        gRPC services registered
+        gRPC services
       
     </span>
   </a>
@@ -4804,10 +4804,10 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#rest-endpoints-registered" class="md-nav__link">
+  <a href="#rest-endpoints" class="md-nav__link">
     <span class="md-ellipsis">
       
-        REST endpoints registered
+        REST endpoints
       
     </span>
   </a>
@@ -4815,10 +4815,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#grpc-services-registered" class="md-nav__link">
+  <a href="#grpc-services" class="md-nav__link">
     <span class="md-ellipsis">
       
-        gRPC services registered
+        gRPC services
       
     </span>
   </a>
@@ -4859,154 +4859,207 @@
 
 
 <h1 id="api-coverage">API coverage<a class="headerlink" href="#api-coverage" title="Permanent link">&para;</a></h1>
-<p>Auto-generated from <code>src/bqemulator/api/routes/*.py</code> and
-<code>src/bqemulator/grpc_api/*_servicer.py</code>. See the
-<a href="../compatibility-matrix/">compatibility matrix</a> for ship-phase status
-per operation.</p>
-<h2 id="rest-endpoints-registered">REST endpoints registered<a class="headerlink" href="#rest-endpoints-registered" title="Permanent link">&para;</a></h2>
+<p>A flat inventory of every wire-facing endpoint and gRPC RPC the
+emulator exposes. For ship-status (does this surface match real
+BigQuery?) see the <a href="../compatibility-matrix/">compatibility matrix</a>.
+For per-rule SQL translation behaviour see the
+<a href="../sql-function-mapping/">SQL function mapping</a>.</p>
+<p>The inventory tables below are <strong>auto-generated</strong> by
+<a href="https://github.com/jjviscomi/bqemulator/blob/main/scripts/generate_api_coverage.py"><code>scripts/generate_api_coverage.py</code></a>
+from the live route handlers and gRPC servicers. <code>make verify</code>
+runs the script's <code>--check</code> mode to refuse merging a PR whose
+committed inventory has drifted from the source.</p>
+<!-- BEGIN AUTO-GENERATED API INVENTORY -->
+
+<h2 id="rest-endpoints">REST endpoints<a class="headerlink" href="#rest-endpoints" title="Permanent link">&para;</a></h2>
+<blockquote>
+<p><strong>Auto-generated.</strong> Edit route handlers under <a href="https://github.com/jjviscomi/bqemulator/blob/main/src/bqemulator/api/routes/"><code>src/bqemulator/api/routes/</code></a> (or the root-level health router under <a href="https://github.com/jjviscomi/bqemulator/blob/main/src/bqemulator/api/health.py"><code>src/bqemulator/api/health.py</code></a>) and run <code>make api-coverage</code> to regenerate this block. <code>make verify</code> calls <code>--check</code> to refuse merging a PR whose committed inventory has drifted from the live source. Endpoint counts in this block are facts about the codebase; ship-status (v1.0.0 release-quality across all surfaces) is asserted in the <a href="../compatibility-matrix/">compatibility matrix</a> and gated by the conformance corpus on every PR.</p>
+</blockquote>
+<ul>
+<li><strong>Total REST endpoints</strong>: 42 across 9 route modules</li>
+</ul>
 <table>
 <thead>
 <tr>
-<th>Route</th>
+<th>Group</th>
+<th>Path</th>
 <th>Methods</th>
-<th>Phase</th>
 </tr>
 </thead>
 <tbody>
 <tr>
+<td>Health &amp; metrics</td>
 <td><code>/healthz</code></td>
 <td>GET</td>
-<td>0 ✅</td>
 </tr>
 <tr>
+<td>Health &amp; metrics</td>
 <td><code>/readyz</code></td>
 <td>GET</td>
-<td>0 ✅</td>
 </tr>
 <tr>
-<td><code>/metrics</code></td>
-<td>GET</td>
-<td>0 ✅</td>
-</tr>
-<tr>
+<td>Projects</td>
 <td><code>/bigquery/v2/projects</code></td>
 <td>GET</td>
-<td>1 🚧</td>
 </tr>
 <tr>
-<td><code>/bigquery/v2/projects/{p}/datasets</code></td>
-<td>GET POST</td>
-<td>1 🚧</td>
-</tr>
-<tr>
-<td><code>/bigquery/v2/projects/{p}/datasets/{d}</code></td>
-<td>GET PATCH PUT DELETE</td>
-<td>1 🚧</td>
-</tr>
-<tr>
-<td><code>/bigquery/v2/projects/{p}/datasets/{d}/tables</code></td>
-<td>GET POST</td>
-<td>1 🚧</td>
-</tr>
-<tr>
-<td><code>/bigquery/v2/projects/{p}/datasets/{d}/tables/{t}</code></td>
-<td>GET PATCH PUT DELETE</td>
-<td>1 🚧</td>
-</tr>
-<tr>
-<td><code>/bigquery/v2/projects/{p}/datasets/{d}/tables/{t}/insertAll</code></td>
-<td>POST</td>
-<td>2 🚧</td>
-</tr>
-<tr>
-<td><code>/bigquery/v2/projects/{p}/datasets/{d}/tables/{t}/data</code></td>
+<td>Projects</td>
+<td><code>/bigquery/v2/projects/{project_id}/serviceAccount</code></td>
 <td>GET</td>
-<td>2 🚧</td>
 </tr>
 <tr>
-<td><code>/bigquery/v2/projects/{p}/queries</code></td>
-<td>POST</td>
-<td>1 🚧</td>
-</tr>
-<tr>
-<td><code>/bigquery/v2/projects/{p}/jobs</code></td>
+<td>Datasets</td>
+<td><code>/bigquery/v2/projects/{project_id}/datasets</code></td>
 <td>GET POST</td>
-<td>&frac12; 🚧</td>
 </tr>
 <tr>
-<td><code>/bigquery/v2/projects/{p}/jobs/{j}</code></td>
-<td>GET POST DELETE</td>
-<td>2 🚧</td>
+<td>Datasets</td>
+<td><code>/bigquery/v2/projects/{project_id}/datasets/{dataset_id}</code></td>
+<td>GET PUT PATCH DELETE</td>
 </tr>
 <tr>
-<td><code>/bigquery/v2/projects/{p}/jobs/{j}/cancel</code></td>
-<td>POST</td>
-<td>2 🚧</td>
+<td>Tables</td>
+<td><code>/bigquery/v2/projects/{project_id}/datasets/{dataset_id}/tables</code></td>
+<td>GET POST</td>
 </tr>
 <tr>
-<td><code>/bigquery/v2/projects/{p}/queries/{j}</code></td>
+<td>Tables</td>
+<td><code>/bigquery/v2/projects/{project_id}/datasets/{dataset_id}/tables/{table_id}</code></td>
+<td>GET PUT PATCH DELETE</td>
+</tr>
+<tr>
+<td>TableData</td>
+<td><code>/bigquery/v2/projects/{project_id}/datasets/{dataset_id}/tables/{table_id}/data</code></td>
 <td>GET</td>
-<td>2 🚧</td>
 </tr>
 <tr>
-<td><code>/bigquery/v2/projects/{p}/datasets/{d}/routines</code></td>
+<td>TableData</td>
+<td><code>/bigquery/v2/projects/{project_id}/datasets/{dataset_id}/tables/{table_id}/insertAll</code></td>
+<td>POST</td>
+</tr>
+<tr>
+<td>Jobs</td>
+<td><code>/bigquery/v2/projects/{project_id}/jobs</code></td>
 <td>GET POST</td>
-<td>6 🚧</td>
 </tr>
 <tr>
-<td><code>/bigquery/v2/projects/{p}/datasets/{d}/routines/{r}</code></td>
-<td>GET PATCH PUT DELETE</td>
-<td>6 🚧</td>
-</tr>
-<tr>
-<td><code>/upload/bigquery/v2/projects/{p}/jobs?uploadType=media</code></td>
+<td>Jobs</td>
+<td><code>/bigquery/v2/projects/{project_id}/queries</code></td>
 <td>POST</td>
-<td>11 (G2) ✅</td>
 </tr>
 <tr>
-<td><code>/upload/bigquery/v2/projects/{p}/jobs?uploadType=multipart</code></td>
+<td>Jobs</td>
+<td><code>/bigquery/v2/projects/{project_id}/jobs/{job_id}</code></td>
+<td>GET DELETE</td>
+</tr>
+<tr>
+<td>Jobs</td>
+<td><code>/bigquery/v2/projects/{project_id}/queries/{job_id}</code></td>
+<td>GET</td>
+</tr>
+<tr>
+<td>Jobs</td>
+<td><code>/bigquery/v2/projects/{project_id}/jobs/{job_id}/cancel</code></td>
 <td>POST</td>
-<td>11 (G2) ✅</td>
 </tr>
 <tr>
-<td><code>/upload/bigquery/v2/projects/{p}/jobs?uploadType=resumable</code></td>
+<td>Jobs</td>
+<td><code>/bigquery/v2/projects/{project_id}/jobs/{job_id}/delete</code></td>
+<td>DELETE</td>
+</tr>
+<tr>
+<td>Routines</td>
+<td><code>/bigquery/v2/projects/{project_id}/datasets/{dataset_id}/routines</code></td>
+<td>GET POST</td>
+</tr>
+<tr>
+<td>Routines</td>
+<td><code>/bigquery/v2/projects/{project_id}/datasets/{dataset_id}/routines/{routine_id}</code></td>
+<td>GET PUT PATCH DELETE</td>
+</tr>
+<tr>
+<td>RowAccessPolicies</td>
+<td><code>/bigquery/v2/projects/{project_id}/datasets/{dataset_id}/tables/{table_id}/rowAccessPolicies</code></td>
+<td>GET POST</td>
+</tr>
+<tr>
+<td>RowAccessPolicies</td>
+<td><code>/bigquery/v2/projects/{project_id}/datasets/{dataset_id}/tables/{table_id}/rowAccessPolicies:batchDelete</code></td>
 <td>POST</td>
-<td>11 (G2) ✅</td>
 </tr>
 <tr>
-<td><code>/upload/bigquery/v2/projects/{p}/jobs?upload_id={id}</code></td>
-<td>PUT</td>
-<td>11 (G2) ✅</td>
+<td>RowAccessPolicies</td>
+<td><code>/bigquery/v2/projects/{project_id}/datasets/{dataset_id}/tables/{table_id}/rowAccessPolicies/{policy_id}</code></td>
+<td>GET PUT DELETE</td>
+</tr>
+<tr>
+<td>RowAccessPolicies</td>
+<td><code>/bigquery/v2/projects/{project_id}/datasets/{dataset_id}/tables/{table_id}/rowAccessPolicies/{policy_id}:getIamPolicy</code></td>
+<td>POST</td>
+</tr>
+<tr>
+<td>RowAccessPolicies</td>
+<td><code>/bigquery/v2/projects/{project_id}/datasets/{dataset_id}/tables/{table_id}/rowAccessPolicies/{policy_id}:testIamPermissions</code></td>
+<td>POST</td>
+</tr>
+<tr>
+<td>Upload host</td>
+<td><code>/upload/bigquery/v2/projects/{project_id}/jobs</code></td>
+<td>POST PUT</td>
 </tr>
 </tbody>
 </table>
-<h2 id="grpc-services-registered">gRPC services registered<a class="headerlink" href="#grpc-services-registered" title="Permanent link">&para;</a></h2>
+<h2 id="grpc-services">gRPC services<a class="headerlink" href="#grpc-services" title="Permanent link">&para;</a></h2>
+<ul>
+<li><strong>Total gRPC RPCs</strong>: 9 across 2 services</li>
+</ul>
 <table>
 <thead>
 <tr>
 <th>Service</th>
-<th>Methods</th>
-<th>Phase</th>
+<th>RPC method</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td><code>grpc.health.v1.Health</code></td>
-<td><code>Check</code>, <code>Watch</code></td>
-<td>0 ✅</td>
+<td><code>google.cloud.bigquery.storage.v1.BigQueryRead</code></td>
+<td><code>CreateReadSession</code></td>
 </tr>
 <tr>
 <td><code>google.cloud.bigquery.storage.v1.BigQueryRead</code></td>
-<td><code>CreateReadSession</code>, <code>ReadRows</code> (Arrow + <strong>Avro</strong> as of G3 2024-05-21), <code>SplitReadStream</code></td>
-<td>4 + 11 (G3) ✅</td>
+<td><code>ReadRows</code></td>
+</tr>
+<tr>
+<td><code>google.cloud.bigquery.storage.v1.BigQueryRead</code></td>
+<td><code>SplitReadStream</code></td>
 </tr>
 <tr>
 <td><code>google.cloud.bigquery.storage.v1.BigQueryWrite</code></td>
-<td><code>CreateWriteStream</code>, <code>AppendRows</code>, <code>FinalizeWriteStream</code>, <code>BatchCommitWriteStreams</code>, <code>FlushRows</code>, <code>GetWriteStream</code></td>
-<td>5 🚧</td>
+<td><code>AppendRows</code></td>
+</tr>
+<tr>
+<td><code>google.cloud.bigquery.storage.v1.BigQueryWrite</code></td>
+<td><code>BatchCommitWriteStreams</code></td>
+</tr>
+<tr>
+<td><code>google.cloud.bigquery.storage.v1.BigQueryWrite</code></td>
+<td><code>CreateWriteStream</code></td>
+</tr>
+<tr>
+<td><code>google.cloud.bigquery.storage.v1.BigQueryWrite</code></td>
+<td><code>FinalizeWriteStream</code></td>
+</tr>
+<tr>
+<td><code>google.cloud.bigquery.storage.v1.BigQueryWrite</code></td>
+<td><code>FlushRows</code></td>
+</tr>
+<tr>
+<td><code>google.cloud.bigquery.storage.v1.BigQueryWrite</code></td>
+<td><code>GetWriteStream</code></td>
 </tr>
 </tbody>
 </table>
+<!-- END AUTO-GENERATED API INVENTORY -->
 
 
 

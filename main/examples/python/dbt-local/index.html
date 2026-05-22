@@ -4145,6 +4145,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#version-compatibility" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Version compatibility
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#layout" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -4857,6 +4868,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#version-compatibility" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Version compatibility
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#layout" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -4929,14 +4951,27 @@ override path.</p>
 <p>Pairs with the <a href="../../../guides/dbt-integration/">dbt integration guide</a>.</p>
 <h2 id="what-it-demonstrates">What it demonstrates<a class="headerlink" href="#what-it-demonstrates" title="Permanent link">&para;</a></h2>
 <ul>
-<li>Pointing <code>dbt-bigquery</code> at the emulator using <code>BIGQUERY_EMULATOR_HOST</code></li>
-<li>the <code>oauth</code> method with anonymous credentials.</li>
+<li>Pointing <code>dbt-bigquery</code> at the emulator using <code>BIGQUERY_EMULATOR_HOST</code>
+  (full URL including the <code>http://</code> scheme — dbt-bigquery forwards
+  this verbatim into <code>client_options.api_endpoint</code> and <code>requests</code>
+  needs the scheme to pick a connection adapter) + the
+  <code>oauth-secrets</code> method with a placeholder bearer token (bqemulator
+  accepts any token; <code>oauth-secrets</code> is the one auth path that does
+  not contact Google's <code>/token</code> endpoint at startup).</li>
 <li>One seed (<code>customers.csv</code>), one staging model
   (<code>models/staging/stg_customers.sql</code>), one mart model
   (<code>models/marts/dim_customers.sql</code>), and dbt schema tests
   (<code>not_null</code>, <code>unique</code>).</li>
 <li><code>dbt build</code> runs end to end with no real-GCP credentials.</li>
 </ul>
+<h2 id="version-compatibility">Version compatibility<a class="headerlink" href="#version-compatibility" title="Permanent link">&para;</a></h2>
+<p>The example tracks <code>dbt-bigquery &gt;=1.9,&lt;1.11</code>. Both 1.9 and 1.10
+emit <code>CREATE SCHEMA \</code>proj`.`ds`<code>two-part identifiers; the
+bqemulator table-rewriter collapses those into a single</code>"proj__ds"<code>schema (matching what every other rewriter path
+emits) so the SQL reaches DuckDB cleanly. Earlier passes mistakenly
+pinned to</code>&lt;1.10<code>chasing what looked like a dbt regression — the
+actual cause was bqemulator's rewriter producing</code>"proj__ds".""`
+with an empty trailing identifier.</p>
 <h2 id="layout">Layout<a class="headerlink" href="#layout" title="Permanent link">&para;</a></h2>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>dbt_project.yml          — project + model config
 </span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>profiles.yml             — emulator profile (endpoint, anonymous auth)
@@ -4962,12 +4997,17 @@ override path.</p>
 </ol>
 <h2 id="what-to-look-for">What to look for<a class="headerlink" href="#what-to-look-for" title="Permanent link">&para;</a></h2>
 <ul>
-<li><code>profiles.yml</code> uses <code>method: oauth</code> with no service account — the
-  emulator accepts anonymous credentials.</li>
+<li><code>profiles.yml</code> uses <code>method: oauth-secrets</code> with a literal
+  placeholder token (<code>bqemu-fake-token</code>). dbt builds a static
+  <code>google.oauth2.credentials.Credentials</code> from it and never calls
+  Google's token endpoint — the bearer reaches bqemulator, which
+  doesn't validate auth, and the call goes through.</li>
 <li>The endpoint override is set via the
   <a href="https://cloud.google.com/bigquery/docs/emulator"><code>BIGQUERY_EMULATOR_HOST</code></a>
-  env var (a GCP-wide convention <code>dbt-bigquery</code> respects when it
-  constructs its underlying <code>google-cloud-bigquery</code> client).</li>
+  env var, prefixed with <code>http://</code>. dbt-bigquery forwards the value
+  verbatim into <code>client_options.api_endpoint</code>, so the scheme must
+  be present (the bare <code>google-cloud-bigquery</code> library auto-injects
+  <code>http://</code> but dbt's wrapper bypasses that branch).</li>
 <li>No real GCP project, dataset, or billing is required.</li>
 </ul>
 

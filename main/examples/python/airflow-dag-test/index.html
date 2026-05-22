@@ -4934,9 +4934,15 @@ the DAG via Airflow's <code>TaskInstance.run()</code> API.</p>
 <li>An Airflow connection (<code>google_cloud_default</code>) configured at test
   time via <code>AIRFLOW_CONN_GOOGLE_CLOUD_DEFAULT</code> so no Airflow metadata
   DB is required.</li>
-<li>Pointing the connection at <code>bqemulator</code> via the standard
-  <code>BIGQUERY_EMULATOR_HOST</code> env var that <code>google-cloud-bigquery</code> (the
-  hook's underlying transport) respects.</li>
+<li>Pointing the connection at <code>bqemulator</code> via the
+  <code>BIGQUERY_EMULATOR_HOST</code> env var, set to the <strong>full URL including
+  the <code>http://</code> scheme</strong> (the Airflow Google provider forwards this
+  value verbatim into <code>client_options.api_endpoint</code> and <code>requests</code>
+  picks the adapter from the scheme).</li>
+<li>A session-scoped monkey-patch on <code>google.auth.default()</code> that
+  returns <code>AnonymousCredentials</code> so the BQ hook never attempts a JWT
+  grant against <code>oauth2.googleapis.com/token</code>. bqemulator doesn't
+  validate auth, so the anonymous credentials sail through.</li>
 <li>Tests run each task in isolation via <code>TaskInstance.run(test_mode=True)</code>.</li>
 </ul>
 <h2 id="layout">Layout<a class="headerlink" href="#layout" title="Permanent link">&para;</a></h2>

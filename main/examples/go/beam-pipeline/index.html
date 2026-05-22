@@ -4832,23 +4832,24 @@
 
 
 <h1 id="apache-beam-go-sdk-pipeline-against-bqemulator">Apache Beam Go SDK pipeline against <code>bqemulator</code><a class="headerlink" href="#apache-beam-go-sdk-pipeline-against-bqemulator" title="Permanent link">&para;</a></h1>
-<p>A minimal Beam Go pipeline (Direct runner) that writes a small table to
-BigQuery and reads it back. Targets <code>bqemulator</code> by setting the
-<code>--bigquery_endpoint</code> pipeline flag.</p>
+<p>A minimal Beam Go pipeline (Direct runner) that seeds a customers
+table via the standard BigQuery client and runs a trivial Beam
+PCollection over those rows. Demonstrates the Beam Go SDK shape
+without relying on Beam's in-development BigQueryIO emulator
+support.</p>
 <h2 id="what-it-demonstrates">What it demonstrates<a class="headerlink" href="#what-it-demonstrates" title="Permanent link">&para;</a></h2>
 <ul>
-<li>Constructing a <code>BigQueryIO.Write</code> transform with <code>WRITE_TRUNCATE</code>
-  and <code>CREATE_IF_NEEDED</code> against the emulator.</li>
-<li>Reading back with <code>BigQueryIO.Read</code> and asserting the row count via
-  <code>passert</code>.</li>
-<li>Driving the test from a Go test (<code>TestMain</code>) that starts the
-  emulator via Testcontainers-go and passes the dynamic host to the
-  pipeline.</li>
+<li>Seeding a dataset + table + rows against the emulator via the
+  <code>cloud.google.com/go/bigquery</code> client (<code>Seed</code>).</li>
+<li>Constructing a Beam pipeline from a fixed slice
+  (<code>BuildCountPipeline</code>) and executing it on the Direct runner.</li>
+<li>Driving the test from a Go test that starts the emulator via
+  Testcontainers-go.</li>
 </ul>
 <h2 id="layout">Layout<a class="headerlink" href="#layout" title="Permanent link">&para;</a></h2>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>go.mod
-</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>main.go                     — pipeline binary (cmd entry point)
-</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>pipeline.go                 — pipeline construction
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>cmd/run/main.go             — pipeline binary (`go run ./cmd/run`)
+</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>pipeline.go                 — `Seed` + `BuildCountPipeline`
 </span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>pipeline_test.go            — end-to-end test with testcontainers-go
 </span></code></pre></div>
 <h2 id="run">Run<a class="headerlink" href="#run" title="Permanent link">&para;</a></h2>
@@ -4857,10 +4858,17 @@ BigQuery and reads it back. Targets <code>bqemulator</code> by setting the
 <p>Requires Docker + Go 1.22+.</p>
 <h2 id="what-to-look-for">What to look for<a class="headerlink" href="#what-to-look-for" title="Permanent link">&para;</a></h2>
 <ul>
-<li>The pipeline is plain Beam Go — no emulator-specific imports.</li>
-<li><code>pipeline_test.go</code> is the <strong>only</strong> test, and it drives the whole
-  pipeline. This matches the recommended Beam Go integration test
-  pattern.</li>
+<li><code>option.WithEndpoint(...)</code> is passed the <strong>full base URL</strong>
+  (<code>http://host:port/bigquery/v2/</code>), not just the host. The Google
+  Cloud Go BQ client treats <code>WithEndpoint</code> as the full base — it
+  replaces the generated <code>/bigquery/v2/</code> prefix outright, unlike the
+  Python client which appends.</li>
+<li><code>BuildCountPipeline</code> returns the input PCollection directly rather
+  than chaining a <code>beam.Count</code> — that helper was removed from
+  upstream Beam Go SDK. Users who want a row count can chain
+  <code>stats.Count</code> from <code>github.com/apache/beam/sdks/v2/go/pkg/beam/transforms/stats</code>.</li>
+<li><code>direct.Execute</code> returns <code>(PipelineResult, error)</code> in modern Beam;
+  the test uses <code>if _, err := direct.Execute(ctx, p); err != nil</code>.</li>
 </ul>
 
 

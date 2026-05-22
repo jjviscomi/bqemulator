@@ -37,9 +37,10 @@ func main() {
 		{ID: 3, Name: "Carol"},
 	}
 	p, _, count := pipeline.BuildCountPipeline(customers)
-	if err := direct.Execute(ctx, p); err != nil {
+	// direct.Execute returns (PipelineResult, error) in modern Beam.
+	if _, err := direct.Execute(ctx, p); err != nil {
 		log.Fatalf("direct.Execute: %v", err)
 	}
 	beam.PipelineOptions.Set("project", *project)
-	fmt.Printf("OK: pipeline ran (count PCollection=%v)\n", count)
+	fmt.Printf("OK: pipeline ran (output PCollection=%v)\n", count)
 }

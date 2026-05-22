@@ -4924,24 +4924,29 @@ not drift.</p>
 <tr>
 <th>Path</th>
 <th>What it demonstrates</th>
+<th>Known caveats</th>
 </tr>
 </thead>
 <tbody>
 <tr>
 <td><a href="python/pytest-integration/"><code>python/pytest-integration/</code></a></td>
 <td>Flask app + pytest fixture (<code>bqemu_client</code>)</td>
+<td>—</td>
 </tr>
 <tr>
 <td><a href="python/dbt-local/"><code>python/dbt-local/</code></a></td>
 <td><code>dbt build</code> against emulator (seed + model + tests)</td>
+<td>—</td>
 </tr>
 <tr>
 <td><a href="python/airflow-dag-test/"><code>python/airflow-dag-test/</code></a></td>
 <td><code>BigQueryInsertJobOperator</code> DAG via <code>dag.test()</code></td>
+<td>Monkey-patches <code>google.auth.default</code> to return <code>AnonymousCredentials</code> so the BQ hook skips JWT grant</td>
 </tr>
 <tr>
 <td><a href="python/pyspark-bigquery/"><code>python/pyspark-bigquery/</code></a></td>
 <td>PySpark <code>DataFrame</code> from Storage Read (Arrow)</td>
+<td>Iterates <code>ReadRowsResponse</code> by hand instead of <code>reader.to_arrow(session)</code> — see <a href="https://github.com/jjviscomi/bqemulator/issues/15">#15</a></td>
 </tr>
 </tbody>
 </table>
@@ -4989,16 +4994,19 @@ not drift.</p>
 <tr>
 <th>Path</th>
 <th>What it demonstrates</th>
+<th>Known caveats</th>
 </tr>
 </thead>
 <tbody>
 <tr>
 <td><a href="java/spring-boot/"><code>java/spring-boot/</code></a></td>
 <td>Spring Boot repository + Testcontainers integration test</td>
+<td>—</td>
 </tr>
 <tr>
 <td><a href="java/scio/"><code>java/scio/</code></a></td>
 <td>Spotify Scio (Scala-on-Beam) pipeline + ScalaTest</td>
+<td>Test asserts the <em>wiring</em> (container up, REST API reachable). The end-to-end <code>CustomersPipeline.run</code> is parked behind <a href="https://github.com/jjviscomi/bqemulator/issues/17">#17</a> — Beam Java BigQueryIO can't be pointed at a dynamic-port emulator from inside the test JVM. The pipeline source itself is production-ready.</td>
 </tr>
 </tbody>
 </table>

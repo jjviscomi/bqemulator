@@ -4943,7 +4943,7 @@ code path, no Beam runner needed, fast iteration against an emulator.</p>
 preferences.</p>
 <h2 id="layout">Layout<a class="headerlink" href="#layout" title="Permanent link">&para;</a></h2>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>go.mod
-</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>main.go                 — binary entry point
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>cmd/run/main.go         — binary entry point (`go run ./cmd/run`)
 </span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>etl.go                  — Transform + Sink helpers (testable)
 </span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>etl_test.go             — table-driven tests + end-to-end against emulator
 </span></code></pre></div>
@@ -4957,6 +4957,11 @@ preferences.</p>
   separated from BigQuery I/O.</li>
 <li><code>etl_test.go</code> includes both unit tests and one end-to-end test
   driven by Testcontainers — keeping the fast and slow gates distinct.</li>
+<li><code>option.WithEndpoint(...)</code> is passed the <strong>full base URL</strong>
+  (<code>http://host:port/bigquery/v2/</code>), not just the host. The Google
+  Cloud Go BQ client treats <code>WithEndpoint</code> as the full base — it
+  replaces the generated <code>/bigquery/v2/</code> prefix outright, unlike the
+  Python client which appends.</li>
 </ul>
 
 
