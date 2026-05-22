@@ -46,7 +46,11 @@ jobs:
       - name: Interrogate (docstring coverage)
         run: interrogate src
       - name: Typos
-        uses: crate-ci/typos@master
+        # Pin to a specific commit SHA so the workflow is reproducible
+        # and Dependabot can track upgrades. ``@master`` would silently
+        # follow the moving branch and could introduce surprise
+        # behaviour or supply-chain risk.
+        uses: crate-ci/typos@aca895bf05aec0cb7dffa6f94495e923224d9f17 # v1.46.2
 
   unit:
     name: Unit + property tests (py${{ matrix.python }} · ${{ matrix.os }})
