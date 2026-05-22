@@ -20,6 +20,26 @@ section and adds the release date.
 
 ## [Unreleased]
 
+### Changed
+
+- **scio example: testcontainers bump + #17 investigation notes.**
+  Bumped ``testcontainers`` 1.19.7 → 1.20.4 in the scio example's
+  ``build.sbt`` — the older docker-java 1.32 client doesn't talk to
+  Docker 27+ (modern Docker Desktop returns ``client version 1.32 is
+  too old``). The end-to-end Beam BigQueryIO routing attempted under
+  issue #17 turned out to be deeper than a single flag/env-var fix
+  — ``--bigQueryEndpoint`` does override the Apiary ``Bigquery``
+  client's ``rootUrl``, but Beam's ``BigQueryIO.Write`` defaults to
+  the ``BATCH_LOADS`` method which stages rows to GCS before
+  invoking a BigQuery LOAD job (no GCS-compatible shim in the
+  emulator), and Beam's auth refresh fires before the redirected
+  HTTP call so ``OAuth2Credentials.refresh()`` 400s against
+  ``oauth2.googleapis.com`` even with
+  ``--gcpCredentialFactoryClass=NoopCredentialFactory``. The
+  ``CustomersPipelineSpec`` stays at the wiring-only smoke for
+  v1.0.1; the full set of constraints is captured in the spec's
+  header comment and tracked on issue #17 for v1.0.2+.
+
 ## [1.0.0] — 2026-05-22
 
 ### Added
