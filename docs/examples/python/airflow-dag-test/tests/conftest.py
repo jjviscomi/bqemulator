@@ -45,70 +45,46 @@ def _airflow_home(tmp_path_factory: pytest.TempPathFactory) -> Iterator[None]:
         os.environ["AIRFLOW_HOME"] = previous
 
 
-def _mint_fake_service_account_key(path: Path, project: str) -> None:
-    """Write a syntactically valid service-account keyfile.
-
-    Airflow's ``BigQueryHook`` resolves credentials (via
-    ``google.auth.default()``) before ``BIGQUERY_EMULATOR_HOST`` can
-    short-circuit anything. Without ADC the hook raises
-    ``DefaultCredentialsError`` at the first attribute lookup. Synthesise
-    a real RSA-PEM keyfile here so the parser is satisfied; the
-    emulator never calls Google's token endpoint, so the key stays
-    local.
-    """
-    from cryptography.hazmat.primitives import serialization
-    from cryptography.hazmat.primitives.asymmetric import rsa
-
-    key = rsa.generate_private_key(public_exponent=65537, key_size=2048)
-    pem = key.private_bytes(
-        encoding=serialization.Encoding.PEM,
-        format=serialization.PrivateFormat.PKCS8,
-        encryption_algorithm=serialization.NoEncryption(),
-    ).decode()
-    path.write_text(
-        json.dumps(
-            {
-                "type": "service_account",
-                "project_id": project,
-                "private_key_id": "bqemu-fake-key",
-                "private_key": pem,
-                "client_email": f"bqemu-fake@{project}.iam.gserviceaccount.com",
-                "client_id": "1",
-                "auth_uri": "https://accounts.google.com/o/oauth2/auth",
-                "token_uri": "https://oauth2.googleapis.com/token",
-                "auth_provider_x509_cert_url": (
-                    "https://www.googleapis.com/oauth2/v1/certs"
-                ),
-            }
-        )
-    )
-
-
 @pytest.fixture(scope="session", autouse=True)
-def _emulator_env(
-    bqemu_server,
-    tmp_path_factory: pytest.TempPathFactory,
-) -> Iterator[None]:
-    """Wire the emulator into the env vars that the BQ hook consumes."""
+def _emulator_env(bqemu_server) -> Iterator[None]:
+    """Wire the emulator into the env vars that the BQ hook consumes.
+
+    ``BigQueryHook`` resolves credentials via ``google.auth.default()``
+    and then forwards them to ``google.cloud.bigquery.Client``. A real
+    service-account keyfile gets through ADC but the client then does
+    a JWT grant against ``oauth2.googleapis.com/token`` on the first
+    API call — which fails with ``invalid_grant`` for a synthetic SA.
+    bqemulator doesn't validate auth, so the cleanest workaround is
+    to make ``google.auth.default()`` hand back
+    ``AnonymousCredentials`` for the duration of the session. Airflow
+    then propagates those into the BQ client and no token exchange
+    ever happens.
+    """
+    import google.auth
+    import google.auth._default
+    import google.auth.credentials
+
+    project = os.environ.get("BQ_PROJECT", "bqemu-demo")
+    anon = google.auth.credentials.AnonymousCredentials()
+
+    def _emu_default(scopes=None, request=None, quota_project_id=None,
+                     default_scopes=None):  # noqa: ANN001
+        return anon, project
+
     rest_url = bqemu_server.rest_url
     host = rest_url.removeprefix("http://").removeprefix("https://")
-    project = os.environ.get("BQ_PROJECT", "bqemu-demo")
-    key_path = tmp_path_factory.mktemp("gcp_keys") / "fake-sa.json"
-    _mint_fake_service_account_key(key_path, project)
-
     previous_emu = os.environ.get("BIGQUERY_EMULATOR_HOST")
-    previous_adc = os.environ.get("GOOGLE_APPLICATION_CREDENTIALS")
+    previous_default = google.auth.default
+    previous_internal_default = google.auth._default.default
     os.environ["BIGQUERY_EMULATOR_HOST"] = host
-    # ADC fallback so ``google.auth.default()`` succeeds — the
-    # connection's ``key_path`` covers the Airflow hook path, this
-    # covers anything that bypasses the connection layer.
-    os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = str(key_path)
+    google.auth.default = _emu_default
+    google.auth._default.default = _emu_default
     conn = {
         "conn_type": "google_cloud_platform",
         "extra": json.dumps(
             {
                 "project": project,
-                "key_path": str(key_path),
+                "key_path": "",
                 "scope": "https://www.googleapis.com/auth/bigquery",
             }
         ),
@@ -117,14 +93,12 @@ def _emulator_env(
         f"google-cloud-platform://?{conn['extra']}"
     )
     yield
+    google.auth.default = previous_default
+    google.auth._default.default = previous_internal_default
     if previous_emu is None:
         os.environ.pop("BIGQUERY_EMULATOR_HOST", None)
     else:
         os.environ["BIGQUERY_EMULATOR_HOST"] = previous_emu
-    if previous_adc is None:
-        os.environ.pop("GOOGLE_APPLICATION_CREDENTIALS", None)
-    else:
-        os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = previous_adc
 
 
 @pytest.fixture

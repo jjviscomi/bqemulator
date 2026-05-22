@@ -1,7 +1,3 @@
 apache-airflow>=2.8,<3.0
 apache-airflow-providers-google>=10.0,<12.0
 pytest>=8.0,<9.0
-# Used by conftest to synthesise a syntactically valid
-# service-account keyfile so the BQ hook's auth resolver passes
-# before BIGQUERY_EMULATOR_HOST short-circuits real API calls.
-cryptography>=42.0

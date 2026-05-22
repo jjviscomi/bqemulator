@@ -1,5 +1,8 @@
 package com.example.bqemu
 
+import java.net.URI
+import java.net.http.{HttpClient, HttpRequest, HttpResponse}
+
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
 import org.testcontainers.containers.GenericContainer
@@ -31,6 +34,21 @@ class CustomersPipelineSpec extends AnyFlatSpec with Matchers {
     container.start()
     try {
       val rest = s"http://${container.getHost}:${container.getMappedPort(9050)}"
+      // BigQueryIO's preflight checks the *dataset* exists before the
+      // pipeline runs; `CREATE_IF_NEEDED` only ever creates the
+      // table. In production the dataset is usually provisioned by
+      // Terraform or `bq mk`; for the example we mint it inline via
+      // the REST API so the pipeline can focus on the actual write.
+      val createDs = HttpRequest.newBuilder()
+        .uri(URI.create(s"$rest/bigquery/v2/projects/bqemu-demo/datasets"))
+        .header("Content-Type", "application/json")
+        .POST(HttpRequest.BodyPublishers.ofString(
+          """{"datasetReference":{"projectId":"bqemu-demo","datasetId":"scio_demo"},"location":"US"}"""
+        ))
+        .build()
+      HttpClient.newHttpClient()
+        .send(createDs, HttpResponse.BodyHandlers.discarding())
+
       val args = Array(
         "--runner=DirectRunner",
         s"--bigQueryEndpoint=$rest",
