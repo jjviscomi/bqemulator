@@ -85,7 +85,28 @@ test-integration: ## In-process emulator + client integration tests
 .PHONY: test-coverage
 test-coverage: ## Combined U+P+I coverage gate (90% line+branch; matches STATUS.md methodology)
 	pytest tests/unit tests/property tests/integration \
-		--cov=bqemulator --cov-branch --cov-report=term --cov-fail-under=90
+		--cov=bqemulator --cov-branch \
+		--cov-report=term --cov-report=xml \
+		--cov-fail-under=90
+
+# Patch-coverage gate. ``--cov-fail-under`` above checks the
+# **project** total. This target checks the **diff** — the lines this
+# branch adds (or modifies) versus ``main``. Mirrors Codecov's
+# ``patch`` status (configured at 70% in codecov.yml). Catches the
+# gap where the project total stays ≥90% but the PR's own new
+# lines are uncovered. Requires a fresh ``coverage.xml`` (the
+# ``test-coverage`` target now emits one).
+PATCH_COVERAGE_BASE ?= origin/main
+.PHONY: test-patch-coverage
+test-patch-coverage: ## Patch coverage on lines added vs main (≥70%); needs prior `make test-coverage`
+	@if [ ! -f coverage.xml ]; then \
+	    echo "ERROR: coverage.xml missing — run 'make test-coverage' first." >&2; \
+	    exit 1; \
+	fi
+	diff-cover coverage.xml \
+		--compare-branch=$(PATCH_COVERAGE_BASE) \
+		--fail-under=70 \
+		--include-untracked
 
 .PHONY: test-e2e
 test-e2e: test-e2e-python test-e2e-nodejs test-e2e-go test-e2e-java test-e2e-bq-cli ## E2E against live container (all five conformance clients)

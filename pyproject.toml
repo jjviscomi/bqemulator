@@ -187,6 +187,10 @@ dev = [
     "pre-commit>=3.6",
     "mutmut>=2.4",
     "vulture>=2.11",
+    # diff-cover drives the local ``test-patch-coverage`` gate —
+    # mirrors Codecov's ``patch`` status so patch-coverage drops
+    # are caught **before** push, not after CI fails.
+    "diff-cover>=9.0",
 ]
 
 [project.urls]
