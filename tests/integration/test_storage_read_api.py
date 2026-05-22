@@ -90,16 +90,24 @@ def test_create_read_session_via_grpc(bqemu_server: EmulatorServer) -> None:
 
     assert len(responses) >= 1
 
-    # Deserialize and verify Arrow data.
+    # Deserialize and verify Arrow data. ``serialized_record_batch``
+    # carries a bare batch message; the schema travels separately on
+    # ``ReadSession.arrow_schema.serialized_schema``. Reconstruct the
+    # schema once and use ``read_record_batch`` per response — this is
+    # exactly the path real Storage Read clients
+    # (``google-cloud-bigquery-storage``) follow. See issue #15.
     import pyarrow as pa
 
+    schema = pa.ipc.open_stream(session.arrow_schema.serialized_schema).schema
     total_rows = 0
     for resp_bytes in responses:
         resp = types.ReadRowsResponse.deserialize(resp_bytes)
         if resp.arrow_record_batch.serialized_record_batch:
-            reader = pa.ipc.open_stream(resp.arrow_record_batch.serialized_record_batch)
-            batch_table = reader.read_all()
-            total_rows += batch_table.num_rows
+            batch = pa.ipc.read_record_batch(
+                resp.arrow_record_batch.serialized_record_batch,
+                schema,
+            )
+            total_rows += batch.num_rows
 
     assert total_rows > 0
 
@@ -147,12 +155,15 @@ def test_create_read_session_with_projection(bqemu_server: EmulatorServer) -> No
 
     import pyarrow as pa
 
+    schema = pa.ipc.open_stream(session.arrow_schema.serialized_schema).schema
     for resp_bytes in responses:
         resp = types.ReadRowsResponse.deserialize(resp_bytes)
         if resp.arrow_record_batch.serialized_record_batch:
-            reader = pa.ipc.open_stream(resp.arrow_record_batch.serialized_record_batch)
-            batch_table = reader.read_all()
-            assert batch_table.column_names == ["value"]
+            batch = pa.ipc.read_record_batch(
+                resp.arrow_record_batch.serialized_record_batch,
+                schema,
+            )
+            assert batch.schema.names == ["value"]
 
     channel.close()
     _make_bq_client(bqemu_server).delete_dataset("storage_read", delete_contents=True)

@@ -9,7 +9,7 @@ from bqemulator.streaming.read_session import (
     create_read_session,
     get_session,
     get_stream_data,
-    serialize_arrow_ipc,
+    serialize_arrow_record_batch,
 )
 
 pytestmark = pytest.mark.unit
@@ -93,14 +93,36 @@ class TestGetStreamData:
         assert total_rows == sample_table.num_rows
 
 
-class TestSerializeArrowIpc:
-    def test_round_trips(self, sample_table: pa.Table) -> None:
-        ipc_bytes = serialize_arrow_ipc(sample_table)
-        assert isinstance(ipc_bytes, bytes)
-        assert len(ipc_bytes) > 0
+class TestSerializeArrowRecordBatch:
+    """Pin the bare-message contract (issue #15).
 
-        # Deserialize and verify.
-        reader = pa.ipc.open_stream(ipc_bytes)
-        result = reader.read_all()
-        assert result.num_rows == sample_table.num_rows
-        assert result.column_names == sample_table.column_names
+    ``serialize_arrow_record_batch`` MUST emit a single IPC
+    record-batch message (no schema-message prefix, no EOS-marker
+    suffix). ``pa.ipc.read_record_batch(bytes, schema)`` is the
+    consumer path real Storage Read clients use; if the function
+    regresses to emitting a full stream, this test fails because
+    ``read_record_batch`` raises ``OSError: Expected IPC message of
+    type record batch but got schema``.
+    """
+
+    def test_round_trips_as_bare_batch_message(self, sample_table: pa.Table) -> None:
+        batch = sample_table.combine_chunks().to_batches()[0]
+        msg_bytes = serialize_arrow_record_batch(batch)
+        assert isinstance(msg_bytes, bytes)
+        assert len(msg_bytes) > 0
+
+        # Deserialize via the documented consumer path — ``read_record_batch``
+        # requires a known schema and refuses any prefix message.
+        result = pa.ipc.read_record_batch(msg_bytes, batch.schema)
+        assert result.num_rows == batch.num_rows
+        assert result.schema == batch.schema
+
+    def test_rejects_full_stream_consumer_pattern(self, sample_table: pa.Table) -> None:
+        # Belt-and-braces: ``open_stream`` would still parse a full
+        # IPC stream silently. We assert the output is NOT a stream
+        # by checking it lacks the schema-message prefix that
+        # ``open_stream`` requires.
+        batch = sample_table.combine_chunks().to_batches()[0]
+        msg_bytes = serialize_arrow_record_batch(batch)
+        with pytest.raises((OSError, pa.lib.ArrowInvalid)):
+            pa.ipc.open_stream(msg_bytes).read_all()

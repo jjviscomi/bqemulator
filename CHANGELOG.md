@@ -20,6 +20,25 @@ section and adds the release date.
 
 ## [Unreleased]
 
+### Fixed
+
+- **Storage Read API IPC framing** (#15). The gRPC ``ReadRows`` handler
+  previously packed a full Arrow IPC stream (schema-message + batches +
+  EOS-marker) into ``ArrowRecordBatch.serialized_record_batch``, breaking
+  every real Storage Read client — ``google-cloud-bigquery-storage``'s
+  ``reader.to_arrow(session)`` tripped on ``OSError: Expected IPC message
+  of type record batch but got schema``. The handler now emits only the
+  record-batch IPC message bytes; the schema continues to travel
+  separately via ``ReadSession.arrow_schema.serialized_schema`` and the
+  first ``ReadRowsResponse.arrow_schema`` field, matching the BigQuery
+  contract. ``serialize_arrow_ipc(table)`` in
+  ``bqemulator.streaming.read_session`` is replaced by
+  ``serialize_arrow_record_batch(batch)``; the pyspark-bigquery example
+  drops its inline workaround and goes back to the natural
+  ``reader.to_arrow(session)`` call. See ADR 0033 for the formal
+  bare-message contract — dictionary-encoded columns at any nesting
+  depth are rejected with ``ValueError`` at the producer boundary.
+
 ### Changed
 
 - **scio example: testcontainers bump + #17 investigation notes.**

@@ -242,19 +242,54 @@ def split_stream(stream_name: str, fraction: float) -> tuple[str, str] | None:
     return primary_name, remainder_name
 
 
-def serialize_arrow_ipc(table: pa.Table) -> bytes:
-    """Serialize an Arrow table as Arrow IPC stream format.
+def serialize_arrow_record_batch(batch: pa.RecordBatch) -> bytes:
+    """Serialize a single Arrow record batch as a bare IPC message.
 
-    This produces the bytes that ``ReadRowsResponse.arrow_record_batch.serialized_record_batch``
-    carries over the wire.
+    Returns ONLY the record-batch IPC message bytes (continuation
+    marker + metadata length + flatbuffer metadata + padding + body
+    buffers), NOT a full IPC stream. This matches the BigQuery
+    Storage Read API contract: ``ArrowRecordBatch.serialized_record_batch``
+    is documented to carry a single batch message; the schema travels
+    separately via ``ReadSession.arrow_schema.serialized_schema`` and
+    the first ``ReadRowsResponse.arrow_schema`` field.
+
+    Earlier (≤ v1.0.0) the read servicer packed a full IPC stream
+    (schema framing + batches + EOS marker) into ``serialized_record_batch``.
+    Real Storage Read clients tripped on the format mismatch — e.g.
+    ``google-cloud-bigquery-storage``'s ``reader.to_arrow(session)``
+    calls ``pyarrow.ipc.read_record_batch(...)`` which raises
+    ``OSError: Expected IPC message of type record batch but got schema``.
+    This function emits the documented format so those clients work
+    unchanged. See issue #15.
+
+    The implementation writes the batch through ``pa.ipc.new_stream``
+    to a transient buffer, then re-reads the stream with a
+    ``MessageReader`` to peel off the schema-message prefix and the
+    EOS-marker suffix, leaving just the batch-message bytes. This is
+    the portable approach across pyarrow versions; the alternative
+    (low-level ``pa.ipc.write_message``) has signature drift between
+    pyarrow 14.x and 17.x+ that we'd rather not chase.
     """
-    sink = io.BytesIO()
-    writer = pa.ipc.new_stream(sink, table.schema)  # type: ignore[no-untyped-call,unused-ignore]
-    # Write all batches.
-    for batch in table.to_batches():
-        writer.write_batch(batch)
+    sink = pa.BufferOutputStream()
+    writer = pa.ipc.new_stream(sink, batch.schema)  # type: ignore[no-untyped-call,unused-ignore]
+    writer.write_batch(batch)
     writer.close()
-    return sink.getvalue()
+    stream_bytes = sink.getvalue()
+
+    # Stream layout: [schema-message][batch-message][EOS-marker].
+    # We want only the middle slot. ``MessageReader`` is re-exported
+    # by the ``pyarrow.ipc`` module but the stubs don't list it; the
+    # ignore matches the pattern used elsewhere in this file for
+    # ``new_stream``.
+    reader = pa.ipc.MessageReader.open_stream(  # type: ignore[attr-defined]
+        pa.BufferReader(stream_bytes)
+    )
+    reader.read_next_message()  # discard schema message
+    batch_msg = reader.read_next_message()
+
+    out = pa.BufferOutputStream()
+    batch_msg.serialize_to(out)
+    return bytes(out.getvalue())
 
 
 __all__ = [
@@ -265,6 +300,6 @@ __all__ = [
     "create_read_session",
     "get_session",
     "get_stream_data",
-    "serialize_arrow_ipc",
+    "serialize_arrow_record_batch",
     "split_stream",
 ]

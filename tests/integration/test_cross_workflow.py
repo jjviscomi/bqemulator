@@ -274,6 +274,7 @@ def test_full_cross_workflow(  # noqa: PLR0915
     # ReadRows — read data back via Arrow IPC.
     import pyarrow as pa
 
+    schema = pa.ipc.open_stream(session.arrow_schema.serialized_schema).schema
     total_storage_rows = 0
     for stream in session.streams:
         read_req = storage_types.ReadRowsRequest(read_stream=stream.name)
@@ -285,10 +286,11 @@ def test_full_cross_workflow(  # noqa: PLR0915
         for r in responses:
             rr = storage_types.ReadRowsResponse.deserialize(r)
             if rr.arrow_record_batch.serialized_record_batch:
-                reader = pa.ipc.open_stream(
+                batch = pa.ipc.read_record_batch(
                     rr.arrow_record_batch.serialized_record_batch,
+                    schema,
                 )
-                total_storage_rows += reader.read_all().num_rows
+                total_storage_rows += batch.num_rows
     # Should match the 5 rows we loaded (3 insertAll + 2 CSV load).
     assert total_storage_rows == 5
 
@@ -316,13 +318,15 @@ def test_full_cross_workflow(  # noqa: PLR0915
             "/google.cloud.bigquery.storage.v1.BigQueryRead/ReadRows",
         )(storage_types.ReadRowsRequest.serialize(proj_read))
     )
+    proj_schema = pa.ipc.open_stream(proj_session.arrow_schema.serialized_schema).schema
     for r in proj_responses:
         rr = storage_types.ReadRowsResponse.deserialize(r)
         if rr.arrow_record_batch.serialized_record_batch:
-            tbl = pa.ipc.open_stream(
+            batch = pa.ipc.read_record_batch(
                 rr.arrow_record_batch.serialized_record_batch,
-            ).read_all()
-            assert tbl.column_names == ["customer"]
+                proj_schema,
+            )
+            assert batch.schema.names == ["customer"]
 
     channel.close()
 
