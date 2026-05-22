@@ -18,12 +18,10 @@
 
 language: en-US
 
-tone_instructions: |
-  Be terse and pragmatic. The project biases toward production-shape
-  feedback over style nitpicks: surface real bugs, security issues,
-  missing test coverage, and ADR-worthy architectural drift. Skip
-  comments about code style that ``ruff`` or ``mypy --strict`` would
-  catch — those gates run in CI.
+tone_instructions: >-
+  Be terse and pragmatic. Surface real bugs, security issues, missing
+  test coverage, and ADR-worthy architectural drift. Skip style
+  nitpicks `ruff` or `mypy --strict` would catch — those run in CI.
 
 early_access: false
 
