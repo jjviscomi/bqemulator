@@ -191,17 +191,26 @@ they could have been caught in ~90s of local time. Failures are
 
 Two distinct coverage gates, two thresholds:
 
-* **`make test-coverage` (90%)** — total project line+branch.
-  Mirrors the in-CI `Combined U+P+I coverage gate` and Codecov's
-  `project` status. Non-negotiable release floor.
-* **`make test-patch-coverage` (70%)** — *new lines this PR
-  adds* vs `main`. Mirrors Codecov's `patch` status. Catches
-  the gap where the project total barely moves but the PR's
-  own helpers are uncovered.
+* **`make test-coverage` (≥ 90% absolute)** — total project
+  line+branch via `--cov-fail-under=90`. The non-negotiable
+  release floor. Mirrored in-CI by `Combined U+P+I coverage
+  gate (≥90%)`. **This** is the contractual gate.
+* **`make test-patch-coverage` (≥ 70% on diff)** — *new lines
+  this PR adds* vs `main`. Mirrors Codecov's `patch` status.
+  Catches the gap where the project total barely moves but the
+  PR's own helpers are uncovered.
 
-Both must pass locally before push. Codecov reports the same two
-numbers on the PR; the local targets exist so a coverage drop
-fails *before* you push instead of *after* CI runs.
+Both must pass locally before push.
+
+Codecov's `project` status is configured as `target: auto`
+(don't drop below main) with a 0.5% noise threshold — NOT a hard
+90% rule. That's deliberate: Codecov aggregates `coverage.xml`
+differently than coverage.py's terminal output (typically ~1-2%
+lower), so a Codecov-side absolute 90% target trips spuriously
+even when local `make test-coverage` is well above 90%. The
+absolute floor is enforced *in CI* by the `Combined U+P+I` job
+and *locally* by `make test-coverage`; Codecov's role is
+regression detection.
 
 When fixing an example or a downstream integration, reproduce the
 failure with the example's own `make test` **before** writing any

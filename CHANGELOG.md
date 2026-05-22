@@ -105,9 +105,15 @@ section and adds the release date.
   and restore, CI/CD patterns, dbt, Airflow, Spark, the `bq` CLI,
   observability).
 - **Auto-generated reference docs** — compatibility matrix, conformance
-  coverage matrix, SQL function mapping, API coverage, API configuration
-  coverage. Each ships with a `make <name>-check` drift gate wired into
-  `make verify` and the per-PR CI workflow.
+  coverage matrix, SQL function mapping, and API coverage. Each ships
+  with a `make <name>-check` drift gate wired into `make verify` and
+  the per-PR `Docs-drift gates` CI job, so a regenerated doc can't
+  drift from the live source between commits. A fifth audit doc —
+  `docs/reference/api-configuration-coverage-matrix.md` — is the
+  manually-maintained sibling that tracks the *configuration knob*
+  surface (the part that can't be mechanically derived from the
+  route handlers); it's labelled "Audit dated" at the top of the
+  file and refreshed during the pre-release doc sweep.
 - **Architecture Decision Records** — 32 ADRs documenting non-obvious
   design choices (DuckDB vs. alternatives, hexagonal architecture, scripting
   execution model, materialized-view refresh semantics, caller identity

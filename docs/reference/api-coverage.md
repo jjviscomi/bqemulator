@@ -1,40 +1,66 @@
 # API coverage
 
-Auto-generated from `src/bqemulator/api/routes/*.py` and
-`src/bqemulator/grpc_api/*_servicer.py`. See the
-[compatibility matrix](compatibility-matrix.md) for ship-phase status
-per operation.
+A flat inventory of every wire-facing endpoint and gRPC RPC the
+emulator exposes. For ship-status (does this surface match real
+BigQuery?) see the [compatibility matrix](compatibility-matrix.md).
+For per-rule SQL translation behaviour see the
+[SQL function mapping](sql-function-mapping.md).
 
-## REST endpoints registered
+The inventory tables below are **auto-generated** by
+[`scripts/generate_api_coverage.py`](https://github.com/jjviscomi/bqemulator/blob/main/scripts/generate_api_coverage.py)
+from the live route handlers and gRPC servicers. `make verify`
+runs the script's `--check` mode to refuse merging a PR whose
+committed inventory has drifted from the source.
 
-| Route | Methods | Phase |
+<!-- BEGIN AUTO-GENERATED API INVENTORY -->
+
+## REST endpoints
+
+> **Auto-generated.** Edit route handlers under [`src/bqemulator/api/routes/`](https://github.com/jjviscomi/bqemulator/blob/main/src/bqemulator/api/routes/) (or the root-level health router under [`src/bqemulator/api/health.py`](https://github.com/jjviscomi/bqemulator/blob/main/src/bqemulator/api/health.py)) and run `make api-coverage` to regenerate this block. `make verify` calls `--check` to refuse merging a PR whose committed inventory has drifted from the live source. Endpoint counts in this block are facts about the codebase; ship-status (v1.0.0 release-quality across all surfaces) is asserted in the [compatibility matrix](compatibility-matrix.md) and gated by the conformance corpus on every PR.
+
+- **Total REST endpoints**: 42 across 9 route modules
+
+| Group | Path | Methods |
 |---|---|---|
-| `/healthz` | GET | 0 ✅ |
-| `/readyz` | GET | 0 ✅ |
-| `/metrics` | GET | 0 ✅ |
-| `/bigquery/v2/projects` | GET | 1 🚧 |
-| `/bigquery/v2/projects/{p}/datasets` | GET POST | 1 🚧 |
-| `/bigquery/v2/projects/{p}/datasets/{d}` | GET PATCH PUT DELETE | 1 🚧 |
-| `/bigquery/v2/projects/{p}/datasets/{d}/tables` | GET POST | 1 🚧 |
-| `/bigquery/v2/projects/{p}/datasets/{d}/tables/{t}` | GET PATCH PUT DELETE | 1 🚧 |
-| `/bigquery/v2/projects/{p}/datasets/{d}/tables/{t}/insertAll` | POST | 2 🚧 |
-| `/bigquery/v2/projects/{p}/datasets/{d}/tables/{t}/data` | GET | 2 🚧 |
-| `/bigquery/v2/projects/{p}/queries` | POST | 1 🚧 |
-| `/bigquery/v2/projects/{p}/jobs` | GET POST | 1/2 🚧 |
-| `/bigquery/v2/projects/{p}/jobs/{j}` | GET POST DELETE | 2 🚧 |
-| `/bigquery/v2/projects/{p}/jobs/{j}/cancel` | POST | 2 🚧 |
-| `/bigquery/v2/projects/{p}/queries/{j}` | GET | 2 🚧 |
-| `/bigquery/v2/projects/{p}/datasets/{d}/routines` | GET POST | 6 🚧 |
-| `/bigquery/v2/projects/{p}/datasets/{d}/routines/{r}` | GET PATCH PUT DELETE | 6 🚧 |
-| `/upload/bigquery/v2/projects/{p}/jobs?uploadType=media` | POST | 11 (G2) ✅ |
-| `/upload/bigquery/v2/projects/{p}/jobs?uploadType=multipart` | POST | 11 (G2) ✅ |
-| `/upload/bigquery/v2/projects/{p}/jobs?uploadType=resumable` | POST | 11 (G2) ✅ |
-| `/upload/bigquery/v2/projects/{p}/jobs?upload_id={id}` | PUT | 11 (G2) ✅ |
+| Health & metrics | `/healthz` | GET |
+| Health & metrics | `/readyz` | GET |
+| Projects | `/bigquery/v2/projects` | GET |
+| Projects | `/bigquery/v2/projects/{project_id}/serviceAccount` | GET |
+| Datasets | `/bigquery/v2/projects/{project_id}/datasets` | GET POST |
+| Datasets | `/bigquery/v2/projects/{project_id}/datasets/{dataset_id}` | GET PUT PATCH DELETE |
+| Tables | `/bigquery/v2/projects/{project_id}/datasets/{dataset_id}/tables` | GET POST |
+| Tables | `/bigquery/v2/projects/{project_id}/datasets/{dataset_id}/tables/{table_id}` | GET PUT PATCH DELETE |
+| TableData | `/bigquery/v2/projects/{project_id}/datasets/{dataset_id}/tables/{table_id}/data` | GET |
+| TableData | `/bigquery/v2/projects/{project_id}/datasets/{dataset_id}/tables/{table_id}/insertAll` | POST |
+| Jobs | `/bigquery/v2/projects/{project_id}/jobs` | GET POST |
+| Jobs | `/bigquery/v2/projects/{project_id}/queries` | POST |
+| Jobs | `/bigquery/v2/projects/{project_id}/jobs/{job_id}` | GET DELETE |
+| Jobs | `/bigquery/v2/projects/{project_id}/queries/{job_id}` | GET |
+| Jobs | `/bigquery/v2/projects/{project_id}/jobs/{job_id}/cancel` | POST |
+| Jobs | `/bigquery/v2/projects/{project_id}/jobs/{job_id}/delete` | DELETE |
+| Routines | `/bigquery/v2/projects/{project_id}/datasets/{dataset_id}/routines` | GET POST |
+| Routines | `/bigquery/v2/projects/{project_id}/datasets/{dataset_id}/routines/{routine_id}` | GET PUT PATCH DELETE |
+| RowAccessPolicies | `/bigquery/v2/projects/{project_id}/datasets/{dataset_id}/tables/{table_id}/rowAccessPolicies` | GET POST |
+| RowAccessPolicies | `/bigquery/v2/projects/{project_id}/datasets/{dataset_id}/tables/{table_id}/rowAccessPolicies:batchDelete` | POST |
+| RowAccessPolicies | `/bigquery/v2/projects/{project_id}/datasets/{dataset_id}/tables/{table_id}/rowAccessPolicies/{policy_id}` | GET PUT DELETE |
+| RowAccessPolicies | `/bigquery/v2/projects/{project_id}/datasets/{dataset_id}/tables/{table_id}/rowAccessPolicies/{policy_id}:getIamPolicy` | POST |
+| RowAccessPolicies | `/bigquery/v2/projects/{project_id}/datasets/{dataset_id}/tables/{table_id}/rowAccessPolicies/{policy_id}:testIamPermissions` | POST |
+| Upload host | `/upload/bigquery/v2/projects/{project_id}/jobs` | POST PUT |
 
-## gRPC services registered
+## gRPC services
 
-| Service | Methods | Phase |
-|---|---|---|
-| `grpc.health.v1.Health` | `Check`, `Watch` | 0 ✅ |
-| `google.cloud.bigquery.storage.v1.BigQueryRead` | `CreateReadSession`, `ReadRows` (Arrow + **Avro** as of G3 2024-05-21), `SplitReadStream` | 4 + 11 (G3) ✅ |
-| `google.cloud.bigquery.storage.v1.BigQueryWrite` | `CreateWriteStream`, `AppendRows`, `FinalizeWriteStream`, `BatchCommitWriteStreams`, `FlushRows`, `GetWriteStream` | 5 🚧 |
+- **Total gRPC RPCs**: 9 across 2 services
+
+| Service | RPC method |
+|---|---|
+| `google.cloud.bigquery.storage.v1.BigQueryRead` | `CreateReadSession` |
+| `google.cloud.bigquery.storage.v1.BigQueryRead` | `ReadRows` |
+| `google.cloud.bigquery.storage.v1.BigQueryRead` | `SplitReadStream` |
+| `google.cloud.bigquery.storage.v1.BigQueryWrite` | `AppendRows` |
+| `google.cloud.bigquery.storage.v1.BigQueryWrite` | `BatchCommitWriteStreams` |
+| `google.cloud.bigquery.storage.v1.BigQueryWrite` | `CreateWriteStream` |
+| `google.cloud.bigquery.storage.v1.BigQueryWrite` | `FinalizeWriteStream` |
+| `google.cloud.bigquery.storage.v1.BigQueryWrite` | `FlushRows` |
+| `google.cloud.bigquery.storage.v1.BigQueryWrite` | `GetWriteStream` |
+
+<!-- END AUTO-GENERATED API INVENTORY -->

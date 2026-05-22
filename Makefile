@@ -241,6 +241,14 @@ function-mapping: ## Regenerate the rule registry inside docs/reference/sql-func
 function-mapping-check: ## CI gate — fail if the committed function-mapping registry has drifted from the live rules
 	python scripts/generate_function_mapping.py --check
 
+.PHONY: api-coverage
+api-coverage: ## Regenerate the REST + gRPC inventory inside docs/reference/api-coverage.md
+	python scripts/generate_api_coverage.py
+
+.PHONY: api-coverage-check
+api-coverage-check: ## CI gate — fail if the committed API inventory has drifted from the live route handlers
+	python scripts/generate_api_coverage.py --check
+
 .PHONY: generate-avro-fixtures
 generate-avro-fixtures: ## Regenerate the reference .avro OCFs under tests/fixtures/avro/ (G3 / ADR 0030)
 	python scripts/generate_avro_fixtures.py
@@ -389,7 +397,7 @@ build: clean ## Build wheel and sdist
 
 .PHONY: verify
 verify: lint test test-coverage \
-        coverage-matrix-check compat-matrix-check function-mapping-check \
+        coverage-matrix-check compat-matrix-check function-mapping-check api-coverage-check \
         docker-build test-e2e docs-build ## Full release-ready gate chain
 	@echo ""
 	@echo "All release-readiness gates passed."
@@ -407,6 +415,7 @@ regenerate-protos: ## Regenerate gRPC proto stubs from vendored googleapis
 	scripts/generate_protos.sh
 
 .PHONY: matrix
-matrix: ## Regenerate compatibility matrix + function mapping docs
+matrix: ## Regenerate every auto-generated reference doc (compat-matrix + function-mapping + api-coverage)
 	$(PYTHON) scripts/generate_compatibility_matrix.py
 	$(PYTHON) scripts/generate_function_mapping.py
+	$(PYTHON) scripts/generate_api_coverage.py
