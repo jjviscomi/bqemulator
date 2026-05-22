@@ -57,7 +57,7 @@ catalog. No row data is copied.
 ## `bqemulator version`
 
 ```
-bqemulator 0.1.0
+bqemulator 1.0.0
 ```
 
 ## Using Google's `bq` CLI against the emulator
