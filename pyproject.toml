@@ -445,6 +445,14 @@ filterwarnings = [
     # resolves there. Match by message so we don't have to enumerate
     # every emission module along the deprecation chain.
     "ignore:SelectableGroups dict interface is deprecated:DeprecationWarning",
+    # pytest 9 surfaces unhandled exceptions inside finalizers (sqlite3
+    # connection close, asyncio loop shutdown, etc.) as a
+    # ``PytestUnraisableExceptionWarning``. Combined with the
+    # ``"error"`` filter above, these GC-timing races would otherwise
+    # fail a *random* test on each run (whichever ran when the
+    # finalizer happened to GC). The underlying resources are safely
+    # cleaned up by the runtime; the warning is purely diagnostic.
+    "ignore::pytest.PytestUnraisableExceptionWarning",
 ]
 
 [tool.coverage.run]
