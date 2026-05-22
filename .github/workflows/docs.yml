@@ -55,7 +55,16 @@ jobs:
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
       - name: Deploy latest (main)
         if: github.ref == 'refs/heads/main'
-        run: mike deploy --push --update-aliases main latest
+        run: |
+          mike deploy --push --update-aliases main latest
+          # Pin the root URL's redirect target. Without this,
+          # https://jjviscomi.github.io/bqemulator/ returns 404
+          # because ``mike`` only configures per-version
+          # subdirectories and no default. Pre-v1.0.0 the bare
+          # URL points at ``latest`` (= ``main``); the
+          # tag-deploy step below flips the default to
+          # ``stable`` when v1.0.0 ships.
+          mike set-default --push latest
       - name: Deploy tagged version
         if: startsWith(github.ref, 'refs/tags/v')
         run: |

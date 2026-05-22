@@ -200,7 +200,10 @@ See the [`docker-compose/full-stack`](docs/examples/docker-compose/full-stack/) 
 
 ## What works today
 
-`bqemulator` is rigorously tested but pre-1.0. The [compatibility matrix](https://jjviscomi.github.io/bqemulator/reference/compatibility-matrix/) is auto-generated from the conformance corpus on every CI run; the [conformance coverage matrix](https://jjviscomi.github.io/bqemulator/reference/conformance-coverage-matrix/) breaks down support by surface item.
+`bqemulator` is tracking **v1.0.0** as the initial
+production-stable release. SemVer applies once the tag fires:
+breaking changes ship only in MAJOR, deprecations live ≥2 MINOR
+or 6 months. The [compatibility matrix](https://jjviscomi.github.io/bqemulator/reference/compatibility-matrix/) is auto-generated from the conformance corpus on every CI run; the [conformance coverage matrix](https://jjviscomi.github.io/bqemulator/reference/conformance-coverage-matrix/) breaks down support by surface item.
 
 | Surface | Status |
 |---|---|
@@ -268,7 +271,12 @@ Every example under [`docs/examples/`](docs/examples/) is a complete, runnable p
 
 ## Project status
 
-`bqemulator` is currently **0.1.0** (pre-1.0). The v1.0.0 release will be cut from the codebase you see here once the example projects have passed a full nightly sweep on GitHub Actions and the conformance corpus has been re-recorded against the current BigQuery release.
+`bqemulator` is at **v1.0.0-rc** — the initial production-stable
+release is staged on `main` (release commit cuts version to
+`1.0.0` and pushes the tag; publish workflows fire from the tag).
+SemVer applies once published: breaking changes ship only in
+MAJOR versions, preceded by ≥1 MINOR with deprecation warnings;
+deprecated APIs remain for ≥2 MINOR versions or 6 months.
 
 Maturity signals:
 
@@ -280,7 +288,8 @@ Maturity signals:
 - ✅ Fuzz-tier (`Atheris`) harnesses on the SQL translator, dynamic-protobuf decoder, and Arrow bridge.
 - ✅ Differential-tier row-order perturbation of the entire conformance corpus passes.
 - ✅ Performance baselines committed for `darwin-arm64`, with regression gates (`pytest-benchmark` `--benchmark-compare-fail=median:10%`).
-- ⚪ PyPI + GHCR publish (v1.0.0 release event).
+- ⚪ PyPI publish via Trusted Publishing (sigstore-attested wheels) — `release.yml` is wired and waiting on the `v1.0.0` tag push; flips to ✅ in the post-release doc flip once `pip install bqemulator` returns 200.
+- ⚪ GHCR publish with keyless cosign signatures — `docker.yml` is wired and waiting on the `v1.0.0` tag push; flips to ✅ once `docker pull ghcr.io/jjviscomi/bqemulator:1.0.0` resolves.
 
 See [`CHANGELOG.md`](CHANGELOG.md) for the complete v1.0 inventory.
 

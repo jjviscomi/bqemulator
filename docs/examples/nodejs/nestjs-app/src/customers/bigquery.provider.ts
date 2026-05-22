@@ -1,4 +1,5 @@
-import { BigQuery } from '@google-cloud/bigquery';
+import { BigQuery, BigQueryOptions } from '@google-cloud/bigquery';
+import { PassThroughClient } from 'google-auth-library';
 import { FactoryProvider } from '@nestjs/common';
 
 export const BIGQUERY = Symbol('BIGQUERY');
@@ -11,13 +12,15 @@ export const BigQueryProvider: FactoryProvider<BigQuery> = {
 
     if (apiEndpoint) {
       // Emulator mode: skip auth, point at the local endpoint.
+      // PassThroughClient is the documented pattern for emulators — it
+      // returns empty auth headers and never tries to reach the metadata
+      // server or ADC. `BigQueryOptions.authClient` is typed against
+      // `JSONClient` so we widen via cast; runtime accepts any AuthClient.
       return new BigQuery({
         projectId,
         apiEndpoint,
-        // The emulator accepts any token; this avoids the SDK
-        // attempting an ADC lookup against the metadata server.
-        token: 'dummy',
-      });
+        authClient: new PassThroughClient(),
+      } as BigQueryOptions);
     }
 
     // Production: rely on Application Default Credentials.

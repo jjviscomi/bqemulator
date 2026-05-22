@@ -174,19 +174,20 @@ jobs:
           CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
 
   docs-drift:
-    name: Docs-drift gates (coverage-matrix / compat-matrix / function-mapping)
+    name: Docs-drift gates (coverage-matrix / compat-matrix / function-mapping / api-coverage)
     runs-on: ubuntu-latest
     needs: [lint]
-    # Closes the doc-drift class for the three auto-regenerated
+    # Closes the doc-drift class for the four auto-regenerated
     # reference docs:
     #   * docs/reference/conformance-coverage-matrix.md (P8.a)
     #   * docs/reference/compatibility-matrix.md          (P4.b)
     #   * docs/reference/sql-function-mapping.md          (P4.b)
+    #   * docs/reference/api-coverage.md                  (v1.0 prep)
     # Each generator has a ``--check`` mode that diffs the committed
     # copy against the live regeneration and exits non-zero on drift.
     # When this gate fails, the remediation is always the same:
-    # ``make matrix && make coverage-matrix``, then commit the
-    # regenerated files.
+    # ``make matrix && make coverage-matrix && make function-mapping
+    # && make api-coverage``, then commit the regenerated files.
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -202,3 +203,5 @@ jobs:
         run: python scripts/generate_compatibility_matrix.py --check
       - name: Function mapping (P4.b)
         run: python scripts/generate_function_mapping.py --check
+      - name: API coverage (v1.0 prep)
+        run: python scripts/generate_api_coverage.py --check

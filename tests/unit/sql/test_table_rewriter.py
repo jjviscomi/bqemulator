@@ -33,6 +33,58 @@ class TestThreePartReferences:
         assert '"tbl"' in result
 
 
+class TestBacktickedCompoundIdentifier:
+    """SQLGlot's BigQuery → DuckDB transpile turns ``\\`proj.ds\\``` into
+    ``"proj.ds"`` (a single dotted identifier in the ``db`` slot).
+    The Airflow ``BigQueryInsertJobOperator`` example emits this shape
+    on every task. Without splitting the dotted ``db`` into
+    ``(catalog, db)`` *before* validation, ``_BQ_DATASET_RE`` rejects
+    the dotted name as an invalid dataset ID.
+    """
+
+    def test_compound_create_schema_collapses(self) -> None:
+        sql = 'CREATE SCHEMA IF NOT EXISTS "bqemu-demo.airflow_demo_xyz"'
+        result = rewrite_table_refs(sql, "default")
+        assert '"bqemu-demo__airflow_demo_xyz"' in result
+        # No zero-length trailing identifier from the schema-only path.
+        assert '""' not in result
+
+    def test_compound_select_collapses(self) -> None:
+        sql = 'SELECT * FROM "p.d"."t"'
+        result = rewrite_table_refs(sql, "default")
+        assert '"p__d"' in result
+        assert '"t"' in result
+
+
+class TestSchemaOnlyReferences:
+    """``CREATE SCHEMA proj.ds`` / ``DROP SCHEMA proj.ds`` parse as
+    ``Table(catalog=proj, db=ds, this=Identifier(""))`` in SQLGlot's
+    AST. The rewriter must collapse the catalog+db pair into a single
+    ``"proj__ds"`` identifier with **no** trailing ``.""`` — without
+    this dbt-bigquery's ``CREATE SCHEMA IF NOT EXISTS \\`proj\\`.\\`ds\\```
+    hits DuckDB's parser as ``"proj__ds"."" `` and 400s with
+    ``zero-length delimited identifier``.
+    """
+
+    def test_create_schema_two_part_collapses(self) -> None:
+        sql = 'CREATE SCHEMA IF NOT EXISTS "bqemu-demo"."dbt_local_raw"'
+        result = rewrite_table_refs(sql, "default")
+        assert '"bqemu-demo__dbt_local_raw"' in result
+        assert '""' not in result  # no zero-length trailing identifier
+
+    def test_create_schema_unquoted_two_part_collapses(self) -> None:
+        sql = "CREATE SCHEMA IF NOT EXISTS proj.ds"
+        result = rewrite_table_refs(sql, "default")
+        assert '"proj__ds"' in result
+        assert '""' not in result
+
+    def test_drop_schema_two_part_collapses(self) -> None:
+        sql = "DROP SCHEMA proj.ds"
+        result = rewrite_table_refs(sql, "default")
+        assert '"proj__ds"' in result
+        assert '""' not in result
+
+
 class TestNoRewrite:
     def test_single_part_left_alone(self) -> None:
         result = rewrite_table_refs("SELECT * FROM bare_table", "p")

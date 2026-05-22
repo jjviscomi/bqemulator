@@ -39,7 +39,14 @@ def test_dag_runs_against_emulator(unique_dataset: str) -> None:
 
     dag.test()
 
-    rest = f"http://{os.environ['BIGQUERY_EMULATOR_HOST']}"
+    # ``BIGQUERY_EMULATOR_HOST`` is set with the scheme in conftest
+    # (google-cloud-bigquery 3.20+ reads it verbatim as the API base
+    # URL — the default it replaces is ``https://...``, so the value
+    # must already carry the scheme). Pass it through as-is; only
+    # prepend ``http://`` if a bare ``host:port`` was provided.
+    rest = os.environ["BIGQUERY_EMULATOR_HOST"]
+    if not rest.startswith(("http://", "https://")):
+        rest = f"http://{rest}"
     client = bigquery.Client(
         project=project,
         credentials=AnonymousCredentials(),  # type: ignore[no-untyped-call]

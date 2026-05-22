@@ -174,11 +174,95 @@ make release NEXT=minor
 git push origin main vX.Y.Z
 ```
 
+## Pre-commit gate (mandatory)
+
+Run **every** check listed below **before** every commit. CI runs
+exactly the same gates and CI failures here are wasted cycles when
+they could have been caught in ~90s of local time. Failures are
+**not** addressable by pushing-and-watching — fix locally first.
+
+| Command | What it covers | Typical local time |
+|---|---|---|
+| `make lint` | ruff check + ruff format + mypy --strict + bandit + pip-audit + interrogate + typos | ~30 s |
+| `make test-unit` | full unit tier (2400+ tests) | ~45 s |
+| `make test-coverage` | combined unit+property+integration with `--cov-fail-under=90` (line + branch). Also writes `coverage.xml` for the patch gate below. | ~3–5 min |
+| `make test-patch-coverage` | diff-line coverage on this branch vs `main` (`--fail-under=70`). Mirrors Codecov's `patch` status. Requires a fresh `coverage.xml`, so run **after** `make test-coverage`. | ~5 s |
+| Per-example `make test` (when an example was changed) | actual runtime behaviour of the example against a real `bqemulator` start | ~30 s |
+
+Two distinct coverage gates, two thresholds:
+
+* **`make test-coverage` (≥ 90% absolute)** — total project
+  line+branch via `--cov-fail-under=90`. The non-negotiable
+  release floor. Mirrored in-CI by `Combined U+P+I coverage
+  gate (≥90%)`. **This** is the contractual gate.
+* **`make test-patch-coverage` (≥ 70% on diff)** — *new lines
+  this PR adds* vs `main`. Mirrors Codecov's `patch` status.
+  Catches the gap where the project total barely moves but the
+  PR's own helpers are uncovered.
+
+Both must pass locally before push.
+
+Codecov's `project` status is configured as `target: auto`
+(don't drop below main) with a 0.5% noise threshold — NOT a hard
+90% rule. That's deliberate: Codecov aggregates `coverage.xml`
+differently than coverage.py's terminal output (typically ~1-2%
+lower), so a Codecov-side absolute 90% target trips spuriously
+even when local `make test-coverage` is well above 90%. The
+absolute floor is enforced *in CI* by the `Combined U+P+I` job
+and *locally* by `make test-coverage`; Codecov's role is
+regression detection.
+
+When fixing an example or a downstream integration, reproduce the
+failure with the example's own `make test` **before** writing any
+patch. Do not iterate by pushing to CI and reading logs — that
+burns 10× the time and the actual error usually shows up cleaner
+under stderr from a local run than it does in a 60 MB CI log
+artifact.
+
+## Review-thread protocol
+
+Every CodeRabbit, CodeQL ("github-advanced-security"), Dependabot,
+or human review comment on an open PR follows the same three-step
+loop:
+
+1. **Reply on the thread directly** (not as a top-level PR comment)
+   via the `POST /repos/.../pulls/{n}/comments/{cid}/replies` API
+   (or `gh pr view --comments` + reply through the UI). The reply
+   states the resolution: either the fix that's landing, or the
+   technical rationale for not acting. Keep it concrete — quote
+   the changed file/lines or the CVE rationale.
+2. **Land the fix in a commit** that references the thread (the
+   commit message should name the file + the warning ID).
+3. **Mark the thread resolved** via the GraphQL
+   `resolveReviewThread` mutation **after** the commit has pushed
+   and the inline reply has been posted. A response without
+   resolution leaves the thread open and the PR shows unresolved
+   feedback.
+
+Treat "thread is closed" as the only acceptable terminal state.
+A reply alone is not enough; a resolved-without-reply thread looks
+ignored. Both steps, every time.
+
 ## Things to never do
 
-- Commit without `make lint test-unit` passing locally.
+- Commit without **all** of the pre-commit gate above passing
+  locally — including both coverage targets:
+  `make test-coverage` (project ≥ 90%) **and**
+  `make test-patch-coverage` (patch ≥ 70%). The patch target is
+  the local mirror of Codecov's `patch` status; running only
+  `test-coverage` leaves the patch-coverage blind spot.
+- Commit a new function / class / branch without a unit test
+  exercising it the same commit. The project-wide coverage gate
+  passes even when diff-introduced lines are uncovered (the
+  total just barely moves); the patch gate at 70% is what fails
+  fast on that.
 - Merge a PR that drops coverage below 90%.
 - Merge a feature without e2e coverage for all five conformance clients.
+- Push speculative fixes for example / integration regressions
+  without first reproducing the failure locally against the
+  example's own `make test`.
+- Leave a review thread open after a fix lands — every comment
+  needs an inline reply **and** a `resolveReviewThread` mutation.
 - Add `TODO` or `FIXME` without a linked issue number.
 - Mock DuckDB in integration tests.
 - Defer scope to "v1.1" or "later" — complete in-phase or exclude

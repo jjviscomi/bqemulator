@@ -1,0 +1,57 @@
+# Codecov configuration.
+#
+# Two status checks, two thresholds:
+#
+# 1. ``project`` — total project coverage. Mirrors the in-CI
+#    ``Combined U+P+I coverage gate (≥90%)`` job and the local
+#    ``make test-coverage`` target. Pinned at 90% because the
+#    ``--cov-fail-under=90`` flag in those gates is the
+#    contractual release-blocker per AGENTS.md "Non-negotiable
+#    principles". Any drop in *total* coverage on a PR will fail
+#    this check.
+#
+# 2. ``patch`` — coverage on the lines this PR adds. The
+#    contractual release floor is 70%: a PR has to land its own
+#    feature with reasonable coverage but isn't required to hit
+#    100% on every defensive branch (error handlers, fallback
+#    paths) — those land covered by the *project* gate.
+#
+#    Locally enforced by ``make test-patch-coverage`` (which runs
+#    ``diff-cover --fail-under=70`` against the same coverage.xml
+#    Codecov ingests), so a patch-coverage drop fails the
+#    pre-commit gate instead of the post-push PR check.
+
+coverage:
+  status:
+    project:
+      default:
+        # ``auto`` = "don't drop below main's coverage". The
+        # *absolute* 90% release-blocker stays enforced locally by
+        # ``make test-coverage`` (``--cov-fail-under=90``) and by
+        # the in-CI ``Combined U+P+I coverage gate (≥90%)`` job;
+        # Codecov's role here is regression detection, which is what
+        # it's actually good at. A hard 90% absolute target on
+        # Codecov was tripping because Codecov aggregates
+        # ``coverage.xml`` differently than coverage.py's terminal
+        # output (currently a 1.56% delta — Codecov reports 89.41%
+        # for the same run that ``pytest-cov`` terminal-prints
+        # 90.97%).
+        target: auto
+        # Tolerate 0.5% of aggregation noise vs main so a Codecov
+        # internal recomputation can't fail an otherwise-clean PR.
+        # Real coverage drops > 0.5% still fail.
+        threshold: 0.5%
+        if_no_uploads: error
+    patch:
+      default:
+        target: 70%      # diff-line coverage; locally enforced
+        threshold: 0%
+
+# We use the in-CI ``Combined U+P+I coverage gate (≥90%)`` job as
+# the release-blocker. Codecov's checks are advisory in the sense
+# that they catch the same gap differently — for the PR-time
+# experience and for the trendline view. Both flow back to the
+# same coverage.xml uploaded once per CI run.
+comment:
+  layout: "header, diff, files"
+  require_changes: false

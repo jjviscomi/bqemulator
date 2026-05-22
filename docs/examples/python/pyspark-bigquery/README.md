@@ -52,8 +52,27 @@ make test
 
 ## What to look for
 
-- The Storage Read client is constructed with
-  `client_options=ClientOptions(api_endpoint=grpc_endpoint)` pointing
-  at the emulator's gRPC port (not the REST port).
+- The Storage Read client is constructed with a `BigQueryReadGrpcTransport`
+  wrapping an explicit `grpc.insecure_channel(...)` — bqemulator
+  serves the Storage Read API over plaintext gRPC, and the default
+  transport wraps every call in TLS (failing the handshake with
+  `SSL_ERROR_SSL: WRONG_VERSION_NUMBER`).
 - Spark runs in local-master mode (`local[*]`) so the example is
   hermetic — no Hadoop/YARN cluster required.
+
+## Known limitation — Storage Read IPC bytes layout
+
+bqemulator currently packs the full Arrow IPC stream (schema framing
++ batches) into `ReadRowsResponse.arrow_record_batch.serialized_record_batch`
+instead of a single record-batch IPC message. The high-level
+`reader.to_arrow(session)` helper assumes the real-BigQuery shape
+(schema lives on `ReadSession.arrow_schema.serialized_schema`,
+batches travel on their own) and trips
+`Expected IPC message of type record batch but got schema`.
+
+The example works around this by iterating responses by hand and
+using `pyarrow.ipc.open_stream`, which accepts the full IPC stream
+that bqemulator emits. Tracked for cleanup in
+[#15](https://github.com/jjviscomi/bqemulator/issues/15) — once the
+server emits the correct format the workaround disappears and the
+natural `reader.to_arrow(session)` call works out of the box.

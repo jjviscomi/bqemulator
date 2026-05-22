@@ -105,9 +105,15 @@ section and adds the release date.
   and restore, CI/CD patterns, dbt, Airflow, Spark, the `bq` CLI,
   observability).
 - **Auto-generated reference docs** — compatibility matrix, conformance
-  coverage matrix, SQL function mapping, API coverage, API configuration
-  coverage. Each ships with a `make <name>-check` drift gate wired into
-  `make verify` and the per-PR CI workflow.
+  coverage matrix, SQL function mapping, and API coverage. Each ships
+  with a `make <name>-check` drift gate wired into `make verify` and
+  the per-PR `Docs-drift gates` CI job, so a regenerated doc can't
+  drift from the live source between commits. A fifth audit doc —
+  `docs/reference/api-configuration-coverage-matrix.md` — is the
+  manually-maintained sibling that tracks the *configuration knob*
+  surface (the part that can't be mechanically derived from the
+  route handlers); it's labelled "Audit dated" at the top of the
+  file and refreshed during the pre-release doc sweep.
 - **Architecture Decision Records** — 32 ADRs documenting non-obvious
   design choices (DuckDB vs. alternatives, hexagonal architecture, scripting
   execution model, materialized-view refresh semantics, caller identity
@@ -139,3 +145,32 @@ section and adds the release date.
   carry sigstore attestations.
 - **GHCR image signing** via keyless cosign with GitHub OIDC certificate
   identity.
+
+### Known limitations (deferred to v1.0.1)
+
+These ship as documented caveats on the affected example projects.
+None affect the core emulator surface.
+
+- **Storage Read API IPC bytes layout** — bqemulator packs the full
+  Arrow IPC stream (schema framing + batches) into
+  `ReadRowsResponse.arrow_record_batch.serialized_record_batch`
+  rather than a single record-batch IPC message; the schema lives
+  separately on `ReadSession.arrow_schema`. The
+  `google-cloud-bigquery-storage` client's high-level
+  `reader.to_arrow(session)` trips
+  `Expected IPC message of type record batch but got schema`. The
+  `python/pyspark-bigquery` example iterates raw responses through
+  `pa.ipc.open_stream` as a workaround. Tracked in
+  [#15](https://github.com/jjviscomi/bqemulator/issues/15).
+- **Scio test exercises wiring only** — Beam Java BigQueryIO does
+  not honour `--bigQueryEndpoint` for the *write* path (that flag
+  only gates internal preflight validators); the Java BQ client
+  *does* honour `BIGQUERY_EMULATOR_HOST`, but it must be visible to
+  the JVM before the first BQ class loads, which is impossible
+  when the testcontainer port is allocated at runtime. The
+  `java/scio` example's spec asserts the wiring bqemulator owns
+  (container up, REST API reachable, dataset creation works); the
+  `CustomersPipeline.run` source itself remains production-ready
+  for users running against real BigQuery or a long-lived
+  bqemulator with a stable port. Tracked in
+  [#17](https://github.com/jjviscomi/bqemulator/issues/17).

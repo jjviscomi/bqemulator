@@ -2,6 +2,7 @@
 
 const express = require('express');
 const { BigQuery } = require('@google-cloud/bigquery');
+const { PassThroughClient } = require('google-auth-library');
 
 const PORT = Number(process.env.PORT) || 8080;
 const PROJECT = process.env.BQ_PROJECT || 'bqemu-demo';
@@ -10,7 +11,13 @@ const REST_URL = process.env.BQEMU_REST_URL;
 
 function buildBigQuery() {
   if (REST_URL) {
-    return new BigQuery({ projectId: PROJECT, apiEndpoint: REST_URL, token: 'dummy' });
+    // PassThroughClient skips ADC entirely — the documented pattern for
+    // pointing the SDK at a local emulator.
+    return new BigQuery({
+      projectId: PROJECT,
+      apiEndpoint: REST_URL,
+      authClient: new PassThroughClient(),
+    });
   }
   return new BigQuery({ projectId: PROJECT });
 }

@@ -24,7 +24,7 @@ keywords = [
     "ci",
 ]
 classifiers = [
-    "Development Status :: 3 - Alpha",
+    "Development Status :: 5 - Production/Stable",
     "Intended Audience :: Developers",
     "License :: OSI Approved :: Apache Software License",
     "Operating System :: OS Independent",
@@ -32,6 +32,7 @@ classifiers = [
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
     "Programming Language :: Python :: 3 :: Only",
     "Topic :: Database",
     "Topic :: Software Development :: Testing",
@@ -186,6 +187,10 @@ dev = [
     "pre-commit>=3.6",
     "mutmut>=2.4",
     "vulture>=2.11",
+    # diff-cover drives the local ``test-patch-coverage`` gate —
+    # mirrors Codecov's ``patch`` status so patch-coverage drops
+    # are caught **before** push, not after CI fails.
+    "diff-cover>=9.0",
 ]
 
 [project.urls]

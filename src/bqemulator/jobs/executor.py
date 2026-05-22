@@ -413,13 +413,71 @@ async def execute_query_job(
         job_id=job_id,
         job_type="QUERY",
         state="DONE",
-        configuration={"query": {"query": bq_sql}},
+        configuration=_build_query_configuration(bq_sql, project_id, job_id),
         statistics=statistics,
         creation_time=now,
         start_time=now,
         end_time=ctx.clock.now(),
         etag=generate_etag(project_id, job_id, str(now)),
     )
+
+
+#: Dataset id under which bqemulator advertises anonymous-result tables.
+#: Real BigQuery uses ``_script<hash>`` for scripts and an internal
+#: per-job anonymous table for interactive queries; the
+#: ``api/routes/tables.py:get_table`` handler intercepts this dataset
+#: and synthesises a response from ``JOB_RESULTS``.
+_ANONYMOUS_RESULTS_DATASET = "_bqemu_anonymous"
+
+
+def _build_query_configuration(
+    bq_sql: str,
+    project_id: str,
+    job_id: str,
+) -> dict[str, Any]:
+    """Return ``configuration`` for a finished QUERY job.
+
+    Always carries the original ``query`` text and a ``destinationTable``
+    so REST clients that fetch the destination metadata after the job
+    completes — notably ``dbt-bigquery``'s
+    ``client.get_table(query_job.destination)`` post-execution step —
+    see a non-``None`` ref and proceed instead of raising
+    ``'NoneType' object has no attribute 'path'``.
+
+    For ``CREATE [OR REPLACE] TABLE`` outputs the destination is the
+    actual target table the executor materialised in DuckDB. For every
+    other query (``SELECT``, ``INSERT``, ``UPDATE``, ``DELETE``,
+    ``MERGE``, etc.) the destination is a synthetic anonymous-result
+    ref under the reserved
+    :data:`_ANONYMOUS_RESULTS_DATASET`; ``api/routes/tables.get_table``
+    fans that out by reading the job's row count + schema from
+    ``JOB_RESULTS``.
+    """
+    config: dict[str, Any] = {"query": {"query": bq_sql}}
+    from bqemulator.catalog.ddl_sync import (
+        _detect_plain_create_table,
+        _split_target,
+    )
+
+    target = _detect_plain_create_table(bq_sql)
+    if target is not None:
+        p_id, d_id, t_id = _split_target(target, project_id)
+        if d_id and t_id:
+            config["query"]["destinationTable"] = {
+                "projectId": p_id,
+                "datasetId": d_id,
+                "tableId": t_id,
+            }
+            return config
+
+    # Fall through: synthesise an anonymous destination so the wire
+    # shape always carries a non-``None`` ``destinationTable``.
+    config["query"]["destinationTable"] = {
+        "projectId": project_id,
+        "datasetId": _ANONYMOUS_RESULTS_DATASET,
+        "tableId": f"anon{job_id.replace('-', '')}",
+    }
+    return config
 
 
 def _build_query_statistics(
