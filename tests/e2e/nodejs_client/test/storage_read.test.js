@@ -240,7 +240,16 @@ describe("bqemulator Phase 4 Storage Read (Node.js via gRPC + Arrow IPC)", () =>
         "CreateReadSession returned no streams",
       );
       const schemaBytes = decodeReadSessionArrowSchema(sessionBytes);
-      assert.ok(schemaBytes, "CreateReadSession returned no arrow_schema");
+      // Validate length BEFORE slicing the trailing EOS marker (8
+      // bytes — 0xFFFFFFFF continuation + 0x00000000 zero-length).
+      // The Go and Java tests do the same. A truthy-but-too-short
+      // ``schemaBytes`` would silently produce a garbage
+      // ``schemaOnly`` and the test would fail downstream with an
+      // opaque Arrow parse error.
+      assert.ok(
+        schemaBytes && schemaBytes.length > 8,
+        "CreateReadSession returned no arrow_schema or schema is malformed (need > 8 bytes for EOS marker stripping)",
+      );
 
       // ReadRows on the first stream.
       //

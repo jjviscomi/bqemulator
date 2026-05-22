@@ -269,6 +269,18 @@ def serialize_arrow_record_batch(batch: pa.RecordBatch) -> bytes:
     the portable approach across pyarrow versions; the alternative
     (low-level ``pa.ipc.write_message``) has signature drift between
     pyarrow 14.x and 17.x+ that we'd rather not chase.
+
+    Arrow IPC streaming permits ``DictionaryBatch`` messages between
+    the schema and the first ``RecordBatch`` when the batch carries
+    dictionary-encoded columns — pyarrow's writer emits one
+    DictionaryBatch per dict-encoded field. Naively grabbing the
+    *second* message would capture a dictionary, not the batch. The
+    loop below skips non-RecordBatch messages so callers always get
+    the actual batch payload back. (The current BigQuery Storage
+    Read wire format doesn't carry separate dictionary messages on
+    the wire — clients reconstruct dictionaries from the schema. If
+    we ever need to surface dictionaries we'd extend the protocol;
+    for now skipping them is the right defensive default.)
     """
     sink = pa.BufferOutputStream()
     writer = pa.ipc.new_stream(sink, batch.schema)  # type: ignore[no-untyped-call,unused-ignore]
@@ -276,16 +288,36 @@ def serialize_arrow_record_batch(batch: pa.RecordBatch) -> bytes:
     writer.close()
     stream_bytes = sink.getvalue()
 
-    # Stream layout: [schema-message][batch-message][EOS-marker].
-    # We want only the middle slot. ``MessageReader`` is re-exported
-    # by the ``pyarrow.ipc`` module but the stubs don't list it; the
+    # Stream layout (typed schemas without dict columns):
+    #   [schema-message][batch-message][EOS-marker]
+    # Stream layout (with dict-encoded columns):
+    #   [schema][dict-1]...[dict-N][batch][EOS]
+    # Either way we want the RecordBatch message — loop until we
+    # find one. ``MessageReader`` is re-exported by the
+    # ``pyarrow.ipc`` module but the stubs don't list it; the
     # ignore matches the pattern used elsewhere in this file for
     # ``new_stream``.
     reader = pa.ipc.MessageReader.open_stream(  # type: ignore[attr-defined]
         pa.BufferReader(stream_bytes)
     )
-    reader.read_next_message()  # discard schema message
-    batch_msg = reader.read_next_message()
+    batch_msg = None
+    try:
+        while True:
+            msg = reader.read_next_message()
+            if msg.type == "record batch":
+                batch_msg = msg
+                break
+            # Otherwise (schema / dictionary / ...), skip and
+            # keep reading.
+    except StopIteration:
+        # End-of-stream without ever seeing a RecordBatch is a
+        # writer-side bug — defend against it explicitly rather
+        # than returning empty bytes downstream.
+        pass
+    if batch_msg is None:
+        raise RuntimeError(
+            "pyarrow IPC stream contained no RecordBatch message",
+        )
 
     out = pa.BufferOutputStream()
     batch_msg.serialize_to(out)

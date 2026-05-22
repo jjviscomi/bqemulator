@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from hypothesis import HealthCheck, given, settings
+from hypothesis import strategies as st
 import pyarrow as pa
 import pytest
 
@@ -124,5 +126,113 @@ class TestSerializeArrowRecordBatch:
         # ``open_stream`` requires.
         batch = sample_table.combine_chunks().to_batches()[0]
         msg_bytes = serialize_arrow_record_batch(batch)
+        with pytest.raises((OSError, pa.lib.ArrowInvalid)):
+            pa.ipc.open_stream(msg_bytes).read_all()
+
+
+# Hypothesis strategies for the property test below. The repo
+# convention (cited by CodeRabbit on PR #31) is to use Hypothesis
+# for combinatorial surfaces — type × nullability × row-count is a
+# textbook fit. We restrict to scalar types Arrow can round-trip
+# without DuckDB-side coercion, since this test exercises the
+# pyarrow IPC layer in isolation (not the full read-session path).
+
+_HY_TYPES = st.sampled_from(
+    [
+        pa.int8(),
+        pa.int16(),
+        pa.int32(),
+        pa.int64(),
+        pa.uint8(),
+        pa.uint16(),
+        pa.uint32(),
+        pa.uint64(),
+        pa.float32(),
+        pa.float64(),
+        pa.bool_(),
+        pa.string(),
+        pa.binary(),
+        pa.date32(),
+        pa.timestamp("us"),
+    ],
+)
+
+
+@st.composite
+def _hy_record_batch(draw: st.DrawFn) -> pa.RecordBatch:
+    """Generate a ``pa.RecordBatch`` with random schema and row count."""
+    n_cols = draw(st.integers(min_value=1, max_value=4))
+    n_rows = draw(st.integers(min_value=0, max_value=12))
+    fields: list[pa.Field] = []
+    arrays: list[pa.Array] = []
+    for i in range(n_cols):
+        arrow_type = draw(_HY_TYPES)
+        nullable = draw(st.booleans())
+        fields.append(pa.field(f"c{i}", arrow_type, nullable=nullable))
+        # Build values via a type-driven helper. Each ``pa.array(...)``
+        # call validates the values against the declared type, so we
+        # only need to draw shape-compatible primitives.
+        if pa.types.is_integer(arrow_type) or pa.types.is_unsigned_integer(arrow_type):
+            vals: list = draw(
+                st.lists(st.integers(min_value=0, max_value=100), min_size=n_rows, max_size=n_rows)
+            )
+        elif pa.types.is_floating(arrow_type):
+            vals = draw(
+                st.lists(
+                    st.floats(min_value=-1e6, max_value=1e6, allow_nan=False, allow_infinity=False),
+                    min_size=n_rows,
+                    max_size=n_rows,
+                )
+            )
+        elif pa.types.is_boolean(arrow_type):
+            vals = draw(st.lists(st.booleans(), min_size=n_rows, max_size=n_rows))
+        elif pa.types.is_string(arrow_type):
+            vals = draw(
+                st.lists(st.text(min_size=0, max_size=16), min_size=n_rows, max_size=n_rows)
+            )
+        elif pa.types.is_binary(arrow_type):
+            vals = draw(
+                st.lists(st.binary(min_size=0, max_size=16), min_size=n_rows, max_size=n_rows)
+            )
+        elif pa.types.is_date(arrow_type) or pa.types.is_timestamp(arrow_type):
+            # ``pa.array`` will accept Python ``int`` / ``None`` and
+            # interpret as the underlying logical unit.
+            vals = draw(
+                st.lists(
+                    st.integers(min_value=0, max_value=1_000_000),
+                    min_size=n_rows,
+                    max_size=n_rows,
+                )
+            )
+        else:  # pragma: no cover — strategy is exhaustive
+            raise AssertionError(f"unhandled type in strategy: {arrow_type}")
+        # Optionally null-out some entries when the field is nullable.
+        if nullable and vals:
+            mask = draw(st.lists(st.booleans(), min_size=n_rows, max_size=n_rows))
+            vals = [None if m else v for v, m in zip(vals, mask, strict=True)]
+        arrays.append(pa.array(vals, type=arrow_type))
+    return pa.RecordBatch.from_arrays(arrays, schema=pa.schema(fields))
+
+
+class TestSerializeArrowRecordBatchProperties:
+    """Property-based round-trip — generates batches with varied
+    types, nullability, and row counts (including zero) and asserts
+    the bare-message ↔ ``read_record_batch`` round-trip stays
+    invariant across the combinatorial surface.
+    """
+
+    @given(batch=_hy_record_batch())
+    @settings(
+        deadline=None,
+        max_examples=50,
+        suppress_health_check=[HealthCheck.too_slow],
+    )
+    def test_round_trip_property(self, batch: pa.RecordBatch) -> None:
+        msg_bytes = serialize_arrow_record_batch(batch)
+        result = pa.ipc.read_record_batch(msg_bytes, batch.schema)
+        assert result.num_rows == batch.num_rows
+        assert result.schema == batch.schema
+        # And the bare-message contract still holds — full-stream
+        # readers must refuse the payload.
         with pytest.raises((OSError, pa.lib.ArrowInvalid)):
             pa.ipc.open_stream(msg_bytes).read_all()
