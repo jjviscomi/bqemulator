@@ -132,7 +132,7 @@ jobs:
       - uses: actions/download-artifact@v4
         with: { name: bqemu-image, path: /tmp }
       - run: docker load -i /tmp/bqemu.tar
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v6
         with:
           node-version: "20"
       - name: make test
@@ -150,7 +150,7 @@ jobs:
       - uses: actions/download-artifact@v4
         with: { name: bqemu-image, path: /tmp }
       - run: docker load -i /tmp/bqemu.tar
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v6
         with: { node-version: "20" }
       - name: make test
         env:
