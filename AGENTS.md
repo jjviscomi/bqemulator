@@ -96,6 +96,21 @@ grpc_api/ ──┘        + scripting/ + udf/ + versioning/ + types/
 
 ## Conventions
 
+- **GitHub Actions pinning.** Third-party `uses:` references in
+  `.github/workflows/*.yml` are pinned to a **full-length commit SHA**
+  with a trailing `# vX.Y.Z` comment that names the matching release
+  tag. SHA pinning is the
+  [GitHub Security Lab](https://github.blog/security/supply-chain-security/four-tips-to-keep-your-github-actions-workflows-secure/)
+  + [OpenSSF Scorecard](https://github.com/ossf/scorecard/blob/main/docs/checks.md#pinned-dependencies)
+  recommendation — major-version tags like `@v1` are mutable and can
+  be re-pointed by the action author, which is exactly the supply-
+  chain attack vector we're closing. The trailing `# vX.Y.Z` comment
+  is Dependabot's canonical bump-anchor; the GHA ecosystem updater
+  rewrites both the SHA and the comment together when new releases
+  ship, so reproducibility doesn't cost us upgrade hygiene. First-
+  party `actions/*` (GitHub-owned) are exempt and may use major-
+  version tags (`actions/checkout@v4`) — GitHub's own actions live
+  under a different threat model.
 - **Conventional Commits** (`feat:`, `fix:`, `docs:`, `refactor:`,
   `test:`, `chore:`, `build:`, `ci:`, `perf:`, `style:`). Enforced by
   `commitlint`.

@@ -27,7 +27,7 @@ jobs:
       - uses: docker/setup-buildx-action@v3
       - name: Build
         id: build
-        uses: docker/build-push-action@v5
+        uses: docker/build-push-action@ca052bb54ab0790a636c9b5f226502c73d547a25 # v5.4.0
         with:
           context: .
           platforms: linux/amd64
@@ -78,22 +78,39 @@ jobs:
           node-version: "20"
           cache: npm
           cache-dependency-path: tests/e2e/nodejs_client/package-lock.json
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install fixture-staging deps
+        run: pip install fastavro pyorc
       - uses: actions/download-artifact@v4
         with:
           name: bqemu-image
           path: /tmp
       - run: docker load -i /tmp/bqemu.tar
-      - name: Start emulator container
+      - name: Stage G1 fixtures + start emulator container
         env:
           BQEMU_IMAGE: ghcr.io/jjviscomi/bqemulator:ci-${{ github.sha }}
         run: |
+          # Mirror the Makefile recipe — stage canonical Avro/ORC
+          # fixtures into a host dir, then bind-mount it as the
+          # container's GCS local root so the G1 ``gs://`` URIs
+          # resolve. Without this, the load/extract Avro+ORC tests
+          # fail with ``Cannot resolve gs:// URIs without
+          # BQEMU_GCS_LOCAL_ROOT configured``.
+          GCS_DIR="$(mktemp -d -t bqemu-g1-nodejs.XXXXXX)"
+          chmod 777 "$GCS_DIR"
+          echo "GCS_DIR=$GCS_DIR" >> "$GITHUB_ENV"
+          python scripts/stage_g1_e2e_fixtures.py --root "$GCS_DIR"
           docker run -d --name bqemu \
             -p 9050:9050 -p 9060:9060 \
+            -v "$GCS_DIR:/var/lib/bqemu-gcs:rw" \
             -e BQEMU_REST_HOST=0.0.0.0 \
             -e BQEMU_GRPC_HOST=0.0.0.0 \
             -e BQEMU_REST_PORT=9050 \
             -e BQEMU_GRPC_PORT=9060 \
             -e BQEMU_ADMIN_ENABLED=1 \
+            -e BQEMU_GCS_LOCAL_ROOT=/var/lib/bqemu-gcs \
             "$BQEMU_IMAGE"
           # Wait up to 60s for /healthz to respond.
           for _ in $(seq 1 120); do
@@ -129,22 +146,33 @@ jobs:
           go-version: "1.22"
           cache: true
           cache-dependency-path: tests/e2e/go_client/go.mod
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install fixture-staging deps
+        run: pip install fastavro pyorc
       - uses: actions/download-artifact@v4
         with:
           name: bqemu-image
           path: /tmp
       - run: docker load -i /tmp/bqemu.tar
-      - name: Start emulator container
+      - name: Stage G1 fixtures + start emulator container
         env:
           BQEMU_IMAGE: ghcr.io/jjviscomi/bqemulator:ci-${{ github.sha }}
         run: |
+          GCS_DIR="$(mktemp -d -t bqemu-g1-go.XXXXXX)"
+          chmod 777 "$GCS_DIR"
+          echo "GCS_DIR=$GCS_DIR" >> "$GITHUB_ENV"
+          python scripts/stage_g1_e2e_fixtures.py --root "$GCS_DIR"
           docker run -d --name bqemu \
             -p 9050:9050 -p 9060:9060 \
+            -v "$GCS_DIR:/var/lib/bqemu-gcs:rw" \
             -e BQEMU_REST_HOST=0.0.0.0 \
             -e BQEMU_GRPC_HOST=0.0.0.0 \
             -e BQEMU_REST_PORT=9050 \
             -e BQEMU_GRPC_PORT=9060 \
             -e BQEMU_ADMIN_ENABLED=1 \
+            -e BQEMU_GCS_LOCAL_ROOT=/var/lib/bqemu-gcs \
             "$BQEMU_IMAGE"
           for _ in $(seq 1 120); do
             if curl -sf http://localhost:9050/healthz > /dev/null; then exit 0; fi
@@ -178,22 +206,33 @@ jobs:
           distribution: temurin
           java-version: "17"
           cache: maven
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install fixture-staging deps
+        run: pip install fastavro pyorc
       - uses: actions/download-artifact@v4
         with:
           name: bqemu-image
           path: /tmp
       - run: docker load -i /tmp/bqemu.tar
-      - name: Start emulator container
+      - name: Stage G1 fixtures + start emulator container
         env:
           BQEMU_IMAGE: ghcr.io/jjviscomi/bqemulator:ci-${{ github.sha }}
         run: |
+          GCS_DIR="$(mktemp -d -t bqemu-g1-java.XXXXXX)"
+          chmod 777 "$GCS_DIR"
+          echo "GCS_DIR=$GCS_DIR" >> "$GITHUB_ENV"
+          python scripts/stage_g1_e2e_fixtures.py --root "$GCS_DIR"
           docker run -d --name bqemu \
             -p 9050:9050 -p 9060:9060 \
+            -v "$GCS_DIR:/var/lib/bqemu-gcs:rw" \
             -e BQEMU_REST_HOST=0.0.0.0 \
             -e BQEMU_GRPC_HOST=0.0.0.0 \
             -e BQEMU_REST_PORT=9050 \
             -e BQEMU_GRPC_PORT=9060 \
             -e BQEMU_ADMIN_ENABLED=1 \
+            -e BQEMU_GCS_LOCAL_ROOT=/var/lib/bqemu-gcs \
             "$BQEMU_IMAGE"
           for _ in $(seq 1 120); do
             if curl -sf http://localhost:9050/healthz > /dev/null; then exit 0; fi

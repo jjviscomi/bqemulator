@@ -36,14 +36,24 @@ jobs:
       - name: Bandit
         run: bandit -c pyproject.toml -r src -ll
       - name: pip-audit
-        run: pip-audit
+        # Honor ``.pip-audit-ignore`` (the same filter ``make lint`` uses
+        # locally). Each line that starts with ``PYSEC-`` / ``CVE-`` /
+        # ``GHSA-`` becomes a ``--ignore-vuln`` flag — rationale for
+        # every advisory ID lives next to the entry in that file.
+        run: |
+          awk '/^(PYSEC|CVE|GHSA)-/ {printf "--ignore-vuln %s\n", $1}' \
+            .pip-audit-ignore | xargs pip-audit
       - name: Interrogate (docstring coverage)
         run: interrogate src
       - name: Typos
-        uses: crate-ci/typos@master
+        # Pin to a specific commit SHA so the workflow is reproducible
+        # and Dependabot can track upgrades. ``@master`` would silently
+        # follow the moving branch and could introduce surprise
+        # behaviour or supply-chain risk.
+        uses: crate-ci/typos@aca895bf05aec0cb7dffa6f94495e923224d9f17 # v1.46.2
 
   unit:
-    name: Unit + property tests (py${{ matrix.python }})
+    name: Unit + property tests (py${{ matrix.python }} · ${{ matrix.os }})
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
@@ -134,7 +144,12 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
-          python-version: "3.11"
+          # Pin to the dev-environment Python so the gate stays
+          # consistent with local ``make verify``. The unit matrix
+          # already covers py3.11–3.13; the coverage report itself
+          # uses the dev-pinned interpreter so cross-version code-
+          # path differences don't move the coverage number.
+          python-version: "3.14"
           cache: pip
       - run: |
           python -m pip install --upgrade pip
@@ -146,10 +161,15 @@ jobs:
             --cov-report=xml --cov-report=term \
             --cov-fail-under=90
       - name: Upload coverage
-        uses: codecov/codecov-action@v4
+        uses: codecov/codecov-action@b9fd7d16f6d7d1b5d2bec1a2887e65ceed900238 # v4.6.0
         with:
           file: coverage.xml
-          fail_ci_if_error: true
+          # Don't fail the CI run if the Codecov upload itself
+          # fails — the 90% gate is already enforced locally on
+          # the runner by ``--cov-fail-under=90``. Codecov is for
+          # the dashboard / per-PR diff comment; an upload-side
+          # outage shouldn't block merges.
+          fail_ci_if_error: false
         env:
           CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
 

@@ -57,3 +57,23 @@ def test_offset_in_aliased_expression() -> None:
     out = rewrite_unnest_offset(sql)
     # Aliased column still has its expression rebased.
     assert "off - 1" in out
+
+
+def test_with_offset_unused_returns_unchanged() -> None:
+    """WITH OFFSET declared but never referenced returns SQL unchanged."""
+    # Exercises the no-modification short-circuit (modified is False
+    # after the column walk): the offset alias is declared but never
+    # referenced, so the original SQL is returned as-is.
+    sql = "SELECT x FROM UNNEST([1, 2, 3]) AS x WITH OFFSET AS off"
+    out = rewrite_unnest_offset(sql)
+    assert out == sql
+
+
+def test_with_offset_token_in_string_only_unchanged() -> None:
+    """The trigger token inside a string literal doesn't fire the rewrite."""
+    # The string check looks for 'WITH OFFSET' in upper-cased SQL, so
+    # the trigger fires on the literal; but no Unnest carries an
+    # offset column, so the offset_names set is empty.
+    sql = "SELECT 'WITH OFFSET in literal' AS lbl FROM (SELECT 1) AS t"
+    out = rewrite_unnest_offset(sql)
+    assert out == sql
