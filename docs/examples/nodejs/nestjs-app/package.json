@@ -10,7 +10,7 @@
   },
   "dependencies": {
     "@google-cloud/bigquery": "^7.5.0",
-    "@nestjs/common": "^10.3.0",
+    "@nestjs/common": "^11.0.0",
     "@nestjs/core": "^11.1.23",
     "@nestjs/platform-express": "^11.1.23",
     "google-auth-library": "^9.0.0",
