@@ -2760,6 +2760,23 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="Step-by-step (with the orchestrator)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#readme-project-status-flip-folded-into-the-release-pr" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        README "Project status" flip (folded into the release PR)
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
         <li class="md-nav__item">
@@ -4944,6 +4961,23 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="Step-by-step (with the orchestrator)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#readme-project-status-flip-folded-into-the-release-pr" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        README "Project status" flip (folded into the release PR)
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
         <li class="md-nav__item">
@@ -5088,21 +5122,31 @@ remain for ≥2 MINOR versions or 6 months.</p>
 <code>release.yml</code> and operator scripting can pin the abort point (see the
 <code>EXIT_*</code> constants at the top of each script).</p>
 <h2 id="quick-reference">Quick reference<a class="headerlink" href="#quick-reference" title="Permanent link">&para;</a></h2>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="c1"># 1. Preview the release (no files touched, no git state changed):</span>
-</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>python<span class="w"> </span>scripts/release.py<span class="w"> </span>--dry-run<span class="w"> </span>--next<span class="w"> </span>minor
-</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="c1"># or</span>
-</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>make<span class="w"> </span>release-dry-run<span class="w"> </span><span class="nv">NEXT</span><span class="o">=</span>minor
-</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>
-</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="c1"># 2. Apply the release (runs make verify, mutates files, commits, tags):</span>
-</span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>python<span class="w"> </span>scripts/release.py<span class="w"> </span>--apply<span class="w"> </span>--next<span class="w"> </span>minor
-</span><span id="__span-0-8"><a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a><span class="c1"># or</span>
-</span><span id="__span-0-9"><a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a>make<span class="w"> </span>release<span class="w"> </span><span class="nv">NEXT</span><span class="o">=</span>minor
-</span><span id="__span-0-10"><a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a>
-</span><span id="__span-0-11"><a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a><span class="c1"># 3. Inspect + push:</span>
-</span><span id="__span-0-12"><a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a>git<span class="w"> </span>show<span class="w"> </span>v0.2.0
-</span><span id="__span-0-13"><a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a>git<span class="w"> </span>push<span class="w"> </span>origin<span class="w"> </span>main<span class="w"> </span>v0.2.0
-</span><span id="__span-0-14"><a id="__codelineno-0-14" name="__codelineno-0-14" href="#__codelineno-0-14"></a>
-</span><span id="__span-0-15"><a id="__codelineno-0-15" name="__codelineno-0-15" href="#__codelineno-0-15"></a><span class="c1"># 4. .github/workflows/release.yml fires on the tag push.</span>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="c1"># 1. Branch off main and stage the README &quot;Project status&quot; flip</span>
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="c1">#    (rc → final, ⚪ → ✅ on PyPI + GHCR rows) as the FIRST commit:</span>
+</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>git<span class="w"> </span>checkout<span class="w"> </span>-b<span class="w"> </span>release/vX.Y.Z
+</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="nv">$EDITOR</span><span class="w"> </span>README.md
+</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>git<span class="w"> </span>add<span class="w"> </span>README.md<span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span>git<span class="w"> </span>commit<span class="w"> </span>-m<span class="w"> </span><span class="s1">&#39;docs(release): flip README to vX.Y.Z final&#39;</span>
+</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>
+</span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a><span class="c1"># 2. Preview the release (no files touched, no git state changed):</span>
+</span><span id="__span-0-8"><a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a>python<span class="w"> </span>scripts/release.py<span class="w"> </span>--dry-run<span class="w"> </span>--next<span class="w"> </span>minor
+</span><span id="__span-0-9"><a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a><span class="c1"># or</span>
+</span><span id="__span-0-10"><a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a>make<span class="w"> </span>release-dry-run<span class="w"> </span><span class="nv">NEXT</span><span class="o">=</span>minor
+</span><span id="__span-0-11"><a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a>
+</span><span id="__span-0-12"><a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a><span class="c1"># 3. Apply the release (runs make verify, mutates files, commits, tags):</span>
+</span><span id="__span-0-13"><a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a>python<span class="w"> </span>scripts/release.py<span class="w"> </span>--apply<span class="w"> </span>--next<span class="w"> </span>minor
+</span><span id="__span-0-14"><a id="__codelineno-0-14" name="__codelineno-0-14" href="#__codelineno-0-14"></a><span class="c1"># or</span>
+</span><span id="__span-0-15"><a id="__codelineno-0-15" name="__codelineno-0-15" href="#__codelineno-0-15"></a>make<span class="w"> </span>release<span class="w"> </span><span class="nv">NEXT</span><span class="o">=</span>minor
+</span><span id="__span-0-16"><a id="__codelineno-0-16" name="__codelineno-0-16" href="#__codelineno-0-16"></a>
+</span><span id="__span-0-17"><a id="__codelineno-0-17" name="__codelineno-0-17" href="#__codelineno-0-17"></a><span class="c1"># 4. Push branch + open the PR; CI gates the release commit.</span>
+</span><span id="__span-0-18"><a id="__codelineno-0-18" name="__codelineno-0-18" href="#__codelineno-0-18"></a>
+</span><span id="__span-0-19"><a id="__codelineno-0-19" name="__codelineno-0-19" href="#__codelineno-0-19"></a><span class="c1"># 5. After squash-merge, reconcile the tag onto the merged commit:</span>
+</span><span id="__span-0-20"><a id="__codelineno-0-20" name="__codelineno-0-20" href="#__codelineno-0-20"></a>git<span class="w"> </span>checkout<span class="w"> </span>main<span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span>git<span class="w"> </span>pull<span class="w"> </span>--ff-only
+</span><span id="__span-0-21"><a id="__codelineno-0-21" name="__codelineno-0-21" href="#__codelineno-0-21"></a>git<span class="w"> </span>tag<span class="w"> </span>-d<span class="w"> </span>vX.Y.Z
+</span><span id="__span-0-22"><a id="__codelineno-0-22" name="__codelineno-0-22" href="#__codelineno-0-22"></a>git<span class="w"> </span>tag<span class="w"> </span>-a<span class="w"> </span>vX.Y.Z<span class="w"> </span>-m<span class="w"> </span>vX.Y.Z
+</span><span id="__span-0-23"><a id="__codelineno-0-23" name="__codelineno-0-23" href="#__codelineno-0-23"></a>git<span class="w"> </span>push<span class="w"> </span>origin<span class="w"> </span>vX.Y.Z
+</span><span id="__span-0-24"><a id="__codelineno-0-24" name="__codelineno-0-24" href="#__codelineno-0-24"></a>
+</span><span id="__span-0-25"><a id="__codelineno-0-25" name="__codelineno-0-25" href="#__codelineno-0-25"></a><span class="c1"># 6. .github/workflows/release.yml fires on the tag push.</span>
 </span></code></pre></div>
 <p>The orchestrator's hard preconditions (every one of which aborts with
 a dedicated exit code):</p>
@@ -5145,7 +5189,7 @@ a dedicated exit code):</p>
 </tr>
 <tr>
 <td><a href="https://github.com/jjviscomi/bqemulator/blob/main/README.md"><code>README.md</code></a> — "Project status" section</td>
-<td>Drop "pre-1.0" / "currently 0.x.y" language; promote any <code>⚪</code> maturity rows for things now shipped (PyPI publish, GHCR publish, etc.).</td>
+<td>Drop "pre-1.0" / "currently 0.x.y" language; promote any <code>⚪</code> maturity rows for things now shipped (PyPI publish, GHCR publish, etc.). <strong>Land this on the release branch itself (first commit, before <code>make release</code>)</strong> — see the "README 'Project status' flip" subsection below. The rest of this sweep can land in a separate pre-release housekeeping PR.</td>
 </tr>
 <tr>
 <td><a href="https://github.com/jjviscomi/bqemulator/blob/main/README.md"><code>README.md</code></a> — "Conformance corpus depth" header</td>
@@ -5176,7 +5220,18 @@ a dedicated exit code):</p>
    afterthought.</p>
 <ol>
 <li>
-<p><strong>Branch off <code>main</code>.</strong> Conventional name: <code>release/vX.Y.Z</code>.</p>
+<p><strong>Branch off <code>main</code> and stage the README flip.</strong> Conventional
+   branch name: <code>release/vX.Y.Z</code>. The <strong>first commit on this
+   branch</strong> flips the README "Project status" wording from
+   <code>vX.Y.Z-rc</code> / "staged on <code>main</code>" prose to factual
+   "at <strong>vX.Y.Z</strong> — the initial production-stable release"
+   wording, and promotes the ⚪ PyPI + GHCR maturity rows to ✅
+   with the actual <code>pip install</code> / <code>docker pull</code> commands. The
+   bump commit created by the orchestrator (step 6) stacks on
+   top, and squash-merge collapses both into a single commit on
+   <code>main</code>. See the <a href="#readme-project-status-flip-folded-into-the-release-pr">README "Project status" flip</a>
+   subsection at the bottom of this section for the
+   chicken-and-egg rationale.</p>
 </li>
 <li>
 <p><strong>Dry-run the release locally.</strong></p>
@@ -5220,12 +5275,31 @@ nothing has hit the remote yet.</p>
    The full gate chain must be green. CODEOWNERS approval rules apply.</p>
 </li>
 <li>
-<p><strong>Merge to <code>main</code>.</strong> Squash-merge per the repo convention.</p>
+<p><strong>Merge to <code>main</code>.</strong> Squash-merge per the repo convention.
+   <strong>Note:</strong> squash-merge produces a new commit SHA on <code>main</code>
+   that subsumes every commit on the release branch — including
+   the orchestrator's <code>release: bump to vX.Y.Z</code> commit. The
+   annotated tag created in step 6 still points to the
+   unmerged release-branch commit, which is no longer reachable
+   from <code>main</code> after the merge. Step 9 reconciles the tag.</p>
 </li>
 <li>
-<p><strong>Push the tag.</strong></p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>git<span class="w"> </span>push<span class="w"> </span>origin<span class="w"> </span>main<span class="w"> </span>vX.Y.Z
+<p><strong>Reconcile and push the tag.</strong> Re-create the tag on the
+   merged commit before publishing it, otherwise <code>release.yml</code>
+   builds the wheel from a commit that isn't on <code>main</code>:</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>git<span class="w"> </span>checkout<span class="w"> </span>main
+</span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>git<span class="w"> </span>pull<span class="w"> </span>--ff-only<span class="w"> </span>origin<span class="w"> </span>main
+</span><span id="__span-3-3"><a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a>git<span class="w"> </span>tag<span class="w"> </span>-d<span class="w"> </span>vX.Y.Z<span class="w">              </span><span class="c1"># remove the orphaned local tag</span>
+</span><span id="__span-3-4"><a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a>git<span class="w"> </span>tag<span class="w"> </span>-a<span class="w"> </span>vX.Y.Z<span class="w"> </span>-m<span class="w"> </span>vX.Y.Z<span class="w">    </span><span class="c1"># re-annotate on the squash-merge commit</span>
+</span><span id="__span-3-5"><a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a>git<span class="w"> </span>push<span class="w"> </span>origin<span class="w"> </span>vX.Y.Z<span class="w">          </span><span class="c1"># publish the tag</span>
 </span></code></pre></div>
+<p>The orchestrator created the tag as <code>git tag -a vX.Y.Z -m vX.Y.Z</code>
+(annotation is intentionally just the tag name — <code>release.yml</code>
+pulls release-note content from <code>CHANGELOG.md</code> separately), so
+re-creating it is byte-equivalent. When
+<code>git config commit.gpgsign true</code> is set globally, the
+re-created tag is signed automatically; the orchestrator
+does not force <code>-s</code>.</p>
 <p>Pushing the tag fires
 <a href="https://github.com/jjviscomi/bqemulator/blob/main/.github/workflows/release.yml"><code>.github/workflows/release.yml</code></a>,
 which:</p>
@@ -5246,30 +5320,47 @@ signatures.</p>
 </span><span id="__span-4-3"><a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a>bqemulator<span class="w"> </span>version<span class="w">   </span><span class="c1"># prints X.Y.Z</span>
 </span></code></pre></div>
 </li>
-<li>
-<p><strong>Post-release doc flip.</strong> Open a follow-up PR (<code>docs/post-release-vX.Y.Z</code>) that flips every README claim which was <em>aspirational</em> during the release commit into <em>factual</em> now that the artefacts exist. The list is precisely the inverse of the step-2 sweep table — the entries that can only be true after the publish workflows finish:</p>
+</ol>
+<h3 id="readme-project-status-flip-folded-into-the-release-pr">README "Project status" flip (folded into the release PR)<a class="headerlink" href="#readme-project-status-flip-folded-into-the-release-pr" title="Permanent link">&para;</a></h3>
+<p>Earlier iterations of this process kept the README's
+<em>aspirational-vs-factual</em> wording in a <strong>separate post-release
+PR</strong> that landed after step 10's smoke-tests. That meant every
+release shipped a chicken-and-egg gap: the release commit
+referenced a <code>vX.Y.Z-rc</code> README, and a follow-up PR had to land
+with the same release notes to flip ⚪ → ✅. v1.0.0 collapsed the
+two into a single PR; the convention since is to do the README
+flip <strong>before</strong> running the orchestrator (step 3), so the bump
+commit and the wording flip land in the same merge.</p>
+<p>The actionable list of strings to flip is the inverse of step 2's
+pre-release sweep — the entries below can only be true after the
+publish workflows finish, but we now write them in the release
+commit anyway:</p>
 <table>
 <thead>
 <tr>
 <th>File</th>
-<th>What to flip</th>
+<th>What to flip (release branch, first commit, before <code>make release</code>)</th>
 </tr>
 </thead>
 <tbody>
 <tr>
 <td><a href="https://github.com/jjviscomi/bqemulator/blob/main/README.md"><code>README.md</code></a> — "Project status" header</td>
-<td><code>vX.Y.Z-rc</code> / "staged on main" prose → factual "at <strong>vX.Y.Z</strong> — the initial production-stable release" wording.</td>
+<td><code>vX.Y.Z-rc</code> / "staged on <code>main</code>" prose → factual "at <strong>vX.Y.Z</strong> — the initial production-stable release" wording.</td>
 </tr>
 <tr>
 <td><a href="https://github.com/jjviscomi/bqemulator/blob/main/README.md"><code>README.md</code></a> — "Maturity signals" rows</td>
-<td>⚪ "PyPI publish — wired and waiting on the tag push" → ✅ with the verified <code>pip install</code> command. Same flip for the GHCR row with the <code>docker pull</code> command.</td>
+<td>⚪ "PyPI publish — wired and waiting on the tag push" → ✅ with the actual <code>pip install</code> / <code>docker pull</code> command.</td>
 </tr>
 </tbody>
 </table>
-<p>This split exists because step-2 pre-release strings (classifier bumps, example outputs that match what <code>bqemulator version</code> will print) become true the moment the release <strong>commit</strong> lands; the entries above become true only after the <strong>artefacts</strong> are confirmed published. Conflating them ships a README that lies about something it cannot verify yet — the post-release flip is what closes that window.</p>
-<p>The post-release PR must include the actual smoke-test commands from step 10 rendered as proof — committers verify the artefacts exist by running them, not just by reading the workflow's "✓ success" badge.</p>
-</li>
-</ol>
+<p>The trade-off is explicit: the README now claims the artefacts
+exist a few minutes <strong>before</strong> the publish workflows finish.
+That window closes within roughly 5–10 min of pushing the tag
+(<code>release.yml</code> + <code>docker.yml</code> end-to-end). The convention is to
+verify the artefacts (<code>pip install</code>, <code>docker pull</code>, cosign
+verification) right after the tag push — if a workflow fails,
+the next commit on <code>main</code> is the README revert, not a separate
+"flip" PR.</p>
 <h2 id="cli-reference">CLI reference<a class="headerlink" href="#cli-reference" title="Permanent link">&para;</a></h2>
 <h3 id="scriptsbump_versionpy"><code>scripts/bump_version.py</code><a class="headerlink" href="#scriptsbump_versionpy" title="Permanent link">&para;</a></h3>
 <div class="language-bash highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a>python<span class="w"> </span>scripts/bump_version.py<span class="w"> </span><span class="m">1</span>.0.0<span class="w">            </span><span class="c1"># explicit</span>
