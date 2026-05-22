@@ -148,6 +148,44 @@ class TestSerializeArrowRecordBatch:
         with pytest.raises(ValueError, match="Dictionary-encoded columns"):
             serialize_arrow_record_batch(batch)
 
+    def test_rejects_nested_dictionary_in_struct(self) -> None:
+        """``pa.types.is_dictionary`` only inspects the top-level type, but
+        Arrow's IPC format emits ``DictionaryBatch`` messages for
+        dict-encoded children of struct / list / map / union containers
+        too. The producer must refuse nested dict-encoded leaves with
+        the same ``ValueError`` it raises for top-level dict columns,
+        otherwise the bare-message payload silently omits the dict
+        frames consumers need (see ADR 0033).
+        """
+        dict_type = pa.dictionary(pa.int32(), pa.string())
+        # Struct with a dict-encoded child field.
+        struct_type = pa.struct([pa.field("category", dict_type)])
+        cat = pa.array(["a", "b", "a"]).dictionary_encode().cast(dict_type)
+        struct_arr = pa.StructArray.from_arrays([cat], fields=[pa.field("category", dict_type)])
+        batch = pa.RecordBatch.from_arrays(
+            [struct_arr],
+            schema=pa.schema([pa.field("nested", struct_type)]),
+        )
+        with pytest.raises(ValueError, match="Dictionary-encoded columns"):
+            serialize_arrow_record_batch(batch)
+
+    def test_rejects_nested_dictionary_in_list(self) -> None:
+        """Same recursion guard, exercising the ``list<dict<...>>`` shape —
+        catches the case where a dict-encoded element type hides inside
+        a list container.
+        """
+        dict_type = pa.dictionary(pa.int32(), pa.string())
+        list_type = pa.list_(dict_type)
+        # Build a list array with dict-encoded elements.
+        inner = pa.array(["a", "b", "a"]).dictionary_encode().cast(dict_type)
+        list_arr = pa.ListArray.from_arrays(pa.array([0, 2, 3]), inner)
+        batch = pa.RecordBatch.from_arrays(
+            [list_arr],
+            schema=pa.schema([pa.field("tags", list_type)]),
+        )
+        with pytest.raises(ValueError, match="Dictionary-encoded columns"):
+            serialize_arrow_record_batch(batch)
+
 
 # Hypothesis strategies for the property test below. The repo
 # convention (cited by CodeRabbit on PR #31) is to use Hypothesis

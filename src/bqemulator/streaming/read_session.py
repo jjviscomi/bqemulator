@@ -242,6 +242,33 @@ def split_stream(stream_name: str, fraction: float) -> tuple[str, str] | None:
     return primary_name, remainder_name
 
 
+def _type_contains_dictionary(arrow_type: pa.DataType) -> bool:
+    """Return ``True`` if ``arrow_type`` or any nested child is dict-encoded.
+
+    ``pa.types.is_dictionary`` only inspects the top-level type;
+    Arrow's IPC format emits ``DictionaryBatch`` frames for dict
+    children inside struct / list / map / union containers as well.
+    See ADR 0033.
+    """
+    if pa.types.is_dictionary(arrow_type):
+        return True
+    if pa.types.is_struct(arrow_type):
+        return any(_type_contains_dictionary(f.type) for f in arrow_type)
+    if (
+        pa.types.is_list(arrow_type)
+        or pa.types.is_large_list(arrow_type)
+        or pa.types.is_fixed_size_list(arrow_type)
+    ):
+        return _type_contains_dictionary(arrow_type.value_type)
+    if pa.types.is_map(arrow_type):
+        return _type_contains_dictionary(arrow_type.key_type) or _type_contains_dictionary(
+            arrow_type.item_type
+        )
+    if pa.types.is_union(arrow_type):
+        return any(_type_contains_dictionary(f.type) for f in arrow_type)
+    return False
+
+
 def serialize_arrow_record_batch(batch: pa.RecordBatch) -> bytes:
     """Serialize a single Arrow record batch as a bare IPC message.
 
@@ -291,18 +318,26 @@ def serialize_arrow_record_batch(batch: pa.RecordBatch) -> bytes:
     function stays correct across pyarrow upgrades.
     """
     # Refuse dict-encoded batches up front — see docstring.
-    # Using ``schema_field`` instead of ``field`` to avoid shadowing
-    # the ``dataclasses.field`` import at the top of the module.
+    # Walks every type recursively because ``pa.types.is_dictionary``
+    # only inspects the top-level type, and Arrow's IPC format emits
+    # ``DictionaryBatch`` frames for dict-encoded children inside
+    # struct / list / map / union containers as well. A flat check
+    # would silently allow nested dict fields and produce the same
+    # corrupt-payload bug the rejection guards against. Using
+    # ``schema_field`` instead of ``field`` to avoid shadowing the
+    # ``dataclasses.field`` import at the top of the module.
     for schema_field in batch.schema:
-        if pa.types.is_dictionary(schema_field.type):
+        if _type_contains_dictionary(schema_field.type):
             raise ValueError(
                 f"Dictionary-encoded columns are not supported by"
                 f" the BigQuery Storage Read API serializer "
                 f"(column {schema_field.name!r} has type "
-                f"{schema_field.type}). The wire contract carries"
-                f" only the record-batch message, but pyarrow"
-                f" requires a DictionaryMemo to decode dict frames"
-                f" — that channel does not exist in the wire format."
+                f"{schema_field.type}; dict-encoded leaf detected"
+                f" at the top level or in a nested container). The"
+                f" wire contract carries only the record-batch"
+                f" message, but pyarrow requires a DictionaryMemo"
+                f" to decode dict frames — that channel does not"
+                f" exist in the wire format. See ADR 0033."
             )
 
     sink = pa.BufferOutputStream()
