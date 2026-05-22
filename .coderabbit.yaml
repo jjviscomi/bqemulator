@@ -89,8 +89,17 @@ reviews:
     - path: ".github/workflows/**"
       instructions: |
         Verify ``concurrency: cancel-in-progress`` is set on push-
-        triggered workflows. Flag steps that don't pin action versions
-        with a major-version tag.
+        triggered workflows.
+
+        ACTION PINNING POLICY (per AGENTS.md): third-party ``uses:``
+        references are pinned to a **full-length commit SHA** with a
+        trailing ``# vX.Y.Z`` comment as the Dependabot bump-anchor.
+        SHA pinning is the GitHub Security Lab + OpenSSF Scorecard
+        recommendation. DO NOT suggest downgrading SHA pins to
+        major-version tags (e.g. ``@v1``) — that's a regression in
+        supply-chain posture, not an improvement. First-party
+        ``actions/*`` (GitHub-owned) are exempt and may use
+        major-version tags; everything else uses a SHA pin.
     - path: "docs/**"
       instructions: |
         Flag any reintroduction of the "Phase N" scaffolding pattern
