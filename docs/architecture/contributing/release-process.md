@@ -157,6 +157,17 @@ a dedicated exit code):
     bqemulator version   # prints X.Y.Z
     ```
 
+11. **Post-release doc flip.** Open a follow-up PR (`docs/post-release-vX.Y.Z`) that flips every README claim which was *aspirational* during the release commit into *factual* now that the artefacts exist. The list is precisely the inverse of the step-2 sweep table — the entries that can only be true after the publish workflows finish:
+
+    | File | What to flip |
+    |---|---|
+    | [`README.md`](https://github.com/jjviscomi/bqemulator/blob/main/README.md) — "Project status" header | `vX.Y.Z-rc` / "staged on main" prose → factual "at **vX.Y.Z** — the initial production-stable release" wording. |
+    | [`README.md`](https://github.com/jjviscomi/bqemulator/blob/main/README.md) — "Maturity signals" rows | ⚪ "PyPI publish — wired and waiting on the tag push" → ✅ with the verified `pip install` command. Same flip for the GHCR row with the `docker pull` command. |
+
+    This split exists because step-2 pre-release strings (classifier bumps, example outputs that match what `bqemulator version` will print) become true the moment the release **commit** lands; the entries above become true only after the **artefacts** are confirmed published. Conflating them ships a README that lies about something it cannot verify yet — the post-release flip is what closes that window.
+
+    The post-release PR must include the actual smoke-test commands from step 10 rendered as proof — committers verify the artefacts exist by running them, not just by reading the workflow's "✓ success" badge.
+
 ## CLI reference
 
 ### `scripts/bump_version.py`
