@@ -140,7 +140,12 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
-          python-version: "3.11"
+          # Pin to the dev-environment Python so the gate stays
+          # consistent with local ``make verify``. The unit matrix
+          # already covers py3.11–3.13; the coverage report itself
+          # uses the dev-pinned interpreter so cross-version code-
+          # path differences don't move the coverage number.
+          python-version: "3.14"
           cache: pip
       - run: |
           python -m pip install --upgrade pip
