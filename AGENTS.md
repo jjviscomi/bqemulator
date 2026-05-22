@@ -186,12 +186,22 @@ they could have been caught in ~90s of local time. Failures are
 | `make lint` | ruff check + ruff format + mypy --strict + bandit + pip-audit + interrogate + typos | ~30 s |
 | `make test-unit` | full unit tier (2400+ tests) | ~45 s |
 | `make test-coverage` | combined unit+property+integration with `--cov-fail-under=90` (line + branch) | ~3–5 min |
+| Per-file diff coverage (Codecov-equivalent) | `pytest tests/{unit,property,integration} --cov=bqemulator --cov-branch --cov-report=term-missing:skip-covered` then read the per-file rows for the files this commit touched. Aim for **every diff-added line** to be hit. | included in `make test-coverage` |
 | Per-example `make test` (when an example was changed) | actual runtime behaviour of the example against a real `bqemulator` start | ~30 s |
 
-The `make test-coverage` step is the one that catches dropped
-coverage **before** Codecov complains on the PR. Treat any diff
-that doesn't move coverage with you as a finished change — if it
-drops the number, add tests until it doesn't.
+The `make test-coverage` step is the one that catches a dropped
+*project* coverage — `--cov-fail-under=90` enforces the
+**total** line+branch threshold. That is **not** the same as
+Codecov's `patch` check on the PR. Codecov's patch gate looks
+at the *new lines this PR adds* and fails if those specific
+lines aren't covered, even when the project total still ≥ 90%.
+
+For every new helper / branch / case you add, write a unit test
+that exercises it the same commit. The `--cov-report=term-missing`
+output above is the contract: scan the rows for the files in your
+diff, and there should be **no diff-added line** in the
+"Missing" column. Pre-existing uncovered lines in those files
+are fine — only new ones matter for the patch gate.
 
 When fixing an example or a downstream integration, reproduce the
 failure with the example's own `make test` **before** writing any
@@ -229,6 +239,12 @@ ignored. Both steps, every time.
 - Commit without **all** of the pre-commit gate above passing
   locally — that includes `make test-coverage`, not just
   `make lint test-unit`.
+- Commit a new function / class / branch without a unit test
+  exercising it the same commit. The project-wide coverage gate
+  passes even when diff-introduced lines are uncovered (the
+  total just barely moves); Codecov's `patch` check catches
+  this and fails the PR. Scan `term-missing` per-file rows
+  before every push.
 - Merge a PR that drops coverage below 90%.
 - Merge a feature without e2e coverage for all five conformance clients.
 - Push speculative fixes for example / integration regressions
