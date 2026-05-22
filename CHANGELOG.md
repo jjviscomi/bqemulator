@@ -20,6 +20,8 @@ section and adds the release date.
 
 ## [Unreleased]
 
+## [1.0.0] — 2026-05-22
+
 ### Added
 
 - **REST API parity** — Datasets, Tables, Jobs, TableData, Routines, Models,
@@ -174,3 +176,4 @@ None affect the core emulator surface.
   for users running against real BigQuery or a long-lived
   bqemulator with a stable port. Tracked in
   [#17](https://github.com/jjviscomi/bqemulator/issues/17).
+
