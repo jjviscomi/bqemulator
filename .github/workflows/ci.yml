@@ -164,7 +164,12 @@ jobs:
         uses: codecov/codecov-action@v4
         with:
           file: coverage.xml
-          fail_ci_if_error: true
+          # Don't fail the CI run if the Codecov upload itself
+          # fails — the 90% gate is already enforced locally on
+          # the runner by ``--cov-fail-under=90``. Codecov is for
+          # the dashboard / per-PR diff comment; an upload-side
+          # outage shouldn't block merges.
+          fail_ci_if_error: false
         env:
           CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
 

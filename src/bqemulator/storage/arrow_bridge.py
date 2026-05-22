@@ -133,10 +133,15 @@ def _format_range_endpoint(value: Any, bq_elem: str) -> str:
             ts = value if value.tzinfo is not None else value.replace(tzinfo=UTC)
             return str(int(ts.timestamp() * 1_000_000))
         # DATETIME — naive ISO 8601 with ``T`` separator so the
-        # Python client's ``_RFC3339_*`` formats match.
-        if value.microsecond:
-            return value.strftime("%Y-%m-%dT%H:%M:%S.%f")
-        return value.strftime("%Y-%m-%dT%H:%M:%S")
+        # Python client's ``_RFC3339_*`` formats match. Use
+        # ``isoformat()`` (pure-Python; always zero-pads the year)
+        # instead of ``strftime("%Y-...")``, which delegates to
+        # the platform C library and does NOT zero-pad year < 1000
+        # on Linux glibc. The DATETIME boundary cases — year 1 and
+        # year 9999 — must round-trip cleanly via the official
+        # Python BigQuery client's ``strptime`` parser, which
+        # demands a 4-digit ``%Y``.
+        return value.isoformat()
     if isinstance(value, date):
         return value.isoformat()
     return str(value)
@@ -273,8 +278,13 @@ def _format_bq_value(
                     delta.days * 86_400_000_000 + delta.seconds * 1_000_000 + delta.microseconds
                 )
                 return str(micros)
-            # BigQuery DATETIME format: "YYYY-MM-DDTHH:MM:SS.ffffff"
-            return value.strftime("%Y-%m-%dT%H:%M:%S.%f")
+            # BigQuery DATETIME format: ``YYYY-MM-DDTHH:MM:SS[.ffffff]``.
+            # Use ``isoformat()`` (always zero-pads the year) over
+            # ``strftime("%Y-...")`` so the year-1 / year-9999
+            # boundary cases parse correctly through the Python
+            # client's ``strptime`` chain. See the matching note in
+            # ``_format_range_endpoint`` above.
+            return value.isoformat()
         return str(value)
 
     # List / Array
