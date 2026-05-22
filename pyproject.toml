@@ -478,6 +478,16 @@ parallel = true
 concurrency = ["thread"]
 omit = [
     "*/bqemulator/__main__.py",
+    # Metadata-only top-level package init (docstring + ``__all__`` +
+    # ``__version__``). Every line is module-level, runs once at import
+    # time — and pytest-cov's tracer only starts AFTER pytest itself
+    # has already imported ``bqemulator`` via the conftest path, so
+    # these lines consistently report ``hits=0`` despite being
+    # exercised by every test. The release bump touches ``__version__``
+    # which then trips diff-cover's patch-coverage gate at 0%; omitting
+    # the file removes the false-negative without losing any real
+    # signal (the file contains no logic to cover).
+    "*/bqemulator/__init__.py",
     "*/bqemulator/grpc_api/proto/*",
     # Test helpers — they are exercised BY tests (as fixtures and containers)
     # but are not the subject of direct coverage. CI e2e tests exercise

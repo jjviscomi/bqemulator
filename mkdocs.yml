@@ -6,6 +6,21 @@ repo_name: jjviscomi/bqemulator
 edit_uri: edit/main/docs/
 copyright: Apache 2.0
 
+# Exclude developer-only artefacts that may transiently exist under
+# ``docs/`` after running example workflows locally. ``make verify``
+# runs ``test-e2e-nodejs`` (which ``npm install``s into the example
+# project) before ``docs-build``; mkdocs strict mode would otherwise
+# treat every dependency's ``README.md`` as a docs file and abort on
+# the dependency's broken intra-package anchors. CI is hermetic so
+# this only bites local verify runs, but the exclusion is harmless
+# in CI too.
+exclude_docs: |
+  examples/nodejs/*/node_modules/
+  examples/**/target/
+  examples/**/build/
+  examples/**/.venv/
+  examples/**/__pycache__/
+
 theme:
   name: material
   features:
