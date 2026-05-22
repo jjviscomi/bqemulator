@@ -3,15 +3,22 @@ bqemulator_dbt_local:
   outputs:
     emulator:
       type: bigquery
-      # dbt-bigquery 1.9+ resolves credentials before honouring
-      # BIGQUERY_EMULATOR_HOST. The ``oauth`` method calls
-      # ``google.auth.default()`` and fails fast when there is no
-      # ADC. ``service-account`` accepts a keyfile that we
-      # synthesise at run-time in run.sh — that keeps the auth path
-      # happy while the env var redirects every actual API call to
-      # the emulator.
-      method: service-account
-      keyfile: "{{ env_var('BQEMU_FAKE_SA_KEY') }}"
+      # dbt-bigquery 1.9+ runs its credential handshake *before*
+      # BIGQUERY_EMULATOR_HOST kicks in. ``oauth`` calls
+      # ``google.auth.default()`` and fails without ADC;
+      # ``service-account`` eagerly exchanges the keyfile for a
+      # real OAuth token against ``oauth2.googleapis.com/token``
+      # and fails with ``invalid_grant: account not found`` when
+      # the fake SA isn't registered upstream.
+      #
+      # ``oauth-secrets`` is the one method that never contacts
+      # Google: dbt builds a static
+      # ``google.oauth2.credentials.Credentials(token=…)`` and
+      # uses the literal token in the Authorization header.
+      # bqemulator accepts any bearer token, so the static value
+      # is fine.
+      method: oauth-secrets
+      token: bqemu-fake-token
       project: "{{ env_var('BQ_PROJECT', 'bqemu-demo') }}"
       dataset: dbt_local
       location: US

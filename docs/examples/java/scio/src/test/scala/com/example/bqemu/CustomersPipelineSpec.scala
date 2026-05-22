@@ -34,8 +34,11 @@ class CustomersPipelineSpec extends AnyFlatSpec with Matchers {
       val args = Array(
         "--runner=DirectRunner",
         s"--bigQueryEndpoint=$rest",
-        "--project=bqemu-demo",
-        "--dataset=scio_demo"
+        // Use namespaced names — ``--project`` is consumed by
+        // ScioContext as a pipeline option and never reaches
+        // ``parsedArgs``.
+        "--bqProject=bqemu-demo",
+        "--bqDataset=scio_demo"
       )
       val written = CustomersPipeline.run(args)
       written shouldBe 3L
