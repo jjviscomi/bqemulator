@@ -72,11 +72,12 @@ def _emulator_env(bqemu_server) -> Iterator[None]:
         return anon, project
 
     rest_url = bqemu_server.rest_url
-    # The Airflow Google provider forwards ``BIGQUERY_EMULATOR_HOST``
-    # verbatim into ``client_options.api_endpoint``; without the
-    # scheme, ``requests`` aborts with
-    # ``No connection adapters were found for '127.0.0.1:PORT/...'``.
-    # Set the env var with ``http://`` already in place.
+    # google-cloud-bigquery 3.20+ reads ``BIGQUERY_EMULATOR_HOST``
+    # verbatim as the API base URL (no scheme prefixing) — the
+    # default it replaces is ``https://bigquery.googleapis.com``,
+    # which already carries the scheme. So our value MUST be a
+    # full URL too; the bare host:port form makes ``requests`` abort
+    # with ``InvalidSchema: No connection adapters were found``.
     previous_emu = os.environ.get("BIGQUERY_EMULATOR_HOST")
     previous_default = google.auth.default
     previous_internal_default = google.auth._default.default
