@@ -123,14 +123,27 @@ class CustomersPipelineSpec extends AnyFlatSpec with Matchers {
         Set(200, 201, 409) should contain(createDsResp.statusCode())
       }
 
-      // Run the pipeline end-to-end. Beam DirectRunner; the
-      // ``BIGQUERY_EMULATOR_HOST`` env var on the forked JVM
-      // (applied by sbt's ``Test / envVars``) routes BQ client
-      // writes to the emulator.
+      // Run the pipeline end-to-end. Beam needs TWO endpoint
+      // overrides to route everything to the emulator:
+      //
+      // * ``--bigQueryEndpoint=$restBase`` — covers Beam BigQueryIO's
+      //   preflight validators (dataset-exists, table-exists checks
+      //   issued via the low-level Apiary ``Bigquery`` client). Without
+      //   this the test fails with a 404 against
+      //   ``https://bigquery.googleapis.com/...`` on the pre-write
+      //   dataset lookup.
+      // * ``BIGQUERY_EMULATOR_HOST`` env var (set above by sbt's
+      //   ``Test / envVars``) — covers the actual WRITE path, which
+      //   uses the cloud-style ``com.google.cloud.bigquery.BigQuery``
+      //   client. That client picks up the env var at builder time.
+      //
+      // Either one alone is insufficient; both together close the
+      // routing gap.
       val written = CustomersPipeline.run(
         Array(
           "--runner=DirectRunner",
           "--project=bqemu-demo",
+          s"--bigQueryEndpoint=$restBase",
           "--bqProject=bqemu-demo",
           "--bqDataset=scio_demo"
         )
