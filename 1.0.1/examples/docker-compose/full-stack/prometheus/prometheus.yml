@@ -1,0 +1,8 @@
+global:
+  scrape_interval: 5s
+
+scrape_configs:
+  - job_name: bqemulator
+    static_configs:
+      - targets: ["bqemulator:9050"]
+    metrics_path: /metrics
