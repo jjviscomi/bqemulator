@@ -4245,10 +4245,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#known-limitation-storage-read-ipc-bytes-layout" class="md-nav__link">
+  <a href="#storage-read-api-bare-record-batch-ipc-contract-v101" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Known limitation — Storage Read IPC bytes layout
+        Storage Read API — bare record-batch IPC contract (v1.0.1)
       
     </span>
   </a>
@@ -4923,10 +4923,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#known-limitation-storage-read-ipc-bytes-layout" class="md-nav__link">
+  <a href="#storage-read-api-bare-record-batch-ipc-contract-v101" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Known limitation — Storage Read IPC bytes layout
+        Storage Read API — bare record-batch IPC contract (v1.0.1)
       
     </span>
   </a>
@@ -5016,20 +5016,17 @@ pattern used in the <a href="../../../guides/storage-api/">Storage Read API guid
 <li>Spark runs in local-master mode (<code>local[*]</code>) so the example is
   hermetic — no Hadoop/YARN cluster required.</li>
 </ul>
-<h2 id="known-limitation-storage-read-ipc-bytes-layout">Known limitation — Storage Read IPC bytes layout<a class="headerlink" href="#known-limitation-storage-read-ipc-bytes-layout" title="Permanent link">&para;</a></h2>
-<p>bqemulator currently packs the full Arrow IPC stream (schema framing
-+ batches) into <code>ReadRowsResponse.arrow_record_batch.serialized_record_batch</code>
-instead of a single record-batch IPC message. The high-level
-<code>reader.to_arrow(session)</code> helper assumes the real-BigQuery shape
-(schema lives on <code>ReadSession.arrow_schema.serialized_schema</code>,
-batches travel on their own) and trips
-<code>Expected IPC message of type record batch but got schema</code>.</p>
-<p>The example works around this by iterating responses by hand and
-using <code>pyarrow.ipc.open_stream</code>, which accepts the full IPC stream
-that bqemulator emits. Tracked for cleanup in
-<a href="https://github.com/jjviscomi/bqemulator/issues/15">#15</a> — once the
-server emits the correct format the workaround disappears and the
-natural <code>reader.to_arrow(session)</code> call works out of the box.</p>
+<h2 id="storage-read-api-bare-record-batch-ipc-contract-v101">Storage Read API — bare record-batch IPC contract (v1.0.1)<a class="headerlink" href="#storage-read-api-bare-record-batch-ipc-contract-v101" title="Permanent link">&para;</a></h2>
+<p>The example uses the canonical
+<code>reader.to_arrow(session)</code> helper from the
+<code>google-cloud-bigquery-storage</code> client. Under v1.0.0 this call tripped
+on a bqemulator wire-format bug (the server packed a full Arrow IPC
+stream into <code>ArrowRecordBatch.serialized_record_batch</code>); v1.0.1
+<a href="https://github.com/jjviscomi/bqemulator/issues/15">#15</a> /
+<a href="../../../adr/0033-storage-read-arrow-ipc-bare-message-contract/">ADR 0033</a>
+shipped the spec-conforming bare record-batch format and removed
+the workaround. If you're pinning to v1.0.0 the helper still trips
+the format mismatch; upgrade to v1.0.1+.</p>
 
 
 

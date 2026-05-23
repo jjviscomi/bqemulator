@@ -4525,10 +4525,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#known-limitation-beam-java-bigqueryio-doesnt-reach-the-emulator" class="md-nav__link">
+  <a href="#known-limitation-running-beam-bigqueryio-end-to-end-against-bqemulator" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Known limitation — Beam Java BigQueryIO doesn't reach the emulator
+        Known limitation — running Beam BigQueryIO end-to-end against bqemulator
       
     </span>
   </a>
@@ -4536,10 +4536,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#what-the-spec-exercises-v100" class="md-nav__link">
+  <a href="#what-the-spec-exercises" class="md-nav__link">
     <span class="md-ellipsis">
       
-        What the spec exercises (v1.0.0)
+        What the spec exercises
       
     </span>
   </a>
@@ -4879,10 +4879,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#known-limitation-beam-java-bigqueryio-doesnt-reach-the-emulator" class="md-nav__link">
+  <a href="#known-limitation-running-beam-bigqueryio-end-to-end-against-bqemulator" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Known limitation — Beam Java BigQueryIO doesn't reach the emulator
+        Known limitation — running Beam BigQueryIO end-to-end against bqemulator
       
     </span>
   </a>
@@ -4890,10 +4890,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#what-the-spec-exercises-v100" class="md-nav__link">
+  <a href="#what-the-spec-exercises" class="md-nav__link">
     <span class="md-ellipsis">
       
-        What the spec exercises (v1.0.0)
+        What the spec exercises
       
     </span>
   </a>
@@ -4976,27 +4976,42 @@ against real BigQuery or Dataflow today.</p>
 on Google's stack run through it. Targeting it against <code>bqemulator</code>
 means engineering teams can run the same job locally that they run in
 Dataflow, without spinning up a real BigQuery dataset.</p>
-<h2 id="known-limitation-beam-java-bigqueryio-doesnt-reach-the-emulator">Known limitation — Beam Java BigQueryIO doesn't reach the emulator<a class="headerlink" href="#known-limitation-beam-java-bigqueryio-doesnt-reach-the-emulator" title="Permanent link">&para;</a></h2>
-<p>Beam Java BigQueryIO <strong>does not honour <code>--bigQueryEndpoint</code> for the
-write path</strong> — that pipeline option only gates internal preflight
-validators (dataset-exists checks, schema lookups). The actual write
-goes through the official Java BigQuery client at its default base
-URL (<code>https://bigquery.googleapis.com/...</code>).</p>
-<p>The Java BQ client honours the <code>BIGQUERY_EMULATOR_HOST</code> env var, but
-it has to be visible to the JVM <strong>before the first BQ class loads</strong>.
-Testcontainers allocates the bqemulator port dynamically at runtime,
-so by the time we know the port the BQ classes are already wired to
-the real Google endpoint.</p>
-<p>The result: running <code>CustomersPipeline.run(args)</code> from inside the
-test JVM tries to write to real BigQuery and 404s without
-credentials. <strong>The pipeline itself is correct</strong> — point it at a
-long-lived bqemulator on a stable port (with <code>BIGQUERY_EMULATOR_HOST</code>
-exported before the JVM starts) and it runs end to end.</p>
-<p>Tracked for cleanup in
-<a href="https://github.com/jjviscomi/bqemulator/issues/17">#17</a> — Scio /
-Beam may grow a per-call endpoint override that lets the test set
-the endpoint after the container is up.</p>
-<h2 id="what-the-spec-exercises-v100">What the spec exercises (v1.0.0)<a class="headerlink" href="#what-the-spec-exercises-v100" title="Permanent link">&para;</a></h2>
+<h2 id="known-limitation-running-beam-bigqueryio-end-to-end-against-bqemulator">Known limitation — running Beam BigQueryIO end-to-end against bqemulator<a class="headerlink" href="#known-limitation-running-beam-bigqueryio-end-to-end-against-bqemulator" title="Permanent link">&para;</a></h2>
+<p>Running <code>CustomersPipeline.run</code> against the emulator from inside
+the test JVM hits <strong>three independent blockers</strong>, surfaced during
+the v1.0.1 investigation
+(<a href="https://github.com/jjviscomi/bqemulator/issues/17">#17</a>):</p>
+<ol>
+<li><strong>Endpoint routing — works.</strong> <code>--bigQueryEndpoint=http://host:port</code>
+   <em>does</em> set the Apiary <code>Bigquery</code> client's <code>rootUrl</code>
+   (verified locally via auth-failure stack traces confirming the
+   override applied). The original v1.0.0 hypothesis that
+   <code>--bigQueryEndpoint</code> was ignored turned out to be wrong;
+   however, the next two issues still bite.</li>
+<li><strong>Auth refresh fires before the redirected call.</strong> With
+   <code>--bigQueryEndpoint</code> set, Beam still invokes
+   <code>OAuth2Credentials.refresh()</code> at request time. The refresh
+   <code>400</code>s against <code>oauth2.googleapis.com</code> <em>before</em> the redirected
+   HTTP call ever fires.
+   <code>--gcpCredentialFactoryClass=org.apache.beam.sdk.extensions.gcp.auth.NoopCredentialFactory</code>
+   is the documented escape hatch, but doesn't fully suppress the
+   discovery chain when application-default credentials exist on
+   the host (gcloud SDK auto-detects them past the flag).</li>
+<li><strong>BigQueryIO.Write defaults to BATCH_LOADS — needs GCS.</strong> Bounded
+   pipelines stage rows to GCS before invoking BigQuery LOAD jobs.
+   The emulator doesn't expose a GCS-compatible shim Beam can stage
+   to; forcing <code>Method.STREAMING_INSERTS</code> would bypass GCS but
+   requires changing the <code>CustomersPipeline</code> source and pulls in
+   a different routing branch in BigQueryIO with its own quirks.</li>
+</ol>
+<p><strong>The pipeline source itself remains correct.</strong> Point it at real
+BigQuery (Dataflow) or a long-lived bqemulator on a stable port
++ a real GCS bucket and it runs end-to-end.</p>
+<p>Tracked for v1.0.2+. Likely path: integrate a GCS emulator
+(e.g. <a href="https://github.com/fsouza/fake-gcs-server">fsouza/fake-gcs-server</a>)
+for staging + full auth-suppression chain + decide between staying
+on <code>BATCH_LOADS</code> (via GCS shim) or pivoting to <code>STREAMING_INSERTS</code>.</p>
+<h2 id="what-the-spec-exercises">What the spec exercises<a class="headerlink" href="#what-the-spec-exercises" title="Permanent link">&para;</a></h2>
 <p>Until #17 lands, the ScalaTest spec exercises the <strong>wiring</strong> that
 bqemulator owns and that Scio users actually depend on:</p>
 <ul>
