@@ -20,6 +20,8 @@ section and adds the release date.
 
 ## [Unreleased]
 
+## [1.0.1] — 2026-05-23
+
 ### Fixed
 
 - **Storage Read API IPC framing** (#15). The gRPC ``ReadRows`` handler
