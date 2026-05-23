@@ -67,7 +67,7 @@ lint: ## Lint + typecheck + security scan
 	typos .
 
 # ---------------------------------------------------------------------------
-# Quality gates (non-blocking; see ADR 0035)
+# Quality gates (complexity required; duplication + dead-code non-blocking)
 # ---------------------------------------------------------------------------
 #
 # Three gates that ``ruff`` and the standard ``make lint`` chain don't
@@ -125,7 +125,7 @@ quality-dead-code: ## Dead-name detection via vulture (non-blocking)
 	vulture
 
 .PHONY: quality
-quality: quality-complexity quality-duplication quality-dead-code ## Run all non-blocking quality gates
+quality: quality-complexity quality-duplication quality-dead-code ## Run all quality gates (complexity required; rest non-blocking)
 
 # ---------------------------------------------------------------------------
 # Tests

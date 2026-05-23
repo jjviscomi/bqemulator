@@ -18,14 +18,14 @@ from __future__ import annotations
 
 from datetime import datetime
 import re
-from typing import Annotated, Any
+from typing import TYPE_CHECKING, Annotated, Any
 from uuid import uuid4
 
 from fastapi import APIRouter, Depends, Query, Request
 
 from bqemulator.api.dependencies import AppContext, get_caller, get_context
 from bqemulator.catalog.etag import generate_etag
-from bqemulator.catalog.models import JobMeta, JobType
+from bqemulator.catalog.models import JobMeta, JobType, TableMeta
 from bqemulator.domain.errors import (
     AlreadyExistsError,
     DomainError,
@@ -51,6 +51,9 @@ from bqemulator.jobs.executor import (
 )
 from bqemulator.row_access.identity import CallerIdentity
 from bqemulator.storage.arrow_bridge import arrow_table_to_bq_rows
+
+if TYPE_CHECKING:
+    import pyarrow as pa
 
 router = APIRouter(prefix="/bigquery/v2", tags=["jobs"])
 
@@ -902,7 +905,7 @@ def _resolve_write_append_destination(
     query_config: dict[str, Any],
     ctx: AppContext,
     request_project_id: str,
-) -> tuple[Any, set[str]] | None:
+) -> tuple[TableMeta, set[str]] | None:
     """Return ``(destination TableMeta, set of destination column names)`` or None.
 
     Returns ``None`` whenever any of the destination-resolution
@@ -961,9 +964,9 @@ def _validate_write_append_schema(
 
 
 def _combine_write_append_tables(
-    arrow_table: Any | None,
-    existing_table: Any,
-) -> Any | None:
+    arrow_table: pa.Table | None,
+    existing_table: pa.Table,
+) -> pa.Table | None:
     """Concat pre-existing rows + SELECT rows, returning the unified table.
 
     The schemas may differ on column order *and* integer-width (DuckDB

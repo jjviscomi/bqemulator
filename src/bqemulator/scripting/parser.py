@@ -185,8 +185,9 @@ class Parser:
     # Keyword → parse-method dispatch. Synonyms (BREAK / LEAVE,
     # CONTINUE / ITERATE) map to the same handler; multi-shape
     # keywords (BEGIN, CREATE) dispatch through small disambiguating
-    # wrappers above. Built lazily at attribute-access time to avoid
-    # bound-method ordering at class-definition time.
+    # wrappers above. Stored as method-name strings (not bound
+    # methods) so the dispatch table can live at class-definition
+    # time without ordering against the methods it references.
     _STATEMENT_KEYWORD_HANDLERS: ClassVar[dict[str, str]] = {
         "DECLARE": "_parse_declare",
         "SET": "_parse_set",

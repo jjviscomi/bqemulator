@@ -83,11 +83,14 @@ section and adds the release date.
   extraction for procedural sub-blocks (the catalog cascade /
   interval parser / write-append post-processor / table-meta
   builder). Worst-case complexity drops from 39 (`_format_bq_value`)
-  to 14. The gate is now part of `make verify`,
+  to 14. The gate is now part of `make verify`, and
   `.github/workflows/code-quality.yml`'s complexity step drops
-  `continue-on-error: true`, and the branch-protection ruleset's
-  required-checks list includes the `Quality gates` job (stable
-  name carries forward across blocking-status changes). Duplication
+  `continue-on-error: true`. The branch-protection ruleset's
+  required-checks list will be updated to include the `Quality
+  gates` job (stable name across future blocking-status changes)
+  in a follow-up step once CI on this PR reports the new check
+  name green — adding it pre-CI would create a chicken-and-egg
+  merge block. Duplication
   (jscpd) + dead-code (vulture) gates stay non-blocking — each gets
   its own ratchet PR when its baseline settles. See
   [ADR 0036](docs/adr/0036-complexity-ratchet-to-c.md) for the full
