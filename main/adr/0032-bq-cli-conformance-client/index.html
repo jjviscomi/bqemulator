@@ -5239,7 +5239,7 @@ e2e test(s) against live container … never skip an e2e test
 language."</p>
 <p>But four SDKs is not the full canonical client population.
 Google's
-<a href="https://cloud.google.com/bigquery/docs/bq-command-line-tool-reference"><code>bq</code> command-line tool</a>
+<a href="https://cloud.google.com/bigquery/docs/reference/bq-cli-reference"><code>bq</code> command-line tool</a>
 is the BigQuery CLI — distributed as part of the
 <code>google-cloud-cli</code> package, used daily by data engineers, DBAs, CI
 pipelines, ad-hoc shell scripts, and <code>dbt</code>/<code>Airflow</code>/<code>Looker</code>
@@ -5256,7 +5256,7 @@ configurations that shell out to bq for control-plane operations.</p>
 <li>Its error renderer prints <code>BigQuery error in &lt;op&gt;: &lt;reason&gt;</code> to
   stderr, <strong>not</strong> a JSON error envelope. The
   emulator's
-  <a href="https://github.com/jjviscomi/bqemulator/blob/main/src/bqemulator/sql/error_mapper.py"><code>error_mapper</code></a> feeds
+  <a href="https://github.com/jjviscomi/bqemulator/blob/main/src/bqemulator/jobs/error_mapper.py"><code>error_mapper</code></a> feeds
   whatever the SDK clients pretty-print into their own JSON-aware
   parsers — but <code>bq</code> parses a different field path out of the
   response, and a regression that broke that field path would leave

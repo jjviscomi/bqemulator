@@ -5002,9 +5002,9 @@ with an empty trailing identifier.</p>
   <code>google.oauth2.credentials.Credentials</code> from it and never calls
   Google's token endpoint — the bearer reaches bqemulator, which
   doesn't validate auth, and the call goes through.</li>
-<li>The endpoint override is set via the
-  <a href="https://cloud.google.com/bigquery/docs/emulator"><code>BIGQUERY_EMULATOR_HOST</code></a>
-  env var, prefixed with <code>http://</code>. dbt-bigquery forwards the value
+<li>The endpoint override is set via the <code>BIGQUERY_EMULATOR_HOST</code>
+  env var (the Google Cloud Python client libraries recognise it
+  natively), prefixed with <code>http://</code>. dbt-bigquery forwards the value
   verbatim into <code>client_options.api_endpoint</code>, so the scheme must
   be present (the bare <code>google-cloud-bigquery</code> library auto-injects
   <code>http://</code> but dbt's wrapper bypasses that branch).</li>

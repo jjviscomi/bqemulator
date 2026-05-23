@@ -5125,7 +5125,7 @@
 
 
 <h1 id="using-the-bq-cli-against-bqemulator">Using the <code>bq</code> CLI against bqemulator<a class="headerlink" href="#using-the-bq-cli-against-bqemulator" title="Permanent link">&para;</a></h1>
-<p><a href="https://cloud.google.com/bigquery/docs/bq-command-line-tool-reference"><code>bq</code></a>
+<p><a href="https://cloud.google.com/bigquery/docs/reference/bq-cli-reference"><code>bq</code></a>
 is Google's official command-line tool for BigQuery. It ships as
 part of the <code>google-cloud-cli</code> package and is the canonical CLI
 surface for data engineers, DBAs, CI pipelines, and ad-hoc shell
@@ -5329,7 +5329,7 @@ directory and drop a <code>bigqueryrc</code> there:</p>
   <code>AuthorizedSession</code>.</li>
 </ul>
 <p>The
-<a href="https://github.com/jjviscomi/bqemulator/blob/main/tests/e2e/bq_cli_client/test_storage_read_storage_write_skipped.py"><code>tests/e2e/bq_cli_client/test_storage_read_storage_write_skipped.py</code></a>
+<a href="https://github.com/jjviscomi/bqemulator/blob/main/tests/e2e/bq_cli_client/test_storage_read_write_skipped.py"><code>tests/e2e/bq_cli_client/test_storage_read_write_skipped.py</code></a>
 file documents these gaps explicitly via <code>pytest.skip</code> with clear
 reasons, so future readers see "this isn't tested because it
 can't be" instead of "this isn't tested because we forgot."</p>

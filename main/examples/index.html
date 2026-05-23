@@ -4946,7 +4946,7 @@ not drift.</p>
 <tr>
 <td><a href="python/pyspark-bigquery/"><code>python/pyspark-bigquery/</code></a></td>
 <td>PySpark <code>DataFrame</code> from Storage Read (Arrow)</td>
-<td>Iterates <code>ReadRowsResponse</code> by hand instead of <code>reader.to_arrow(session)</code> — see <a href="https://github.com/jjviscomi/bqemulator/issues/15">#15</a></td>
+<td>— (v1.0.0's IPC-format workaround was removed in v1.0.1 — <a href="https://github.com/jjviscomi/bqemulator/issues/15">#15</a> / <a href="../adr/0033-storage-read-arrow-ipc-bare-message-contract/">ADR 0033</a>)</td>
 </tr>
 </tbody>
 </table>
@@ -5006,7 +5006,7 @@ not drift.</p>
 <tr>
 <td><a href="java/scio/"><code>java/scio/</code></a></td>
 <td>Spotify Scio (Scala-on-Beam) pipeline + ScalaTest</td>
-<td>Test asserts the <em>wiring</em> (container up, REST API reachable). The end-to-end <code>CustomersPipeline.run</code> is parked behind <a href="https://github.com/jjviscomi/bqemulator/issues/17">#17</a> — Beam Java BigQueryIO can't be pointed at a dynamic-port emulator from inside the test JVM. The pipeline source itself is production-ready.</td>
+<td>Test asserts the <em>wiring</em> (container up, REST API reachable). End-to-end <code>CustomersPipeline.run</code> deferred to v1.0.2+ (<a href="https://github.com/jjviscomi/bqemulator/issues/17">#17</a>) — three independent blockers: <code>--bigQueryEndpoint</code> does set the Apiary client's <code>rootUrl</code>, but Beam's <code>OAuth2Credentials.refresh()</code> 400s before the redirected call, and <code>BigQueryIO.Write</code> defaults to <code>BATCH_LOADS</code> which stages rows to GCS (no emulator-side shim). Likely v1.0.2 path: GCS emulator integration. The pipeline source itself remains production-ready against real BigQuery (Dataflow) or a long-lived bqemulator with stable port + real GCS bucket.</td>
 </tr>
 </tbody>
 </table>

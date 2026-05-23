@@ -1662,10 +1662,10 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#known-limitation-storage-read-ipc-format" class="md-nav__link">
+  <a href="#storage-read-api-bare-record-batch-ipc-contract-v101" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Known limitation — Storage Read IPC format
+        Storage Read API — bare record-batch IPC contract (v1.0.1)
       
     </span>
   </a>
@@ -4804,10 +4804,10 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#known-limitation-storage-read-ipc-format" class="md-nav__link">
+  <a href="#storage-read-api-bare-record-batch-ipc-contract-v101" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Known limitation — Storage Read IPC format
+        Storage Read API — bare record-batch IPC contract (v1.0.1)
       
     </span>
   </a>
@@ -4876,33 +4876,31 @@ emulator:</p>
 </span></code></pre></div>
 <p>Storage Write API sink writes are equivalently configured. See the
 example project for a complete Spark job.</p>
-<h2 id="known-limitation-storage-read-ipc-format">Known limitation — Storage Read IPC format<a class="headerlink" href="#known-limitation-storage-read-ipc-format" title="Permanent link">&para;</a></h2>
-<p>bqemulator currently packs the full Arrow IPC stream (schema framing
-+ batches) into <code>ReadRowsResponse.arrow_record_batch.serialized_record_batch</code>
-instead of a single record-batch IPC message. Real BigQuery sends just
-the record-batch bytes — the schema travels on
-<code>ReadSession.arrow_schema.serialized_schema</code>. The
-<code>google-cloud-bigquery-storage</code> client's high-level
-<code>reader.to_arrow(session)</code> helper assumes the real-BigQuery shape and
-trips <code>Expected IPC message of type record batch but got schema</code>.</p>
-<p>Workaround (used by the pyspark-bigquery example): iterate the
-responses by hand and use <code>pyarrow.ipc.open_stream</code>, which accepts
-the full IPC stream that bqemulator emits.</p>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="kn">import</span><span class="w"> </span><span class="nn">pyarrow</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pa</span>
-</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>
-</span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="n">batches</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">pa</span><span class="o">.</span><span class="n">RecordBatch</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
-</span><span id="__span-1-4"><a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="k">for</span> <span class="n">response</span> <span class="ow">in</span> <span class="n">reader</span><span class="p">:</span>
-</span><span id="__span-1-5"><a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a>    <span class="n">payload</span> <span class="o">=</span> <span class="n">response</span><span class="o">.</span><span class="n">arrow_record_batch</span><span class="o">.</span><span class="n">serialized_record_batch</span>
-</span><span id="__span-1-6"><a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a>    <span class="k">if</span> <span class="ow">not</span> <span class="n">payload</span><span class="p">:</span>
-</span><span id="__span-1-7"><a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a>        <span class="k">continue</span>
-</span><span id="__span-1-8"><a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a>    <span class="k">with</span> <span class="n">pa</span><span class="o">.</span><span class="n">ipc</span><span class="o">.</span><span class="n">open_stream</span><span class="p">(</span><span class="n">payload</span><span class="p">)</span> <span class="k">as</span> <span class="n">stream_reader</span><span class="p">:</span>
-</span><span id="__span-1-9"><a id="__codelineno-1-9" name="__codelineno-1-9" href="#__codelineno-1-9"></a>        <span class="n">batches</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">stream_reader</span><span class="o">.</span><span class="n">read_all</span><span class="p">()</span><span class="o">.</span><span class="n">to_batches</span><span class="p">())</span>
-</span><span id="__span-1-10"><a id="__codelineno-1-10" name="__codelineno-1-10" href="#__codelineno-1-10"></a><span class="n">arrow_table</span> <span class="o">=</span> <span class="n">pa</span><span class="o">.</span><span class="n">Table</span><span class="o">.</span><span class="n">from_batches</span><span class="p">(</span><span class="n">batches</span><span class="p">)</span>
+<h2 id="storage-read-api-bare-record-batch-ipc-contract-v101">Storage Read API — bare record-batch IPC contract (v1.0.1)<a class="headerlink" href="#storage-read-api-bare-record-batch-ipc-contract-v101" title="Permanent link">&para;</a></h2>
+<p>Under v1.0.0 the server packed a full Arrow IPC stream
+(schema-message + batches + EOS marker) into
+<code>ReadRowsResponse.arrow_record_batch.serialized_record_batch</code>. Real
+BigQuery sends only the record-batch bytes — the schema travels on
+<code>ReadSession.arrow_schema.serialized_schema</code>. The mismatch tripped
+the canonical <code>google-cloud-bigquery-storage</code>
+<code>reader.to_arrow(session)</code> helper with
+<code>Expected IPC message of type record batch but got schema</code>.</p>
+<p>v1.0.1 (<a href="https://github.com/jjviscomi/bqemulator/issues/15">#15</a> /
+<a href="../../adr/0033-storage-read-arrow-ipc-bare-message-contract/">ADR 0033</a>)
+shipped the spec-conforming bare record-batch format. The canonical
+helper now works against bqemulator unchanged:</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="n">arrow_table</span> <span class="o">=</span> <span class="n">reader</span><span class="o">.</span><span class="n">to_arrow</span><span class="p">(</span><span class="n">session</span><span class="p">)</span>
 </span></code></pre></div>
-<p>Tracked for cleanup in
-<a href="https://github.com/jjviscomi/bqemulator/issues/15">#15</a> — once the
-server emits the correct format the workaround disappears and
-<code>reader.to_arrow(session)</code> works out of the box.</p>
+<p>If you're pinning to v1.0.0 you still need the
+<code>pyarrow.ipc.open_stream</code> workaround — upgrade to v1.0.1+ to use
+the canonical path.</p>
+<blockquote>
+<p><strong>Note:</strong> Dictionary-encoded columns (at any nesting depth in
+structs / lists / maps / unions) are rejected by the v1.0.1
+producer with a clear <code>ValueError</code> rather than silently produce
+a payload the consumer can't decode. See ADR 0033 for the formal
+contract.</p>
+</blockquote>
 <h2 id="plaintext-grpc">Plaintext gRPC<a class="headerlink" href="#plaintext-grpc" title="Permanent link">&para;</a></h2>
 <p>bqemulator serves the Storage Read API over plaintext gRPC. The
 default <code>BigQueryReadClient</code> transport wraps every call in TLS,
