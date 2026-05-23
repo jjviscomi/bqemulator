@@ -192,3 +192,4 @@ project/project/
 # dbt
 dbt_packages/
 logs/
+.lycheecache
