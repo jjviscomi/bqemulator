@@ -39,7 +39,7 @@ not drift.
 | Path | What it demonstrates | Known caveats |
 |---|---|---|
 | [`java/spring-boot/`](java/spring-boot/README.md) | Spring Boot repository + Testcontainers integration test | — |
-| [`java/scio/`](java/scio/README.md) | Spotify Scio (Scala-on-Beam) pipeline + ScalaTest | Test asserts the *wiring* (container up, REST API reachable). End-to-end ``CustomersPipeline.run`` deferred to v1.0.2+ ([#17](https://github.com/jjviscomi/bqemulator/issues/17)) — three independent blockers: ``--bigQueryEndpoint`` does set the Apiary client's ``rootUrl``, but Beam's ``OAuth2Credentials.refresh()`` 400s before the redirected call, and ``BigQueryIO.Write`` defaults to ``BATCH_LOADS`` which stages rows to GCS (no emulator-side shim). Likely v1.0.2 path: GCS emulator integration. The pipeline source itself remains production-ready against real BigQuery (Dataflow) or a long-lived bqemulator with stable port + real GCS bucket. |
+| [`java/scio/`](java/scio/README.md) | Spotify Scio (Scala-on-Beam) pipeline + ScalaTest. End-to-end ``CustomersPipeline.run`` writes 3 rows via Beam's BATCH_LOADS and the emulator returns them on read — closed in v1.0.2 via a per-example ``EmulatorBigQueryServices`` injected through ``BigQueryIO.Write.withTestServices(...)`` and a ``fsouza/fake-gcs-server`` sidecar for the GCS staging step ([#17](https://github.com/jjviscomi/bqemulator/issues/17), [ADR 0034](../adr/0034-scio-beam-emulator-routing.md)). | — |
 
 ## Compose stacks
 
