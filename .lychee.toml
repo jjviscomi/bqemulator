@@ -22,10 +22,18 @@ timeout = 20
 # Don't follow more than 5 redirects (catches infinite-loop CDNs).
 max_redirects = 5
 
-# Retry failed URLs once before reporting them broken — a single
-# transient network blip shouldn't fail a PR.
-max_retries = 2
-retry_wait_time = 3
+# Retry failed URLs on transient errors. Calibrated against the
+# v1.0.2 release CI cycle (PR #43, 2026-05-23) where lychee hit
+# repeated ``502 Bad Gateway`` from ``github.com/.../blob/main/...``
+# source-tree pages — GitHub.com itself briefly choking on existing
+# files. Two retries with a 3-second wait covered ~6 seconds total;
+# the 502 window outlasted that. Four retries × 10s give a ~40-second
+# total budget per failing URL, which absorbs the typical 30-60s
+# blob-render transient without masking real outages (the alternative
+# of adding ``502`` to the ``accept`` list was rejected — a renamed
+# repo would 502 persistently and we want to know).
+max_retries = 4
+retry_wait_time = 10
 
 # Run requests in parallel (default is fast enough; capping at 16
 # avoids tripping rate limits on github.com).
