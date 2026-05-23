@@ -67,6 +67,16 @@ class TestParseIntervalLiteral:
             ("1.5", "HOUR"),  # non-integer for an integer-only unit
             ("1-2", "BOGUS SPAN"),
             ("1 2", "DAY TO SECOND"),  # missing H:M:S block where required
+            # Compound-parser ``int(...)`` call sites that previously
+            # leaked ``ValueError`` to callers; the per-block consumers
+            # now route through ``_parse_int_token`` → ``ValidationError``.
+            ("abc-1", "YEAR TO MONTH"),  # bad years in Y-M split
+            ("1-abc", "YEAR TO MONTH"),  # bad months in Y-M split
+            ("abc", "YEAR"),  # bad year single-unit (compound path)
+            ("abc 1:2:3", "DAY TO SECOND"),  # bad day token
+            ("1-2 abc 4:5:6", "YEAR TO SECOND"),  # bad day in full span
+            ("1-2 3 abc:5:6", "YEAR TO SECOND"),  # bad hour in time block
+            ("1-2 3 4:abc:6", "YEAR TO SECOND"),  # bad minute in time block
         ],
     )
     def test_invalid_inputs_raise(self, literal: str, span: str) -> None:

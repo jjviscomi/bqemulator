@@ -1,11 +1,16 @@
 name: Code quality
 
-# Non-blocking quality gates: cyclomatic complexity (xenon), DRY /
-# duplication (jscpd), dead code (vulture). Wired per ADR 0035.
+# Quality gates: cyclomatic complexity (xenon), DRY / duplication
+# (jscpd), dead code (vulture). Wired per ADR 0035; complexity
+# ratcheted + promoted to required in ADR 0036.
 #
-# Every step uses ``continue-on-error: true`` for now — the gate is
-# informational. Promotion-to-required is a separate follow-up PR
-# once thresholds + baselines have a cycle on main to settle.
+# Wiring status:
+#   - Complexity (xenon): REQUIRED. No ``continue-on-error``. A
+#     function above rank C (cyclomatic complexity > 20) fails the
+#     workflow. Branch protection lists this job in required-checks.
+#   - Duplication (jscpd) + dead code (vulture): still non-blocking
+#     (``continue-on-error: true``). Each gets its own ratchet PR
+#     when the baselines settle.
 #
 # Triggers match the rest of the repo's per-PR + nightly pattern:
 # - Pull requests touching code or quality config.
@@ -46,7 +51,11 @@ permissions:
 
 jobs:
   quality:
-    name: Quality gates (non-blocking)
+    # Stable job name so the branch-protection ruleset's
+    # required-checks list keeps matching across blocking-status
+    # changes — the per-step ``Blocking`` annotation in the workflow
+    # summary documents which gates are required versus non-blocking.
+    name: Quality gates
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -64,7 +73,10 @@ jobs:
 
       - name: Cyclomatic complexity (xenon)
         id: complexity
-        continue-on-error: true
+        # Required gate as of ADR 0036 — fails the workflow on any
+        # function ranked above C. Drop ``continue-on-error`` (which
+        # the duplication / dead-code steps still keep) once those
+        # gates ratchet to required on their own follow-up PRs.
         run: make quality-complexity
 
       - name: Cross-file duplication (jscpd)
@@ -78,20 +90,23 @@ jobs:
         run: make quality-dead-code
 
       - name: Summarise outcomes
-        # Aggregated visibility — without this step the per-step
-        # ``continue-on-error: true`` would hide which gate actually
-        # tripped. The workflow itself still exits 0; the step
-        # outcomes go into the GitHub Actions summary.
+        # Aggregated visibility — surfaces which gate tripped even
+        # when the duplication / dead-code steps' ``continue-on-error``
+        # masks them at the step level. Complexity is required (no
+        # continue-on-error), so an outcome of ``failure`` there
+        # already fails the workflow before this step runs;
+        # ``always()`` keeps the summary visible in that case too.
+        if: always()
         run: |
           {
-            echo "## Non-blocking quality-gate outcomes"
+            echo "## Quality-gate outcomes"
             echo ""
-            echo "| Gate | Outcome |"
-            echo "|---|---|"
-            echo "| Cyclomatic complexity (xenon) | ${{ steps.complexity.outcome }} |"
-            echo "| Cross-file duplication (jscpd) | ${{ steps.duplication.outcome }} |"
-            echo "| Dead code (vulture) | ${{ steps.dead-code.outcome }} |"
+            echo "| Gate | Outcome | Blocking |"
+            echo "|---|---|---|"
+            echo "| Cyclomatic complexity (xenon) | ${{ steps.complexity.outcome }} | ✅ required (ADR 0036) |"
+            echo "| Cross-file duplication (jscpd) | ${{ steps.duplication.outcome }} | ⏳ non-blocking |"
+            echo "| Dead code (vulture) | ${{ steps.dead-code.outcome }} | ⏳ non-blocking |"
             echo ""
-            echo "These gates are non-blocking. Promotion to required check"
-            echo "is tracked as a follow-up — see ADR 0035."
+            echo "The non-blocking gates have follow-up ratchet PRs scheduled —"
+            echo "see ADR 0035 + ADR 0036 for the promotion pattern."
           } >> "$GITHUB_STEP_SUMMARY"

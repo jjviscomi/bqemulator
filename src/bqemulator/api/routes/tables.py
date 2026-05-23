@@ -146,6 +146,80 @@ def _parse_schema_fields(raw_fields: list[dict[str, Any]]) -> tuple[TableFieldSc
     return tuple(result)
 
 
+def _rest_to_schema(
+    fields_raw: list[Any],
+    existing: TableMeta | None,
+) -> TableSchema:
+    """Resolve the table's schema from the request body's ``schema.fields``.
+
+    If ``fields_raw`` is non-empty, parse it. Otherwise fall back to
+    the existing table's schema (UPDATE / PATCH) or an empty schema
+    (initial CREATE without explicit fields).
+    """
+    if fields_raw:
+        return TableSchema(fields=_parse_schema_fields(fields_raw))
+    return existing.schema_ if existing else TableSchema()
+
+
+def _rest_to_time_partitioning(
+    raw: dict[str, Any] | None,
+    existing: TableMeta | None,
+) -> TimePartitioning | None:
+    """Resolve the time-partitioning config from the request body.
+
+    The request's ``timePartitioning`` block takes precedence; on an
+    UPDATE / PATCH with no block in the request we preserve the
+    existing config.
+    """
+    if raw:
+        return TimePartitioning(
+            type=raw.get("type", "DAY"),
+            field=raw.get("field"),
+            expiration_ms=raw.get("expirationMs"),
+            require_partition_filter=raw.get("requirePartitionFilter", False),
+        )
+    return existing.time_partitioning if existing else None
+
+
+def _rest_to_clustering(
+    raw: dict[str, Any] | None,
+    existing: TableMeta | None,
+) -> Clustering | None:
+    """Resolve the clustering config from the request body.
+
+    Mirrors :func:`_rest_to_time_partitioning`'s precedence rules — the
+    request body wins, otherwise the existing config is preserved.
+    """
+    if raw and "fields" in raw:
+        return Clustering(fields=tuple(raw["fields"]))
+    return existing.clustering if existing else None
+
+
+def _rest_to_view_query_and_type(
+    body: dict[str, Any],
+    existing: TableMeta | None,
+) -> tuple[str | None, str]:
+    """Resolve ``(view_query, table_type)`` from the body's optional ``view`` block.
+
+    BigQuery infers ``type=VIEW`` when a ``view`` block is provided
+    without an explicit ``type`` — the official client doesn't always
+    set ``type`` on CREATE VIEW, so this mirrors that inference so
+    downstream rewrites pick up the right table_type.
+    """
+    view_block = body.get("view") if isinstance(body.get("view"), dict) else None
+    view_query = (
+        view_block.get("query")
+        if view_block is not None
+        else (existing.view_query if existing else None)
+    )
+    inferred_type = "VIEW" if view_query and "type" not in body else None
+    table_type = body.get(
+        "type",
+        inferred_type or (existing.table_type if existing else "TABLE"),
+    )
+    return view_query, table_type
+
+
 def _rest_to_table_meta(
     project_id: str,
     dataset_id: str,
@@ -159,52 +233,10 @@ def _rest_to_table_meta(
     now = clock.now()
 
     schema_raw = body.get("schema", {})
-    fields_raw = schema_raw.get("fields", [])
-    schema = (
-        TableSchema(fields=_parse_schema_fields(fields_raw))
-        if fields_raw
-        else (existing.schema_ if existing else TableSchema())
-    )
-
-    # Parse partitioning config.
-    time_part_raw = body.get("timePartitioning")
-    time_partitioning = None
-    if time_part_raw:
-        time_partitioning = TimePartitioning(
-            type=time_part_raw.get("type", "DAY"),
-            field=time_part_raw.get("field"),
-            expiration_ms=time_part_raw.get("expirationMs"),
-            require_partition_filter=time_part_raw.get(
-                "requirePartitionFilter",
-                False,
-            ),
-        )
-    elif existing:
-        time_partitioning = existing.time_partitioning
-
-    # Parse clustering config.
-    clustering_raw = body.get("clustering")
-    clustering = None
-    if clustering_raw and "fields" in clustering_raw:
-        clustering = Clustering(fields=tuple(clustering_raw["fields"]))
-    elif existing:
-        clustering = existing.clustering
-
-    view_block = body.get("view") if isinstance(body.get("view"), dict) else None
-    view_query = (
-        view_block.get("query")
-        if view_block is not None
-        else (existing.view_query if existing else None)
-    )
-    # BigQuery infers ``type=VIEW`` when a ``view`` block is provided
-    # without an explicit type. Mirror that so client code that uses
-    # the official BigQuery client (which doesn't always set ``type``)
-    # gets the correct table_type for downstream rewriting.
-    inferred_type = "VIEW" if view_query and "type" not in body else None
-    table_type = body.get(
-        "type",
-        inferred_type or (existing.table_type if existing else "TABLE"),
-    )
+    schema = _rest_to_schema(schema_raw.get("fields", []), existing)
+    time_partitioning = _rest_to_time_partitioning(body.get("timePartitioning"), existing)
+    clustering = _rest_to_clustering(body.get("clustering"), existing)
+    view_query, table_type = _rest_to_view_query_and_type(body, existing)
 
     return TableMeta(
         project_id=project_id,

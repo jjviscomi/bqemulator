@@ -9,7 +9,7 @@ script variables bound as parameters — see
 
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, ClassVar
 
 from bqemulator.domain.errors import InvalidQueryError
 from bqemulator.scripting.ast import (
@@ -150,6 +150,63 @@ class Parser:
                 stmts.append(stmt)
         return stmts
 
+    def _parse_break(self) -> Statement:
+        """Parse the ``BREAK`` / ``LEAVE`` statement (synonyms)."""
+        self._cursor.advance()
+        self._consume_optional_semicolon()
+        return BreakStmt()
+
+    def _parse_continue(self) -> Statement:
+        """Parse the ``CONTINUE`` / ``ITERATE`` statement (synonyms)."""
+        self._cursor.advance()
+        self._consume_optional_semicolon()
+        return ContinueStmt()
+
+    def _parse_begin_or_transaction(self) -> Statement:
+        """Disambiguate ``BEGIN ...`` between a block opener and ``BEGIN TRANSACTION``.
+
+        ``BEGIN TRANSACTION`` is a transaction-control statement, NOT a
+        BEGIN/END block — route it through the generic SQL statement
+        parser (which the engine handles via DuckDB's own transaction
+        model). The peek-ahead is cheap and keeps ``_parse_begin``
+        focused on the block shape.
+        """
+        next_tok = self._cursor.peek(1)
+        if next_tok.kind in ("KEYWORD", "IDENT") and next_tok.value.upper() == "TRANSACTION":
+            return self._parse_sql_statement()
+        return self._parse_begin()
+
+    def _parse_create_or_sql(self) -> Statement:
+        """Dispatch ``CREATE`` between a scripting routine and generic SQL DDL."""
+        if self._is_create_routine():
+            return self._parse_create_routine()
+        return self._parse_sql_statement()
+
+    # Keyword → parse-method dispatch. Synonyms (BREAK / LEAVE,
+    # CONTINUE / ITERATE) map to the same handler; multi-shape
+    # keywords (BEGIN, CREATE) dispatch through small disambiguating
+    # wrappers above. Stored as method-name strings (not bound
+    # methods) so the dispatch table can live at class-definition
+    # time without ordering against the methods it references.
+    _STATEMENT_KEYWORD_HANDLERS: ClassVar[dict[str, str]] = {
+        "DECLARE": "_parse_declare",
+        "SET": "_parse_set",
+        "IF": "_parse_if",
+        "WHILE": "_parse_while",
+        "LOOP": "_parse_loop",
+        "FOR": "_parse_for",
+        "BREAK": "_parse_break",
+        "LEAVE": "_parse_break",
+        "CONTINUE": "_parse_continue",
+        "ITERATE": "_parse_continue",
+        "BEGIN": "_parse_begin_or_transaction",
+        "CALL": "_parse_call",
+        "EXECUTE": "_parse_execute_immediate",
+        "RETURN": "_parse_return",
+        "RAISE": "_parse_raise",
+        "CREATE": "_parse_create_or_sql",
+    }
+
     def _parse_statement(self) -> Statement | None:
         tok = self._cursor.current
         if tok.kind == "PUNCT" and tok.value == ";":
@@ -157,52 +214,9 @@ class Parser:
             return None
 
         if tok.kind == "KEYWORD":
-            kw = tok.value
-            if kw == "DECLARE":
-                return self._parse_declare()
-            if kw == "SET":
-                return self._parse_set()
-            if kw == "IF":
-                return self._parse_if()
-            if kw == "WHILE":
-                return self._parse_while()
-            if kw == "LOOP":
-                return self._parse_loop()
-            if kw == "FOR":
-                return self._parse_for()
-            if kw in ("BREAK", "LEAVE"):
-                self._cursor.advance()
-                self._consume_optional_semicolon()
-                return BreakStmt()
-            if kw in ("CONTINUE", "ITERATE"):
-                self._cursor.advance()
-                self._consume_optional_semicolon()
-                return ContinueStmt()
-            if kw == "BEGIN":
-                # ``BEGIN TRANSACTION`` / ``BEGIN TRANSACTION;`` is a
-                # transaction-control statement, NOT a BEGIN/END block.
-                # Route it through the generic SQL statement parser
-                # (which the engine handles via DuckDB's own
-                # transaction model). The peek-ahead is cheap and safer
-                # than asking ``_parse_begin`` to lookahead.
-                next_tok = self._cursor.peek(1)
-                if next_tok.kind == "KEYWORD" and next_tok.value.upper() == "TRANSACTION":
-                    return self._parse_sql_statement()
-                if next_tok.kind == "IDENT" and next_tok.value.upper() == "TRANSACTION":
-                    return self._parse_sql_statement()
-                return self._parse_begin()
-            if kw == "CALL":
-                return self._parse_call()
-            if kw == "EXECUTE":
-                return self._parse_execute_immediate()
-            if kw == "RETURN":
-                return self._parse_return()
-            if kw == "RAISE":
-                return self._parse_raise()
-            if kw == "CREATE":
-                if self._is_create_routine():
-                    return self._parse_create_routine()
-                return self._parse_sql_statement()
+            handler_name = self._STATEMENT_KEYWORD_HANDLERS.get(tok.value)
+            if handler_name is not None:
+                return getattr(self, handler_name)()
 
         return self._parse_sql_statement()
 
@@ -644,6 +658,35 @@ class Parser:
         self._cursor.advance()
         return _unquote_string(tok.value)
 
+    def _consume_precision_parens(self) -> None:
+        """Consume a balanced ``(...)`` block at the cursor (e.g. ``DECIMAL(38,9)``).
+
+        No-op when the current token is not an opening paren. Advances
+        the cursor past the matching close paren regardless of nesting.
+        """
+        if self._cursor.current.kind != "PUNCT" or self._cursor.current.value != "(":
+            return
+        self._cursor.advance()
+        depth = 1
+        while not self._cursor.at_eof() and depth > 0:
+            inner = self._cursor.current
+            if inner.kind == "PUNCT" and inner.value == "(":
+                depth += 1
+            elif inner.kind == "PUNCT" and inner.value == ")":
+                depth -= 1
+            self._cursor.advance()
+
+    @staticmethod
+    def _close_bracket_count(tok_value: str) -> int:
+        """Return the close-bracket count encoded in a fused ``>`` OP token.
+
+        The lexer fuses consecutive ``>`` characters into a single OP
+        token (it's also the right-shift operator), so the lexed token
+        may be ``>``, ``>>``, or ``>>>``. The count is the literal
+        length — callers cap it against the open-bracket depth.
+        """
+        return len(tok_value)
+
     def _read_type_name(self) -> str:
         """Read a BigQuery type annotation — e.g. ``INT64``, ``ARRAY<INT64>``.
 
@@ -657,20 +700,19 @@ class Parser:
         consumed_any = False
         while not self._cursor.at_eof():
             tok = self._cursor.current
+            # Opening bracket — always advances the bracket depth.
             if tok.kind == "OP" and tok.value == "<":
                 depth += 1
                 consumed_any = True
                 self._cursor.advance()
                 continue
-            if tok.kind == "OP" and set(tok.value) == {">"} and tok.value:
-                close_count = len(tok.value)
+            # Closing brackets — may be one, two, or three ``>`` chars
+            # fused into a single OP token.
+            if tok.kind == "OP" and tok.value and set(tok.value) == {">"}:
                 if depth == 0:
                     break
+                close_count = self._close_bracket_count(tok.value)
                 if close_count > depth:
-                    # We can only "consume" min(depth, close_count)
-                    # closing brackets, but since the lexer gives us a
-                    # single token we have to consume the whole thing —
-                    # mismatched bracket depth in user input.
                     raise InvalidQueryError(
                         f"Type annotation has more closing brackets than openings: {tok.value!r}"
                     )
@@ -678,24 +720,19 @@ class Parser:
                 consumed_any = True
                 self._cursor.advance()
                 continue
+            # Inside the bracket span — any token is part of the
+            # parameterised type body.
             if depth > 0:
                 consumed_any = True
                 self._cursor.advance()
                 continue
+            # Bare type identifier at the head — capture, then consume
+            # an optional ``(precision, scale)`` paren block (e.g.
+            # ``DECIMAL(38, 9)``).
             if tok.kind in ("IDENT", "KEYWORD") and not consumed_any:
                 consumed_any = True
                 self._cursor.advance()
-                # DECIMAL(38,9)-style precision
-                if self._cursor.current.kind == "PUNCT" and self._cursor.current.value == "(":
-                    self._cursor.advance()
-                    inner_depth = 1
-                    while not self._cursor.at_eof() and inner_depth > 0:
-                        inner = self._cursor.current
-                        if inner.kind == "PUNCT" and inner.value == "(":
-                            inner_depth += 1
-                        elif inner.kind == "PUNCT" and inner.value == ")":
-                            inner_depth -= 1
-                        self._cursor.advance()
+                self._consume_precision_parens()
                 continue
             break
         if not consumed_any:

@@ -70,6 +70,63 @@ section and adds the release date.
   rejected — a renamed repo would 502 persistently and we want to
   know).
 
+- **Cyclomatic-complexity gate ratcheted from rank E to rank C +
+  promoted to required.** The `quality-complexity` gate introduced by
+  ADR 0035 (non-blocking, `xenon --max-absolute E`) now enforces
+  `xenon --max-absolute C --max-modules C --max-average A` on
+  `src/bqemulator/`. Every function must rank C or better
+  (cyclomatic complexity ≤ 20); no exclusions. Ten D-rank and
+  E-rank functions surfaced by the baseline audit were refactored
+  using two patterns documented in ADR 0036: dispatch-table for
+  type-keyed branching (the arrow_bridge / avro_serializer /
+  classify_statement_type / scripting parser cases) and helper
+  extraction for procedural sub-blocks (the catalog cascade /
+  interval parser / write-append post-processor / table-meta
+  builder). Worst-case complexity drops from 39 (`_format_bq_value`)
+  to 14. The gate is now part of `make verify`, and
+  `.github/workflows/code-quality.yml`'s complexity step drops
+  `continue-on-error: true`. The branch-protection ruleset's
+  required-checks list will be updated to include the `Quality
+  gates` job (stable name across future blocking-status changes)
+  in a follow-up step once CI on this PR reports the new check
+  name green — adding it pre-CI would create a chicken-and-egg
+  merge block. Duplication
+  (jscpd) + dead-code (vulture) gates stay non-blocking — each gets
+  its own ratchet PR when its baseline settles. See
+  [ADR 0036](docs/adr/0036-complexity-ratchet-to-c.md) for the full
+  audit table, per-function refactor results, and the bucket-A /
+  bucket-B refactor patterns.
+
+### Fixed
+
+- **`_coerce_arrow_binary` (REST `tabledata.insertAll` BYTES path):
+  strict base64 validation + clear errors for non-string inputs.**
+  Previously the helper called `base64.b64decode(value)` without
+  `validate=True`, which silently produced partial bytes on malformed
+  input, AND fell through to `bytes(value)` for any non-string type
+  (which would convert iterables of ints — masking real caller
+  bugs). Now: strings go through `base64.b64decode(value, validate=True)`
+  (matching BigQuery's `400 invalid: Could not decode bytes` on bad
+  payloads); `bytes` / `bytearray` are passed through unchanged
+  (preserves the Storage Write proto path in
+  `streaming/proto_deserializer.py` that feeds proto-decoded BYTES
+  fields here); any other type raises `TypeError` with a clear
+  message. New unit tests cover all three branches plus the
+  pre-existing happy path.
+- **INTERVAL literal parsing: bad integer tokens now raise
+  `ValidationError` instead of leaking `ValueError`.** The
+  compound-parser path (`_consume_blocks` and helpers) used bare
+  `int(...)` calls on user-supplied tokens; the wrapping
+  `parse_interval_literal` documented `ValidationError` as the
+  parse-failure exception but the bare conversion bypassed it on
+  the `_consume_blocks` path. A new `_parse_int_token(raw, field=...)`
+  helper centralises the `int(...) + try/except ValueError →
+  raise ValidationError` pattern; all year / month / day / hour /
+  minute call sites now route through it. New
+  `test_invalid_inputs_raise` cases cover the year, month, day,
+  hour, and minute parse-failure paths that previously leaked
+  `ValueError`.
+
 ## [1.0.2] — 2026-05-23
 
 ### Fixed

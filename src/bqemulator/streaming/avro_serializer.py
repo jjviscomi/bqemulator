@@ -57,6 +57,7 @@ REQUIRED T    bare ``<T>`` (matches real BigQuery; caller passes the
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from datetime import date, datetime, time, timezone
 from decimal import Decimal
 import io
@@ -190,6 +191,88 @@ def _arrow_field_to_avro(
     return spec
 
 
+def _avro_decimal(dtype: pa.DataType, _field_name: str) -> Any:
+    """NUMERIC / BIGNUMERIC → Avro decimal logical type (precision + scale)."""
+    return {
+        "type": "bytes",
+        "logicalType": "decimal",
+        "precision": dtype.precision,
+        "scale": dtype.scale,
+    }
+
+
+def _avro_list(dtype: pa.DataType, field_name: str) -> Any:
+    """REPEATED column → Avro array with the element-type recurser."""
+    return {
+        "type": "array",
+        "items": _arrow_dtype_to_avro(dtype.value_type, field_name=f"{field_name}_item"),
+    }
+
+
+def _avro_struct(dtype: pa.DataType, field_name: str) -> Any:
+    """STRUCT column → Avro record (one Avro field per Arrow child)."""
+    return {
+        "type": "record",
+        "name": f"{field_name}_record",
+        "fields": [_arrow_field_to_avro(dtype.field(i)) for i in range(dtype.num_fields)],
+    }
+
+
+def _avro_map(dtype: pa.DataType, field_name: str) -> Any:
+    """MAP column → Avro map<string, V>. Avro requires string-typed keys."""
+    return {
+        "type": "map",
+        "values": _arrow_dtype_to_avro(dtype.item_type, field_name=f"{field_name}_value"),
+    }
+
+
+def _avro_int_all_widths(dtype: pa.DataType) -> bool:
+    """Predicate matching every signed Arrow integer width."""
+    return (
+        pa.types.is_int64(dtype)
+        or pa.types.is_int32(dtype)
+        or pa.types.is_int16(dtype)
+        or pa.types.is_int8(dtype)
+    )
+
+
+def _avro_uint_small_widths(dtype: pa.DataType) -> bool:
+    """Predicate matching uint widths that fit losslessly in Avro long (8/16/32)."""
+    return pa.types.is_uint32(dtype) or pa.types.is_uint16(dtype) or pa.types.is_uint8(dtype)
+
+
+# Predicate → Avro-type-or-constructor dispatch for ``_arrow_dtype_to_avro``.
+# Handlers are either a literal Avro type string ("long" / "double" / ...) or a
+# callable taking ``(dtype, field_name)`` that builds a dict-typed Avro schema.
+# BigQuery's documented Arrow → Avro mapping drives the order.
+_ARROW_TO_AVRO_DISPATCH: tuple[tuple[Callable[[pa.DataType], bool], Any], ...] = (
+    # BigQuery only has INT64. Smaller widths collapse to ``long`` to
+    # stay on the documented mapping. UINT64 has no native Avro unsigned
+    # type — also stored as ``long`` (BigQuery has no UINT64 surface;
+    # adapter-side only).
+    (_avro_int_all_widths, "long"),
+    (_avro_uint_small_widths, "long"),
+    (pa.types.is_uint64, "long"),
+    (pa.types.is_floating, "double"),
+    (pa.types.is_boolean, "boolean"),
+    (lambda t: pa.types.is_string(t) or pa.types.is_large_string(t), "string"),
+    (lambda t: pa.types.is_binary(t) or pa.types.is_large_binary(t), "bytes"),
+    (pa.types.is_decimal, _avro_decimal),
+    (
+        lambda t: pa.types.is_date32(t) or pa.types.is_date64(t),
+        {"type": "int", "logicalType": "date"},
+    ),
+    (
+        lambda t: pa.types.is_time32(t) or pa.types.is_time64(t),
+        {"type": "long", "logicalType": "time-micros"},
+    ),
+    (pa.types.is_timestamp, {"type": "long", "logicalType": "timestamp-micros"}),
+    (lambda t: pa.types.is_list(t) or pa.types.is_large_list(t), _avro_list),
+    (pa.types.is_struct, _avro_struct),
+    (pa.types.is_map, _avro_map),
+)
+
+
 def _arrow_dtype_to_avro(dtype: pa.DataType, *, field_name: str) -> Any:
     """Convert one pyarrow DataType to its Avro JSON form.
 
@@ -197,69 +280,16 @@ def _arrow_dtype_to_avro(dtype: pa.DataType, *, field_name: str) -> Any:
     derive stable, unique nested record names (Avro requires every
     record to have a name and rejects two records with the same fully
     qualified name in the same schema).
+
+    GEOGRAPHY, JSON, INTERVAL, DATETIME all surface as Arrow strings
+    at the storage layer; the dispatch table catches them via the
+    string predicate. Any Arrow type not matched here falls through
+    to ``"string"``, matching the documented BigQuery convention for
+    "unknown to Avro" types.
     """
-    if (
-        pa.types.is_int64(dtype)
-        or pa.types.is_int32(dtype)
-        or pa.types.is_int16(dtype)
-        or pa.types.is_int8(dtype)
-    ):
-        # BigQuery only has INT64. We collapse smaller widths to ``long``
-        # to stay on the documented mapping.
-        return "long"
-    if pa.types.is_uint32(dtype) or pa.types.is_uint16(dtype) or pa.types.is_uint8(dtype):
-        return "long"
-    if pa.types.is_uint64(dtype):
-        # No native Avro unsigned 64-bit; encode as long. BigQuery
-        # itself has no UINT64 surface, so this only applies to
-        # adapter-side columns.
-        return "long"
-    if pa.types.is_floating(dtype):
-        return "double"
-    if pa.types.is_boolean(dtype):
-        return "boolean"
-    if pa.types.is_string(dtype) or pa.types.is_large_string(dtype):
-        return "string"
-    if pa.types.is_binary(dtype) or pa.types.is_large_binary(dtype):
-        return "bytes"
-    if pa.types.is_decimal(dtype):
-        # NUMERIC / BIGNUMERIC. precision + scale are carried on the
-        # Arrow type; surface them on the Avro decimal logical type.
-        return {
-            "type": "bytes",
-            "logicalType": "decimal",
-            "precision": dtype.precision,
-            "scale": dtype.scale,
-        }
-    if pa.types.is_date32(dtype) or pa.types.is_date64(dtype):
-        return {"type": "int", "logicalType": "date"}
-    if pa.types.is_time32(dtype) or pa.types.is_time64(dtype):
-        return {"type": "long", "logicalType": "time-micros"}
-    if pa.types.is_timestamp(dtype):
-        return {"type": "long", "logicalType": "timestamp-micros"}
-    if pa.types.is_list(dtype) or pa.types.is_large_list(dtype):
-        return {
-            "type": "array",
-            "items": _arrow_dtype_to_avro(dtype.value_type, field_name=f"{field_name}_item"),
-        }
-    if pa.types.is_struct(dtype):
-        return {
-            "type": "record",
-            "name": f"{field_name}_record",
-            "fields": [_arrow_field_to_avro(dtype.field(i)) for i in range(dtype.num_fields)],
-        }
-    if pa.types.is_map(dtype):
-        # Avro maps are <string, V>. pyarrow Map types carry a key
-        # type that we coerce to string for BQ-shaped output.
-        return {
-            "type": "map",
-            "values": _arrow_dtype_to_avro(dtype.item_type, field_name=f"{field_name}_value"),
-        }
-    # GEOGRAPHY, JSON, INTERVAL, DATETIME all surface as Arrow strings
-    # at the storage layer; the schema-mapping table maps them to
-    # Avro ``string``. Any other Arrow type falls back here too,
-    # matching the documented BigQuery convention for "unknown to
-    # Avro" types.
+    for predicate, mapping in _ARROW_TO_AVRO_DISPATCH:
+        if predicate(dtype):
+            return mapping(dtype, field_name) if callable(mapping) else mapping
     return "string"
 
 

@@ -67,7 +67,7 @@ lint: ## Lint + typecheck + security scan
 	typos .
 
 # ---------------------------------------------------------------------------
-# Quality gates (non-blocking; see ADR 0035)
+# Quality gates (complexity required; duplication + dead-code non-blocking)
 # ---------------------------------------------------------------------------
 #
 # Three gates that ``ruff`` and the standard ``make lint`` chain don't
@@ -87,18 +87,28 @@ lint: ## Lint + typecheck + security scan
 #   - quality-dead-code: vulture, configured in pyproject.toml but
 #     previously unwired. Surfaces names not referenced anywhere.
 #
-# Wired non-blocking in CI (.github/workflows/code-quality.yml,
-# continue-on-error: true). Not part of ``make verify`` — that gate
-# stays the strict pre-merge contract. Promote-to-required is a
-# separate follow-up PR once thresholds + baselines are stable.
+# Wiring status:
+#
+#   - ``quality-complexity`` is REQUIRED (part of ``make verify``, no
+#     ``continue-on-error`` on its CI step). ADR 0036 ratcheted the
+#     threshold from rank E to rank C and promoted the gate.
+#   - ``quality-duplication`` and ``quality-dead-code`` are still
+#     non-blocking in CI; their own promote-to-required PRs come
+#     when the baselines settle.
 
 .PHONY: quality-complexity
-quality-complexity: ## Cyclomatic-complexity ceiling via xenon (non-blocking)
-	# Baseline thresholds match the v1.0.2 codebase: project-wide
-	# average A (3.44), worst module C, worst function E (39 — the
-	# arrow_bridge ``_format_bq_value`` value-coercion switch). Any
-	# regression past these tiers fails the gate; today's code passes.
-	xenon --max-absolute E --max-modules C --max-average A src/bqemulator
+quality-complexity: ## Cyclomatic-complexity ceiling via xenon — REQUIRED gate (ratcheted to C in ADR 0036)
+	# Threshold: every function in src/bqemulator must rank C or
+	# better (cyclomatic complexity ≤ 20), every module average must
+	# stay ≤ rank C, and the project-wide average must stay ≤ rank A.
+	# ADR 0036 documents the audit + the bucket-A/B refactors that
+	# closed the original 10 D+E functions. Any new function above
+	# rank C either gets a behavior-preserving refactor (typically a
+	# dispatch table or helper extraction) or a separate PR adding
+	# a documented xenon ``--exclude`` carve-out (a new bucket-C
+	# irreducibility verdict — bar is genuine domain-shaped
+	# complexity, not accumulated cruft).
+	xenon --max-absolute C --max-modules C --max-average A src/bqemulator
 
 .PHONY: quality-duplication
 quality-duplication: ## Cross-file DRY check via jscpd (non-blocking)
@@ -115,7 +125,7 @@ quality-dead-code: ## Dead-name detection via vulture (non-blocking)
 	vulture
 
 .PHONY: quality
-quality: quality-complexity quality-duplication quality-dead-code ## Run all non-blocking quality gates
+quality: quality-complexity quality-duplication quality-dead-code ## Run all quality gates (complexity required; rest non-blocking)
 
 # ---------------------------------------------------------------------------
 # Tests
@@ -447,7 +457,7 @@ build: clean ## Build wheel and sdist
 # ---------------------------------------------------------------------------
 
 .PHONY: verify
-verify: lint test test-coverage \
+verify: lint quality-complexity test test-coverage \
         coverage-matrix-check compat-matrix-check function-mapping-check api-coverage-check \
         docker-build test-e2e docs-build ## Full release-ready gate chain
 	@echo ""
