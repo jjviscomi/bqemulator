@@ -22,6 +22,33 @@ section and adds the release date.
 
 ### Added
 
+- **OpenSSF Scorecard workflow + public badge.** New
+  `.github/workflows/scorecard.yml` runs the official
+  `ossf/scorecard-action` against `main` on every push, every
+  published release, weekly via cron, and on `workflow_dispatch`.
+  The score (0–10) publishes to the OSSF public database at
+  `https://api.securityscorecards.dev/projects/github.com/jjviscomi/bqemulator`
+  (opt-in: `publish_results: true`) and surfaces in the README as a
+  badge linking to the public viewer. Scorecard's SARIF output also
+  uploads to GitHub's Security tab via
+  `github/codeql-action/upload-sarif` so findings show alongside
+  CodeQL alerts. Third-party action pinning follows the
+  project-wide OpenSSF-alignment rule: SHA pin + trailing
+  `# vX.Y.Z` comment (ossf/scorecard-action@4eaacf0 # v2.4.3,
+  github/codeql-action/upload-sarif@7211b7c # v4.36.0). Initial
+  expected score ~8/10; the two checks that drag are
+  CII-Best-Practices (not enrolled) and Contributors (single
+  maintainer) — actionable checks (Pinned-Deps, Signed-Releases,
+  Branch-Protection, SAST, Code-Review) all score high. The
+  public database takes ~24-48h to populate the first score; the
+  badge endpoint returns 404 until then. ``scripts/bump_version.py``
+  was extended with `_README_SCORECARD_BADGE_RE` so each release
+  also rewrites the Scorecard badge URL's ``?v=X.Y.Z`` cache-bust
+  suffix (camo TTL ~24h; the bump forces an immediate refresh).
+  See [ADR 0037](docs/adr/0037-openssf-scorecard.md) for the
+  decision context, expected check breakdown, and trigger
+  rationale.
+
 - **Non-blocking code-quality gates: complexity, duplication, dead code.**
   Three concerns that the existing pre-commit chain (ruff + mypy +
   bandit + pip-audit + interrogate + typos) doesn't meaningfully

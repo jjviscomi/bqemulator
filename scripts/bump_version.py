@@ -7,12 +7,19 @@ prerequisite). The version lives in a single source of truth at
 re-uses it through `[tool.hatch.version] path = ...` in
 [`pyproject.toml`](../pyproject.toml), so the canonical bump touches one
 file. A secondary in-place rewrite on
-[`README.md`](../README.md) keeps the shields.io PyPI / Python-versions
-badges' ``?cacheSeconds=120&v=X.Y.Z`` cache-bust query parameter in
-sync — that suffix changes GitHub camo's cache key so README readers
-see the new wheel without waiting ~24 h for the proxy to expire. The
-README rewrite is idempotent (no-op when the badges are already at the
-new version) and silent when the pattern is absent.
+[`README.md`](../README.md) keeps two badge families' cache-bust query
+parameters in sync:
+
+- The shields.io PyPI / Python-versions badges (``?cacheSeconds=120&v=X.Y.Z``).
+- The OpenSSF Scorecard badge
+  (``api.securityscorecards.dev/.../badge?v=X.Y.Z``) — a non-shields.io
+  endpoint that we cache-bust via a bare ``?v=`` suffix.
+
+Both suffixes change GitHub camo's cache key so README readers see
+the freshly published artefacts without waiting ~24 h for the
+image-proxy TTL. The rewrite is idempotent (no-op when the badges
+are already at the new version) and silent when the pattern is
+absent.
 
 Usage::
 
@@ -73,6 +80,25 @@ _VERSION_RE = re.compile(r"^(\d+)\.(\d+)\.(\d+)$")
 #: the current ``120`` value — a future tuning of the camo TTL won't
 #: silently de-match the regex.
 _README_BADGE_RE = re.compile(r"(\?cacheSeconds=\d+&v=)\d+\.\d+\.\d+")
+
+#: Match the OpenSSF Scorecard badge's ``?v=X.Y.Z`` cache-bust suffix.
+#: The Scorecard endpoint
+#: (``api.securityscorecards.dev/projects/.../badge``) is NOT a
+#: shields.io badge — it doesn't accept a ``cacheSeconds`` query param,
+#: so we use a sibling ``?v=`` suffix as the camo cache-bust. The
+#: regex anchors on the host + ``/badge`` path so it never accidentally
+#: matches an unrelated ``?v=`` URL (e.g. a shields.io endpoint where
+#: ``?v=`` is the second query param — that case is already covered
+#: by :data:`_README_BADGE_RE`, which requires ``?cacheSeconds=`` to
+#: precede ``&v=``).
+_README_SCORECARD_BADGE_RE = re.compile(
+    r"(api\.securityscorecards\.dev/[^\s)]+/badge\?v=)\d+\.\d+\.\d+"
+)
+
+#: Every regex applied during a README cache-bust pass. Iterating
+#: keeps the per-regex logic isolated (each matches a distinct badge
+#: family) while ``update_readme_text`` aggregates the total count.
+_README_VERSION_REGEXES = (_README_BADGE_RE, _README_SCORECARD_BADGE_RE)
 
 #: Bump kinds accepted on the CLI as ``--next <kind>``. Order matters
 #: for argparse's ``choices`` display.
@@ -175,14 +201,24 @@ def write_new(new: Version, file: Path = VERSION_FILE) -> Version:
 def update_readme_text(text: str, new: Version) -> tuple[str, int]:
     """Rewrite every cache-bust badge URL in ``text`` to point at ``new``.
 
-    Pure (no I/O): returns the rewritten body and the number of badges
-    rewritten. ``count == 0`` means the README had no matching
-    ``?cacheSeconds=...&v=X.Y.Z`` suffix; ``count == n`` for the same
-    version is still idempotent (the substituted bytes equal the
-    originals). Callers use the count purely for operator-facing
-    reporting — a missing badge pattern is not an error.
+    Pure (no I/O): returns the rewritten body and the total number of
+    badges rewritten across all configured badge families
+    (:data:`_README_VERSION_REGEXES`). Today that's two — shields.io
+    style ``?cacheSeconds=N&v=X.Y.Z`` and OpenSSF Scorecard style
+    ``api.securityscorecards.dev/.../badge?v=X.Y.Z``.
+
+    ``count == 0`` means none of the regexes matched (silent no-op).
+    ``count == n`` for the same version is still idempotent — each
+    regex's substitution is byte-for-byte identical on a no-op. The
+    callers use the count purely for operator-facing reporting; a
+    missing badge pattern is not an error.
     """
-    return _README_BADGE_RE.subn(rf"\g<1>{new}", text)
+    total_count = 0
+    updated = text
+    for regex in _README_VERSION_REGEXES:
+        updated, count = regex.subn(rf"\g<1>{new}", updated)
+        total_count += count
+    return updated, total_count
 
 
 def write_readme_badges(new: Version, file: Path = README_FILE) -> int:
