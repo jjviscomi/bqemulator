@@ -73,17 +73,28 @@ _CHANGELOG_TEMPLATE = """\
 - initial release.
 """
 
+_README_TEMPLATE = """# bqemulator
 
-def _seed_repo_files(repo: Path, *, version: str = "0.1.0") -> None:
-    """Drop a minimal source + changelog into ``repo``."""
+[![PyPI](https://img.shields.io/pypi/v/bqemulator.svg?cacheSeconds=120&v=0.1.0)](https://pypi.org/project/bqemulator/)
+[![Python](https://img.shields.io/pypi/pyversions/bqemulator.svg?cacheSeconds=120&v=0.1.0)](https://pypi.org/project/bqemulator/)
+"""
+
+
+def _seed_repo_files(repo: Path, *, version: str = "0.1.0", with_readme: bool = False) -> None:
+    """Drop a minimal source + changelog (+ optionally README) into ``repo``."""
     (repo / "src" / "bqemulator").mkdir(parents=True, exist_ok=True)
     init = repo / "src" / "bqemulator" / "__init__.py"
     init.write_text(_INIT_TEMPLATE.replace("0.1.0", version), encoding="utf-8")
     changelog = repo / "CHANGELOG.md"
     changelog.write_text(_CHANGELOG_TEMPLATE, encoding="utf-8")
+    if with_readme:
+        (repo / "README.md").write_text(
+            _README_TEMPLATE.replace("0.1.0", version),
+            encoding="utf-8",
+        )
 
 
-def _init_repo(tmp_path: Path, *, version: str = "0.1.0") -> Path:
+def _init_repo(tmp_path: Path, *, version: str = "0.1.0", with_readme: bool = False) -> Path:
     """Create a git repo at ``tmp_path/repo`` with a clean initial commit.
 
     Returns the repo root. Uses ``-c`` config flags rather than mutating
@@ -92,7 +103,7 @@ def _init_repo(tmp_path: Path, *, version: str = "0.1.0") -> Path:
     """
     repo = tmp_path / "repo"
     repo.mkdir()
-    _seed_repo_files(repo, version=version)
+    _seed_repo_files(repo, version=version, with_readme=with_readme)
     env_cfg = [
         "-c",
         "user.email=test@example.com",
@@ -392,6 +403,107 @@ class TestApply:
         )
         rc = rel.orchestrate(_opts(repo, dry_run=False, allow_empty_changelog=True))
         assert rc == rel.EXIT_OK
+
+
+# ---------------------------------------------------------------------------
+# README badge cache-bust integration
+# ---------------------------------------------------------------------------
+
+
+class TestReadmeBadgeBump:
+    """The orchestrator bumps README cache-bust badges in lockstep with the
+    version. Both dry-run preview and apply mutation are exercised, plus the
+    no-README path that the existing tests above (with_readme=False) silently
+    cover.
+    """
+
+    def test_dry_run_previews_badge_bump(
+        self,
+        tmp_path: Path,
+        monkeypatch: pytest.MonkeyPatch,
+        capsys: pytest.CaptureFixture[str],
+    ) -> None:
+        _git_test_env(monkeypatch)
+        repo = _init_repo(tmp_path, with_readme=True)
+        readme = repo / "README.md"
+        before = readme.read_text(encoding="utf-8")
+        rc = rel.orchestrate(_opts(repo))
+        assert rc == rel.EXIT_OK
+        captured = capsys.readouterr()
+        assert "would bump 2 README badge(s)" in captured.out
+        # Dry-run is read-only — README must be unchanged.
+        assert readme.read_text(encoding="utf-8") == before
+
+    def test_dry_run_no_readme_emits_no_badge_line(
+        self,
+        tmp_path: Path,
+        monkeypatch: pytest.MonkeyPatch,
+        capsys: pytest.CaptureFixture[str],
+    ) -> None:
+        _git_test_env(monkeypatch)
+        repo = _init_repo(tmp_path, with_readme=False)
+        rc = rel.orchestrate(_opts(repo))
+        assert rc == rel.EXIT_OK
+        captured = capsys.readouterr()
+        # The orchestrator skips silently when README is absent — no
+        # "would bump N README" or "no cache-bust badges" message at all.
+        assert "README" not in captured.out
+
+    def test_dry_run_readme_without_badges_emits_no_badge_message(
+        self,
+        tmp_path: Path,
+        monkeypatch: pytest.MonkeyPatch,
+        capsys: pytest.CaptureFixture[str],
+    ) -> None:
+        _git_test_env(monkeypatch)
+        repo = _init_repo(tmp_path, with_readme=False)
+        (repo / "README.md").write_text("# Plain README\n", encoding="utf-8")
+        subprocess.run([_GIT, "add", "-A"], cwd=repo, check=True)  # noqa: S603
+        subprocess.run(  # noqa: S603
+            [_GIT, "commit", "-q", "-m", "add bare README"],
+            cwd=repo,
+            check=True,
+        )
+        rc = rel.orchestrate(_opts(repo))
+        assert rc == rel.EXIT_OK
+        captured = capsys.readouterr()
+        assert "no cache-bust badges to bump" in captured.out
+
+    def test_apply_mutates_readme_badge(
+        self,
+        tmp_path: Path,
+        monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        _git_test_env(monkeypatch)
+        repo = _init_repo(tmp_path, with_readme=True)
+        rc = rel.orchestrate(_opts(repo, dry_run=False))
+        assert rc == rel.EXIT_OK
+        body = (repo / "README.md").read_text(encoding="utf-8")
+        assert "v=0.1.0" not in body
+        assert body.count("v=0.2.0") == 2
+
+    def test_apply_readme_change_is_in_release_commit(
+        self,
+        tmp_path: Path,
+        monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        _git_test_env(monkeypatch)
+        repo = _init_repo(tmp_path, with_readme=True)
+        rc = rel.orchestrate(_opts(repo, dry_run=False))
+        assert rc == rel.EXIT_OK
+        # ``git show --stat HEAD`` must list README.md alongside __init__.py
+        # — proves the release commit captures both bumps atomically.
+        files_in_commit = subprocess.run(  # noqa: S603
+            [_GIT, "show", "--name-only", "--format=", "HEAD"],
+            cwd=repo,
+            capture_output=True,
+            text=True,
+            check=True,
+        )
+        names = set(files_in_commit.stdout.split())
+        assert "README.md" in names
+        assert "src/bqemulator/__init__.py" in names
+        assert "CHANGELOG.md" in names
 
 
 # ---------------------------------------------------------------------------

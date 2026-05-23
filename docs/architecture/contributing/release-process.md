@@ -17,7 +17,7 @@ Three Python scripts back the release flow:
 
 | Script | Responsibility |
 |---|---|
-| [`scripts/bump_version.py`](https://github.com/jjviscomi/bqemulator/blob/main/scripts/bump_version.py) | Update `__version__` in `src/bqemulator/__init__.py`. Validates the new version is strictly greater than the current. |
+| [`scripts/bump_version.py`](https://github.com/jjviscomi/bqemulator/blob/main/scripts/bump_version.py) | Update `__version__` in `src/bqemulator/__init__.py` **and** the `?cacheSeconds=N&v=X.Y.Z` cache-bust suffix on the README's shields.io PyPI / Python-versions badges (`README.md`). The README rewrite is idempotent and silent when the pattern is absent. Validates the new version is strictly greater than the current. |
 | [`scripts/changelog.py`](https://github.com/jjviscomi/bqemulator/blob/main/scripts/changelog.py) | Move the `## [Unreleased]` body into a new `## [X.Y.Z] — YYYY-MM-DD` section. Refuses to finalise an empty `Unreleased` section by default. |
 | [`scripts/release.py`](https://github.com/jjviscomi/bqemulator/blob/main/scripts/release.py) | Orchestrator. Runs `make verify`, calls the two scripts above, and creates the release commit + tag. Default mode is `--dry-run`; pass `--apply` to mutate state. |
 
@@ -74,10 +74,11 @@ a dedicated exit code):
    `Security`).
 
 2. **Pre-release doc sweep.** The release orchestrator only mutates
-   `src/bqemulator/__version__` (via `bump_version.py`) and
-   `CHANGELOG.md` (via `changelog.py`). Every other version- or
-   maturity-bearing string is **manual** and must be checked once per
-   release. The audit:
+   three surfaces: `src/bqemulator/__version__` and the README
+   shields.io badge cache-bust query parameter (both via
+   `bump_version.py`), plus `CHANGELOG.md` (via `changelog.py`).
+   Every other version- or maturity-bearing string is **manual** and
+   must be checked once per release. The audit:
 
    | File | What to update at a MAJOR / first-stable cut |
    |---|---|
