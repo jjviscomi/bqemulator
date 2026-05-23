@@ -163,15 +163,18 @@ class TestReadWithProjection:
             )(types.ReadRowsRequest.serialize(read_req))
         )
 
+        schema = pa.ipc.open_stream(session.arrow_schema.serialized_schema).schema
+        total_rows = 0
         for r in responses:
             rr = types.ReadRowsResponse.deserialize(r)
             if rr.arrow_record_batch.serialized_record_batch:
-                reader = pa.ipc.open_stream(
+                batch = pa.ipc.read_record_batch(
                     rr.arrow_record_batch.serialized_record_batch,
+                    schema,
                 )
-                table = reader.read_all()
-                assert table.column_names == ["name"]
-                assert table.num_rows == 3
+                assert batch.schema.names == ["name"]
+                total_rows += batch.num_rows
+        assert total_rows == 3
 
         channel.close()
 
@@ -212,15 +215,16 @@ class TestReadWithRowFilter:
             )(types.ReadRowsRequest.serialize(read_req))
         )
 
+        schema = pa.ipc.open_stream(session.arrow_schema.serialized_schema).schema
         total_rows = 0
         for r in responses:
             rr = types.ReadRowsResponse.deserialize(r)
             if rr.arrow_record_batch.serialized_record_batch:
-                reader = pa.ipc.open_stream(
+                batch = pa.ipc.read_record_batch(
                     rr.arrow_record_batch.serialized_record_batch,
+                    schema,
                 )
-                table = reader.read_all()
-                total_rows += table.num_rows
+                total_rows += batch.num_rows
 
         # Alice (90) and Carol (85) pass, Bob (70) filtered out.
         assert total_rows == 2
@@ -254,6 +258,7 @@ class TestMultiStreamRead:
         session = types.ReadSession.deserialize(resp)
 
         # Read ALL streams and count total rows.
+        schema = pa.ipc.open_stream(session.arrow_schema.serialized_schema).schema
         total_rows = 0
         for stream in session.streams:
             read_req = types.ReadRowsRequest(read_stream=stream.name)
@@ -265,10 +270,11 @@ class TestMultiStreamRead:
             for r in responses:
                 rr = types.ReadRowsResponse.deserialize(r)
                 if rr.arrow_record_batch.serialized_record_batch:
-                    reader = pa.ipc.open_stream(
+                    batch = pa.ipc.read_record_batch(
                         rr.arrow_record_batch.serialized_record_batch,
+                        schema,
                     )
-                    total_rows += reader.read_all().num_rows
+                    total_rows += batch.num_rows
 
         assert total_rows == 3
 

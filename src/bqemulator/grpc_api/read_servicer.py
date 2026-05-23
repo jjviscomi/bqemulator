@@ -28,7 +28,7 @@ from bqemulator.streaming.read_session import (
     FORMAT_AVRO,
     create_read_session,
     get_stream_data,
-    serialize_arrow_ipc,
+    serialize_arrow_record_batch,
 )
 
 _COLUMN_NAME_RE = re.compile(r"^[A-Za-z_][A-Za-z0-9_]{0,299}$")
@@ -417,7 +417,12 @@ class BigQueryReadHandler(grpc.GenericRpcHandler):
                     )
                     is_first = False
             else:
-                ipc_bytes = serialize_arrow_ipc(batch_table)
+                # ``serialized_record_batch`` carries ONLY the
+                # batch-message bytes; the schema travels separately
+                # via ``ReadSession.arrow_schema.serialized_schema``
+                # and the first response's ``arrow_schema`` field.
+                # See issue #15 for the format-mismatch fix.
+                ipc_bytes = serialize_arrow_record_batch(batch)
                 kwargs["arrow_record_batch"] = types.ArrowRecordBatch(
                     serialized_record_batch=ipc_bytes,
                 )

@@ -242,19 +242,144 @@ def split_stream(stream_name: str, fraction: float) -> tuple[str, str] | None:
     return primary_name, remainder_name
 
 
-def serialize_arrow_ipc(table: pa.Table) -> bytes:
-    """Serialize an Arrow table as Arrow IPC stream format.
+def _type_contains_dictionary(arrow_type: pa.DataType) -> bool:
+    """Return ``True`` if ``arrow_type`` or any nested child is dict-encoded.
 
-    This produces the bytes that ``ReadRowsResponse.arrow_record_batch.serialized_record_batch``
-    carries over the wire.
+    ``pa.types.is_dictionary`` only inspects the top-level type;
+    Arrow's IPC format emits ``DictionaryBatch`` frames for dict
+    children inside struct / list / map / union containers as well.
+    See ADR 0033.
     """
-    sink = io.BytesIO()
-    writer = pa.ipc.new_stream(sink, table.schema)  # type: ignore[no-untyped-call,unused-ignore]
-    # Write all batches.
-    for batch in table.to_batches():
-        writer.write_batch(batch)
+    if pa.types.is_dictionary(arrow_type):
+        return True
+    if pa.types.is_struct(arrow_type):
+        return any(_type_contains_dictionary(f.type) for f in arrow_type)
+    if (
+        pa.types.is_list(arrow_type)
+        or pa.types.is_large_list(arrow_type)
+        or pa.types.is_fixed_size_list(arrow_type)
+    ):
+        return _type_contains_dictionary(arrow_type.value_type)
+    if pa.types.is_map(arrow_type):
+        return _type_contains_dictionary(arrow_type.key_type) or _type_contains_dictionary(
+            arrow_type.item_type
+        )
+    if pa.types.is_union(arrow_type):
+        return any(_type_contains_dictionary(f.type) for f in arrow_type)
+    return False
+
+
+def serialize_arrow_record_batch(batch: pa.RecordBatch) -> bytes:
+    """Serialize a single Arrow record batch as a bare IPC message.
+
+    Returns ONLY the record-batch IPC message bytes (continuation
+    marker + metadata length + flatbuffer metadata + padding + body
+    buffers), NOT a full IPC stream. This matches the BigQuery
+    Storage Read API contract: ``ArrowRecordBatch.serialized_record_batch``
+    is documented to carry a single batch message; the schema travels
+    separately via ``ReadSession.arrow_schema.serialized_schema`` and
+    the first ``ReadRowsResponse.arrow_schema`` field.
+
+    Earlier (≤ v1.0.0) the read servicer packed a full IPC stream
+    (schema framing + batches + EOS marker) into ``serialized_record_batch``.
+    Real Storage Read clients tripped on the format mismatch — e.g.
+    ``google-cloud-bigquery-storage``'s ``reader.to_arrow(session)``
+    calls ``pyarrow.ipc.read_record_batch(...)`` which raises
+    ``OSError: Expected IPC message of type record batch but got schema``.
+    This function emits the documented format so those clients work
+    unchanged. See issue #15.
+
+    The implementation writes the batch through ``pa.ipc.new_stream``
+    to a transient buffer, then re-reads the stream with a
+    ``MessageReader`` to peel off the schema-message prefix and the
+    EOS-marker suffix, leaving just the batch-message bytes. This is
+    the portable approach across pyarrow versions; the alternative
+    (low-level ``pa.ipc.write_message``) has signature drift between
+    pyarrow 14.x and 17.x+ that we'd rather not chase.
+
+    Dictionary-encoded columns are explicitly rejected. The
+    BigQuery Storage Read wire format only carries
+    ``ArrowSchema.serialized_schema`` and
+    ``ArrowRecordBatch.serialized_record_batch`` — there's no slot
+    for ``DictionaryBatch`` frames. pyarrow's
+    ``read_record_batch(bytes, schema)`` requires a populated
+    ``DictionaryMemo`` to decode dict-encoded fields, which the
+    bare-message contract can't provide; quietly stripping the
+    ``DictionaryBatch`` frames would produce a wire-format message
+    consumers can't decode. Raise ``ValueError`` at the producer
+    boundary so the misuse fails loudly. Real BigQuery doesn't
+    surface dict-encoded columns through Storage Read either —
+    if a future code path needs them, plumb a separate channel
+    for the dictionary frames or use a different wire format.
+
+    The loop below also skips any unexpected non-RecordBatch
+    message types pyarrow could emit (compression headers,
+    sentinel markers in future format versions, …) so the
+    function stays correct across pyarrow upgrades.
+    """
+    # Refuse dict-encoded batches up front — see docstring.
+    # Walks every type recursively because ``pa.types.is_dictionary``
+    # only inspects the top-level type, and Arrow's IPC format emits
+    # ``DictionaryBatch`` frames for dict-encoded children inside
+    # struct / list / map / union containers as well. A flat check
+    # would silently allow nested dict fields and produce the same
+    # corrupt-payload bug the rejection guards against. Using
+    # ``schema_field`` instead of ``field`` to avoid shadowing the
+    # ``dataclasses.field`` import at the top of the module.
+    for schema_field in batch.schema:
+        if _type_contains_dictionary(schema_field.type):
+            raise ValueError(
+                f"Dictionary-encoded columns are not supported by"
+                f" the BigQuery Storage Read API serializer "
+                f"(column {schema_field.name!r} has type "
+                f"{schema_field.type}; dict-encoded leaf detected"
+                f" at the top level or in a nested container). The"
+                f" wire contract carries only the record-batch"
+                f" message, but pyarrow requires a DictionaryMemo"
+                f" to decode dict frames — that channel does not"
+                f" exist in the wire format. See ADR 0033."
+            )
+
+    sink = pa.BufferOutputStream()
+    writer = pa.ipc.new_stream(sink, batch.schema)  # type: ignore[no-untyped-call,unused-ignore]
+    writer.write_batch(batch)
     writer.close()
-    return sink.getvalue()
+    stream_bytes = sink.getvalue()
+
+    # Stream layout (typed schemas without dict columns):
+    #   [schema-message][batch-message][EOS-marker]
+    # Stream layout (with dict-encoded columns):
+    #   [schema][dict-1]...[dict-N][batch][EOS]
+    # Either way we want the RecordBatch message — loop until we
+    # find one. ``MessageReader`` is re-exported by the
+    # ``pyarrow.ipc`` module but the stubs don't list it; the
+    # ignore matches the pattern used elsewhere in this file for
+    # ``new_stream``.
+    reader = pa.ipc.MessageReader.open_stream(  # type: ignore[attr-defined]
+        pa.BufferReader(stream_bytes)
+    )
+    batch_msg = None
+    try:
+        while True:
+            msg = reader.read_next_message()
+            if msg.type == "record batch":
+                batch_msg = msg
+                break
+            # Otherwise (schema / dictionary / ...), skip and
+            # keep reading.
+    except StopIteration:
+        # End-of-stream without ever seeing a RecordBatch is a
+        # writer-side bug — defend against it explicitly rather
+        # than returning empty bytes downstream.
+        pass
+    if batch_msg is None:
+        raise RuntimeError(
+            "pyarrow IPC stream contained no RecordBatch message",
+        )
+
+    out = pa.BufferOutputStream()
+    batch_msg.serialize_to(out)
+    return bytes(out.getvalue())
 
 
 __all__ = [
@@ -265,6 +390,6 @@ __all__ = [
     "create_read_session",
     "get_session",
     "get_stream_data",
-    "serialize_arrow_ipc",
+    "serialize_arrow_record_batch",
     "split_stream",
 ]

@@ -135,6 +135,29 @@ class StorageReadTest {
                 assertTrue(session.getStreamsCount() >= 1,
                         "expected at least one stream");
 
+                // ``serialized_record_batch`` carries a BARE Arrow IPC
+                // record-batch message (no schema-message prefix, no
+                // EOS-marker suffix). The schema travels separately on
+                // ``session.arrow_schema.serialized_schema`` (which we
+                // emit as a one-message stream with trailing EOS — same
+                // shape pyarrow's ``new_stream(schema).close()``
+                // produces). ``ArrowStreamReader`` expects a full
+                // stream, so we synthesise one per batch by
+                // concatenating the schema-stream bytes (minus their
+                // trailing EOS) + the batch message + an EOS marker.
+                byte[] schemaStream = session.getArrowSchema()
+                        .getSerializedSchema()
+                        .toByteArray();
+                assertTrue(schemaStream.length > 8,
+                        "session.arrow_schema is empty or malformed");
+                // Strip the 8-byte EOS marker (0xFFFFFFFF + 0x00000000)
+                // from the trailing position of the schema stream.
+                byte[] schemaOnly = new byte[schemaStream.length - 8];
+                System.arraycopy(schemaStream, 0, schemaOnly, 0, schemaOnly.length);
+                byte[] eosMarker = new byte[]{
+                        (byte) 0xFF, (byte) 0xFF, (byte) 0xFF, (byte) 0xFF,
+                        0x00, 0x00, 0x00, 0x00};
+
                 int total = 0;
                 try (BufferAllocator allocator = new RootAllocator()) {
                     for (int i = 0; i < session.getStreamsCount(); i++) {
@@ -149,12 +172,15 @@ class StorageReadTest {
                             if (batch.length == 0) {
                                 continue;
                             }
-                            // The emulator serializes each batch as a
-                            // self-contained Arrow IPC stream (schema
-                            // header + record batch), so the reader
-                            // parses the batch payload directly.
+                            java.io.ByteArrayOutputStream merged =
+                                    new java.io.ByteArrayOutputStream(
+                                            schemaOnly.length + batch.length + 8);
+                            merged.write(schemaOnly);
+                            merged.write(batch);
+                            merged.write(eosMarker);
                             try (ArrowStreamReader reader = new ArrowStreamReader(
-                                    new ByteArrayInputStream(batch), allocator)) {
+                                    new ByteArrayInputStream(merged.toByteArray()),
+                                    allocator)) {
                                 while (reader.loadNextBatch()) {
                                     VectorSchemaRoot root = reader.getVectorSchemaRoot();
                                     total += root.getRowCount();

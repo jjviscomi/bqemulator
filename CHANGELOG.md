@@ -20,6 +20,25 @@ section and adds the release date.
 
 ## [Unreleased]
 
+### Fixed
+
+- **Storage Read API IPC framing** (#15). The gRPC ``ReadRows`` handler
+  previously packed a full Arrow IPC stream (schema-message + batches +
+  EOS-marker) into ``ArrowRecordBatch.serialized_record_batch``, breaking
+  every real Storage Read client — ``google-cloud-bigquery-storage``'s
+  ``reader.to_arrow(session)`` tripped on ``OSError: Expected IPC message
+  of type record batch but got schema``. The handler now emits only the
+  record-batch IPC message bytes; the schema continues to travel
+  separately via ``ReadSession.arrow_schema.serialized_schema`` and the
+  first ``ReadRowsResponse.arrow_schema`` field, matching the BigQuery
+  contract. ``serialize_arrow_ipc(table)`` in
+  ``bqemulator.streaming.read_session`` is replaced by
+  ``serialize_arrow_record_batch(batch)``; the pyspark-bigquery example
+  drops its inline workaround and goes back to the natural
+  ``reader.to_arrow(session)`` call. See ADR 0033 for the formal
+  bare-message contract — dictionary-encoded columns at any nesting
+  depth are rejected with ``ValueError`` at the producer boundary.
+
 ### Changed
 
 - **scio example: testcontainers bump + #17 investigation notes.**
@@ -168,32 +187,41 @@ section and adds the release date.
 - **GHCR image signing** via keyless cosign with GitHub OIDC certificate
   identity.
 
-### Known limitations (deferred to v1.0.1)
+### Known limitations (snapshot at v1.0.0 release; status as of v1.0.1)
 
-These ship as documented caveats on the affected example projects.
-None affect the core emulator surface.
+The two caveats below were carried at v1.0.0 as documented
+limitations to be addressed in v1.0.1. Status update after the
+v1.0.1 release:
 
-- **Storage Read API IPC bytes layout** — bqemulator packs the full
-  Arrow IPC stream (schema framing + batches) into
-  `ReadRowsResponse.arrow_record_batch.serialized_record_batch`
-  rather than a single record-batch IPC message; the schema lives
-  separately on `ReadSession.arrow_schema`. The
-  `google-cloud-bigquery-storage` client's high-level
-  `reader.to_arrow(session)` trips
-  `Expected IPC message of type record batch but got schema`. The
-  `python/pyspark-bigquery` example iterates raw responses through
-  `pa.ipc.open_stream` as a workaround. Tracked in
-  [#15](https://github.com/jjviscomi/bqemulator/issues/15).
-- **Scio test exercises wiring only** — Beam Java BigQueryIO does
-  not honour `--bigQueryEndpoint` for the *write* path (that flag
-  only gates internal preflight validators); the Java BQ client
-  *does* honour `BIGQUERY_EMULATOR_HOST`, but it must be visible to
-  the JVM before the first BQ class loads, which is impossible
-  when the testcontainer port is allocated at runtime. The
-  `java/scio` example's spec asserts the wiring bqemulator owns
-  (container up, REST API reachable, dataset creation works); the
-  `CustomersPipeline.run` source itself remains production-ready
+- ✅ **Storage Read API IPC bytes layout** — **CLOSED in v1.0.1**
+  (see ``Fixed`` block under [Unreleased]/[1.0.1] above). The
+  ``ReadRows`` handler now emits a bare record-batch IPC message
+  per the BigQuery wire contract;
+  ``google-cloud-bigquery-storage``'s
+  ``reader.to_arrow(session)`` works unchanged; the
+  ``python/pyspark-bigquery`` example dropped its inline
+  workaround. See [ADR 0033](docs/adr/0033-storage-read-arrow-ipc-bare-message-contract.md)
+  for the formal contract. ([#15](https://github.com/jjviscomi/bqemulator/issues/15))
+- ⏳ **Scio test exercises wiring only** — **DEFERRED to v1.0.2+**.
+  v1.0.1 investigation (see ``Changed`` block above + the
+  ``CustomersPipelineSpec`` header comment) found the end-to-end
+  path requires three independent fixes, not the single
+  flag/env-var the v1.0.0 limitation note suggested:
+  ``--bigQueryEndpoint`` does override the Apiary client's
+  ``rootUrl`` (✅), but Beam's auth refresh fires before the
+  redirected HTTP call (``OAuth2Credentials.refresh()`` 400s
+  even with ``NoopCredentialFactory``), and
+  ``BigQueryIO.Write`` defaults to ``BATCH_LOADS`` which stages
+  rows to GCS — the emulator has no GCS-compatible shim. Likely
+  v1.0.2 path: integrate a GCS emulator (e.g.
+  ``fsouza/fake-gcs-server``) for staging + finish auth
+  suppression + decide between staying on ``BATCH_LOADS`` (via
+  GCS shim) or pivoting to ``STREAMING_INSERTS``. The
+  ``CustomersPipeline.run`` source itself stays production-ready
   for users running against real BigQuery or a long-lived
-  bqemulator with a stable port. Tracked in
+  bqemulator with a stable port + real GCS bucket. The scio
+  example test continues to assert the wiring-only smoke
+  bqemulator owns (container up, REST reachable, dataset
+  creation works). Tracked in
   [#17](https://github.com/jjviscomi/bqemulator/issues/17).
 

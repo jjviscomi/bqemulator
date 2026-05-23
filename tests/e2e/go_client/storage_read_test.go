@@ -111,6 +111,22 @@ func TestStorageReadStorageReadShipCriterion(t *testing.T) {
 		t.Fatal("CreateReadSession returned no streams")
 	}
 
+	// ``serialized_record_batch`` carries a BARE Arrow IPC
+	// record-batch message (no schema-message prefix, no EOS-marker
+	// suffix). The schema travels separately on
+	// ``session.arrow_schema.serialized_schema`` (which we emit as a
+	// one-message stream with trailing EOS — same shape pyarrow's
+	// ``new_stream(schema).close()`` produces). ``ipc.NewReader``
+	// expects a full stream, so we synthesise one per batch by
+	// concatenating the schema-stream bytes (minus their trailing
+	// EOS) + the batch message + an EOS marker.
+	schemaStream := session.GetArrowSchema().GetSerializedSchema()
+	if len(schemaStream) <= 8 {
+		t.Fatalf("session.arrow_schema is empty or malformed (%d bytes)", len(schemaStream))
+	}
+	schemaOnly := schemaStream[:len(schemaStream)-8]
+	eosMarker := []byte{0xff, 0xff, 0xff, 0xff, 0x00, 0x00, 0x00, 0x00}
+
 	total := 0
 	for _, stream := range session.GetStreams() {
 		rows, err := readClient.ReadRows(ctx, &storagepb.ReadRowsRequest{ReadStream: stream.GetName()})
@@ -125,15 +141,15 @@ func TestStorageReadStorageReadShipCriterion(t *testing.T) {
 			if err != nil {
 				t.Fatalf("ReadRows.Recv: %v", err)
 			}
-			// The emulator serializes each batch as a self-contained IPC
-			// stream (schema header + record batch), so the reader can
-			// open the batch payload directly without prepending the
-			// session-level arrow_schema.
 			batch := resp.GetArrowRecordBatch().GetSerializedRecordBatch()
 			if len(batch) == 0 {
 				continue
 			}
-			reader, err := ipc.NewReader(bytes.NewReader(batch))
+			merged := make([]byte, 0, len(schemaOnly)+len(batch)+8)
+			merged = append(merged, schemaOnly...)
+			merged = append(merged, batch...)
+			merged = append(merged, eosMarker...)
+			reader, err := ipc.NewReader(bytes.NewReader(merged))
 			if err != nil {
 				t.Fatalf("ipc.NewReader: %v", err)
 			}

@@ -86,6 +86,7 @@ def test_create_read_session_and_read_rows(
             session = types.ReadSession.deserialize(resp_bytes)
             assert len(session.streams) >= 1
 
+            schema = pa.ipc.open_stream(session.arrow_schema.serialized_schema).schema
             total = 0
             for stream in session.streams:
                 read_req = types.ReadRowsRequest(read_stream=stream.name)
@@ -94,10 +95,11 @@ def test_create_read_session_and_read_rows(
                 ):
                     resp = types.ReadRowsResponse.deserialize(resp_bytes)
                     if resp.arrow_record_batch.serialized_record_batch:
-                        reader = pa.ipc.open_stream(
+                        batch = pa.ipc.read_record_batch(
                             resp.arrow_record_batch.serialized_record_batch,
+                            schema,
                         )
-                        total += reader.read_all().num_rows
+                        total += batch.num_rows
             assert total == 3
         finally:
             channel.close()
@@ -132,6 +134,7 @@ def test_row_filter_pushdown(
                     types.CreateReadSessionRequest.serialize(req),
                 ),
             )
+            schema = pa.ipc.open_stream(resp.arrow_schema.serialized_schema).schema
             total = 0
             read_req = types.ReadRowsRequest(read_stream=resp.streams[0].name)
             for resp_bytes in channel.unary_stream(f"{_READ}/ReadRows")(
@@ -139,10 +142,11 @@ def test_row_filter_pushdown(
             ):
                 rr = types.ReadRowsResponse.deserialize(resp_bytes)
                 if rr.arrow_record_batch.serialized_record_batch:
-                    reader = pa.ipc.open_stream(
+                    batch = pa.ipc.read_record_batch(
                         rr.arrow_record_batch.serialized_record_batch,
+                        schema,
                     )
-                    total += reader.read_all().num_rows
+                    total += batch.num_rows
             # Alice (90) + Carol (85) pass, Bob (70) filtered.
             assert total == 2
         finally:

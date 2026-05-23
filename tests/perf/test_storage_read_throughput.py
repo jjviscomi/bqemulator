@@ -93,18 +93,19 @@ def test_storage_read_arrow_throughput(
         channel = grpc.insecure_channel(bqemu_server.grpc_endpoint)
         try:
             session = _create_read_session(channel, storage_read_table)
+            schema = pa.ipc.open_stream(session.arrow_schema.serialized_schema).schema
             read_request = types.ReadRowsRequest(read_stream=session.streams[0].name)
             read_bytes = types.ReadRowsRequest.serialize(read_request)
             total_rows = 0
             total_bytes = 0
             for resp_bytes in channel.unary_stream(f"{_READ}/ReadRows")(read_bytes):
                 resp = types.ReadRowsResponse.deserialize(resp_bytes)
-                batch = resp.arrow_record_batch.serialized_record_batch
-                if not batch:
+                batch_bytes = resp.arrow_record_batch.serialized_record_batch
+                if not batch_bytes:
                     continue
-                total_bytes += len(batch)
-                reader = pa.ipc.open_stream(batch)
-                total_rows += reader.read_all().num_rows
+                total_bytes += len(batch_bytes)
+                batch = pa.ipc.read_record_batch(batch_bytes, schema)
+                total_rows += batch.num_rows
         finally:
             channel.close()
         return total_rows, total_bytes
