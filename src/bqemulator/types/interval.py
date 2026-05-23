@@ -150,72 +150,123 @@ def _parse_compound(raw: str, fields: tuple[str, ...], sign: int) -> IntervalPar
     return IntervalParts(**parts)  # type: ignore[arg-type]
 
 
+def _consume_year_month_block(
+    blocks: list[str],
+    pos: int,
+    fields: tuple[str, ...],
+    out: dict[str, int | Decimal],
+) -> int:
+    """Consume the optional ``Y`` / ``Y-M`` block. Returns the new position.
+
+    Three shapes:
+    - ``Y-M`` when both years and months are in scope and the token
+      carries the dash separator (and isn't itself a leading-dash
+      negative number — that case falls through to single-unit).
+    - ``Y`` when only years is in scope.
+    - ``M`` when only months is in scope.
+    """
+    if ("years" not in fields and "months" not in fields) or pos >= len(blocks):
+        return pos
+    token = blocks[pos]
+    if "years" in fields and "months" in fields and "-" in token and not token.startswith("-"):
+        yr_s, mo_s = token.split("-", 1)
+        out["years"] = int(yr_s)
+        out["months"] = int(mo_s)
+    elif "years" in fields:
+        out["years"] = int(token)
+    else:  # months only
+        out["months"] = int(token)
+    return pos + 1
+
+
+def _consume_day_block(
+    blocks: list[str],
+    pos: int,
+    fields: tuple[str, ...],
+    out: dict[str, int | Decimal],
+) -> int:
+    """Consume the optional day-count block. Returns the new position.
+
+    Returns ``pos`` unchanged when the current token looks like a
+    time block (contains ``:``) — that means no day block was
+    supplied and we fall through to the time-block consumer.
+    """
+    if "days" not in fields or pos >= len(blocks):
+        return pos
+    token = blocks[pos]
+    if ":" in token:
+        return pos
+    out["days"] = int(token)
+    return pos + 1
+
+
+def _consume_time_block_segments(
+    token: str,
+    time_fields: tuple[str, ...],
+    out: dict[str, int | Decimal],
+) -> None:
+    """Parse a colon-separated time block into ``out`` per ``time_fields``.
+
+    Seconds are kept as ``Decimal`` so fractional precision is
+    preserved through arithmetic; hours / minutes stay as ``int``.
+    Raises ``ValidationError`` for malformed shapes (no colon, too
+    many segments, unparseable seconds).
+    """
+    if ":" not in token:
+        raise ValidationError(
+            f"Expected H:M[:S[.f]] block in INTERVAL literal, got {token!r}.",
+        )
+    segs = token.split(":")
+    if len(segs) > len(time_fields):
+        raise ValidationError(
+            f"Too many colon-separated parts in INTERVAL literal {token!r} "
+            f"for span {' TO '.join(f.upper()[:-1] for f in time_fields)}.",
+        )
+    for field, raw_value in zip(time_fields, segs, strict=False):
+        if field == "seconds":
+            try:
+                out["seconds"] = Decimal(raw_value)
+            except Exception as exc:
+                raise ValidationError(
+                    f"Cannot parse INTERVAL seconds {raw_value!r}: {exc}",
+                ) from exc
+        else:
+            out[field] = int(raw_value)
+
+
+def _consume_time_block(
+    blocks: list[str],
+    pos: int,
+    fields: tuple[str, ...],
+    out: dict[str, int | Decimal],
+) -> int:
+    """Consume the optional time block. Returns the new position.
+
+    Single-unit shorthand (e.g. DAY TO HOUR with no nested colon
+    structure) treats the whole token as an int for the lone time
+    field; multi-unit spans dispatch into
+    :func:`_consume_time_block_segments`.
+    """
+    time_fields = tuple(f for f in ("hours", "minutes", "seconds") if f in fields)
+    if not time_fields or pos >= len(blocks):
+        return pos
+    token = blocks[pos]
+    if len(time_fields) == 1:
+        out[time_fields[0]] = int(token)
+    else:
+        _consume_time_block_segments(token, time_fields, out)
+    return pos + 1
+
+
 def _consume_blocks(
     blocks: list[str],
     fields: tuple[str, ...],
 ) -> dict[str, int | Decimal]:
     out: dict[str, int | Decimal] = {}
     pos = 0
-
-    # Year/month block (``Y`` or ``Y-M``).
-    if "years" in fields or "months" in fields:
-        if pos >= len(blocks):
-            return out
-        token = blocks[pos]
-        if "years" in fields and "months" in fields and "-" in token and not token.startswith("-"):
-            yr_s, mo_s = token.split("-", 1)
-            out["years"] = int(yr_s)
-            out["months"] = int(mo_s)
-        elif "years" in fields:
-            out["years"] = int(token)
-        else:  # months only
-            out["months"] = int(token)
-        pos += 1
-
-    # Day block.
-    if "days" in fields:
-        if pos >= len(blocks):
-            return out
-        token = blocks[pos]
-        if ":" in token:
-            # No day block supplied; fall through.
-            pass
-        else:
-            out["days"] = int(token)
-            pos += 1
-
-    # Time block — interpretation depends on which fields are in scope.
-    time_fields = tuple(f for f in ("hours", "minutes", "seconds") if f in fields)
-    if time_fields:
-        if pos >= len(blocks):
-            return out
-        token = blocks[pos]
-        if len(time_fields) == 1:
-            # Single-unit shorthand within a compound span (e.g. DAY TO HOUR).
-            out[time_fields[0]] = int(token)
-        else:
-            if ":" not in token:
-                raise ValidationError(
-                    f"Expected H:M[:S[.f]] block in INTERVAL literal, got {token!r}.",
-                )
-            segs = token.split(":")
-            if len(segs) > len(time_fields):
-                raise ValidationError(
-                    f"Too many colon-separated parts in INTERVAL literal {token!r} "
-                    f"for span {' TO '.join(f.upper()[:-1] for f in time_fields)}.",
-                )
-            for field, raw_value in zip(time_fields, segs, strict=False):
-                if field == "seconds":
-                    try:
-                        out["seconds"] = Decimal(raw_value)
-                    except Exception as exc:
-                        raise ValidationError(
-                            f"Cannot parse INTERVAL seconds {raw_value!r}: {exc}",
-                        ) from exc
-                else:
-                    out[field] = int(raw_value)
-        pos += 1
-
+    pos = _consume_year_month_block(blocks, pos, fields, out)
+    pos = _consume_day_block(blocks, pos, fields, out)
+    pos = _consume_time_block(blocks, pos, fields, out)
     if pos != len(blocks):
         raise ValidationError(
             f"Unexpected extra tokens in INTERVAL literal: {' '.join(blocks[pos:])!r}",
