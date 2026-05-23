@@ -5686,7 +5686,7 @@
 <tr>
 <td>INFORMATION_SCHEMA virtual views</td>
 <td><code>INFORMATION_SCHEMA.SCHEMATA</code></td>
-<td><a href="https://cloud.google.com/bigquery/docs/information-schema-schemata">BQ ref</a></td>
+<td><a href="https://cloud.google.com/bigquery/docs/information-schema-intro">BQ ref</a></td>
 </tr>
 <tr>
 <td>INFORMATION_SCHEMA virtual views</td>
@@ -8841,7 +8841,7 @@
 </thead>
 <tbody>
 <tr>
-<td><a href="https://cloud.google.com/bigquery/docs/information-schema-schemata"><code>INFORMATION_SCHEMA.SCHEMATA</code></a></td>
+<td><a href="https://cloud.google.com/bigquery/docs/information-schema-intro"><code>INFORMATION_SCHEMA.SCHEMATA</code></a></td>
 <td style="text-align: right;">0</td>
 <td style="text-align: center;">🔴 Uncovered</td>
 <td>—</td>
@@ -9001,7 +9001,7 @@
 </tbody>
 </table>
 <h3 id="error-response-parity">Error response parity<a class="headerlink" href="#error-response-parity" title="Permanent link">&para;</a></h3>
-<p><a href="https://cloud.google.com/bigquery/docs/reference/rest/v2/Error">BigQuery reference</a> -- <strong>4 / 4 items covered</strong></p>
+<p><a href="https://cloud.google.com/bigquery/docs/reference/rest/v2/ErrorProto">BigQuery reference</a> -- <strong>4 / 4 items covered</strong></p>
 <blockquote>
 <p>Recorded error envelopes (<code>error.reason</code> / <code>http_status</code> / <code>message_pattern</code>). Coverage is owned by P3.a and the <code>error.json</code> fixtures.</p>
 </blockquote>
@@ -9017,28 +9017,28 @@
 </thead>
 <tbody>
 <tr>
-<td><a href="https://cloud.google.com/bigquery/docs/reference/rest/v2/Error"><code>reason=invalid (syntax / argument)</code></a></td>
+<td><a href="https://cloud.google.com/bigquery/docs/reference/rest/v2/ErrorProto"><code>reason=invalid (syntax / argument)</code></a></td>
 <td style="text-align: right;">7</td>
 <td style="text-align: center;">🟢🟢 Deep</td>
 <td>null×1 / error×7</td>
 <td><a href="https://github.com/jjviscomi/bqemulator/blob/main/tests/conformance/sql_corpus/api_configuration/dest_clustering_fields_invalid_column"><code>api_configuration/dest_clustering_fields_invalid_column</code></a>, <a href="https://github.com/jjviscomi/bqemulator/blob/main/tests/conformance/sql_corpus/api_configuration/dest_time_partitioning_invalid_field"><code>api_configuration/dest_time_partitioning_invalid_field</code></a>, <a href="https://github.com/jjviscomi/bqemulator/blob/main/tests/conformance/sql_corpus/api_configuration/schema_update_addition_with_truncate"><code>api_configuration/schema_update_addition_with_truncate</code></a>, <a href="https://github.com/jjviscomi/bqemulator/blob/main/tests/conformance/sql_corpus/api_configuration/schema_update_relaxation_required_to_nullable"><code>api_configuration/schema_update_relaxation_required_to_nullable</code></a>, <a href="https://github.com/jjviscomi/bqemulator/blob/main/tests/conformance/sql_corpus/api_configuration/session_invalid_session_id"><code>api_configuration/session_invalid_session_id</code></a>, … (+2 more)</td>
 </tr>
 <tr>
-<td><a href="https://cloud.google.com/bigquery/docs/reference/rest/v2/Error"><code>reason=notFound</code></a></td>
+<td><a href="https://cloud.google.com/bigquery/docs/reference/rest/v2/ErrorProto"><code>reason=notFound</code></a></td>
 <td style="text-align: right;">8</td>
 <td style="text-align: center;">🟢🟢 Deep</td>
 <td>error×8</td>
 <td><a href="https://github.com/jjviscomi/bqemulator/blob/main/tests/conformance/sql_corpus/api_configuration/create_never_missing_destination"><code>api_configuration/create_never_missing_destination</code></a>, <a href="https://github.com/jjviscomi/bqemulator/blob/main/tests/conformance/sql_corpus/api_configuration/create_never_with_append"><code>api_configuration/create_never_with_append</code></a>, <a href="https://github.com/jjviscomi/bqemulator/blob/main/tests/conformance/sql_corpus/api_configuration/create_never_with_truncate"><code>api_configuration/create_never_with_truncate</code></a>, <a href="https://github.com/jjviscomi/bqemulator/blob/main/tests/conformance/sql_corpus/rest_crud/error_alter_nonexistent_table"><code>rest_crud/error_alter_nonexistent_table</code></a>, <a href="https://github.com/jjviscomi/bqemulator/blob/main/tests/conformance/sql_corpus/rest_crud/error_dataset_not_found"><code>rest_crud/error_dataset_not_found</code></a>, … (+3 more)</td>
 </tr>
 <tr>
-<td><a href="https://cloud.google.com/bigquery/docs/reference/rest/v2/Error"><code>reason=duplicate (already exists)</code></a></td>
+<td><a href="https://cloud.google.com/bigquery/docs/reference/rest/v2/ErrorProto"><code>reason=duplicate (already exists)</code></a></td>
 <td style="text-align: right;">1</td>
 <td style="text-align: center;">🟡 Sampled</td>
 <td>error×1</td>
 <td><a href="https://github.com/jjviscomi/bqemulator/blob/main/tests/conformance/sql_corpus/rest_crud/error_create_table_already_exists"><code>rest_crud/error_create_table_already_exists</code></a></td>
 </tr>
 <tr>
-<td><a href="https://cloud.google.com/bigquery/docs/reference/rest/v2/Error"><code>reason=accessDenied</code></a></td>
+<td><a href="https://cloud.google.com/bigquery/docs/reference/rest/v2/ErrorProto"><code>reason=accessDenied</code></a></td>
 <td style="text-align: right;">1</td>
 <td style="text-align: center;">🟡 Sampled</td>
 <td>error×1</td>
