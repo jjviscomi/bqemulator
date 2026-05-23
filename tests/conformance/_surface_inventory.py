@@ -1340,7 +1340,7 @@ INFORMATION_SCHEMA = SurfaceCategory(
         SurfaceItem(
             id="information_schema.schemata",
             name="INFORMATION_SCHEMA.SCHEMATA",
-            bq_docs="https://cloud.google.com/bigquery/docs/information-schema-schemata",
+            bq_docs="https://cloud.google.com/bigquery/docs/information-schema-intro",
             detect=_re(r"INFORMATION_SCHEMA\s*\.\s*SCHEMATA\b"),
         ),
         SurfaceItem(
@@ -1468,7 +1468,7 @@ WIRE_FORMAT = SurfaceCategory(
 ERRORS = SurfaceCategory(
     id="errors",
     name="Error response parity",
-    bq_docs="https://cloud.google.com/bigquery/docs/reference/rest/v2/Error",
+    bq_docs="https://cloud.google.com/bigquery/docs/reference/rest/v2/ErrorProto",
     description=(
         "Recorded error envelopes (``error.reason`` / ``http_status`` / "
         "``message_pattern``). Coverage is owned by P3.a and the "
@@ -1478,25 +1478,25 @@ ERRORS = SurfaceCategory(
         SurfaceItem(
             id="errors.invalid",
             name="reason=invalid (syntax / argument)",
-            bq_docs="https://cloud.google.com/bigquery/docs/reference/rest/v2/Error",
+            bq_docs="https://cloud.google.com/bigquery/docs/reference/rest/v2/ErrorProto",
             detect=_re(r'"reason"\s*:\s*"invalid"'),
         ),
         SurfaceItem(
             id="errors.not_found",
             name="reason=notFound",
-            bq_docs="https://cloud.google.com/bigquery/docs/reference/rest/v2/Error",
+            bq_docs="https://cloud.google.com/bigquery/docs/reference/rest/v2/ErrorProto",
             detect=_re(r'"reason"\s*:\s*"notFound"'),
         ),
         SurfaceItem(
             id="errors.duplicate",
             name="reason=duplicate (already exists)",
-            bq_docs="https://cloud.google.com/bigquery/docs/reference/rest/v2/Error",
+            bq_docs="https://cloud.google.com/bigquery/docs/reference/rest/v2/ErrorProto",
             detect=_re(r'"reason"\s*:\s*"duplicate"'),
         ),
         SurfaceItem(
             id="errors.access_denied",
             name="reason=accessDenied",
-            bq_docs="https://cloud.google.com/bigquery/docs/reference/rest/v2/Error",
+            bq_docs="https://cloud.google.com/bigquery/docs/reference/rest/v2/ErrorProto",
             detect=_re(r'"reason"\s*:\s*"accessDenied"'),
         ),
         # ``reason=outOfRange`` is listed in the BigQuery REST API

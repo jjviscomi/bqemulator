@@ -1,0 +1,104 @@
+# lychee link-checker config
+# ---------------------------------------------------------------------------
+#
+# Wired into ``.github/workflows/linkcheck.yml`` (PR + nightly). The
+# goal is to catch the class of breakage we hit during the v1.0.1
+# audit: doc-site URLs missing the ``/latest/`` prefix, github.com
+# blob/tree links pointing at moved files, third-party URLs that have
+# 404'd since the doc was written.
+#
+# We INTENTIONALLY do not validate fragment anchors (#section) by
+# default — mkdocs' generated anchors are slugified, lychee's
+# fragment-check trips on minor case/punctuation differences from
+# the source heading.
+
+# ---------------------------------------------------------------------------
+# Scope
+# ---------------------------------------------------------------------------
+
+# Default check timeout per URL.
+timeout = 20
+
+# Don't follow more than 5 redirects (catches infinite-loop CDNs).
+max_redirects = 5
+
+# Retry failed URLs once before reporting them broken — a single
+# transient network blip shouldn't fail a PR.
+max_retries = 2
+retry_wait_time = 3
+
+# Run requests in parallel (default is fast enough; capping at 16
+# avoids tripping rate limits on github.com).
+max_concurrency = 16
+
+# Treat unrecognised schemes (mailto:, irc:, javascript:) as ok —
+# we don't need to validate them.
+include_mail = false
+
+# ---------------------------------------------------------------------------
+# Status codes
+# ---------------------------------------------------------------------------
+
+# Codes that are NOT treated as broken even though they aren't 2xx:
+# - 401/403/429: behind auth or rate-limited; can't tell from CI
+# - 999: LinkedIn's anti-scraping response (used by many docs links)
+accept = ["200..=299", "401", "403", "429", "999"]
+
+# ---------------------------------------------------------------------------
+# Excludes
+# ---------------------------------------------------------------------------
+
+# Directories whose markdown we never check:
+# - .dev/ is gitignored and internal
+# - node_modules + .venv + target are vendored build trees
+# - tests/conformance has internal test corpus
+# - fuzz/corpus is fuzz harness input
+exclude_path = [
+    ".dev/",
+    "node_modules/",
+    ".venv/",
+    "target/",
+    "site/",
+    "htmlcov/",
+    "build/",
+    ".pytest_cache/",
+    "fuzz/corpus/",
+    "tests/conformance/",
+    "tests/perf/",
+    "tests/fixtures/",
+    "docs/examples/nodejs/cloud-run-local/package-lock.json",
+    "docs/examples/nodejs/nestjs-app/package-lock.json",
+]
+
+# URL patterns that we know to be flaky / not worth checking:
+# - localhost / 127.0.0.1 / 0.0.0.0 — only valid at runtime, never
+#   from a CI runner
+# - shields.io — sometimes 503s; cached badges still work in
+#   practice
+# - github.com/.../actions/.../badge.svg — same as shields.io
+# - cloud.google.com/secret/* — gated, returns 404 to non-members
+# - oauth2.googleapis.com — auth endpoint, not browsable
+exclude = [
+    # Loopback / template URLs
+    "^https?://(localhost|127\\.0\\.0\\.1|0\\.0\\.0\\.0)(:|/|$)",
+    "^https?://(host|REST_URL|GRPC_ENDPOINT|YOUR_PROJECT|<.*>|\\$\\{.*\\}|x\\.example|emulator|bqemulator)(:[0-9]+)?(/|$)",
+    # Anchor-only links inside the same doc (lychee already
+    # handles these well, this is defence in depth).
+    "^#",
+    # Shields.io / GitHub Actions badges — flaky in CI but render
+    # correctly in practice; we already verify their JSON output
+    # at release time.
+    "^https://img\\.shields\\.io/",
+    "^https://github\\.com/[^/]+/[^/]+/actions/workflows/.*\\.svg$",
+    # mike-deployed docs — anything in the ``/bqemulator/<version>/``
+    # tree is only available AFTER the docs deploy step lands; PRs
+    # that update doc paths reach lychee before the deploy fires,
+    # producing a phantom failure. The v1.0.1 audit lives in source
+    # control (every URL was hand-checked at audit time + the
+    # category-1 sweep guarantees the prefix), so skipping these on
+    # CI avoids the false positive. The release workflow re-runs
+    # lychee against the published site.
+    "^https://jjviscomi\\.github\\.io/bqemulator/",
+    # Email / messaging schemes
+    "^mailto:",
+]

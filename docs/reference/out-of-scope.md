@@ -40,9 +40,12 @@ BigQuery's slot billing model.
 
 Query cost accounting.
 
-*Rationale*: no local analog. `dryRun` requests still receive a
-best-effort `totalBytesProcessed` estimate derived from catalog
-statistics.
+*Rationale*: no local analog and no cost model. `dryRun` requests
+parse + validate but `statistics.query.totalBytesProcessed` is
+always returned as `"0"` (the emulator has no way to estimate
+bytes scanned — DuckDB's row-storage layout doesn't map onto
+BigQuery's columnar pricing). Treat `totalBytesProcessed` as
+"validation passed", not as a cost estimate.
 
 ### Data Transfer Service
 

@@ -68,8 +68,10 @@ section and adds the release date.
 - **REST API parity** — Datasets, Tables, Jobs, TableData, Routines, Models,
   with multipart and resumable upload endpoints for `load_table_from_file`
   workflows. `INFORMATION_SCHEMA` views (`TABLES`, `COLUMNS`, `ROUTINES`,
-  `VIEWS`, `JOBS`, `JOBS_BY_*`, `MATERIALIZED_VIEWS`, `PARTITIONS`,
-  `TABLE_OPTIONS`, etc.) queryable via the standard SQL path.
+  `VIEWS`, `MATERIALIZED_VIEWS`, `PARTITIONS`, `TABLE_OPTIONS`, etc.)
+  queryable via the standard SQL path. The `JOBS` / `JOBS_BY_*` family is
+  intentionally out of scope — see
+  [`out-of-scope.md#information_schemajobs-family`](docs/reference/out-of-scope.md#information_schemajobs-family).
 - **Storage Read API** — gRPC servicer with both Arrow and Avro wire formats.
   Avro is the Java client's default; both clients (Python `fastavro`, Node
   `avsc`, Go `linkedin/goavro`, Java canonical Apache Avro) interoperate

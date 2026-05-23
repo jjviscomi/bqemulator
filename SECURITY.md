@@ -4,10 +4,9 @@
 
 | Version | Supported |
 |---|---|
-| Latest minor (e.g. 1.4.x) | Security + bug fixes |
-| Previous minor (e.g. 1.3.x) | Security + bug fixes |
+| Latest minor (currently **1.0.x**) | Security + bug fixes |
+| Previous minor | Security + bug fixes |
 | Older | Security fixes only for 90 days after supersession |
-| Pre-1.0 (0.x) | Latest release only |
 
 ## Reporting a vulnerability
 

@@ -4,8 +4,11 @@ A local emulator for Google BigQuery. Run it on your laptop or in CI and
 point the official Google Cloud client libraries at it.
 
 !!! note "Status"
-    Pre-1.0. See the [compatibility matrix](reference/compatibility-matrix.md)
-    for feature coverage and the [roadmap](https://github.com/jjviscomi/bqemulator/milestones)
+    **v1.0.1** — production-stable. SemVer applies: breaking changes
+    ship only in MAJOR, preceded by ≥1 MINOR with deprecation
+    warnings; deprecated APIs remain for ≥2 MINOR or 6 months. See
+    the [compatibility matrix](reference/compatibility-matrix.md) for
+    feature coverage and the [roadmap](https://github.com/jjviscomi/bqemulator/milestones)
     for what's coming.
 
 ## Why bqemulator?

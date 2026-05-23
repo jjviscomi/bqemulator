@@ -75,7 +75,7 @@ The fastest single-session improvements come from these uncovered cells. Each is
 | Category | Item | BQ docs |
 |---|---|---|
 | GEOGRAPHY functions | `ST_CLUSTERDBSCAN` | [BQ ref](https://cloud.google.com/bigquery/docs/reference/standard-sql/geography_functions) |
-| INFORMATION_SCHEMA virtual views | `INFORMATION_SCHEMA.SCHEMATA` | [BQ ref](https://cloud.google.com/bigquery/docs/information-schema-schemata) |
+| INFORMATION_SCHEMA virtual views | `INFORMATION_SCHEMA.SCHEMATA` | [BQ ref](https://cloud.google.com/bigquery/docs/information-schema-intro) |
 | INFORMATION_SCHEMA virtual views | `INFORMATION_SCHEMA.TABLES` | [BQ ref](https://cloud.google.com/bigquery/docs/information-schema-tables) |
 | INFORMATION_SCHEMA virtual views | `INFORMATION_SCHEMA.COLUMNS` | [BQ ref](https://cloud.google.com/bigquery/docs/information-schema-columns) |
 | INFORMATION_SCHEMA virtual views | `INFORMATION_SCHEMA.TABLE_OPTIONS` | [BQ ref](https://cloud.google.com/bigquery/docs/information-schema-table-options) |
@@ -628,7 +628,7 @@ The fastest single-session improvements come from these uncovered cells. Each is
 
 | Item | Count | Tier | Variation | Fixtures |
 |---|---:|:---:|---|---|
-| [`INFORMATION_SCHEMA.SCHEMATA`](https://cloud.google.com/bigquery/docs/information-schema-schemata) | 0 | 🔴 Uncovered | — | _gap_ |
+| [`INFORMATION_SCHEMA.SCHEMATA`](https://cloud.google.com/bigquery/docs/information-schema-intro) | 0 | 🔴 Uncovered | — | _gap_ |
 | [`INFORMATION_SCHEMA.TABLES`](https://cloud.google.com/bigquery/docs/information-schema-tables) | 0 | 🔴 Uncovered | — | _gap_ |
 | [`INFORMATION_SCHEMA.COLUMNS`](https://cloud.google.com/bigquery/docs/information-schema-columns) | 0 | 🔴 Uncovered | — | _gap_ |
 | [`INFORMATION_SCHEMA.TABLE_OPTIONS`](https://cloud.google.com/bigquery/docs/information-schema-table-options) | 0 | 🔴 Uncovered | — | _gap_ |
@@ -660,16 +660,16 @@ The fastest single-session improvements come from these uncovered cells. Each is
 
 ### Error response parity
 
-[BigQuery reference](https://cloud.google.com/bigquery/docs/reference/rest/v2/Error) -- **4 / 4 items covered**
+[BigQuery reference](https://cloud.google.com/bigquery/docs/reference/rest/v2/ErrorProto) -- **4 / 4 items covered**
 
 > Recorded error envelopes (``error.reason`` / ``http_status`` / ``message_pattern``). Coverage is owned by P3.a and the ``error.json`` fixtures.
 
 | Item | Count | Tier | Variation | Fixtures |
 |---|---:|:---:|---|---|
-| [`reason=invalid (syntax / argument)`](https://cloud.google.com/bigquery/docs/reference/rest/v2/Error) | 7 | 🟢🟢 Deep | null×1 / error×7 | [`api_configuration/dest_clustering_fields_invalid_column`](https://github.com/jjviscomi/bqemulator/blob/main/tests/conformance/sql_corpus/api_configuration/dest_clustering_fields_invalid_column), [`api_configuration/dest_time_partitioning_invalid_field`](https://github.com/jjviscomi/bqemulator/blob/main/tests/conformance/sql_corpus/api_configuration/dest_time_partitioning_invalid_field), [`api_configuration/schema_update_addition_with_truncate`](https://github.com/jjviscomi/bqemulator/blob/main/tests/conformance/sql_corpus/api_configuration/schema_update_addition_with_truncate), [`api_configuration/schema_update_relaxation_required_to_nullable`](https://github.com/jjviscomi/bqemulator/blob/main/tests/conformance/sql_corpus/api_configuration/schema_update_relaxation_required_to_nullable), [`api_configuration/session_invalid_session_id`](https://github.com/jjviscomi/bqemulator/blob/main/tests/conformance/sql_corpus/api_configuration/session_invalid_session_id), … (+2 more) |
-| [`reason=notFound`](https://cloud.google.com/bigquery/docs/reference/rest/v2/Error) | 8 | 🟢🟢 Deep | error×8 | [`api_configuration/create_never_missing_destination`](https://github.com/jjviscomi/bqemulator/blob/main/tests/conformance/sql_corpus/api_configuration/create_never_missing_destination), [`api_configuration/create_never_with_append`](https://github.com/jjviscomi/bqemulator/blob/main/tests/conformance/sql_corpus/api_configuration/create_never_with_append), [`api_configuration/create_never_with_truncate`](https://github.com/jjviscomi/bqemulator/blob/main/tests/conformance/sql_corpus/api_configuration/create_never_with_truncate), [`rest_crud/error_alter_nonexistent_table`](https://github.com/jjviscomi/bqemulator/blob/main/tests/conformance/sql_corpus/rest_crud/error_alter_nonexistent_table), [`rest_crud/error_dataset_not_found`](https://github.com/jjviscomi/bqemulator/blob/main/tests/conformance/sql_corpus/rest_crud/error_dataset_not_found), … (+3 more) |
-| [`reason=duplicate (already exists)`](https://cloud.google.com/bigquery/docs/reference/rest/v2/Error) | 1 | 🟡 Sampled | error×1 | [`rest_crud/error_create_table_already_exists`](https://github.com/jjviscomi/bqemulator/blob/main/tests/conformance/sql_corpus/rest_crud/error_create_table_already_exists) |
-| [`reason=accessDenied`](https://cloud.google.com/bigquery/docs/reference/rest/v2/Error) | 1 | 🟡 Sampled | error×1 | [`rest_crud/error_invalid_project_format`](https://github.com/jjviscomi/bqemulator/blob/main/tests/conformance/sql_corpus/rest_crud/error_invalid_project_format) |
+| [`reason=invalid (syntax / argument)`](https://cloud.google.com/bigquery/docs/reference/rest/v2/ErrorProto) | 7 | 🟢🟢 Deep | null×1 / error×7 | [`api_configuration/dest_clustering_fields_invalid_column`](https://github.com/jjviscomi/bqemulator/blob/main/tests/conformance/sql_corpus/api_configuration/dest_clustering_fields_invalid_column), [`api_configuration/dest_time_partitioning_invalid_field`](https://github.com/jjviscomi/bqemulator/blob/main/tests/conformance/sql_corpus/api_configuration/dest_time_partitioning_invalid_field), [`api_configuration/schema_update_addition_with_truncate`](https://github.com/jjviscomi/bqemulator/blob/main/tests/conformance/sql_corpus/api_configuration/schema_update_addition_with_truncate), [`api_configuration/schema_update_relaxation_required_to_nullable`](https://github.com/jjviscomi/bqemulator/blob/main/tests/conformance/sql_corpus/api_configuration/schema_update_relaxation_required_to_nullable), [`api_configuration/session_invalid_session_id`](https://github.com/jjviscomi/bqemulator/blob/main/tests/conformance/sql_corpus/api_configuration/session_invalid_session_id), … (+2 more) |
+| [`reason=notFound`](https://cloud.google.com/bigquery/docs/reference/rest/v2/ErrorProto) | 8 | 🟢🟢 Deep | error×8 | [`api_configuration/create_never_missing_destination`](https://github.com/jjviscomi/bqemulator/blob/main/tests/conformance/sql_corpus/api_configuration/create_never_missing_destination), [`api_configuration/create_never_with_append`](https://github.com/jjviscomi/bqemulator/blob/main/tests/conformance/sql_corpus/api_configuration/create_never_with_append), [`api_configuration/create_never_with_truncate`](https://github.com/jjviscomi/bqemulator/blob/main/tests/conformance/sql_corpus/api_configuration/create_never_with_truncate), [`rest_crud/error_alter_nonexistent_table`](https://github.com/jjviscomi/bqemulator/blob/main/tests/conformance/sql_corpus/rest_crud/error_alter_nonexistent_table), [`rest_crud/error_dataset_not_found`](https://github.com/jjviscomi/bqemulator/blob/main/tests/conformance/sql_corpus/rest_crud/error_dataset_not_found), … (+3 more) |
+| [`reason=duplicate (already exists)`](https://cloud.google.com/bigquery/docs/reference/rest/v2/ErrorProto) | 1 | 🟡 Sampled | error×1 | [`rest_crud/error_create_table_already_exists`](https://github.com/jjviscomi/bqemulator/blob/main/tests/conformance/sql_corpus/rest_crud/error_create_table_already_exists) |
+| [`reason=accessDenied`](https://cloud.google.com/bigquery/docs/reference/rest/v2/ErrorProto) | 1 | 🟡 Sampled | error×1 | [`rest_crud/error_invalid_project_format`](https://github.com/jjviscomi/bqemulator/blob/main/tests/conformance/sql_corpus/rest_crud/error_invalid_project_format) |
 
 ## See also
 
