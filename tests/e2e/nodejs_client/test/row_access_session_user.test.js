@@ -47,16 +47,27 @@ function makeClient(callerHeader) {
   return client;
 }
 
+// Cap REST calls at 15s so a stalled emulator can't hang the test
+// run indefinitely (CodeRabbit thread PRRT_kwDOSkfuJ86EVwPB).
+const REST_TIMEOUT_MS = 15_000;
+
 async function rest(method, path, body) {
-  const res = await fetch(REST_URL + path, {
-    method,
-    headers: { "Content-Type": "application/json" },
-    body: body ? JSON.stringify(body) : undefined,
-  });
-  if (!res.ok && res.status !== 204) {
-    throw new Error(`${method} ${path} -> ${res.status}: ${await res.text()}`);
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), REST_TIMEOUT_MS);
+  try {
+    const res = await fetch(REST_URL + path, {
+      method,
+      headers: { "Content-Type": "application/json" },
+      body: body ? JSON.stringify(body) : undefined,
+      signal: controller.signal,
+    });
+    if (!res.ok && res.status !== 204) {
+      throw new Error(`${method} ${path} -> ${res.status}: ${await res.text()}`);
+    }
+    return res;
+  } finally {
+    clearTimeout(timer);
   }
-  return res;
 }
 
 async function cleanup() {

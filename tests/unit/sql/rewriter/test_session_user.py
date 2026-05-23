@@ -109,7 +109,10 @@ class TestRewriteSessionUser:
         # path string check is case-insensitive so this still bumps.
         sql = "SELECT session_user() AS who"
         out = rewrite_session_user(sql, self._caller("alice@example.com"))
-        assert "session_user" not in out.lower() or "alice@example.com" in out
+        # Conjunctive assertion (CodeRabbit thread PRRT_kwDOSkfuJ86EVwPG):
+        # both invariants must hold or the regression check is too weak.
+        assert "session_user" not in out.lower()
+        assert "'alice@example.com'" in out
 
     def test_no_session_user_call_is_fast_path_no_op(self) -> None:
         sql = "SELECT 1 + 2 AS x FROM t WHERE y > 3"

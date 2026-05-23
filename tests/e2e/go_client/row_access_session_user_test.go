@@ -48,7 +48,12 @@ func sessionUserClient(ctx context.Context, t *testing.T, caller string) *bigque
 	return client
 }
 
-func sessionUserRest(t *testing.T, method, path string, body any) {
+// Bounded REST client so a stalled emulator can't hang the test run
+// indefinitely (CodeRabbit thread PRRT_kwDOSkfuJ86EVwO0). The 15s cap
+// matches the per-call SLA the rest of the e2e suite assumes.
+var sessionUserHTTP = &http.Client{Timeout: 15 * time.Second}
+
+func sessionUserRest(ctx context.Context, t *testing.T, method, path string, body any) {
 	t.Helper()
 	var rd io.Reader
 	if body != nil {
@@ -58,12 +63,12 @@ func sessionUserRest(t *testing.T, method, path string, body any) {
 		}
 		rd = bytes.NewReader(buf)
 	}
-	req, err := http.NewRequest(method, restURL()+path, rd)
+	req, err := http.NewRequestWithContext(ctx, method, restURL()+path, rd)
 	if err != nil {
 		t.Fatalf("new request: %v", err)
 	}
 	req.Header.Set("Content-Type", "application/json")
-	resp, err := http.DefaultClient.Do(req)
+	resp, err := sessionUserHTTP.Do(req)
 	if err != nil {
 		t.Fatalf("rest %s %s: %v", method, path, err)
 	}
@@ -135,7 +140,7 @@ func TestRowAccessSessionUserFilter(t *testing.T) {
 		),
 	)
 
-	sessionUserRest(t, "POST",
+	sessionUserRest(ctx, t, "POST",
 		fmt.Sprintf("/bigquery/v2/projects/%s/datasets/%s/tables/tenants/rowAccessPolicies",
 			sessionUserProject, dsID),
 		map[string]any{

@@ -4,7 +4,7 @@
 
 ## Context
 
-BigQuery's [`SESSION_USER()`](https://cloud.google.com/bigquery/docs/reference/standard-sql/security-functions)
+BigQuery's [`SESSION_USER()`](https://cloud.google.com/bigquery/docs/reference/standard-sql/security_functions)
 returns the email address of the user running the query —
 ``alice@example.com`` for a user principal,
 ``sa@project.iam.gserviceaccount.com`` for a service account. The
@@ -276,7 +276,7 @@ the surface-inventory entry promised.
 
 ## References
 
-* [BigQuery `SESSION_USER()` reference](https://cloud.google.com/bigquery/docs/reference/standard-sql/security-functions#session_user)
+* [BigQuery `SESSION_USER()` reference](https://cloud.google.com/bigquery/docs/reference/standard-sql/security_functions#session_user)
 * [ADR 0018](0018-caller-identity-and-row-access-enforcement.md) — the
   ``CallerIdentity`` dataclass + ``X-Bqemu-Caller`` header contract this ADR builds on.
 * [ADR 0022](0022-conformance-corpus-design.md) §1.2 / §7 — the

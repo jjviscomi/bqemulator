@@ -14,6 +14,7 @@ import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -109,8 +110,15 @@ class RowAccessSessionUserTest {
         return bq.query(QueryJobConfiguration.newBuilder(sql).setUseLegacySql(false).build());
     }
 
+    // Connect-side timeout on the client, per-request timeout via the
+    // HttpRequest builder. The 15s cap matches the per-call SLA the
+    // rest of the e2e suite assumes; without it, a stalled emulator
+    // can hang the test run indefinitely
+    // (CodeRabbit thread PRRT_kwDOSkfuJ86EVwO9).
+    private static final Duration REST_TIMEOUT = Duration.ofSeconds(15);
     private static final HttpClient HTTP = HttpClient.newBuilder()
             .version(HttpClient.Version.HTTP_1_1)
+            .connectTimeout(REST_TIMEOUT)
             .build();
 
     private void rest(String method, String path, String body) throws Exception {
@@ -119,6 +127,7 @@ class RowAccessSessionUserTest {
                 ? HttpRequest.BodyPublishers.noBody()
                 : HttpRequest.BodyPublishers.ofString(body);
         HttpRequest req = HttpRequest.newBuilder(uri)
+                .timeout(REST_TIMEOUT)
                 .method(method, publisher)
                 .header("Content-Type", "application/json")
                 .build();
@@ -136,6 +145,7 @@ class RowAccessSessionUserTest {
                 ? HttpRequest.BodyPublishers.noBody()
                 : HttpRequest.BodyPublishers.ofString(body);
         HttpRequest req = HttpRequest.newBuilder(uri)
+                .timeout(REST_TIMEOUT)
                 .method(method, publisher)
                 .header("Content-Type", "application/json")
                 .build();

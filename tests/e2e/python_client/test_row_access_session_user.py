@@ -78,7 +78,11 @@ def seeded(bqemu_rest_url: str, bq_admin: bigquery.Client) -> Iterator[None]:
         "(3, 'other.com'), (4, 'other.com')",
     ).result()
     with httpx.Client(base_url=bqemu_rest_url, timeout=30.0) as c:
-        c.post(
+        # ``raise_for_status`` so a broken RAP-creation path fails the
+        # fixture immediately with a clear error instead of cascading
+        # into a later data-mismatch assertion failure that's harder
+        # to debug. (CodeRabbit thread PRRT_kwDOSkfuJ86EVwPD.)
+        response = c.post(
             f"/bigquery/v2/projects/{_PROJECT}/datasets/{_DATASET}"
             "/tables/tenants/rowAccessPolicies",
             json={
@@ -92,6 +96,7 @@ def seeded(bqemu_rest_url: str, bq_admin: bigquery.Client) -> Iterator[None]:
                 "grantees": ["allAuthenticatedUsers"],
             },
         )
+        response.raise_for_status()
     yield None
     with httpx.Client(base_url=bqemu_rest_url, timeout=30.0) as c:
         c.delete(
