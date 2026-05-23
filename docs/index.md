@@ -5,7 +5,8 @@ point the official Google Cloud client libraries at it.
 
 !!! note "Status"
     **v1.0.1** — production-stable. SemVer applies: breaking changes
-    ship only in MAJOR, deprecations live ≥2 MINOR or 6 months. See
+    ship only in MAJOR, preceded by ≥1 MINOR with deprecation
+    warnings; deprecated APIs remain for ≥2 MINOR or 6 months. See
     the [compatibility matrix](reference/compatibility-matrix.md) for
     feature coverage and the [roadmap](https://github.com/jjviscomi/bqemulator/milestones)
     for what's coming.

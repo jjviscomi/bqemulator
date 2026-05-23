@@ -31,13 +31,6 @@ on:
   # Manual trigger for ad-hoc audits.
   workflow_dispatch:
 
-permissions:
-  contents: read
-  # Required so a failing nightly run can open / update a tracking
-  # issue. PR runs annotate inline; the issue path only fires on the
-  # scheduled trigger.
-  issues: write
-
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
@@ -46,6 +39,14 @@ jobs:
   lychee:
     name: Verify links
     runs-on: ubuntu-latest
+    # Permissions scoped at the job level (least-privilege per
+    # zizmor / OpenSSF Scorecard guidance).
+    permissions:
+      contents: read
+      # Required so a failing nightly run can open / update a
+      # tracking issue. PR runs annotate inline; the issue path only
+      # fires on the scheduled trigger.
+      issues: write
     steps:
       - uses: actions/checkout@v4
 
