@@ -2982,6 +2982,8 @@
       
         
       
+        
+      
     
     
     
@@ -4050,6 +4052,34 @@
     
   
     0037 OpenSSF Scorecard adoption + badge
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../adr/0038-session-user/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0038 SESSION_USER() pre-translator substitution
   
 
     
@@ -5161,7 +5191,7 @@ table below maps each BigQuery view to its rewriter function.</p>
 </blockquote>
 <ul>
 <li><strong>Registered rules</strong>: 92 (13 rule modules)</li>
-<li><strong>Rewriter functions</strong>: 23 (23 rewriter modules; the INFORMATION_SCHEMA rewriter has its own hand-maintained per-view table below)</li>
+<li><strong>Rewriter functions</strong>: 24 (24 rewriter modules; the INFORMATION_SCHEMA rewriter has its own hand-maintained per-view table below)</li>
 </ul>
 <h3 id="translation-rules-post-transpile-ast-passes">Translation rules (post-transpile AST passes)<a class="headerlink" href="#translation-rules-post-transpile-ast-passes" title="Permanent link">&para;</a></h3>
 <table>
@@ -5876,6 +5906,12 @@ table below maps each BigQuery view to its rewriter function.</p>
 <td>Return a no-op statement when <code>bq_sql</code> is <code>ALTER TABLE ... SET OPTIONS(...)</code></td>
 <td>—</td>
 <td><code>rewrite_alter_table_set_options</code></td>
+</tr>
+<tr>
+<td>Other rewriter</td>
+<td>Pre-translate BigQuery SQL for the <code>SESSION_USER()</code> function</td>
+<td>—</td>
+<td><code>rewrite_session_user</code></td>
 </tr>
 </tbody>
 </table>
