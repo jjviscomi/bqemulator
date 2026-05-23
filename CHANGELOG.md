@@ -97,6 +97,23 @@ section and adds the release date.
   audit table, per-function refactor results, and the bucket-A /
   bucket-B refactor patterns.
 
+- **`scripts/bump_version.py` now bumps the README's shields.io
+  PyPI / Python-versions badge cache-bust suffix in lockstep with
+  `__version__`.** The two badge URLs in `README.md` carry a
+  `?cacheSeconds=120&v=X.Y.Z` query param — the `v=` portion is
+  ignored by shields.io but is the cache key GitHub camo (the image
+  proxy) uses, so bumping it forces readers' browsers to refetch the
+  fresh PyPI version on release. Previously that bump was a manual
+  README edit on the release branch (see PR #41, where v1.0.1 → 1.0.1
+  cache-bust was hand-applied); now both `python scripts/bump_version.py
+  X.Y.Z` and the orchestrator `scripts/release.py --apply` rewrite the
+  badges idempotently. New `bump.update_readme_text` /
+  `bump.write_readme_badges` helpers plus `--readme` CLI flag for
+  test isolation; `scripts/release.py --dry-run` previews the badge
+  diff alongside the `__init__.py` bump. Idempotent (silent no-op
+  when README is missing or already at the target version). Closes
+  follow-up "automate README badges + OpenSSF Scorecard" — PR A.
+
 ### Fixed
 
 - **`_coerce_arrow_binary` (REST `tabledata.insertAll` BYTES path):

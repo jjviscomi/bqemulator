@@ -295,12 +295,27 @@ def _preview_changelog(plan: ReleasePlan, opts: ReleaseOptions) -> None:
     )
 
 
-def _preview_bump(plan: ReleasePlan) -> None:
-    """Render the proposed version bump."""
+def _preview_bump(plan: ReleasePlan, opts: ReleaseOptions) -> None:
+    """Render the proposed version bump and README badge cache-bust diff."""
     _emit(
         f"would bump __version__: {plan.current} -> {plan.target}",
         prefix="[dry-run]",
     )
+    readme_path = opts.repo_root / "README.md"
+    if readme_path.exists():
+        text = readme_path.read_text(encoding="utf-8")
+        _, count = bump.update_readme_text(text, plan.target)
+        if count:
+            _emit(
+                f"would bump {count} README badge(s) in {readme_path.name}: "
+                f"?v={plan.current} -> ?v={plan.target}",
+                prefix="[dry-run]",
+            )
+        else:
+            _emit(
+                f"README has no cache-bust badges to bump in {readme_path.name}",
+                prefix="[dry-run]",
+            )
 
 
 def _preview_commit_and_tag(plan: ReleasePlan) -> None:
@@ -310,7 +325,7 @@ def _preview_commit_and_tag(plan: ReleasePlan) -> None:
 
 
 def _apply_bump(plan: ReleasePlan, opts: ReleaseOptions) -> int:
-    """Write the new version to ``__init__.py``."""
+    """Write the new version to ``__init__.py`` + bump README badge cache-bust."""
     version_file = opts.repo_root / "src" / "bqemulator" / "__init__.py"
     try:
         bump.write_new(plan.target, version_file)
@@ -318,6 +333,10 @@ def _apply_bump(plan: ReleasePlan, opts: ReleaseOptions) -> int:
         print(f"error: bump failed: {exc}", file=sys.stderr)
         return EXIT_BUMP_FAILED
     _emit(f"bumped __version__: {plan.current} -> {plan.target}")
+    readme_path = opts.repo_root / "README.md"
+    readme_count = bump.write_readme_badges(plan.target, readme_path)
+    if readme_count:
+        _emit(f"bumped {readme_count} README badge(s) in {readme_path.name}")
     return EXIT_OK
 
 
@@ -453,7 +472,7 @@ def orchestrate(opts: ReleaseOptions) -> int:
 
     # Step 5+: bump + changelog. Dry-run previews; apply mutates.
     if opts.dry_run:
-        _preview_bump(plan)
+        _preview_bump(plan, opts)
         try:
             _preview_changelog(plan, opts)
         except RuntimeError as exc:

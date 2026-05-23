@@ -45,12 +45,30 @@ __all__ = ["__version__"]
 __version__ = "0.1.0"
 '''
 
+_DEFAULT_README = """# bqemulator
+
+[![PyPI](https://img.shields.io/pypi/v/bqemulator.svg?cacheSeconds=120&v=0.1.0)](https://pypi.org/project/bqemulator/)
+[![Python](https://img.shields.io/pypi/pyversions/bqemulator.svg?cacheSeconds=120&v=0.1.0)](https://pypi.org/project/bqemulator/)
+"""
+
 
 def _seed_init(tmp_path: Path, *, version: str = "0.1.0") -> Path:
     """Write a minimal ``__init__.py`` containing the supplied version."""
     init = tmp_path / "__init__.py"
     init.write_text(_DEFAULT_INIT.replace("0.1.0", version), encoding="utf-8")
     return init
+
+
+def _seed_readme(tmp_path: Path, *, version: str = "0.1.0") -> Path:
+    """Write a minimal ``README.md`` whose badge cache-bust matches ``version``."""
+    readme = tmp_path / "README.md"
+    readme.write_text(_DEFAULT_README.replace("0.1.0", version), encoding="utf-8")
+    return readme
+
+
+def _absent_readme(tmp_path: Path) -> Path:
+    """Return a path to a non-existent README — used to skip the badge step."""
+    return tmp_path / "no-readme.md"
 
 
 # ---------------------------------------------------------------------------
@@ -212,7 +230,7 @@ class TestCli:
         capsys: pytest.CaptureFixture[str],
     ) -> None:
         init = _seed_init(tmp_path, version="1.2.3")
-        rc = bump.main(["--print", "--file", str(init)])
+        rc = bump.main(["--print", "--file", str(init), "--readme", str(_absent_readme(tmp_path))])
         assert rc == bump.EXIT_OK
         captured = capsys.readouterr()
         assert captured.out.strip() == "1.2.3"
@@ -221,13 +239,25 @@ class TestCli:
 
     def test_check_does_not_write(self, tmp_path: Path) -> None:
         init = _seed_init(tmp_path, version="0.1.0")
-        rc = bump.main(["--next", "minor", "--check", "--file", str(init)])
+        rc = bump.main(
+            [
+                "--next",
+                "minor",
+                "--check",
+                "--file",
+                str(init),
+                "--readme",
+                str(_absent_readme(tmp_path)),
+            ],
+        )
         assert rc == bump.EXIT_OK
         assert "0.1.0" in init.read_text(encoding="utf-8")
 
     def test_apply_writes_new_version(self, tmp_path: Path) -> None:
         init = _seed_init(tmp_path, version="0.1.0")
-        rc = bump.main(["1.0.0", "--file", str(init)])
+        rc = bump.main(
+            ["1.0.0", "--file", str(init), "--readme", str(_absent_readme(tmp_path))],
+        )
         assert rc == bump.EXIT_OK
         assert '"1.0.0"' in init.read_text(encoding="utf-8")
 
@@ -237,7 +267,9 @@ class TestCli:
         capsys: pytest.CaptureFixture[str],
     ) -> None:
         init = _seed_init(tmp_path, version="0.5.0")
-        rc = bump.main(["0.1.0", "--file", str(init)])
+        rc = bump.main(
+            ["0.1.0", "--file", str(init), "--readme", str(_absent_readme(tmp_path))],
+        )
         assert rc == bump.EXIT_NOT_GREATER
         captured = capsys.readouterr()
         assert "not strictly greater" in captured.err
@@ -248,12 +280,119 @@ class TestCli:
         capsys: pytest.CaptureFixture[str],
     ) -> None:
         init = _seed_init(tmp_path, version="0.1.0")
-        rc = bump.main(["1.2.3-rc1", "--file", str(init)])
+        rc = bump.main(
+            ["1.2.3-rc1", "--file", str(init), "--readme", str(_absent_readme(tmp_path))],
+        )
         assert rc == bump.EXIT_USAGE
         captured = capsys.readouterr()
         assert "canonical X.Y.Z" in captured.err
 
     def test_missing_args_returns_usage_error(self, tmp_path: Path) -> None:
         init = _seed_init(tmp_path, version="0.1.0")
-        rc = bump.main(["--file", str(init)])
+        rc = bump.main(["--file", str(init), "--readme", str(_absent_readme(tmp_path))])
         assert rc == bump.EXIT_USAGE
+
+
+# ---------------------------------------------------------------------------
+# README badge cache-bust
+# ---------------------------------------------------------------------------
+
+
+class TestUpdateReadmeText:
+    """Pure-function contract of the badge regex substitution.
+
+    These tests pin behaviour callers depend on: the regex rewrites every
+    matched badge in one pass; an unmatched README is returned unchanged
+    with a ``0`` count; an already-bumped README is a textual no-op.
+    """
+
+    def test_both_badges_bumped_in_single_pass(self) -> None:
+        text = (
+            "[![PyPI](https://img.shields.io/pypi/v/bqemulator.svg"
+            "?cacheSeconds=120&v=1.0.1)](pypi)\n"
+            "[![Python](https://img.shields.io/pypi/pyversions/bqemulator.svg"
+            "?cacheSeconds=120&v=1.0.1)](pypi)\n"
+        )
+        updated, count = bump.update_readme_text(text, bump.Version(1, 0, 2))
+        assert count == 2
+        assert "v=1.0.1" not in updated
+        assert updated.count("v=1.0.2") == 2
+
+    def test_missing_pattern_is_no_op(self) -> None:
+        text = "# bqemulator\n\nNo badges here.\n"
+        updated, count = bump.update_readme_text(text, bump.Version(1, 0, 2))
+        assert count == 0
+        assert updated == text
+
+    def test_idempotent_substitution_byte_for_byte(self) -> None:
+        text = (
+            "[![PyPI](https://img.shields.io/pypi/v/bqemulator.svg"
+            "?cacheSeconds=120&v=1.0.2)](pypi)\n"
+        )
+        updated, count = bump.update_readme_text(text, bump.Version(1, 0, 2))
+        # Substitution still runs (count == 1), but result equals input.
+        assert count == 1
+        assert updated == text
+
+    def test_alternate_cache_seconds_value_still_matches(self) -> None:
+        # The regex is on ``cacheSeconds=\d+`` not the literal ``120`` —
+        # a future tuning of the camo TTL must not silently de-match.
+        text = "?cacheSeconds=900&v=0.9.5"
+        updated, count = bump.update_readme_text(text, bump.Version(1, 0, 0))
+        assert count == 1
+        assert updated == "?cacheSeconds=900&v=1.0.0"
+
+
+class TestWriteReadmeBadges:
+    """File-IO wrapper handles the messy real-world inputs cleanly."""
+
+    def test_writes_when_badges_change(self, tmp_path: Path) -> None:
+        readme = _seed_readme(tmp_path, version="1.0.1")
+        count = bump.write_readme_badges(bump.Version(1, 0, 2), readme)
+        assert count == 2
+        body = readme.read_text(encoding="utf-8")
+        assert body.count("v=1.0.2") == 2
+        assert "v=1.0.1" not in body
+
+    def test_idempotent_skips_write_when_already_at_target(
+        self,
+        tmp_path: Path,
+    ) -> None:
+        readme = _seed_readme(tmp_path, version="1.0.2")
+        mtime_before = readme.stat().st_mtime_ns
+        count = bump.write_readme_badges(bump.Version(1, 0, 2), readme)
+        assert count == 2  # matches found
+        # No write happened — mtime unchanged.
+        assert readme.stat().st_mtime_ns == mtime_before
+
+    def test_missing_pattern_is_silent_no_op(self, tmp_path: Path) -> None:
+        readme = tmp_path / "README.md"
+        readme.write_text("# Nothing to see here\n", encoding="utf-8")
+        mtime_before = readme.stat().st_mtime_ns
+        count = bump.write_readme_badges(bump.Version(1, 0, 2), readme)
+        assert count == 0
+        assert readme.stat().st_mtime_ns == mtime_before
+
+    def test_absent_file_returns_zero_no_raise(self, tmp_path: Path) -> None:
+        # Tolerant of a renamed/missing README — the version bump must
+        # not fail just because the badges moved out of the README.
+        count = bump.write_readme_badges(bump.Version(1, 0, 2), tmp_path / "absent.md")
+        assert count == 0
+
+    def test_cli_apply_bumps_init_and_readme_together(
+        self,
+        tmp_path: Path,
+        capsys: pytest.CaptureFixture[str],
+    ) -> None:
+        # End-to-end through ``main`` — the contract released
+        # ``release.py`` callers depend on: one CLI call, both files
+        # updated.
+        init = _seed_init(tmp_path, version="1.0.1")
+        readme = _seed_readme(tmp_path, version="1.0.1")
+        rc = bump.main(["1.0.2", "--file", str(init), "--readme", str(readme)])
+        assert rc == bump.EXIT_OK
+        assert '"1.0.2"' in init.read_text(encoding="utf-8")
+        assert "v=1.0.2" in readme.read_text(encoding="utf-8")
+        captured = capsys.readouterr()
+        assert "Bumped 1.0.1 -> 1.0.2" in captured.out
+        assert "Updated 2 README badge(s)" in captured.out

@@ -5,8 +5,14 @@ P4.c (2026-05-21) — first leg of the release-tooling triad (P5
 prerequisite). The version lives in a single source of truth at
 [`src/bqemulator/__init__.py`](../src/bqemulator/__init__.py) — hatchling
 re-uses it through `[tool.hatch.version] path = ...` in
-[`pyproject.toml`](../pyproject.toml), so this script touches one file
-only.
+[`pyproject.toml`](../pyproject.toml), so the canonical bump touches one
+file. A secondary in-place rewrite on
+[`README.md`](../README.md) keeps the shields.io PyPI / Python-versions
+badges' ``?cacheSeconds=120&v=X.Y.Z`` cache-bust query parameter in
+sync — that suffix changes GitHub camo's cache key so README readers
+see the new wheel without waiting ~24 h for the proxy to expire. The
+README rewrite is idempotent (no-op when the badges are already at the
+new version) and silent when the pattern is absent.
 
 Usage::
 
@@ -40,6 +46,15 @@ _REPO_ROOT = Path(__file__).resolve().parent.parent
 #: this file. Hard-coding the path keeps the script self-contained.
 VERSION_FILE = _REPO_ROOT / "src" / "bqemulator" / "__init__.py"
 
+#: README that hosts the shields.io PyPI + Python-versions badges
+#: bumped in lockstep with ``__version__``. The badge URL pattern
+#: matched by :data:`_README_BADGE_RE` carries a
+#: ``?cacheSeconds=120&v=X.Y.Z`` suffix; ``v=`` is a cache-bust query
+#: parameter the shields.io endpoint ignores but GitHub camo (the
+#: image proxy) keys its cache on, so changing it forces readers'
+#: browsers to fetch the fresh PyPI version immediately on release.
+README_FILE = _REPO_ROOT / "README.md"
+
 #: Match ``__version__ = "X.Y.Z"`` exactly (single or double quotes).
 #: The trailing group captures the canonical ``MAJOR.MINOR.PATCH`` form;
 #: prerelease + build-metadata suffixes are intentionally rejected.
@@ -51,6 +66,13 @@ _VERSION_LINE_RE = re.compile(
 #: Strict ``X.Y.Z`` regex used by :func:`parse_version`. Rejects pre-
 #: releases and build metadata so the tag namespace stays flat.
 _VERSION_RE = re.compile(r"^(\d+)\.(\d+)\.(\d+)$")
+
+#: Match the cache-bust suffix on README badge URLs. Group 1 captures
+#: the constant ``?cacheSeconds=<n>&v=`` prefix; the trailing triple is
+#: the version we replace. ``\d+`` on cacheSeconds avoids hard-coding
+#: the current ``120`` value — a future tuning of the camo TTL won't
+#: silently de-match the regex.
+_README_BADGE_RE = re.compile(r"(\?cacheSeconds=\d+&v=)\d+\.\d+\.\d+")
 
 #: Bump kinds accepted on the CLI as ``--next <kind>``. Order matters
 #: for argparse's ``choices`` display.
@@ -150,6 +172,45 @@ def write_new(new: Version, file: Path = VERSION_FILE) -> Version:
     return old
 
 
+def update_readme_text(text: str, new: Version) -> tuple[str, int]:
+    """Rewrite every cache-bust badge URL in ``text`` to point at ``new``.
+
+    Pure (no I/O): returns the rewritten body and the number of badges
+    rewritten. ``count == 0`` means the README had no matching
+    ``?cacheSeconds=...&v=X.Y.Z`` suffix; ``count == n`` for the same
+    version is still idempotent (the substituted bytes equal the
+    originals). Callers use the count purely for operator-facing
+    reporting — a missing badge pattern is not an error.
+    """
+    return _README_BADGE_RE.subn(rf"\g<1>{new}", text)
+
+
+def write_readme_badges(new: Version, file: Path = README_FILE) -> int:
+    """Update the README cache-bust badges to ``new``. Return # replaced.
+
+    The contract is intentionally tolerant: a missing README returns
+    ``0`` (it's a hand-edited file, not a build artefact, so silent
+    no-op is friendlier than ``FileNotFoundError``). Same for a README
+    that contains no cache-bust badges — returns ``0`` and writes
+    nothing. The only failure mode is permission / I/O against an
+    existing file, which propagates as ``OSError`` to the caller.
+
+    Idempotent: re-running with the same ``new`` against a README
+    already at that version performs the substitution (which is a
+    no-op byte-for-byte) and skips the write. The skip matters for
+    file-modification-time sensitive build systems and for the
+    operator's mental model of "this script bumped nothing".
+    """
+    if not file.exists():
+        return 0
+    text = file.read_text(encoding="utf-8")
+    updated, count = update_readme_text(text, new)
+    if count == 0 or updated == text:
+        return count
+    file.write_text(updated, encoding="utf-8")
+    return count
+
+
 def resolve_target(
     current: Version,
     *,
@@ -240,6 +301,17 @@ def main(argv: list[str] | None = None) -> int:
         default=VERSION_FILE,
         help=f"Version file path (default: {VERSION_FILE.relative_to(_REPO_ROOT)}).",
     )
+    parser.add_argument(
+        "--readme",
+        type=Path,
+        default=README_FILE,
+        help=(
+            "README path whose ``?cacheSeconds=N&v=X.Y.Z`` badge query "
+            f"params are bumped alongside ``__version__`` (default: "
+            f"{README_FILE.relative_to(_REPO_ROOT)}). Pass a non-existent "
+            "path to skip the README rewrite (useful for tests)."
+        ),
+    )
     args = parser.parse_args(argv)
 
     try:
@@ -274,6 +346,9 @@ def main(argv: list[str] | None = None) -> int:
 
     write_new(target, args.file)
     print(f"Bumped {current} -> {target} in {args.file}")
+    readme_count = write_readme_badges(target, args.readme)
+    if readme_count:
+        print(f"Updated {readme_count} README badge(s) in {args.readme}")
     return EXIT_OK
 
 
