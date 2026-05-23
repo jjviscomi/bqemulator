@@ -219,6 +219,32 @@ burns 10× the time and the actual error usually shows up cleaner
 under stderr from a local run than it does in a 60 MB CI log
 artifact.
 
+## Pre-PR gate (mandatory)
+
+The pre-commit gate above is the per-commit contract. **Before
+opening a PR** (or pushing a feature branch you intend to open a PR
+from), run the full `make verify` chain — `lint → quality-complexity
+→ test (unit + property + integration) → test-coverage → drift checks
+→ docker-build → test-e2e (Python + Node + Go + Java + bq CLI) →
+docs-build`. ~15-20 min locally.
+
+| Cost | Reason it's worth it |
+|---|---|
+| ~15-20 min wall-clock locally | A failing CI cycle on PR open is ~20-30 min, and you can't iterate while CI is mid-flight — you wait, fix, push, wait again. Catching the same failure locally saves the cycle. |
+| Covers what the pre-commit gate doesn't | `make verify` adds **docker-build** + **test-e2e × 5 clients** + the matrix-drift gates. The pre-commit gate skips these because they're too slow per-commit; per-PR they're table stakes. |
+| Catches integration drift CI catches the same way | If a refactor broke the Node client's wire-format expectations, CI surfaces it in test-e2e. The local run surfaces the same failure 15× faster than the push-rebase-wait loop. |
+
+The pre-commit gate stays the per-commit minimum (so multi-commit
+branches don't have to pay 20 min per commit). `make verify` is the
+"this is ready for review" handoff. CI re-runs the same gates on
+every push — so a green `make verify` locally and a CI restart on
+the open PR are checking exactly the same surface.
+
+When `make verify` fails locally, **do not open the PR** until the
+failure is fixed. Pushing-then-debugging-via-CI is exactly the
+anti-pattern the pre-commit-gate section above warns about; the
+pre-PR gate extends that contract to the slower checks.
+
 ## Review-thread protocol
 
 Every CodeRabbit, CodeQL ("github-advanced-security"), Dependabot,
@@ -251,6 +277,11 @@ ignored. Both steps, every time.
   `make test-patch-coverage` (patch ≥ 70%). The patch target is
   the local mirror of Codecov's `patch` status; running only
   `test-coverage` leaves the patch-coverage blind spot.
+- Open a PR without a green `make verify` locally first. The
+  pre-commit gate is per-commit; `make verify` is per-PR (covers
+  docker-build + test-e2e × 5 clients + matrix-drift gates that
+  the per-commit budget skips). Catching a failure in 20 min of
+  local CPU beats 20 min of CI + the push-wait-fix loop.
 - Commit a new function / class / branch without a unit test
   exercising it the same commit. The project-wide coverage gate
   passes even when diff-introduced lines are uncovered (the
