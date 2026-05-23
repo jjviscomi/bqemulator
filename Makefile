@@ -67,6 +67,57 @@ lint: ## Lint + typecheck + security scan
 	typos .
 
 # ---------------------------------------------------------------------------
+# Quality gates (non-blocking; see ADR 0035)
+# ---------------------------------------------------------------------------
+#
+# Three gates that ``ruff`` and the standard ``make lint`` chain don't
+# meaningfully enforce today:
+#
+#   - quality-complexity: xenon (radon wrapper) checks per-function
+#     cyclomatic-complexity rank. ruff's C901 / PLR0911 / PLR0912 /
+#     PLR0913 are all in pyproject's ignore list ("type-dispatch is
+#     naturally branchy"); xenon provides an absolute-rank ceiling
+#     without per-function noqa annotations.
+#
+#   - quality-duplication: jscpd (cross-file DRY). Nothing in the
+#     standard chain catches this — pylint's duplicate-code is the
+#     only other Python-native option and it's slower with weaker
+#     output. Requires node/npm for ``npx``; CI installs both.
+#
+#   - quality-dead-code: vulture, configured in pyproject.toml but
+#     previously unwired. Surfaces names not referenced anywhere.
+#
+# Wired non-blocking in CI (.github/workflows/code-quality.yml,
+# continue-on-error: true). Not part of ``make verify`` — that gate
+# stays the strict pre-merge contract. Promote-to-required is a
+# separate follow-up PR once thresholds + baselines are stable.
+
+.PHONY: quality-complexity
+quality-complexity: ## Cyclomatic-complexity ceiling via xenon (non-blocking)
+	# Baseline thresholds match the v1.0.2 codebase: project-wide
+	# average A (3.44), worst module C, worst function E (39 — the
+	# arrow_bridge ``_format_bq_value`` value-coercion switch). Any
+	# regression past these tiers fails the gate; today's code passes.
+	xenon --max-absolute E --max-modules C --max-average A src/bqemulator
+
+.PHONY: quality-duplication
+quality-duplication: ## Cross-file DRY check via jscpd (non-blocking)
+	# Requires ``npx`` on PATH (node/npm). ``-y`` auto-confirms the
+	# jscpd download on first run; ``@4`` pins the major version so
+	# the gate is reproducible (ADR 0035 documents the choice — a
+	# jscpd 5.x release can break our config / threshold semantics).
+	npx -y jscpd@4 --config .jscpd.json
+
+.PHONY: quality-dead-code
+quality-dead-code: ## Dead-name detection via vulture (non-blocking)
+	# Config + whitelist live in pyproject.toml [tool.vulture] and
+	# .vulture_whitelist.py.
+	vulture
+
+.PHONY: quality
+quality: quality-complexity quality-duplication quality-dead-code ## Run all non-blocking quality gates
+
+# ---------------------------------------------------------------------------
 # Tests
 # ---------------------------------------------------------------------------
 

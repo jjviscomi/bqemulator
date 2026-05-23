@@ -20,6 +20,43 @@ section and adds the release date.
 
 ## [Unreleased]
 
+### Added
+
+- **Non-blocking code-quality gates: complexity, duplication, dead code.**
+  Three concerns that the existing pre-commit chain (ruff + mypy +
+  bandit + pip-audit + interrogate + typos) doesn't meaningfully
+  enforce today now have observable CI signal:
+  - **`radon` + `xenon`** for per-function cyclomatic complexity
+    (`make quality-complexity`). Baseline thresholds picked against
+    the v1.0.2 codebase — `--max-absolute E --max-modules C --max-average A` —
+    so today's code passes; regression past those tiers fails. Fills
+    the gap left by ruff's intentionally-suppressed ``C901`` /
+    ``PLR0911`` / ``PLR0912`` / ``PLR0913`` (type-dispatch functions
+    are naturally branchy; xenon caps the worst case absolutely
+    without requiring per-function `noqa`).
+  - **`jscpd`** for cross-file DRY violations
+    (`make quality-duplication`). The one category nothing in the
+    stack covered. Threshold 1.0% — v1.0.2 baseline 0.36% (7 clones,
+    112 lines, all 11–22 lines and structurally template-shaped).
+    Wired via `npx -y jscpd@4` (major-version pin for reproducibility)
+    so the Python project takes on no permanent JS dep.
+  - **`vulture`** wired into the new `make quality-dead-code`
+    target. The dev-dep + `[tool.vulture]` config already existed;
+    it was never invoked. New `.vulture_whitelist.py` documents the
+    one current false positive (the reserved `use_cache` kwarg on
+    `execute_query_job`). Each future whitelist entry lands via PR
+    review only — that's the contract that keeps the gate
+    trustworthy.
+
+  All three run via a single `make quality` umbrella and the new
+  `.github/workflows/code-quality.yml` workflow (per-PR + push-to-main
+  + nightly + manual). Every step uses `continue-on-error: true` —
+  the gates are **non-blocking by design** for this PR. `make verify`
+  is unchanged. Promote-to-required is a separate follow-up PR once
+  the thresholds settle against `main`. See
+  [ADR 0035](docs/adr/0035-code-quality-gates.md) for the full design,
+  baselines, and follow-up checklist.
+
 ### Changed
 
 - **lychee retry budget bumped** in `.lychee.toml` — `max_retries` 2→4,

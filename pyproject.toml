@@ -191,6 +191,16 @@ dev = [
     # mirrors Codecov's ``patch`` status so patch-coverage drops
     # are caught **before** push, not after CI fails.
     "diff-cover>=9.0",
+    # Non-blocking quality gates (ADR 0035): radon measures per-function
+    # cyclomatic complexity + maintainability index; xenon wraps radon
+    # with hard-threshold rank gates (``A``..``F``) suitable for CI.
+    # Filling the gap left by ruff's intentionally-suppressed ``C901``,
+    # ``PLR0911``, ``PLR0912``, ``PLR0913`` — those rules ignore "type-
+    # dispatch is naturally branchy" cases per-call; xenon enforces
+    # an absolute-rank ceiling instead, which doesn't need per-function
+    # noqa annotations.
+    "radon>=6.0",
+    "xenon>=0.9",
 ]
 
 [project.urls]
@@ -581,7 +591,12 @@ skips = [
 # ---------------------------------------------------------------------------
 
 [tool.vulture]
-paths = ["src/bqemulator"]
+# The whitelist file lists names that vulture would otherwise flag as
+# dead but that are intentionally retained — each entry there has an
+# inline rationale comment. New whitelist entries land via PR review
+# only; that's the contract that lets us trust ``make quality-dead-code``
+# as a real signal once it's promoted to a required gate.
+paths = ["src/bqemulator", ".vulture_whitelist.py"]
 min_confidence = 80
 ignore_decorators = ["@app.*", "@router.*", "@pytest.fixture"]
 ignore_names = ["*Command", "*Request", "*Response"]

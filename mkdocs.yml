@@ -217,6 +217,7 @@ nav:
       - "0032 bq CLI as a fifth conformance client": adr/0032-bq-cli-conformance-client.md
       - "0033 Storage Read Arrow IPC bare-message contract": adr/0033-storage-read-arrow-ipc-bare-message-contract.md
       - "0034 Scio + Beam BigQueryIO routing against bqemulator": adr/0034-scio-beam-emulator-routing.md
+      - "0035 Non-blocking code-quality gates (complexity / duplication / dead code)": adr/0035-code-quality-gates.md
   - RFCs: rfcs/README.md
   - Examples:
       - Overview: examples/README.md
