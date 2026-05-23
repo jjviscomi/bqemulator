@@ -1,0 +1,97 @@
+name: Code quality
+
+# Non-blocking quality gates: cyclomatic complexity (xenon), DRY /
+# duplication (jscpd), dead code (vulture). Wired per ADR 0035.
+#
+# Every step uses ``continue-on-error: true`` for now — the gate is
+# informational. Promotion-to-required is a separate follow-up PR
+# once thresholds + baselines have a cycle on main to settle.
+#
+# Triggers match the rest of the repo's per-PR + nightly pattern:
+# - Pull requests touching code or quality config.
+# - Pushes to main (so the baseline run stays current).
+# - Nightly schedule so threshold drift surfaces even in a quiet week.
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - "src/**"
+      - "tests/**"
+      - "pyproject.toml"
+      - ".vulture_whitelist.py"
+      - ".jscpd.json"
+      - "Makefile"
+      - ".github/workflows/code-quality.yml"
+  push:
+    branches: [main]
+    paths:
+      - "src/**"
+      - "tests/**"
+      - "pyproject.toml"
+      - ".vulture_whitelist.py"
+      - ".jscpd.json"
+      - "Makefile"
+      - ".github/workflows/code-quality.yml"
+  schedule:
+    - cron: "13 7 * * *"  # 07:13 UTC — off the hour to avoid contention
+  workflow_dispatch:
+
+concurrency:
+  group: code-quality-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  quality:
+    name: Quality gates (non-blocking)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+      - uses: actions/setup-node@v6
+        with:
+          node-version: "20"
+      - name: Install dev deps
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[dev]"
+
+      - name: Cyclomatic complexity (xenon)
+        id: complexity
+        continue-on-error: true
+        run: make quality-complexity
+
+      - name: Cross-file duplication (jscpd)
+        id: duplication
+        continue-on-error: true
+        run: make quality-duplication
+
+      - name: Dead code (vulture)
+        id: dead-code
+        continue-on-error: true
+        run: make quality-dead-code
+
+      - name: Summarise outcomes
+        # Aggregated visibility — without this step the per-step
+        # ``continue-on-error: true`` would hide which gate actually
+        # tripped. The workflow itself still exits 0; the step
+        # outcomes go into the GitHub Actions summary.
+        run: |
+          {
+            echo "## Non-blocking quality-gate outcomes"
+            echo ""
+            echo "| Gate | Outcome |"
+            echo "|---|---|"
+            echo "| Cyclomatic complexity (xenon) | ${{ steps.complexity.outcome }} |"
+            echo "| Cross-file duplication (jscpd) | ${{ steps.duplication.outcome }} |"
+            echo "| Dead code (vulture) | ${{ steps.dead-code.outcome }} |"
+            echo ""
+            echo "These gates are non-blocking. Promotion to required check"
+            echo "is tracked as a follow-up — see ADR 0035."
+          } >> "$GITHUB_STEP_SUMMARY"

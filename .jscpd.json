@@ -1,0 +1,32 @@
+{
+  "_comment": [
+    "jscpd cross-file duplicate-code detection.",
+    "Wired by docs/adr/0035-code-quality-gates.md — DRY gate.",
+    "",
+    "Thresholds chosen against the v1.0.2 baseline:",
+    "  Project-wide duplication: 0.36% (7 clones, 112 lines).",
+    "  All current clones are <25 lines and structurally template-like",
+    "  (paired streaming strategies, route-handler CRUD shapes, etc.) —",
+    "  refactoring would introduce premature abstraction. Threshold set",
+    "  at 1% so today's baseline passes; regression that pushes the",
+    "  ratio above 1% fails the gate.",
+    "",
+    "min-lines 10 / min-tokens 70 are conservative for Python: catches",
+    "real copy-paste while ignoring trivially-similar imports / stubs.",
+    "Lower thresholds (5/40) generate too many template-shape hits."
+  ],
+  "pattern": "src/bqemulator/**/*.py",
+  "ignore": [
+    "**/tests/**",
+    "**/conformance/**",
+    "**/__pycache__/**",
+    "**/site/**",
+    "**/build/**"
+  ],
+  "reporters": ["consoleFull"],
+  "absolute": true,
+  "gitignore": true,
+  "min-lines": 10,
+  "min-tokens": 70,
+  "threshold": 1.0
+}
