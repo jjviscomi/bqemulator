@@ -749,7 +749,7 @@ class ScriptInterpreter:
         )
         rewritten = rewrite_unnest_offset(rewritten)
         expanded = expand_wildcard_tables(rewritten, self._project_id, self._ctx.catalog)
-        match self._translator.translate(expanded):
+        match self._translator.translate(expanded, caller=self._caller):
             case Ok(duckdb_sql):
                 pass
             case Err(error):
@@ -795,7 +795,7 @@ class ScriptInterpreter:
         )
         rewritten = rewrite_unnest_offset(rewritten)
         expanded = expand_wildcard_tables(rewritten, self._project_id, self._ctx.catalog)
-        match self._translator.translate(expanded):
+        match self._translator.translate(expanded, caller=self._caller):
             case Ok(duckdb_sql):
                 pass
             case Err(error):
@@ -837,7 +837,7 @@ class ScriptInterpreter:
         )
         rewritten = rewrite_unnest_offset(rewritten)
         expanded = expand_wildcard_tables(rewritten, self._project_id, self._ctx.catalog)
-        match self._translator.translate(expanded):
+        match self._translator.translate(expanded, caller=self._caller):
             case Ok(duckdb_sql):
                 pass
             case Err(error):

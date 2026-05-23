@@ -22,6 +22,71 @@ section and adds the release date.
 
 ### Added
 
+- **`SESSION_USER()` SQL function + canonical RAP-via-SESSION_USER
+  e2e coverage** (ADR 0038). The function was documented in the
+  surface inventory but had zero implementation and zero tests —
+  the rendered conformance-coverage matrix's "Exercised at the unit
+  tier" claim was aspirational. This PR makes it true.
+
+  Implementation: a new ``rewrite_session_user`` pre-translator
+  walks the SQLGlot AST and replaces every ``SessionUser`` node with
+  a string literal of the resolved caller email, before SQLGlot's
+  BigQuery → DuckDB transpile. Caller identity is threaded through
+  ``SQLTranslator.translate`` via a new optional ``caller`` kwarg;
+  five call sites updated to pass the ``CallerIdentity`` they
+  already construct (``jobs/executor.py``, three sites in
+  ``scripting/interpreter.py``, one in
+  ``grpc_api/read_servicer.py``). DuckDB's native ``SESSION_USER``
+  resolves to the literal ``'duckdb'`` — pre-translator
+  substitution is what prevents a confusing
+  ``SELECT SESSION_USER()`` → ``'duckdb'`` regression.
+
+  Resolution contract (per ADR 0038):
+  - ``user:<email>`` / ``serviceAccount:<email>`` / ``group:<email>``
+    / ``domain:<host>`` → strip prefix, return bare email/host.
+  - ``allUsers`` / ``allAuthenticatedUsers`` / unknown shape →
+    raw principal string passthrough (defensive only — these are
+    grantee-side identifiers, never caller identifiers).
+  - Unauthenticated fallback (``is_authenticated=False``) → the
+    literal ``"anonymous"`` sentinel, so RAP filters comparing
+    ``SESSION_USER()`` against a tenant key safely deny every row.
+
+  Coverage:
+  - **21 unit tests** in ``tests/unit/sql/rewriter/test_session_user.py``
+    pin the resolver contract per IAM-member shape + the rewriter's
+    AST walk (multiple call sites, idempotent re-runs, fast-path
+    no-op, lower-case spelling, string-literal-not-rewritten,
+    unparseable-SQL passthrough, view-body substitution).
+  - **5 new integration tests** in
+    ``tests/integration/test_row_access_policies.py`` exercise the
+    canonical
+    ``REGEXP_EXTRACT(SESSION_USER(), r'@(.+)$') = tenant_id`` RAP
+    filter through the in-process emulator with two callers + the
+    unauthenticated fallback + a service-account caller.
+  - **4 new e2e test files** (Python, Node.js, Go, Java) cover the
+    same RAP filter pattern through the official client libraries
+    against a live container. ``bq`` CLI is skipped per the
+    existing module docstring (the CLI doesn't set
+    ``X-Bqemu-Caller``); the skip rationale was extended to point
+    at the new e2e files.
+
+  Out of scope (documented in ADR 0038):
+  - ``CURRENT_USER`` and ``@@session.user`` (deprecated /
+    system-variable spellings of the same function).
+  - ``SESSION_USER()`` inside a SQL UDF body — UDFs are
+    pre-translated at definition time when no caller exists; the
+    function inside a UDF body folds to ``"anonymous"`` permanently.
+  - The Storage Read filter pre-pass at
+    ``grpc_api/read_servicer.py:122`` (``_build_filter_sql`` for the
+    ``row_restriction`` field) doesn't yet receive caller context —
+    folds to ``"anonymous"`` regardless of the actual caller.
+    The canonical SESSION_USER use is RAP filters, not Storage Read
+    row_restriction; documented as a known limitation.
+
+  See [ADR 0038](docs/adr/0038-session-user.md) for the full
+  decision record, the three implementation options considered, and
+  the unauthenticated-fallback rationale.
+
 - **OpenSSF Scorecard workflow + public badge.** New
   `.github/workflows/scorecard.yml` runs the official
   `ossf/scorecard-action` against `main` on every push, every

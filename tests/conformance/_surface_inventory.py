@@ -1226,7 +1226,8 @@ FUNCTIONS_CONDITIONAL = SurfaceCategory(
 _NONDETERMINISTIC_HASH: dict[str, str] = {
     "SESSION_USER": (
         "Excluded from the conformance corpus by ADR 0022 §1.2 — "
-        "session-state dependent. Exercised at the unit tier."
+        "session-state dependent. Exercised at the unit, integration, "
+        "and e2e × 4 client tiers (ADR 0038)."
     ),
     "GENERATE_UUID": (
         "Excluded from the conformance corpus by ADR 0022 §1.2 — "

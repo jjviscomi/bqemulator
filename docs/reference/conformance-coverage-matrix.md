@@ -41,7 +41,7 @@ These surface items are permanently outside the conformance corpus because their
 | Date / time / timestamp / datetime functions | [`CURRENT_DATETIME`](https://cloud.google.com/bigquery/docs/reference/standard-sql/date_functions) | Excluded from the conformance corpus by ADR 0022 §1.2 / §7 — wall-clock dependent. |
 | Date / time / timestamp / datetime functions | [`CURRENT_TIME`](https://cloud.google.com/bigquery/docs/reference/standard-sql/date_functions) | Excluded from the conformance corpus by ADR 0022 §1.2 / §7 — wall-clock dependent. |
 | Date / time / timestamp / datetime functions | [`CURRENT_TIMESTAMP`](https://cloud.google.com/bigquery/docs/reference/standard-sql/date_functions) | Excluded from the conformance corpus by ADR 0022 §1.2 / §7 — wall-clock dependent. The function is exercised in unit / integration tiers where the harness pins time. |
-| Hash / security functions | [`SESSION_USER`](https://cloud.google.com/bigquery/docs/reference/standard-sql/hash_functions) | Excluded from the conformance corpus by ADR 0022 §1.2 — session-state dependent. Exercised at the unit tier. |
+| Hash / security functions | [`SESSION_USER`](https://cloud.google.com/bigquery/docs/reference/standard-sql/hash_functions) | Excluded from the conformance corpus by ADR 0022 §1.2 — session-state dependent. Exercised at the unit, integration, and e2e × 4 client tiers (ADR 0038). |
 | Hash / security functions | [`GENERATE_UUID`](https://cloud.google.com/bigquery/docs/reference/standard-sql/hash_functions) | Excluded from the conformance corpus by ADR 0022 §1.2 — non-deterministic. Property-tested via Hypothesis for shape / uniqueness. |
 
 ## Variation depth — broad-but-shallow surfaces
@@ -577,7 +577,7 @@ The fastest single-session improvements come from these uncovered cells. Each is
 | [`SHA256`](https://cloud.google.com/bigquery/docs/reference/standard-sql/hash_functions) | 1 | 🟡 Sampled | happy×1 | [`standard_functions/hash_sha256`](https://github.com/jjviscomi/bqemulator/blob/main/tests/conformance/sql_corpus/standard_functions/hash_sha256) |
 | [`SHA512`](https://cloud.google.com/bigquery/docs/reference/standard-sql/hash_functions) | 1 | 🟡 Sampled | happy×1 | [`standard_functions/hash_sha512_basic`](https://github.com/jjviscomi/bqemulator/blob/main/tests/conformance/sql_corpus/standard_functions/hash_sha512_basic) |
 | [`SESSION_USER`](https://cloud.google.com/bigquery/docs/reference/standard-sql/hash_functions) _(excluded — non-deterministic)_ | n/a | ⚪ Excluded | n/a | _see [ADR 0022](../adr/0022-conformance-corpus-design.md) §1.2 / §7_ |
-|  |  |  |  | _Excluded from the conformance corpus by ADR 0022 §1.2 — session-state dependent. Exercised at the unit tier._ |
+|  |  |  |  | _Excluded from the conformance corpus by ADR 0022 §1.2 — session-state dependent. Exercised at the unit, integration, and e2e × 4 client tiers (ADR 0038)._ |
 | [`GENERATE_UUID`](https://cloud.google.com/bigquery/docs/reference/standard-sql/hash_functions) _(excluded — non-deterministic)_ | n/a | ⚪ Excluded | n/a | _see [ADR 0022](../adr/0022-conformance-corpus-design.md) §1.2 / §7_ |
 |  |  |  |  | _Excluded from the conformance corpus by ADR 0022 §1.2 — non-deterministic. Property-tested via Hypothesis for shape / uniqueness._ |
 

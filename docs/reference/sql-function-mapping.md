@@ -51,7 +51,7 @@ table below maps each BigQuery view to its rewriter function.
 > **Auto-generated.** Edit translation rules under [`src/bqemulator/sql/rules/`](https://github.com/jjviscomi/bqemulator/blob/main/src/bqemulator/sql/rules/) or rewriters under [`src/bqemulator/sql/rewriter/`](https://github.com/jjviscomi/bqemulator/blob/main/src/bqemulator/sql/rewriter/), then run `make function-mapping` to regenerate this block. The CI gate (`--check`) refuses to merge a PR whose committed registry has drifted from the live source. Per-rule docstring summaries are extracted as the cell text — if a cell reads wrong, edit the rule's docstring.
 
 - **Registered rules**: 92 (13 rule modules)
-- **Rewriter functions**: 23 (23 rewriter modules; the INFORMATION_SCHEMA rewriter has its own hand-maintained per-view table below)
+- **Rewriter functions**: 24 (24 rewriter modules; the INFORMATION_SCHEMA rewriter has its own hand-maintained per-view table below)
 
 ### Translation rules (post-transpile AST passes)
 
@@ -177,5 +177,6 @@ table below maps each BigQuery view to its rewriter function.
 | Pre-translator (UNNEST STRUCT aliases) | Propagate named-struct field aliases inside `UNNEST([...])` arrays | — | `rewrite_unnest_struct` |
 | Pre-translator (wildcard tables) | Expand every wildcard table reference in `bq_sql` | — | `expand_wildcard_tables` |
 | Other rewriter | Return a no-op statement when `bq_sql` is `ALTER TABLE ... SET OPTIONS(...)` | — | `rewrite_alter_table_set_options` |
+| Other rewriter | Pre-translate BigQuery SQL for the `SESSION_USER()` function | — | `rewrite_session_user` |
 
 <!-- END AUTO-GENERATED RULE REGISTRY -->

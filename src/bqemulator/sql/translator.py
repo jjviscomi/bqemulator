@@ -15,7 +15,7 @@ tasks concurrently.
 
 from __future__ import annotations
 
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 import sqlglot
 from sqlglot import exp
@@ -44,6 +44,7 @@ from bqemulator.sql.rewriter.partition_pseudo_columns import (
 )
 from bqemulator.sql.rewriter.range_sessionize import rewrite_range_sessionize
 from bqemulator.sql.rewriter.safe_helpers import rewrite_safe_helpers
+from bqemulator.sql.rewriter.session_user import rewrite_session_user
 from bqemulator.sql.rewriter.sha512 import rewrite_sha512
 from bqemulator.sql.rewriter.specialized_types import rewrite_specialized_types
 from bqemulator.sql.rewriter.string_helpers import rewrite_string_helpers
@@ -53,6 +54,9 @@ from bqemulator.sql.rewriter.timestamp_iso_helpers import (
 )
 from bqemulator.sql.rewriter.unnest_struct import rewrite_unnest_struct
 from bqemulator.sql.rules import TranslationRule, get_all_rules
+
+if TYPE_CHECKING:  # pragma: no cover
+    from bqemulator.row_access.identity import CallerIdentity
 
 _log = get_logger(__name__)
 
@@ -68,6 +72,25 @@ _UNSUPPORTED_KEYWORDS: frozenset[str] = frozenset(
         "ML.GENERATE_EMBEDDING",
     }
 )
+
+
+def _resolve_caller(caller: CallerIdentity | None) -> CallerIdentity:
+    """Return ``caller`` if supplied, else the unauthenticated fallback.
+
+    The fallback mirrors :data:`bqemulator.row_access.identity.DEFAULT_CALLER`
+    so the ``SESSION_USER()`` substitution is deterministic for legacy
+    call sites that haven't propagated identity yet —
+    ``SESSION_USER()`` → ``'anonymous'`` literal — instead of failing
+    the translation.
+
+    The import is deferred to function scope to avoid a circular
+    import (``row_access.identity`` → … → ``sql.translator``).
+    """
+    if caller is not None:
+        return caller
+    from bqemulator.row_access.identity import DEFAULT_CALLER, CallerIdentity
+
+    return CallerIdentity(principal=DEFAULT_CALLER, is_authenticated=False)
 
 
 class SQLTranslator:
@@ -97,6 +120,7 @@ class SQLTranslator:
         bq_sql: str,
         *,
         schema: dict[str, Any] | None = None,
+        caller: CallerIdentity | None = None,
         **kwargs: Any,  # noqa: ARG002 — reserved for future rewriter context
     ) -> Result[str, InvalidQueryError | UnsupportedFeatureError]:
         """Translate a BigQuery SQL string to DuckDB SQL.
@@ -111,6 +135,14 @@ class SQLTranslator:
                 aggregate-type preservation) consult. ``None`` disables
                 the annotation pass — rules that depend on operand
                 types simply skip.
+            caller: Optional :class:`~bqemulator.row_access.identity.CallerIdentity`
+                used by the ``SESSION_USER()`` pre-translator
+                (ADR 0038). ``None`` folds to the unauthenticated
+                fallback identity so legacy callers that haven't
+                propagated identity yet still get a deterministic
+                substitution (``SESSION_USER()`` →
+                ``'anonymous'`` literal) rather than a translation
+                error.
             **kwargs: Reserved for future rewriter context (e.g.
                       catalog handle for wildcard table expansion).
 
@@ -122,6 +154,17 @@ class SQLTranslator:
         for kw in _UNSUPPORTED_KEYWORDS:
             if kw in upper:
                 return Err(sql_unsupported(kw))
+
+        # 1a. ``SESSION_USER()`` substitution (ADR 0038). Runs first
+        #     among the pre-translators so the resolved email literal
+        #     is in the SQL before any other rewriter operates on it
+        #     (the row-access enforcement pass inlines policy filters
+        #     into the user's query; those filters can contain
+        #     ``SESSION_USER()`` and we want the substitution to win
+        #     before SQLGlot transpiles the BigQuery AST to DuckDB,
+        #     which would otherwise resolve ``SESSION_USER`` to the
+        #     literal ``'duckdb'``).
+        bq_sql = rewrite_session_user(bq_sql, _resolve_caller(caller))
 
         # 1b. ``ALTER TABLE ... SET OPTIONS(...)`` no-op. SQLGlot's
         #     BigQuery → DuckDB transpile drops the ``OPTIONS(...)``
