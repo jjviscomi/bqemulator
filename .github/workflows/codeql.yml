@@ -23,10 +23,18 @@ jobs:
         language: [python]
     steps:
       - uses: actions/checkout@v4
-      - uses: github/codeql-action/init@v4
+      # Pin ``github/codeql-action`` by commit SHA per the OpenSSF
+      # Scorecard alignment rule (AGENTS.md): only first-party
+      # ``actions/*`` may use floating major tags; everything else,
+      # including ``github/*``, gets a full SHA + trailing
+      # ``# vX.Y.Z`` comment. Dependabot already monitors
+      # ``.github/workflows/*.yml`` so this pin moves forward
+      # automatically. Bumps the Scorecard ``Pinned-Dependencies``
+      # check that PR #48 (ADR 0037) introduced.
+      - uses: github/codeql-action/init@7211b7c8077ea37d8641b6271f6a365a22a5fbfa # v4.36.0
         with:
           languages: ${{ matrix.language }}
           queries: security-extended
-      - uses: github/codeql-action/analyze@v4
+      - uses: github/codeql-action/analyze@7211b7c8077ea37d8641b6271f6a365a22a5fbfa # v4.36.0
         with:
           category: /language:${{ matrix.language }}

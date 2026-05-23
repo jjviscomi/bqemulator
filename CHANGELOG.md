@@ -151,6 +151,20 @@ section and adds the release date.
 
 ### Changed
 
+- **`github/codeql-action` pinned by full commit SHA** in
+  `.github/workflows/codeql.yml`. Previously used floating
+  `@v4` major tags for `init` and `analyze`, which AGENTS.md's
+  OpenSSF-alignment rule already prohibited for non-first-party
+  actions; surfaced as pre-existing tech debt in PR #48's
+  description (ADR 0037). Now pinned to
+  `github/codeql-action/{init,analyze}@7211b7c8077ea37d8641b6271f6a365a22a5fbfa # v4.36.0`
+  matching the `upload-sarif` pin the Scorecard workflow uses.
+  Bumps the OpenSSF Scorecard `Pinned-Dependencies` check on the
+  initial-publish run so the public score starts higher rather
+  than dragging in a follow-up. Dependabot already monitors
+  `.github/workflows/*.yml` so the SHA moves forward
+  automatically.
+
 - **lychee retry budget bumped** in `.lychee.toml` — `max_retries` 2→4,
   `retry_wait_time` 3s→10s. Calibrated against the v1.0.2 release CI
   cycle (PR #43, 2026-05-23) where lychee hit repeated `502 Bad Gateway`
