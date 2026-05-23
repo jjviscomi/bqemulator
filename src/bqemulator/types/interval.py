@@ -150,6 +150,24 @@ def _parse_compound(raw: str, fields: tuple[str, ...], sign: int) -> IntervalPar
     return IntervalParts(**parts)  # type: ignore[arg-type]
 
 
+def _parse_int_token(raw: str, *, field: str) -> int:
+    """Parse an INTERVAL block's int-typed token, normalising errors.
+
+    A bare ``int(raw)`` raises ``ValueError`` on a malformed literal,
+    which leaks out of the parser's documented contract — every
+    other parse failure surfaces as :class:`ValidationError` with a
+    pointing error message. This wrapper re-raises so callers can
+    rely on the single exception type without per-call try/except
+    churn.
+    """
+    try:
+        return int(raw)
+    except ValueError as exc:
+        raise ValidationError(
+            f"Cannot parse INTERVAL {field} {raw!r}: {exc}",
+        ) from exc
+
+
 def _consume_year_month_block(
     blocks: list[str],
     pos: int,
@@ -170,12 +188,12 @@ def _consume_year_month_block(
     token = blocks[pos]
     if "years" in fields and "months" in fields and "-" in token and not token.startswith("-"):
         yr_s, mo_s = token.split("-", 1)
-        out["years"] = int(yr_s)
-        out["months"] = int(mo_s)
+        out["years"] = _parse_int_token(yr_s, field="years")
+        out["months"] = _parse_int_token(mo_s, field="months")
     elif "years" in fields:
-        out["years"] = int(token)
+        out["years"] = _parse_int_token(token, field="years")
     else:  # months only
-        out["months"] = int(token)
+        out["months"] = _parse_int_token(token, field="months")
     return pos + 1
 
 
@@ -196,7 +214,7 @@ def _consume_day_block(
     token = blocks[pos]
     if ":" in token:
         return pos
-    out["days"] = int(token)
+    out["days"] = _parse_int_token(token, field="days")
     return pos + 1
 
 
@@ -231,7 +249,7 @@ def _consume_time_block_segments(
                     f"Cannot parse INTERVAL seconds {raw_value!r}: {exc}",
                 ) from exc
         else:
-            out[field] = int(raw_value)
+            out[field] = _parse_int_token(raw_value, field=field)
 
 
 def _consume_time_block(
@@ -252,7 +270,7 @@ def _consume_time_block(
         return pos
     token = blocks[pos]
     if len(time_fields) == 1:
-        out[time_fields[0]] = int(token)
+        out[time_fields[0]] = _parse_int_token(token, field=time_fields[0])
     else:
         _consume_time_block_segments(token, time_fields, out)
     return pos + 1

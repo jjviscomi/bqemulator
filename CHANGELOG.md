@@ -97,6 +97,36 @@ section and adds the release date.
   audit table, per-function refactor results, and the bucket-A /
   bucket-B refactor patterns.
 
+### Fixed
+
+- **`_coerce_arrow_binary` (REST `tabledata.insertAll` BYTES path):
+  strict base64 validation + clear errors for non-string inputs.**
+  Previously the helper called `base64.b64decode(value)` without
+  `validate=True`, which silently produced partial bytes on malformed
+  input, AND fell through to `bytes(value)` for any non-string type
+  (which would convert iterables of ints — masking real caller
+  bugs). Now: strings go through `base64.b64decode(value, validate=True)`
+  (matching BigQuery's `400 invalid: Could not decode bytes` on bad
+  payloads); `bytes` / `bytearray` are passed through unchanged
+  (preserves the Storage Write proto path in
+  `streaming/proto_deserializer.py` that feeds proto-decoded BYTES
+  fields here); any other type raises `TypeError` with a clear
+  message. New unit tests cover all three branches plus the
+  pre-existing happy path.
+- **INTERVAL literal parsing: bad integer tokens now raise
+  `ValidationError` instead of leaking `ValueError`.** The
+  compound-parser path (`_consume_blocks` and helpers) used bare
+  `int(...)` calls on user-supplied tokens; the wrapping
+  `parse_interval_literal` documented `ValidationError` as the
+  parse-failure exception but the bare conversion bypassed it on
+  the `_consume_blocks` path. A new `_parse_int_token(raw, field=...)`
+  helper centralises the `int(...) + try/except ValueError →
+  raise ValidationError` pattern; all year / month / day / hour /
+  minute call sites now route through it. New
+  `test_invalid_inputs_raise` cases cover the year, month, day,
+  hour, and minute parse-failure paths that previously leaked
+  `ValueError`.
+
 ## [1.0.2] — 2026-05-23
 
 ### Fixed

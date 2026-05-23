@@ -375,12 +375,35 @@ def _coerce_arrow_boolean(value: Any, _arrow_type: pa.DataType, _field: pa.Field
 
 
 def _coerce_arrow_binary(value: Any, _arrow_type: pa.DataType, _field: pa.Field | None) -> Any:
-    """Coerce a BigQuery BYTES value (base64 string) to Python ``bytes``."""
+    """Coerce a BigQuery BYTES value to Python ``bytes``.
+
+    Accepts two well-defined shapes:
+
+    * ``str`` — base64-encoded, the REST/insertAll wire form. Decoded
+      with ``validate=True`` so malformed base64 raises
+      ``binascii.Error`` (a ``ValueError`` subclass) rather than
+      silently producing partial bytes. Mirrors real BigQuery's
+      ``400 invalid: Could not decode bytes`` on bad payloads.
+    * ``bytes`` / ``bytearray`` — passed through unchanged. The Storage
+      Write proto path (``streaming/proto_deserializer.py``) feeds
+      proto-decoded BYTES fields here as raw ``bytes``; that flow has
+      already validated the wire encoding upstream and a strict
+      base64 check would mis-fire on the binary payload.
+
+    Any other type raises ``TypeError`` — previously such values went
+    through ``bytes(value)`` which tolerated iterables of ints and
+    masked real bugs. Strictness here matches the BigQuery contract
+    and surfaces caller errors loudly.
+    """
     import base64
 
     if isinstance(value, str):
-        return base64.b64decode(value)
-    return bytes(value)
+        return base64.b64decode(value, validate=True)
+    if isinstance(value, (bytes, bytearray)):
+        return bytes(value)
+    raise TypeError(
+        f"BYTES value must be a base64 str or bytes/bytearray, got {type(value).__name__}",
+    )
 
 
 def _coerce_arrow_list(value: Any, arrow_type: pa.DataType, _field: pa.Field | None) -> Any:

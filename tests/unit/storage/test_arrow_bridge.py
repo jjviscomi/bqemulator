@@ -466,6 +466,37 @@ class TestBqRowsToArrow:
         table = bq_rows_to_arrow(rows, schema)
         assert table.column("b")[0].as_py() == b"\x01\x02"
 
+    def test_binary_passes_through_bytes(self) -> None:
+        """Storage Write proto path feeds BYTES fields as raw ``bytes``."""
+        schema = pa.schema([pa.field("b", pa.binary())])
+        rows = [{"json": {"b": b"\x01\x02\x03"}}]
+        table = bq_rows_to_arrow(rows, schema)
+        assert table.column("b")[0].as_py() == b"\x01\x02\x03"
+
+    def test_binary_malformed_base64_raises(self) -> None:
+        """Bad base64 surfaces as a ``ValueError`` (binascii.Error subclass).
+
+        Matches real BigQuery's ``400 invalid: Could not decode bytes``.
+        Pre-refactor behavior silently produced partial bytes.
+        """
+        import binascii
+
+        schema = pa.schema([pa.field("b", pa.binary())])
+        rows = [{"json": {"b": "not-valid-base64!!"}}]
+        with pytest.raises((binascii.Error, ValueError)):
+            bq_rows_to_arrow(rows, schema)
+
+    def test_binary_rejects_unsupported_type(self) -> None:
+        """Anything other than str / bytes / bytearray raises ``TypeError``.
+
+        Pre-refactor behavior went through ``bytes(value)`` which
+        tolerated iterables of ints and masked real bugs.
+        """
+        schema = pa.schema([pa.field("b", pa.binary())])
+        rows = [{"json": {"b": 42}}]
+        with pytest.raises(TypeError, match="BYTES value must be"):
+            bq_rows_to_arrow(rows, schema)
+
     def test_struct_coercion(self) -> None:
         struct_type = pa.struct(
             [
