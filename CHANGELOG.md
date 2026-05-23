@@ -20,6 +20,19 @@ section and adds the release date.
 
 ## [Unreleased]
 
+### Changed
+
+- **lychee retry budget bumped** in `.lychee.toml` — `max_retries` 2→4,
+  `retry_wait_time` 3s→10s. Calibrated against the v1.0.2 release CI
+  cycle (PR #43, 2026-05-23) where lychee hit repeated `502 Bad Gateway`
+  from `github.com/.../blob/main/...` source-tree URLs and the
+  prior 2×3s retry budget couldn't outlast the transient window.
+  Four retries × 10s give a ~40-second total budget per failing URL,
+  which absorbs the typical 30-60s blob-render transient without
+  masking real outages (adding `502` to the `accept` list was
+  rejected — a renamed repo would 502 persistently and we want to
+  know).
+
 ## [1.0.2] — 2026-05-23
 
 ### Fixed
