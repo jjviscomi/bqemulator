@@ -2870,6 +2870,10 @@
       
         
       
+        
+      
+        
+      
     
     
     
@@ -3811,6 +3815,62 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../adr/0033-storage-read-arrow-ipc-bare-message-contract/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0033 Storage Read Arrow IPC bare-message contract
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../adr/0034-scio-beam-emulator-routing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0034 Scio + Beam BigQueryIO routing against bqemulator
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -4525,10 +4585,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#known-limitation-running-beam-bigqueryio-end-to-end-against-bqemulator" class="md-nav__link">
+  <a href="#how-the-pipeline-runs-end-to-end-against-bqemulator-v102" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Known limitation — running Beam BigQueryIO end-to-end against bqemulator
+        How the pipeline runs end-to-end against bqemulator (v1.0.2+)
       
     </span>
   </a>
@@ -4573,6 +4633,17 @@
     <span class="md-ellipsis">
       
         What to look for
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#adapting-this-to-your-own-pipeline" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Adapting this to your own pipeline
       
     </span>
   </a>
@@ -4879,10 +4950,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#known-limitation-running-beam-bigqueryio-end-to-end-against-bqemulator" class="md-nav__link">
+  <a href="#how-the-pipeline-runs-end-to-end-against-bqemulator-v102" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Known limitation — running Beam BigQueryIO end-to-end against bqemulator
+        How the pipeline runs end-to-end against bqemulator (v1.0.2+)
       
     </span>
   </a>
@@ -4933,6 +5004,17 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#adapting-this-to-your-own-pipeline" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Adapting this to your own pipeline
+      
+    </span>
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -4970,79 +5052,115 @@
 <p>A minimal <a href="https://github.com/spotify/scio">Scio</a> pipeline that
 writes a customers table to BigQuery and reads it back. The Scala
 source under <code>src/main/scala/</code> is production-shaped — what you'd run
-against real BigQuery or Dataflow today.</p>
+against real BigQuery or Dataflow today, with a single optional flag
+for the emulator-test path.</p>
 <h2 id="why-this-matters">Why this matters<a class="headerlink" href="#why-this-matters" title="Permanent link">&para;</a></h2>
 <p>Scio is the canonical Scala-on-Beam idiom — most Beam-on-JVM workloads
 on Google's stack run through it. Targeting it against <code>bqemulator</code>
 means engineering teams can run the same job locally that they run in
 Dataflow, without spinning up a real BigQuery dataset.</p>
-<h2 id="known-limitation-running-beam-bigqueryio-end-to-end-against-bqemulator">Known limitation — running Beam BigQueryIO end-to-end against bqemulator<a class="headerlink" href="#known-limitation-running-beam-bigqueryio-end-to-end-against-bqemulator" title="Permanent link">&para;</a></h2>
-<p>Running <code>CustomersPipeline.run</code> against the emulator from inside
-the test JVM hits <strong>three independent blockers</strong>, surfaced during
-the v1.0.1 investigation
-(<a href="https://github.com/jjviscomi/bqemulator/issues/17">#17</a>):</p>
+<h2 id="how-the-pipeline-runs-end-to-end-against-bqemulator-v102">How the pipeline runs end-to-end against bqemulator (v1.0.2+)<a class="headerlink" href="#how-the-pipeline-runs-end-to-end-against-bqemulator-v102" title="Permanent link">&para;</a></h2>
+<p>Beam 2.55.1's Java SDK has no built-in <code>BIGQUERY_EMULATOR_HOST</code>
+support (the Go SDK does — see
+<a href="https://github.com/apache/beam/pull/34037">apache/beam#34037</a> — but
+the Java side never adopted it). v1.0.2 closes
+<a href="https://github.com/jjviscomi/bqemulator/issues/17">#17</a> by wiring a
+test-services hook directly into the scio example, with no
+bqemulator-side code change:</p>
 <ol>
-<li><strong>Endpoint routing — works.</strong> <code>--bigQueryEndpoint=http://host:port</code>
-   <em>does</em> set the Apiary <code>Bigquery</code> client's <code>rootUrl</code>
-   (verified locally via auth-failure stack traces confirming the
-   override applied). The original v1.0.0 hypothesis that
-   <code>--bigQueryEndpoint</code> was ignored turned out to be wrong;
-   however, the next two issues still bite.</li>
-<li><strong>Auth refresh fires before the redirected call.</strong> With
-   <code>--bigQueryEndpoint</code> set, Beam still invokes
-   <code>OAuth2Credentials.refresh()</code> at request time. The refresh
-   <code>400</code>s against <code>oauth2.googleapis.com</code> <em>before</em> the redirected
-   HTTP call ever fires.
+<li><strong><code>CustomersPipeline.run</code> accepts an optional <code>--bqEmulatorEndpoint</code>.</strong>
+   Production callers (real BigQuery / Dataflow) don't pass the flag
+   and take scio's idiomatic <code>saveAsBigQueryTable(...)</code> branch
+   unchanged. When the flag IS present, the pipeline drops to raw
+   <code>BigQueryIO.writeTableRows().withTestServices(
+   EmulatorBigQueryServices(endpoint))</code> for the BQ-traffic redirect.</li>
+<li><strong><code>EmulatorBigQueryServices</code></strong> (in this example, at
+   <code>src/main/scala/org/apache/beam/sdk/io/gcp/bigquery/</code>) extends
+   Beam's <code>BigQueryServicesImpl</code> and overrides <code>getJobService</code> /
+   <code>getDatasetService</code> to construct the Apiary <code>Bigquery</code> client with
+   <code>setRootUrl(emulator)</code>. The class lives in Beam's package so it
+   can reach the <code>@VisibleForTesting</code> constructors on
+   <code>JobServiceImpl</code> / <code>DatasetServiceImpl</code> that accept a pre-built
+   client.</li>
+<li><strong>A <code>fake-gcs-server</code> sidecar</strong> (<a href="https://github.com/fsouza/fake-gcs-server">fsouza/fake-gcs-server</a>)
+   handles GCS staging for Beam's default <code>BATCH_LOADS</code> write method.
+   The spec brings both containers up on a shared testcontainers
+   network and bind-mounts a single host directory into both at their
+   respective storage roots — so files Beam stages to
+   <code>gs://bqemu-staging/...</code> materialise on disk where bqemulator's
+   existing <code>BQEMU_GCS_LOCAL_ROOT</code> shim resolves them.</li>
+<li><strong>Auth suppression via Beam's <code>NoopCredentialFactory</code></strong> —
    <code>--gcpCredentialFactoryClass=org.apache.beam.sdk.extensions.gcp.auth.NoopCredentialFactory</code>
-   is the documented escape hatch, but doesn't fully suppress the
-   discovery chain when application-default credentials exist on
-   the host (gcloud SDK auto-detects them past the flag).</li>
-<li><strong>BigQueryIO.Write defaults to BATCH_LOADS — needs GCS.</strong> Bounded
-   pipelines stage rows to GCS before invoking BigQuery LOAD jobs.
-   The emulator doesn't expose a GCS-compatible shim Beam can stage
-   to; forcing <code>Method.STREAMING_INSERTS</code> would bypass GCS but
-   requires changing the <code>CustomersPipeline</code> source and pulls in
-   a different routing branch in BigQueryIO with its own quirks.</li>
+   short-circuits <code>OAuth2Credentials.refresh()</code> so no token grant
+   fires against <code>oauth2.googleapis.com</code>. The example's <code>build.sbt</code>
+   sets <code>CLOUDSDK_CONFIG</code> and <code>GOOGLE_APPLICATION_CREDENTIALS</code> to
+   empty values as belt-and-suspenders defence on developer laptops
+   with stale <code>gcloud auth application-default login</code> state.</li>
 </ol>
-<p><strong>The pipeline source itself remains correct.</strong> Point it at real
-BigQuery (Dataflow) or a long-lived bqemulator on a stable port
-+ a real GCS bucket and it runs end-to-end.</p>
-<p>Tracked for v1.0.2+. Likely path: integrate a GCS emulator
-(e.g. <a href="https://github.com/fsouza/fake-gcs-server">fsouza/fake-gcs-server</a>)
-for staging + full auth-suppression chain + decide between staying
-on <code>BATCH_LOADS</code> (via GCS shim) or pivoting to <code>STREAMING_INSERTS</code>.</p>
+<p>See <a href="../../../adr/0034-scio-beam-emulator-routing/">ADR 0034</a> for the
+full design — alternatives considered, source-of-truth references in
+Beam, and consequences.</p>
 <h2 id="what-the-spec-exercises">What the spec exercises<a class="headerlink" href="#what-the-spec-exercises" title="Permanent link">&para;</a></h2>
-<p>Until #17 lands, the ScalaTest spec exercises the <strong>wiring</strong> that
-bqemulator owns and that Scio users actually depend on:</p>
+<p>The ScalaTest spec
+(<a href="src/test/scala/com/example/bqemu/CustomersPipelineSpec.scala"><code>CustomersPipelineSpec</code></a>)
+drives the real <code>CustomersPipeline.run</code> and asserts:</p>
 <ul>
-<li>bqemulator container starts and <code>/healthz</code> returns <code>200</code>.</li>
-<li>Dataset creation via the REST surface succeeds (status in
-  <code>{200, 201, 409}</code> — 409 covers idempotent re-runs).</li>
-<li>The dataset shows up on the <code>/bigquery/v2/projects/{project}/datasets</code>
-  listing endpoint.</li>
+<li>bqemulator + fake-gcs-server both start.</li>
+<li>Dataset creation via the REST surface succeeds (idempotent —
+  <code>{200, 201, 409}</code>).</li>
+<li><code>CustomersPipeline.run</code> returns 3 (the rows it intended to write).</li>
+<li>A REST <code>SELECT COUNT(*)</code> against
+  <code>\</code>bqemu-demo`.scio_demo.customers` returns 3 — confirming the
+  LOAD job actually landed the rows on disk.</li>
 </ul>
-<p>The end-to-end <code>CustomersPipeline.run(args)</code> assertion will return to
-the spec once #17 is resolved.</p>
+<p>The pipeline source itself stays production-ready: pointed at real
+BigQuery (Dataflow) with no <code>--bqEmulatorEndpoint</code>, the same code
+takes the scio path and writes via the real GCS staging bucket.</p>
 <h2 id="layout">Layout<a class="headerlink" href="#layout" title="Permanent link">&para;</a></h2>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>build.sbt                                             — sbt build definition
 </span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>project/build.properties                              — sbt version pin
 </span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>src/main/scala/com/example/bqemu/CustomersPipeline.scala
-</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>src/test/scala/com/example/bqemu/CustomersPipelineSpec.scala
+</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>src/main/scala/org/apache/beam/sdk/io/gcp/bigquery/EmulatorBigQueryServices.scala
+</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>src/test/scala/com/example/bqemu/CustomersPipelineSpec.scala
 </span></code></pre></div>
 <h2 id="run">Run<a class="headerlink" href="#run" title="Permanent link">&para;</a></h2>
 <div class="language-bash highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>make<span class="w"> </span><span class="nb">test</span>
 </span></code></pre></div>
-<p><code>make test</code> runs <code>sbt test</code>. Requires Docker for the Testcontainers
-emulator.</p>
+<p><code>make test</code> runs <code>sbt test</code>. Requires Docker (for Testcontainers to
+spin up the bqemulator + fake-gcs-server pair).</p>
 <h2 id="what-to-look-for">What to look for<a class="headerlink" href="#what-to-look-for" title="Permanent link">&para;</a></h2>
 <ul>
 <li><code>build.sbt</code> holds the Jackson stack at <code>2.14.3</code> via
   <code>dependencyOverrides</code>. Scio 0.14.4's Scala Jackson module is
   pinned to 2.14.x; transitive deps drag in jackson-databind 2.16.x
   and the runtime guard refuses to load against the mismatch.</li>
-<li><code>BqemuContainer</code> is a one-line subclass that resolves Scala 2's
-  <code>Nothing</code> self-type collapse on Java's <code>GenericContainer&lt;SELF&gt;</code>.</li>
+<li><code>testcontainers</code> is at 1.21.4 — Docker 29+ rejects docker-java
+  clients announcing API &lt; 1.40, and the 1.20.x line still ships an
+  older shaded docker-java that trips that check on modern Docker
+  Desktop. Bumping to 1.21.x fixes it.</li>
+<li>The <code>EmulatorBigQueryServices</code> Scala file lives in Beam's package
+  (<code>org.apache.beam.sdk.io.gcp.bigquery</code>) — Java's package scoping
+  is by <em>package</em>, not <em>JAR</em>, so the split-package access compiles
+  and runs cleanly. This is the same idiom Beam's own test suite
+  uses for the <code>BigQueryServicesImpl</code> subclasses.</li>
+<li><code>BqemuContainer</code> and <code>FakeGcsContainer</code> are one-line subclasses
+  that resolve Scala 2's <code>Nothing</code> self-type collapse on Java's
+  <code>GenericContainer&lt;SELF&gt;</code>.</li>
+<li>The spec's <code>runPipelineOrDumpDetail</code> wrapper exists because Beam's
+  BATCH_LOADS <code>finishBundle</code> collapses every per-writer close
+  failure into a single <code>IOException("Failed to close some
+  writers")</code> and stashes the real causes as suppressed exceptions —
+  the wrapper prints the full chain so a debug session starting
+  from a green test failure doesn't lose the underlying GCS error.</li>
 </ul>
+<h2 id="adapting-this-to-your-own-pipeline">Adapting this to your own pipeline<a class="headerlink" href="#adapting-this-to-your-own-pipeline" title="Permanent link">&para;</a></h2>
+<p>The <code>EmulatorBigQueryServices</code> class and the fake-gcs-server sidecar
+recipe both generalise. Copy the file under your own
+<code>src/main/scala/org/apache/beam/sdk/io/gcp/bigquery/</code> and call
+<code>BigQueryIO.Write.withTestServices(new
+EmulatorBigQueryServices(emulatorEndpoint))</code> from your test-mode
+branch. The sidecar pattern (shared bind mount + <code>--gcsEndpoint=...storage/v1/</code>)
+is documented in the spec.</p>
 
 
 

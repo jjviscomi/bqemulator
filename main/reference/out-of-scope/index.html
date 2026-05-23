@@ -2299,6 +2299,17 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#google-cloud-storage-emulation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Google Cloud Storage emulation
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#native-windows-containers" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -3160,6 +3171,10 @@
   
     
     
+      
+        
+      
+        
       
         
       
@@ -4153,6 +4168,62 @@
     
   
     0032 bq CLI as a fifth conformance client
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../adr/0033-storage-read-arrow-ipc-bare-message-contract/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0033 Storage Read Arrow IPC bare-message contract
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../adr/0034-scio-beam-emulator-routing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0034 Scio + Beam BigQueryIO routing against bqemulator
   
 
     
@@ -5361,6 +5432,17 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#google-cloud-storage-emulation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Google Cloud Storage emulation
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#native-windows-containers" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -6096,6 +6178,41 @@ other job fields a script-side audit needs:</p>
 extension for INFORMATION_SCHEMA). Goccy's
 <code>bigquery-emulator</code> also defers this surface; the emulator's
 parity-with-goccy stance keeps it out of scope.</p>
+<h3 id="google-cloud-storage-emulation">Google Cloud Storage emulation<a class="headerlink" href="#google-cloud-storage-emulation" title="Permanent link">&para;</a></h3>
+<p><strong>Status</strong>: Excluded permanently — the emulator's charter is BigQuery,
+not GCS.</p>
+<p>bqemulator implements the BigQuery REST + gRPC surface. Real BigQuery
+treats Google Cloud Storage as an external service; the emulator
+follows the same separation. Implementing a GCS HTTP/JSON-API surface
+inside the emulator would expand scope from "BigQuery" to "BigQuery +
+GCS" — a substantially larger maintenance surface for a feature real
+BigQuery doesn't include.</p>
+<p>The emulator's existing <code>BQEMU_GCS_LOCAL_ROOT</code> shim
+(<a href="../../adr/0027-load-extract-avro-orc/">ADR 0027</a>) is a <em>filesystem
+resolver</em> for <code>gs://</code> URIs that appear in LOAD / EXTRACT
+<code>sourceUris</code> — it maps <code>gs://bucket/path</code> to a local filesystem
+path, so a test that pre-stages files on disk can load them. It is
+not a GCS API emulator. Anything that needs the actual GCS JSON API
+(Beam's <code>BigQueryIO.Write</code> BATCH_LOADS staging step, the Java SDK's
+<code>Storage.objects.insert</code>, signed URLs, multipart uploads) must
+target a separate GCS emulator.</p>
+<p><strong>Workaround</strong> for Beam BigQueryIO BATCH_LOADS specifically:
+<a href="https://github.com/fsouza/fake-gcs-server">fsouza/fake-gcs-server</a>
+ships a Docker image that implements the GCS HTTP/JSON API and stores
+objects at <code>{root}/{bucket}/{object}</code> — byte-identical with
+<code>BQEMU_GCS_LOCAL_ROOT</code>'s expected layout. The scio example
+(<a href="../../examples/java/scio/"><code>docs/examples/java/scio/</code></a>) brings
+both containers up with a shared bind mount: Beam stages BATCH_LOADS
+shards via fake-gcs-server (which materialises them on disk),
+bqemulator's LOAD job reads the same bytes via its filesystem
+resolver. See <a href="../../adr/0034-scio-beam-emulator-routing/">ADR 0034</a>
+for the full design.</p>
+<p><strong>Reconsidering</strong>: an in-process GCS emulation surface would need an
+<a href="../../rfcs/">RFC</a> demonstrating use cases the sidecar pattern
+does not cover. The sidecar adds one container to a test fixture; the
+in-process alternative would add an entire HTTP/JSON API + multipart
+upload + signed URL surface to bqemulator. The cost/benefit currently
+favours the sidecar.</p>
 <h3 id="native-windows-containers">Native Windows containers<a class="headerlink" href="#native-windows-containers" title="Permanent link">&para;</a></h3>
 <p>The published image (<code>ghcr.io/jjviscomi/bqemulator</code>) is a multi-arch
 Linux image (<code>linux/amd64,linux/arm64</code>). A separate Windows-container

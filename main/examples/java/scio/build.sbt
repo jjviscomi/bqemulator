@@ -24,9 +24,9 @@ lazy val root = (project in file("."))
       "org.scalatest" %% "scalatest" % "3.2.18" % Test,
       // ``testcontainers`` 1.19.x ships docker-java 1.32 which only
       // talks to docker daemon API < 1.40 — modern Docker Desktop
-      // (27+) returns ``client version 1.32 is too old``. 1.20.x
+      // (27+) returns ``client version 1.32 is too old``. 1.21.x
       // bundles the newer docker-java that handles current daemons.
-      "org.testcontainers" % "testcontainers" % "1.20.4" % Test
+      "org.testcontainers" % "testcontainers" % "1.21.4" % Test
     ),
     dependencyOverrides ++= Seq(
       "com.fasterxml.jackson.core" % "jackson-core" % jacksonVersion,
@@ -35,5 +35,23 @@ lazy val root = (project in file("."))
       "com.fasterxml.jackson.module" %% "jackson-module-scala" % jacksonVersion
     ),
     Test / parallelExecution := false,
-    Test / fork := true
+    Test / fork := true,
+    // Defense in depth against host-side gcloud credentials leaking
+    // into the test JVM. Beam's ``--gcpCredentialFactoryClass=Noop...``
+    // is sufficient on its own (verified against Beam 2.55.1's
+    // ``GcpUserCredentialsFactory.create`` honouring the factory
+    // class — ``NoopCredentialFactory.getCredential()`` returns inert
+    // ``NoopCredentials``), but a fresh-empty ``CLOUDSDK_CONFIG`` and
+    // a deliberately-missing ``GOOGLE_APPLICATION_CREDENTIALS`` keep
+    // the no-op-auth contract honest on developer laptops that have
+    // ``gcloud auth application-default login`` state laying around.
+    Test / envVars := {
+      val emptyConfig = java.nio.file.Files
+        .createTempDirectory("bqemu-scio-empty-cloudsdk")
+        .toString
+      Map(
+        "CLOUDSDK_CONFIG" -> emptyConfig,
+        "GOOGLE_APPLICATION_CREDENTIALS" -> "/nonexistent/bqemu-scio-no-creds.json",
+      )
+    },
   )
