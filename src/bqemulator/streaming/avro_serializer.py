@@ -57,9 +57,9 @@ REQUIRED T    bare ``<T>`` (matches real BigQuery; caller passes the
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from datetime import date, datetime, time, timezone
 from decimal import Decimal
-from collections.abc import Callable
 import io
 import json
 from typing import Any
@@ -258,10 +258,14 @@ _ARROW_TO_AVRO_DISPATCH: tuple[tuple[Callable[[pa.DataType], bool], Any], ...] =
     (lambda t: pa.types.is_string(t) or pa.types.is_large_string(t), "string"),
     (lambda t: pa.types.is_binary(t) or pa.types.is_large_binary(t), "bytes"),
     (pa.types.is_decimal, _avro_decimal),
-    (lambda t: pa.types.is_date32(t) or pa.types.is_date64(t),
-     {"type": "int", "logicalType": "date"}),
-    (lambda t: pa.types.is_time32(t) or pa.types.is_time64(t),
-     {"type": "long", "logicalType": "time-micros"}),
+    (
+        lambda t: pa.types.is_date32(t) or pa.types.is_date64(t),
+        {"type": "int", "logicalType": "date"},
+    ),
+    (
+        lambda t: pa.types.is_time32(t) or pa.types.is_time64(t),
+        {"type": "long", "logicalType": "time-micros"},
+    ),
     (pa.types.is_timestamp, {"type": "long", "logicalType": "timestamp-micros"}),
     (lambda t: pa.types.is_list(t) or pa.types.is_large_list(t), _avro_list),
     (pa.types.is_struct, _avro_struct),

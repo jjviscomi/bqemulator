@@ -70,6 +70,30 @@ section and adds the release date.
   rejected — a renamed repo would 502 persistently and we want to
   know).
 
+- **Cyclomatic-complexity gate ratcheted from rank E to rank C +
+  promoted to required.** The `quality-complexity` gate introduced by
+  ADR 0035 (non-blocking, `xenon --max-absolute E`) now enforces
+  `xenon --max-absolute C --max-modules C --max-average A` on
+  `src/bqemulator/`. Every function must rank C or better
+  (cyclomatic complexity ≤ 20); no exclusions. Ten D-rank and
+  E-rank functions surfaced by the baseline audit were refactored
+  using two patterns documented in ADR 0036: dispatch-table for
+  type-keyed branching (the arrow_bridge / avro_serializer /
+  classify_statement_type / scripting parser cases) and helper
+  extraction for procedural sub-blocks (the catalog cascade /
+  interval parser / write-append post-processor / table-meta
+  builder). Worst-case complexity drops from 39 (`_format_bq_value`)
+  to 14. The gate is now part of `make verify`,
+  `.github/workflows/code-quality.yml`'s complexity step drops
+  `continue-on-error: true`, and the branch-protection ruleset's
+  required-checks list includes the `Quality gates` job (stable
+  name carries forward across blocking-status changes). Duplication
+  (jscpd) + dead-code (vulture) gates stay non-blocking — each gets
+  its own ratchet PR when its baseline settles. See
+  [ADR 0036](docs/adr/0036-complexity-ratchet-to-c.md) for the full
+  audit table, per-function refactor results, and the bucket-A /
+  bucket-B refactor patterns.
+
 ## [1.0.2] — 2026-05-23
 
 ### Fixed

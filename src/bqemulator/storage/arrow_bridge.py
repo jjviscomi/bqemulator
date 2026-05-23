@@ -18,9 +18,9 @@ https://cloud.google.com/bigquery/docs/reference/rest/v2/tabledata/list#response
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from datetime import UTC, date, datetime, time
 from decimal import Decimal
-from collections.abc import Callable
 from typing import Any
 
 import pyarrow as pa
@@ -388,9 +388,7 @@ def _coerce_arrow_list(value: Any, arrow_type: pa.DataType, _field: pa.Field | N
     if not isinstance(value, list):
         return value
     element_field = arrow_type.value_field if hasattr(arrow_type, "value_field") else None
-    return [
-        _coerce_to_arrow_value(v, arrow_type.value_type, field=element_field) for v in value
-    ]
+    return [_coerce_to_arrow_value(v, arrow_type.value_type, field=element_field) for v in value]
 
 
 def _coerce_arrow_struct(value: Any, arrow_type: pa.DataType, _field: pa.Field | None) -> Any:
