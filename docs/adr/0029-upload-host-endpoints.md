@@ -6,7 +6,7 @@
 
 The v1.0 competitor-parity workstream G2 closes the single row of
 the [goccy `bigquery-emulator` feature
-matrix](https://github.com/goccy/bigquery-emulator/blob/main/FEATURE.md)
+matrix](https://github.com/goccy/bigquery-emulator/blob/main/docs/feature-support.md)
 where bqemulator silently lacked the canonical local-file load path:
 
 | Gap | Before | After |

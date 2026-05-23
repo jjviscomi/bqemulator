@@ -1,0 +1,109 @@
+name: Link check
+
+# Wired in response to the v1.0.1 documentation audit (PR #40) which
+# surfaced multiple classes of doc-rot we'd been catching by hand:
+#
+# 1. mkdocs deploys under ``/latest/`` via ``mike``; child paths
+#    without the prefix 404. Every PR that adds a new doc URL is at
+#    risk of reintroducing this bug.
+# 2. ``github.com/.../blob/main/...`` references to source files that
+#    have since moved (e.g. ``sql/error_mapper.py`` → ``jobs/error_mapper.py``).
+# 3. Third-party URLs that 404 after their canonical location moves
+#    (e.g. ``cloud.google.com/bigquery/docs/bq-command-line-tool-reference``
+#    → ``.../docs/reference/bq-cli-reference``).
+#
+# Config lives in ``.lychee.toml`` at the repo root.
+
+on:
+  # On every PR that touches markdown, the lychee config itself, or
+  # this workflow — limits CI cost to PRs that could plausibly change
+  # link state.
+  pull_request:
+    paths:
+      - "**/*.md"
+      - ".lychee.toml"
+      - ".github/workflows/linkcheck.yml"
+  # Nightly run on main so URL rot in unmodified docs is caught
+  # within 24h even without a PR.
+  schedule:
+    - cron: "27 6 * * *"  # 06:27 UTC daily — off the hour to avoid
+                          # contention with default schedules
+  # Manual trigger for ad-hoc audits.
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  # Required so a failing nightly run can open / update a tracking
+  # issue. PR runs annotate inline; the issue path only fires on the
+  # scheduled trigger.
+  issues: write
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  lychee:
+    name: Verify links
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Restore lychee cache
+        # The cache key combines the .lychee.toml hash so a config
+        # change invalidates the cache (we want fresh recheck of
+        # newly-included URLs). Otherwise we reuse the day's prior
+        # response cache to stay friendly to upstream CDNs.
+        uses: actions/cache@v4
+        with:
+          path: .lycheecache
+          key: lychee-${{ hashFiles('.lychee.toml') }}-${{ github.run_id }}
+          restore-keys: |
+            lychee-${{ hashFiles('.lychee.toml') }}-
+
+      - name: Run lychee
+        id: lychee
+        # Pin lycheeverse/lychee-action by commit SHA (OpenSSF
+        # Scorecard alignment, same convention used elsewhere in
+        # this repo for third-party actions). Tag v2.8.0 →
+        # 8646ba30535128ac92d33dfc9133794bfdd9b411.
+        uses: lycheeverse/lychee-action@8646ba30535128ac92d33dfc9133794bfdd9b411 # v2.8.0
+        with:
+          # Args explicitly enumerated so they're auditable inline
+          # rather than buried in defaults.
+          args: >-
+            --no-progress
+            --cache
+            --max-cache-age 1d
+            --base .
+            --config .lychee.toml
+            "**/*.md"
+          # Fail the job on broken links (PR runs annotate inline).
+          fail: true
+          # Surface the markdown report via the action's outputs so
+          # the nightly-issue step below can include it verbatim.
+          format: markdown
+          output: lychee-report.md
+
+      - name: Upload report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: lychee-report
+          path: lychee-report.md
+          if-no-files-found: ignore
+
+      - name: Open / update tracking issue (nightly only)
+        # Only the scheduled run opens an issue — PR runs already
+        # annotate inline, an issue would be noise. The
+        # ``peter-evans/create-issue-from-file`` action upserts a
+        # single canonical issue keyed by title (so consecutive
+        # failures don't spam).
+        if: failure() && github.event_name == 'schedule'
+        uses: peter-evans/create-issue-from-file@fca9117c27cdc29c6c4db3b86c48e4115a786710 # v6.0.0
+        with:
+          title: "Link rot detected by nightly lychee run"
+          content-filepath: lychee-report.md
+          labels: |
+            docs
+            link-rot

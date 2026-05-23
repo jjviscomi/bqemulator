@@ -40,7 +40,7 @@ configurations that shell out to bq for control-plane operations.
   every SDK suite green.
 
 The goccy `bigquery-emulator`'s
-[FEATURE.md](https://github.com/goccy/bigquery-emulator/blob/main/FEATURE.md)
+[FEATURE.md](https://github.com/goccy/bigquery-emulator/blob/main/docs/feature-support.md)
 documents `bq` as part of its supported-clients matrix. Until G5
 , bqemulator covered 4 of the 6 client shapes goccy
 documents (Python + Node + Go + Java; we explicitly defer Ruby + PHP
@@ -246,7 +246,7 @@ a user request" policy.
 - The
   [`tests/e2e/bq_cli_client/`](https://github.com/jjviscomi/bqemulator/blob/main/tests/e2e/bq_cli_client/) suite.
 - The [goccy `bigquery-emulator`
-  FEATURE.md](https://github.com/goccy/bigquery-emulator/blob/main/FEATURE.md)
+  FEATURE.md](https://github.com/goccy/bigquery-emulator/blob/main/docs/feature-support.md)
   parity baseline.
 - ADR 0018 (caller-bound row access policy enforcement) — explains
   why caller-grant testing happens in the Python suite, not the bq

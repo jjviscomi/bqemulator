@@ -6,7 +6,7 @@
 
 The v1.0 competitor-parity workstream G3 closes the single row of the
 [goccy `bigquery-emulator` feature
-matrix](https://github.com/goccy/bigquery-emulator/blob/main/FEATURE.md)
+matrix](https://github.com/goccy/bigquery-emulator/blob/main/docs/feature-support.md)
 where bqemulator's Storage Read API supported only Arrow IPC while
 goccy supported both Arrow and Apache Avro:
 

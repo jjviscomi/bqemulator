@@ -6,7 +6,7 @@
 
 The v1.0 competitor-parity workstream G1 closes three rows of the
 [goccy `bigquery-emulator` feature
-matrix](https://github.com/goccy/bigquery-emulator/blob/main/FEATURE.md)
+matrix](https://github.com/goccy/bigquery-emulator/blob/main/docs/feature-support.md)
 that bqemulator missed before this session:
 
 | Gap | Before | After |
@@ -221,4 +221,4 @@ flow through the standard BigQuery-shape translator unchanged.
 - [BigQuery extract destination formats](https://cloud.google.com/bigquery/docs/exporting-data#export_formats_and_compression_types)
 - [Apache `pyorc`](https://github.com/noirello/pyorc)
 - [BigQuery Avro export details](https://cloud.google.com/bigquery/docs/exporting-data#avro_export_details)
-- [goccy `bigquery-emulator` FEATURE.md](https://github.com/goccy/bigquery-emulator/blob/main/FEATURE.md)
+- [goccy `bigquery-emulator` FEATURE.md](https://github.com/goccy/bigquery-emulator/blob/main/docs/feature-support.md)

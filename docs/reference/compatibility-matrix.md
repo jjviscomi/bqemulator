@@ -126,7 +126,7 @@ notes and [`docs/guides/using-bq-cli.md`](../guides/using-bq-cli.md)
 for the canonical configuration recipe.
 
 goccy `bigquery-emulator`'s
-[FEATURE.md](https://github.com/goccy/bigquery-emulator/blob/main/FEATURE.md)
+[FEATURE.md](https://github.com/goccy/bigquery-emulator/blob/main/docs/feature-support.md)
 documents Python, Ruby, PHP, Node.js, Java, and the `bq` CLI as
 its supported-clients matrix. bqemulator is a strict superset on
 this axis at v1.0 tag time (we ship Go in place of Ruby/PHP; the
