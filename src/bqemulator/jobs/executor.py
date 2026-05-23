@@ -1358,6 +1358,67 @@ _DDL_OPERATION_BY_STATEMENT = {
 _DML_STATEMENTS = frozenset({"INSERT", "UPDATE", "DELETE", "MERGE"})
 
 
+# ``kind`` value → statement-type for CREATE / DROP node dispatch. The
+# CREATE_TABLE entry is handled inline because CTAS (CREATE TABLE AS
+# SELECT) needs a secondary check on the ``expression`` arg.
+_CREATE_KIND_TO_STATEMENT_TYPE = {
+    "VIEW": "CREATE_VIEW",
+    "FUNCTION": "CREATE_FUNCTION",
+    "PROCEDURE": "CREATE_PROCEDURE",
+    "SCHEMA": "CREATE_SCHEMA",
+    "SNAPSHOT": "CREATE_SNAPSHOT_TABLE",
+}
+_DROP_KIND_TO_STATEMENT_TYPE = {
+    "TABLE": "DROP_TABLE",
+    "VIEW": "DROP_VIEW",
+    "FUNCTION": "DROP_FUNCTION",
+    "PROCEDURE": "DROP_PROCEDURE",
+    "SCHEMA": "DROP_SCHEMA",
+    "SNAPSHOT": "DROP_SNAPSHOT_TABLE",
+}
+
+
+def _classify_dml(tree: Any, exp_module: Any) -> str:
+    """Return the DML ``statementType`` for ``tree``, or ``""`` if not DML.
+
+    Includes the older-sqlglot fallback where ``TRUNCATE`` is parsed
+    as ``exp.Command`` rather than the dedicated ``exp.TruncateTable``
+    node (the latter was added later in sqlglot's API).
+    """
+    for node_cls, statement_type in (
+        (exp_module.Insert, "INSERT"),
+        (exp_module.Update, "UPDATE"),
+        (exp_module.Delete, "DELETE"),
+        (exp_module.Merge, "MERGE"),
+    ):
+        if isinstance(tree, node_cls):
+            return statement_type
+    truncate_cls = getattr(exp_module, "TruncateTable", None)
+    if truncate_cls is not None and isinstance(tree, truncate_cls):
+        return "TRUNCATE_TABLE"
+    if (
+        isinstance(tree, exp_module.Command)
+        and str(getattr(tree, "this", "")).upper() == "TRUNCATE"
+    ):
+        return "TRUNCATE_TABLE"
+    return ""
+
+
+def _classify_create(tree: Any) -> str:
+    """Return the ``CREATE_*`` statement type for an ``exp.Create`` node."""
+    kind = (tree.args.get("kind") or "").upper()
+    if kind == "TABLE":
+        # ``expression`` carries the SELECT body for CREATE TABLE AS;
+        # plain CREATE TABLE has no expression.
+        return "CREATE_TABLE_AS_SELECT" if tree.args.get("expression") else "CREATE_TABLE"
+    return _CREATE_KIND_TO_STATEMENT_TYPE.get(kind, "")
+
+
+def _classify_drop(tree: Any) -> str:
+    """Return the ``DROP_*`` statement type for an ``exp.Drop`` node."""
+    return _DROP_KIND_TO_STATEMENT_TYPE.get((tree.args.get("kind") or "").upper(), "")
+
+
 def classify_statement_type(bq_sql: str) -> str:
     """Return BigQuery's ``statementType`` for ``bq_sql``.
 
@@ -1386,57 +1447,16 @@ def classify_statement_type(bq_sql: str) -> str:
     except Exception:  # noqa: BLE001 — best-effort classification
         return ""
 
-    # DML — match against the same node set ``_is_dml`` uses.
-    if isinstance(tree, exp.Insert):
-        return "INSERT"
-    if isinstance(tree, exp.Update):
-        return "UPDATE"
-    if isinstance(tree, exp.Delete):
-        return "DELETE"
-    if isinstance(tree, exp.Merge):
-        return "MERGE"
-    truncate_cls = getattr(exp, "TruncateTable", None)
-    if truncate_cls is not None and isinstance(tree, truncate_cls):
-        return "TRUNCATE_TABLE"
-    if isinstance(tree, exp.Command) and str(getattr(tree, "this", "")).upper() == "TRUNCATE":
-        return "TRUNCATE_TABLE"
+    dml = _classify_dml(tree, exp)
+    if dml:
+        return dml
 
     if isinstance(tree, exp.Select):
         return "SELECT"
-
     if isinstance(tree, exp.Create):
-        kind = (tree.args.get("kind") or "").upper()
-        if kind == "TABLE":
-            # ``expression`` carries the SELECT body for CREATE TABLE AS;
-            # plain CREATE TABLE has no expression.
-            return "CREATE_TABLE_AS_SELECT" if tree.args.get("expression") else "CREATE_TABLE"
-        if kind == "VIEW":
-            return "CREATE_VIEW"
-        if kind == "FUNCTION":
-            return "CREATE_FUNCTION"
-        if kind == "PROCEDURE":
-            return "CREATE_PROCEDURE"
-        if kind == "SCHEMA":
-            return "CREATE_SCHEMA"
-        if kind == "SNAPSHOT":
-            return "CREATE_SNAPSHOT_TABLE"
-        return ""
-
+        return _classify_create(tree)
     if isinstance(tree, exp.Drop):
-        kind = (tree.args.get("kind") or "").upper()
-        if kind == "TABLE":
-            return "DROP_TABLE"
-        if kind == "VIEW":
-            return "DROP_VIEW"
-        if kind == "FUNCTION":
-            return "DROP_FUNCTION"
-        if kind == "PROCEDURE":
-            return "DROP_PROCEDURE"
-        if kind == "SCHEMA":
-            return "DROP_SCHEMA"
-        if kind == "SNAPSHOT":
-            return "DROP_SNAPSHOT_TABLE"
-        return ""
+        return _classify_drop(tree)
 
     alter_cls = getattr(exp, "AlterTable", None) or getattr(exp, "Alter", None)
     if alter_cls is not None and isinstance(tree, alter_cls):
