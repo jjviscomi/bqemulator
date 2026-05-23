@@ -93,30 +93,19 @@ def _read_arrow_via_storage(grpc_endpoint: str) -> pa.Table:
             max_stream_count=1,
         )
         stream = session.streams[0].name
-        # NOTE: ``reader.to_arrow(session)`` assumes
-        # ``ArrowRecordBatch.serialized_record_batch`` carries only a
-        # single record-batch IPC message — that's the real BigQuery
-        # wire format. bqemulator currently packs the *full* Arrow IPC
-        # stream (schema framing + batches) into that field, so the
-        # client's ``pyarrow.ipc.read_record_batch`` call trips
-        # ``Expected IPC message of type record batch but got
-        # schema``. Iterate the responses by hand and use
-        # ``pa.ipc.open_stream`` (which is happy with full IPC
-        # streams) so the example still demonstrates Storage Read
-        # against the emulator. Tracked for cleanup in v1.0.1: the
-        # server should emit just the record-batch message and
-        # publish the schema via ``ReadSession.arrow_schema``.
+        # ``reader.to_arrow(session)`` is the natural Storage Read
+        # consumer path: it reads ``session.arrow_schema.serialized_schema``
+        # once, then parses each response's
+        # ``ArrowRecordBatch.serialized_record_batch`` via
+        # ``pyarrow.ipc.read_record_batch`` — which is exactly the
+        # wire-format contract bqemulator's read servicer emits since
+        # v1.0.1 (issue #15). v1.0.0 packed a full IPC stream into
+        # ``serialized_record_batch`` and tripped the client; the v1.0.1
+        # fix emits just the batch message and publishes the schema
+        # separately, so this call works against real BigQuery and the
+        # emulator identically.
         reader = storage.read_rows(stream)
-        batches: list[pa.RecordBatch] = []
-        for response in reader:
-            payload = response.arrow_record_batch.serialized_record_batch
-            if not payload:
-                continue
-            with pa.ipc.open_stream(payload) as stream_reader:
-                batches.extend(stream_reader.read_all().to_batches())
-        if not batches:
-            return pa.table({})
-        return pa.Table.from_batches(batches)
+        return reader.to_arrow(session)
     finally:
         storage.transport.close()
 
