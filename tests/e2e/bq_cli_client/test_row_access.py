@@ -13,6 +13,12 @@ none / authorized view does not bypass RAP) is covered by the
 Python suite (which can inject ``X-Bqemu-Caller`` via
 ``AuthorizedSession``). The bq suite covers the DDL contract +
 INFORMATION_SCHEMA enumeration.
+
+ADR 0038's ``SESSION_USER()``-in-RAP-filter pattern is similarly out
+of scope here for the same caller-header-injection reason — see
+:file:`tests/e2e/python_client/test_row_access_session_user.py`
+(+ the Node / Go / Java siblings) for the canonical "tenant
+isolation by email domain" coverage.
 """
 
 from __future__ import annotations

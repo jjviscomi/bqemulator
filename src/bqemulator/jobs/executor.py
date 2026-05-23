@@ -550,7 +550,11 @@ async def _run_single_sql(
     # ``AvgDecimalRule`` consults the annotated operand type to decide
     # whether to wrap ``AVG`` in a DECIMAL cast.
     schema_dict = build_catalog_schema(bq_sql, project_id=project_id, catalog=ctx.catalog)
-    translate_result = _translator.translate(bq_sql, schema=schema_dict or None)
+    translate_result = _translator.translate(
+        bq_sql,
+        schema=schema_dict or None,
+        caller=caller,
+    )
     match translate_result:
         case Err(error):
             raise error

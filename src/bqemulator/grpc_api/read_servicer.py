@@ -249,7 +249,7 @@ class BigQueryReadHandler(grpc.GenericRpcHandler):
                 from bqemulator.sql.table_rewriter import rewrite_table_refs
                 from bqemulator.sql.translator import SQLTranslator
 
-                translate_result = SQLTranslator().translate(rewritten)
+                translate_result = SQLTranslator().translate(rewritten, caller=caller)
                 if hasattr(translate_result, "value"):
                     duckdb_sql = translate_result.value
                 else:  # pragma: no cover — translator returned an Err

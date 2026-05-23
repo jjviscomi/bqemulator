@@ -75,19 +75,20 @@ async def _create_policy(
     policy_id: str,
     filter_predicate: str,
     grantees: list[str],
+    table_id: str = "orders",
 ) -> None:
     body = {
         "rowAccessPolicyReference": {
             "projectId": "p",
             "datasetId": "ds",
-            "tableId": "orders",
+            "tableId": table_id,
             "policyId": policy_id,
         },
         "filterPredicate": filter_predicate,
         "grantees": grantees,
     }
     r = await c.post(
-        "/bigquery/v2/projects/p/datasets/ds/tables/orders/rowAccessPolicies",
+        f"/bigquery/v2/projects/p/datasets/ds/tables/{table_id}/rowAccessPolicies",
         json=body,
     )
     r.raise_for_status()
@@ -310,3 +311,154 @@ async def test_x_goog_user_project_fallback(client: httpx.AsyncClient) -> None:
     r.raise_for_status()
     rows = [int(row["f"][0]["v"]) for row in r.json()["rows"]]
     assert rows == [1, 2, 3]
+
+
+# ---------------------------------------------------------------------------
+# SESSION_USER() in the RAP filter predicate — ADR 0038
+# ---------------------------------------------------------------------------
+#
+# The canonical "tenant isolation by email domain" production pattern:
+# a RAP filter calls ``SESSION_USER()``, extracts the domain via
+# ``REGEXP_EXTRACT``, and matches it against a per-row tenant key. Real
+# BigQuery users rely on this; the emulator's pre-translator (ADR 0038)
+# substitutes ``SESSION_USER()`` with the caller's resolved email
+# literal before SQLGlot transpiles to DuckDB.
+#
+# These tests seed a SECOND table (``tenants``) with two domains, grant
+# the policy to ``allAuthenticatedUsers`` so the grantee match always
+# passes, and rely on the filter predicate alone for per-caller row
+# visibility — proving the substitution path end-to-end.
+
+
+async def _seed_tenants_table(c: httpx.AsyncClient) -> None:
+    """Create a ``tenants`` table with rows for two email-domain tenants."""
+    await c.post(
+        "/bigquery/v2/projects/p/datasets/ds/tables",
+        json={
+            "tableReference": {
+                "projectId": "p",
+                "datasetId": "ds",
+                "tableId": "tenants",
+            },
+            "schema": {
+                "fields": [
+                    {"name": "id", "type": "INT64"},
+                    {"name": "tenant_id", "type": "STRING"},
+                ],
+            },
+        },
+    )
+    await _run(
+        c,
+        (
+            "INSERT INTO ds.tenants VALUES "
+            "(1, 'example.com'), (2, 'example.com'), "
+            "(3, 'other.com'), (4, 'other.com')"
+        ),
+    )
+
+
+async def _create_session_user_policy(c: httpx.AsyncClient) -> None:
+    """Create the canonical SESSION_USER-driven tenant-isolation RAP."""
+    await _create_policy(
+        c,
+        policy_id="tenant_by_session_user",
+        filter_predicate=("REGEXP_EXTRACT(SESSION_USER(), r'@(.+)$') = tenant_id"),
+        grantees=["allAuthenticatedUsers"],
+        table_id="tenants",
+    )
+
+
+@pytest.mark.asyncio
+async def test_session_user_filter_example_com_caller(
+    client: httpx.AsyncClient,
+) -> None:
+    """A ``@example.com`` caller sees only the example.com tenant rows."""
+    await _seed_tenants_table(client)
+    await _create_session_user_policy(client)
+    res = await _run(
+        client,
+        "SELECT id FROM ds.tenants ORDER BY id",
+        caller="user:alice@example.com",
+    )
+    rows = [int(r["f"][0]["v"]) for r in res["rows"]]
+    assert rows == [1, 2]
+
+
+@pytest.mark.asyncio
+async def test_session_user_filter_other_com_caller(
+    client: httpx.AsyncClient,
+) -> None:
+    """A ``@other.com`` caller sees only the other.com tenant rows."""
+    await _seed_tenants_table(client)
+    await _create_session_user_policy(client)
+    res = await _run(
+        client,
+        "SELECT id FROM ds.tenants ORDER BY id",
+        caller="user:bob@other.com",
+    )
+    rows = [int(r["f"][0]["v"]) for r in res["rows"]]
+    assert rows == [3, 4]
+
+
+@pytest.mark.asyncio
+async def test_session_user_filter_anonymous_caller_sees_no_rows(
+    client: httpx.AsyncClient,
+) -> None:
+    """No caller header → ``SESSION_USER()`` → 'anonymous' → no match."""
+    await _seed_tenants_table(client)
+    await _create_session_user_policy(client)
+    # The grantee is ``allAuthenticatedUsers`` and the default
+    # caller is *unauthenticated* — the grantee check itself fails
+    # first, so the table reads as "has policies but none match the
+    # caller" → ``WHERE FALSE`` wrap → zero rows.
+    res = await _run(client, "SELECT id FROM ds.tenants")
+    assert res["rows"] == []
+
+
+@pytest.mark.asyncio
+async def test_session_user_filter_service_account_caller(
+    client: httpx.AsyncClient,
+) -> None:
+    """A service-account caller resolves to its full email."""
+    await _seed_tenants_table(client)
+    # The filter predicate matches the part after ``@`` —
+    # service accounts have addresses like
+    # ``svc@example.iam.gserviceaccount.com``, which would *not*
+    # match either tenant_id we seeded. Use a SA whose host happens
+    # to be ``example.com`` to assert the substitution applies the
+    # ``serviceAccount:`` prefix strip + the standard regex extract
+    # (this is unusual in production but is the minimal probe for
+    # the SA path on the e2e wire).
+    await _create_policy(
+        client,
+        policy_id="tenant_sa",
+        filter_predicate=("REGEXP_EXTRACT(SESSION_USER(), r'@(.+)$') = tenant_id"),
+        grantees=["allAuthenticatedUsers"],
+        table_id="tenants",
+    )
+    res = await _run(
+        client,
+        "SELECT id FROM ds.tenants ORDER BY id",
+        caller="serviceAccount:job@example.com",
+    )
+    rows = [int(r["f"][0]["v"]) for r in res["rows"]]
+    assert rows == [1, 2]
+
+
+@pytest.mark.asyncio
+async def test_bare_select_session_user_returns_caller_email(
+    client: httpx.AsyncClient,
+) -> None:
+    """``SELECT SESSION_USER()`` returns the caller's bare email.
+
+    Not strictly a RAP test, but the same substitution path; pinning
+    it here keeps both surfaces (RAP filter + free-form query) in one
+    place.
+    """
+    res = await _run(
+        client,
+        "SELECT SESSION_USER() AS who",
+        caller="user:claire@example.com",
+    )
+    assert res["rows"][0]["f"][0]["v"] == "claire@example.com"
