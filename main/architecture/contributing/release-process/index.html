@@ -5226,7 +5226,7 @@ remain for ≥2 MINOR versions or 6 months.</p>
 <tbody>
 <tr>
 <td><a href="https://github.com/jjviscomi/bqemulator/blob/main/scripts/bump_version.py"><code>scripts/bump_version.py</code></a></td>
-<td>Update <code>__version__</code> in <code>src/bqemulator/__init__.py</code>. Validates the new version is strictly greater than the current.</td>
+<td>Update <code>__version__</code> in <code>src/bqemulator/__init__.py</code> <strong>and</strong> the <code>?cacheSeconds=N&amp;v=X.Y.Z</code> cache-bust suffix on the README's shields.io PyPI / Python-versions badges (<code>README.md</code>). The README rewrite is idempotent and silent when the pattern is absent. Validates the new version is strictly greater than the current.</td>
 </tr>
 <tr>
 <td><a href="https://github.com/jjviscomi/bqemulator/blob/main/scripts/changelog.py"><code>scripts/changelog.py</code></a></td>
@@ -5289,10 +5289,11 @@ a dedicated exit code):</p>
 </li>
 <li>
 <p><strong>Pre-release doc sweep.</strong> The release orchestrator only mutates
-   <code>src/bqemulator/__version__</code> (via <code>bump_version.py</code>) and
-   <code>CHANGELOG.md</code> (via <code>changelog.py</code>). Every other version- or
-   maturity-bearing string is <strong>manual</strong> and must be checked once per
-   release. The audit:</p>
+   three surfaces: <code>src/bqemulator/__version__</code> and the README
+   shields.io badge cache-bust query parameter (both via
+   <code>bump_version.py</code>), plus <code>CHANGELOG.md</code> (via <code>changelog.py</code>).
+   Every other version- or maturity-bearing string is <strong>manual</strong> and
+   must be checked once per release. The audit:</p>
 </li>
 </ol>
 <table>
