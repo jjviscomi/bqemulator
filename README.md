@@ -245,7 +245,7 @@ The full documentation lives at **[jjviscomi.github.io/bqemulator](https://jjvis
 - [**Guides**](https://jjviscomi.github.io/bqemulator/latest/guides/loading-data/) — loading data, querying, streaming inserts, Storage API, UDFs, scripting, partitioning, time travel, materialized views, row access policies, dbt, Airflow, Spark, the `bq` CLI, observability, and more.
 - [**Reference**](https://jjviscomi.github.io/bqemulator/latest/reference/configuration/) — configuration, CLI, REST coverage, SQL function mapping, compatibility matrix, conformance coverage matrix, out-of-scope catalogue, troubleshooting.
 - [**Architecture**](https://jjviscomi.github.io/bqemulator/latest/architecture/overview/) — hexagonal architecture, storage model, SQL translation, jobs lifecycle, Storage Read/Write API design, scripting, UDFs, versioning, row access, specialized types, observability, testing strategy, conformance tier.
-- [**ADRs**](https://jjviscomi.github.io/bqemulator/latest/adr/0001-use-duckdb/) — 32 Architecture Decision Records documenting every non-obvious design choice.
+- [**ADRs**](https://jjviscomi.github.io/bqemulator/latest/adr/0001-use-duckdb/) — 33 Architecture Decision Records documenting every non-obvious design choice.
 
 ## Examples
 

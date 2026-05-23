@@ -1,6 +1,6 @@
 # Using the `bq` CLI against bqemulator
 
-[`bq`](https://cloud.google.com/bigquery/docs/bq-command-line-tool-reference)
+[`bq`](https://cloud.google.com/bigquery/docs/reference/bq-cli-reference)
 is Google's official command-line tool for BigQuery. It ships as
 part of the `google-cloud-cli` package and is the canonical CLI
 surface for data engineers, DBAs, CI pipelines, and ad-hoc shell
@@ -167,7 +167,7 @@ A runnable, CI-verified variant of this lives at
   `AuthorizedSession`.
 
 The
-[`tests/e2e/bq_cli_client/test_storage_read_storage_write_skipped.py`](https://github.com/jjviscomi/bqemulator/blob/main/tests/e2e/bq_cli_client/test_storage_read_storage_write_skipped.py)
+[`tests/e2e/bq_cli_client/test_storage_read_write_skipped.py`](https://github.com/jjviscomi/bqemulator/blob/main/tests/e2e/bq_cli_client/test_storage_read_write_skipped.py)
 file documents these gaps explicitly via `pytest.skip` with clear
 reasons, so future readers see "this isn't tested because it
 can't be" instead of "this isn't tested because we forgot."

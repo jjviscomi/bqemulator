@@ -121,8 +121,8 @@ section and adds the release date.
   (configurable OTLP exporter), Prometheus metrics endpoint.
 - **Admin surface** — `bqemulator import --from-project` clones a real
   BigQuery project's schema (and optionally data) into a local emulator
-  data directory; backup / restore via `bqemulator admin backup` and
-  `bqemulator admin restore`.
+  data directory; backup / restore via `bqemulator backup` and
+  `bqemulator restore`.
 - **Release tooling** — `scripts/bump_version.py`, `scripts/changelog.py`,
   and `scripts/release.py` automate the version bump → changelog finalise
   → release commit + annotated tag flow. `make release-dry-run` previews;

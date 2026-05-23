@@ -12,32 +12,45 @@ on Google's stack run through it. Targeting it against `bqemulator`
 means engineering teams can run the same job locally that they run in
 Dataflow, without spinning up a real BigQuery dataset.
 
-## Known limitation — Beam Java BigQueryIO doesn't reach the emulator
+## Known limitation — running Beam BigQueryIO end-to-end against bqemulator
 
-Beam Java BigQueryIO **does not honour `--bigQueryEndpoint` for the
-write path** — that pipeline option only gates internal preflight
-validators (dataset-exists checks, schema lookups). The actual write
-goes through the official Java BigQuery client at its default base
-URL (`https://bigquery.googleapis.com/...`).
+Running ``CustomersPipeline.run`` against the emulator from inside
+the test JVM hits **three independent blockers**, surfaced during
+the v1.0.1 investigation
+([#17](https://github.com/jjviscomi/bqemulator/issues/17)):
 
-The Java BQ client honours the `BIGQUERY_EMULATOR_HOST` env var, but
-it has to be visible to the JVM **before the first BQ class loads**.
-Testcontainers allocates the bqemulator port dynamically at runtime,
-so by the time we know the port the BQ classes are already wired to
-the real Google endpoint.
+1. **Endpoint routing — works.** ``--bigQueryEndpoint=http://host:port``
+   *does* set the Apiary ``Bigquery`` client's ``rootUrl``
+   (verified locally via auth-failure stack traces confirming the
+   override applied). The original v1.0.0 hypothesis that
+   ``--bigQueryEndpoint`` was ignored turned out to be wrong;
+   however, the next two issues still bite.
+2. **Auth refresh fires before the redirected call.** With
+   ``--bigQueryEndpoint`` set, Beam still invokes
+   ``OAuth2Credentials.refresh()`` at request time. The refresh
+   ``400``s against ``oauth2.googleapis.com`` *before* the redirected
+   HTTP call ever fires.
+   ``--gcpCredentialFactoryClass=org.apache.beam.sdk.extensions.gcp.auth.NoopCredentialFactory``
+   is the documented escape hatch, but doesn't fully suppress the
+   discovery chain when application-default credentials exist on
+   the host (gcloud SDK auto-detects them past the flag).
+3. **BigQueryIO.Write defaults to BATCH_LOADS — needs GCS.** Bounded
+   pipelines stage rows to GCS before invoking BigQuery LOAD jobs.
+   The emulator doesn't expose a GCS-compatible shim Beam can stage
+   to; forcing ``Method.STREAMING_INSERTS`` would bypass GCS but
+   requires changing the ``CustomersPipeline`` source and pulls in
+   a different routing branch in BigQueryIO with its own quirks.
 
-The result: running `CustomersPipeline.run(args)` from inside the
-test JVM tries to write to real BigQuery and 404s without
-credentials. **The pipeline itself is correct** — point it at a
-long-lived bqemulator on a stable port (with `BIGQUERY_EMULATOR_HOST`
-exported before the JVM starts) and it runs end to end.
+**The pipeline source itself remains correct.** Point it at real
+BigQuery (Dataflow) or a long-lived bqemulator on a stable port
++ a real GCS bucket and it runs end-to-end.
 
-Tracked for cleanup in
-[#17](https://github.com/jjviscomi/bqemulator/issues/17) — Scio /
-Beam may grow a per-call endpoint override that lets the test set
-the endpoint after the container is up.
+Tracked for v1.0.2+. Likely path: integrate a GCS emulator
+(e.g. [fsouza/fake-gcs-server](https://github.com/fsouza/fake-gcs-server))
+for staging + full auth-suppression chain + decide between staying
+on ``BATCH_LOADS`` (via GCS shim) or pivoting to ``STREAMING_INSERTS``.
 
-## What the spec exercises (v1.0.0)
+## What the spec exercises
 
 Until #17 lands, the ScalaTest spec exercises the **wiring** that
 bqemulator owns and that Scio users actually depend on:
