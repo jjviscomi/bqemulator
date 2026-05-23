@@ -33,6 +33,16 @@
 
 name: OpenSSF Scorecard
 
+# Concurrency policy: cancel superseded ``push: main`` runs (rapid
+# commits shouldn't queue stale scores). ``github.event_name`` is in
+# the group key so push / release / schedule / workflow_dispatch
+# don't cancel each other — a release-triggered re-score must finish
+# even if a push-triggered run is in flight, and a manual rescore via
+# workflow_dispatch shouldn't kill the weekly cron.
+concurrency:
+  group: scorecard-${{ github.ref }}-${{ github.event_name }}
+  cancel-in-progress: true
+
 on:
   push:
     branches: [main]
