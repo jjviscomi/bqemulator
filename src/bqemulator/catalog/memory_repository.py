@@ -7,7 +7,7 @@ CPython are atomic.
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 from bqemulator.catalog.models import (
     DatasetMeta,
@@ -100,13 +100,13 @@ class MemoryCatalogRepository(CatalogRepository):
                 return
             raise resource_not_found(ResourceRef("dataset", project_id, dataset_id))
 
-        # Check for contents
-        table_keys = [
-            (p, d, t) for (p, d, t) in self._tables if p == project_id and d == dataset_id
-        ]
-        routine_keys = [
-            (p, d, r) for (p, d, r) in self._routines if p == project_id and d == dataset_id
-        ]
+        # Contents check — block the drop unless caller opted into
+        # cascade. Only tables + routines count toward "non-empty" for
+        # this gate; row-access policies / mviews / snapshots cascade
+        # silently because BigQuery itself doesn't surface them as
+        # blocking children.
+        table_keys = self._keys_in_dataset(self._tables, project_id, dataset_id)
+        routine_keys = self._keys_in_dataset(self._routines, project_id, dataset_id)
         if (table_keys or routine_keys) and not delete_contents:
             raise NotFoundError(
                 f"Dataset {project_id}.{dataset_id} is not empty; "
@@ -122,27 +122,54 @@ class MemoryCatalogRepository(CatalogRepository):
         # The DuckDB-backed cascade (``DROP SCHEMA … CASCADE`` in the REST
         # route) only takes care of the DuckDB-side physical tables; this
         # in-memory catalog mirror needs its own cascade.
-        rap_keys = [k for k in self._row_access if k[0] == project_id and k[1] == dataset_id]
-        mview_keys = [
-            (p, d, m) for (p, d, m) in self._mviews if p == project_id and d == dataset_id
-        ]
+        self._delete_keys(self._tables, table_keys)
+        self._delete_keys(self._routines, routine_keys)
+        self._delete_keys(
+            self._row_access,
+            self._keys_in_dataset(self._row_access, project_id, dataset_id),
+        )
+        self._delete_keys(
+            self._mviews,
+            self._keys_in_dataset(self._mviews, project_id, dataset_id),
+        )
+        self._purge_snapshots_in_dataset(project_id, dataset_id)
+        del self._datasets[key]
+
+    @staticmethod
+    def _keys_in_dataset(
+        mapping: dict[Any, Any],
+        project_id: str,
+        dataset_id: str,
+    ) -> list[Any]:
+        """Return all keys in ``mapping`` whose first two elements are ``(project, dataset)``.
+
+        Works uniformly across the dataset-scoped tuple-keyed dicts
+        (``_tables``, ``_routines``, ``_row_access``, ``_mviews``) —
+        each uses a tuple starting with ``(project_id, dataset_id)``,
+        only the trailing element differs.
+        """
+        return [k for k in mapping if k[0] == project_id and k[1] == dataset_id]
+
+    @staticmethod
+    def _delete_keys(mapping: dict[Any, Any], keys: list[Any]) -> None:
+        """Drop each key from ``mapping`` in place. No-op for an empty list."""
+        for k in keys:
+            del mapping[k]
+
+    def _purge_snapshots_in_dataset(self, project_id: str, dataset_id: str) -> None:
+        """Delete snapshots referencing ``(project, dataset)``.
+
+        Separate from ``_delete_keys`` because snapshot lookup is by
+        snapshot id (not a (project, dataset, name) tuple) and the
+        dataset reference lives on the value, not the key.
+        """
         snapshot_ids = [
             sid
             for sid, s in self._snapshots.items()
             if s.project_id == project_id and s.dataset_id == dataset_id
         ]
-
-        for tk in table_keys:
-            del self._tables[tk]
-        for rk in routine_keys:
-            del self._routines[rk]
-        for rak in rap_keys:
-            del self._row_access[rak]
-        for mk in mview_keys:
-            del self._mviews[mk]
         for sid in snapshot_ids:
             del self._snapshots[sid]
-        del self._datasets[key]
 
     # -- Tables -----------------------------------------------------------
 
