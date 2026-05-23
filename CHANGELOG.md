@@ -38,8 +38,8 @@ section and adds the release date.
     (`make quality-duplication`). The one category nothing in the
     stack covered. Threshold 1.0% — v1.0.2 baseline 0.36% (7 clones,
     112 lines, all 11–22 lines and structurally template-shaped).
-    Wired via `npx -y jscpd` so the Python project takes on no
-    permanent JS dep.
+    Wired via `npx -y jscpd@4` (major-version pin for reproducibility)
+    so the Python project takes on no permanent JS dep.
   - **`vulture`** wired into the new `make quality-dead-code`
     target. The dev-dep + `[tool.vulture]` config already existed;
     it was never invoked. New `.vulture_whitelist.py` documents the

@@ -103,8 +103,10 @@ quality-complexity: ## Cyclomatic-complexity ceiling via xenon (non-blocking)
 .PHONY: quality-duplication
 quality-duplication: ## Cross-file DRY check via jscpd (non-blocking)
 	# Requires ``npx`` on PATH (node/npm). ``-y`` auto-confirms the
-	# jscpd download on first run.
-	npx -y jscpd --config .jscpd.json
+	# jscpd download on first run; ``@4`` pins the major version so
+	# the gate is reproducible (ADR 0035 documents the choice — a
+	# jscpd 5.x release can break our config / threshold semantics).
+	npx -y jscpd@4 --config .jscpd.json
 
 .PHONY: quality-dead-code
 quality-dead-code: ## Dead-name detection via vulture (non-blocking)

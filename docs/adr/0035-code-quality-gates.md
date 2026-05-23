@@ -159,7 +159,7 @@ ignore_names = ["*Command", "*Request", "*Response"]
 | Surface | Where |
 |---|---|
 | `make quality-complexity` | `xenon ...` |
-| `make quality-duplication` | `npx -y jscpd --config .jscpd.json` |
+| `make quality-duplication` | `npx -y jscpd@4 --config .jscpd.json` |
 | `make quality-dead-code` | `vulture` (reads `[tool.vulture]`) |
 | `make quality` | Umbrella over all three |
 | `.github/workflows/code-quality.yml` | Per-PR + push-to-main + nightly + manual; each step has `continue-on-error: true`; aggregated outcomes in `$GITHUB_STEP_SUMMARY` |
@@ -220,7 +220,7 @@ codebase. Output quality: jscpd's `consoleFull` reporter prints
 the actual cloned line ranges side-by-side; pylint's
 duplicate-code reporter is more terse and less actionable.
 
-### Why `npx -y jscpd` rather than installing it
+### Why `npx -y jscpd@4` rather than installing it
 
 The Python project has no other JS deps. Pinning jscpd through a
 package-lock here would add a permanent maintenance surface (renovate
@@ -228,7 +228,10 @@ PRs, audit warnings on lockfile vulnerabilities) for a single
 non-blocking gate. `npx -y` pulls the published package on demand;
 CI's `actions/setup-node@v6` cache makes subsequent runs sub-second.
 The local dev experience matches: any developer with node already
-has npx.
+has npx. The `@4` major-version pin keeps the gate reproducible
+without a lockfile: jscpd 4.x is stable; a future 5.x release that
+breaks our config schema or threshold semantics requires a deliberate
+opt-in bump.
 
 ### Why preserve the existing vulture config rather than reset it
 
