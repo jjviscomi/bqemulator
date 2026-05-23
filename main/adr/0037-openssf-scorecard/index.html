@@ -10,31 +10,31 @@
       
       
       
-        <link rel="canonical" href="https://jjviscomi.github.io/bqemulator/main/examples/python/pyspark-bigquery/">
+        <link rel="canonical" href="https://jjviscomi.github.io/bqemulator/main/adr/0037-openssf-scorecard/">
       
       
-        <link rel="prev" href="../airflow-dag-test/">
+        <link rel="prev" href="../0036-complexity-ratchet-to-c/">
       
       
-        <link rel="next" href="../../nodejs/nestjs-app/">
+        <link rel="next" href="../../rfcs/">
       
       
         
       
       
-      <link rel="icon" href="../../../assets/images/favicon.png">
+      <link rel="icon" href="../../assets/images/favicon.png">
       <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.6">
     
     
       
-        <title>PySpark + BigQuery - bqemulator</title>
+        <title>0037 OpenSSF Scorecard adoption + badge - bqemulator</title>
       
     
     
-      <link rel="stylesheet" href="../../../assets/stylesheets/main.484c7ddc.min.css">
+      <link rel="stylesheet" href="../../assets/stylesheets/main.484c7ddc.min.css">
       
         
-        <link rel="stylesheet" href="../../../assets/stylesheets/palette.ab4e12ef.min.css">
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.ab4e12ef.min.css">
       
       
 
@@ -53,9 +53,9 @@
       
     
     
-      <link rel="stylesheet" href="../../../assets/_mkdocstrings.css">
+      <link rel="stylesheet" href="../../assets/_mkdocstrings.css">
     
-    <script>__md_scope=new URL("../../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
     
       
 
@@ -80,7 +80,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#pyspark-reading-from-bqemulator" class="md-skip">
+        <a href="#adr-0037-adopt-openssf-scorecard-public-security-posture-score-badge" class="md-skip">
           Skip to content
         </a>
       
@@ -98,7 +98,7 @@
 
 <header class="md-header" data-md-component="header">
   <nav class="md-header__inner md-grid" aria-label="Header">
-    <a href="../../.." title="bqemulator" class="md-header__button md-logo" aria-label="bqemulator" data-md-component="logo">
+    <a href="../.." title="bqemulator" class="md-header__button md-logo" aria-label="bqemulator" data-md-component="logo">
       
   
   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
@@ -118,7 +118,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              PySpark + BigQuery
+              0037 OpenSSF Scorecard adoption + badge
             
           </span>
         </div>
@@ -236,7 +236,7 @@
   
   
     <li class="md-tabs__item">
-      <a href="../../.." class="md-tabs__link">
+      <a href="../.." class="md-tabs__link">
         
   
   
@@ -255,7 +255,7 @@
   
   
     <li class="md-tabs__item">
-      <a href="../../../getting-started/" class="md-tabs__link">
+      <a href="../../getting-started/" class="md-tabs__link">
         
   
   
@@ -276,7 +276,7 @@
     
     
       <li class="md-tabs__item">
-        <a href="../../../quickstart/python/" class="md-tabs__link">
+        <a href="../../quickstart/python/" class="md-tabs__link">
           
   
   
@@ -298,7 +298,7 @@
     
     
       <li class="md-tabs__item">
-        <a href="../../../guides/loading-data/" class="md-tabs__link">
+        <a href="../../guides/loading-data/" class="md-tabs__link">
           
   
   
@@ -320,7 +320,7 @@
     
     
       <li class="md-tabs__item">
-        <a href="../../../reference/compatibility-matrix/" class="md-tabs__link">
+        <a href="../../reference/compatibility-matrix/" class="md-tabs__link">
           
   
   
@@ -342,7 +342,7 @@
     
     
       <li class="md-tabs__item">
-        <a href="../../../architecture/overview/" class="md-tabs__link">
+        <a href="../../architecture/overview/" class="md-tabs__link">
           
   
   
@@ -360,11 +360,13 @@
   
   
   
+    
+  
   
     
     
-      <li class="md-tabs__item">
-        <a href="../../../adr/0001-use-duckdb/" class="md-tabs__link">
+      <li class="md-tabs__item md-tabs__item--active">
+        <a href="../0001-use-duckdb/" class="md-tabs__link">
           
   
   
@@ -384,7 +386,7 @@
   
   
     <li class="md-tabs__item">
-      <a href="../../../rfcs/" class="md-tabs__link">
+      <a href="../../rfcs/" class="md-tabs__link">
         
   
   
@@ -401,13 +403,11 @@
   
   
   
-    
-  
   
     
     
-      <li class="md-tabs__item md-tabs__item--active">
-        <a href="../../" class="md-tabs__link">
+      <li class="md-tabs__item">
+        <a href="../../examples/" class="md-tabs__link">
           
   
   
@@ -427,7 +427,7 @@
   
   
     <li class="md-tabs__item">
-      <a href="../../../api/" class="md-tabs__link">
+      <a href="../../api/" class="md-tabs__link">
         
   
   
@@ -462,7 +462,7 @@
 
 <nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
   <label class="md-nav__title" for="__drawer">
-    <a href="../../.." title="bqemulator" class="md-nav__button md-logo" aria-label="bqemulator" data-md-component="logo">
+    <a href="../.." title="bqemulator" class="md-nav__button md-logo" aria-label="bqemulator" data-md-component="logo">
       
   
   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
@@ -492,7 +492,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../.." class="md-nav__link">
+      <a href="../.." class="md-nav__link">
         
   
   
@@ -519,7 +519,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../getting-started/" class="md-nav__link">
+      <a href="../../getting-started/" class="md-nav__link">
         
   
   
@@ -614,7 +614,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../quickstart/python/" class="md-nav__link">
+      <a href="../../quickstart/python/" class="md-nav__link">
         
   
   
@@ -642,7 +642,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../quickstart/nodejs/" class="md-nav__link">
+      <a href="../../quickstart/nodejs/" class="md-nav__link">
         
   
   
@@ -670,7 +670,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../quickstart/go/" class="md-nav__link">
+      <a href="../../quickstart/go/" class="md-nav__link">
         
   
   
@@ -698,7 +698,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../quickstart/java/" class="md-nav__link">
+      <a href="../../quickstart/java/" class="md-nav__link">
         
   
   
@@ -726,7 +726,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../quickstart/pytest/" class="md-nav__link">
+      <a href="../../quickstart/pytest/" class="md-nav__link">
         
   
   
@@ -754,7 +754,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../quickstart/docker-compose/" class="md-nav__link">
+      <a href="../../quickstart/docker-compose/" class="md-nav__link">
         
   
   
@@ -782,7 +782,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../quickstart/testcontainers/" class="md-nav__link">
+      <a href="../../quickstart/testcontainers/" class="md-nav__link">
         
   
   
@@ -925,7 +925,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../guides/loading-data/" class="md-nav__link">
+      <a href="../../guides/loading-data/" class="md-nav__link">
         
   
   
@@ -953,7 +953,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../guides/loading-from-local-files/" class="md-nav__link">
+      <a href="../../guides/loading-from-local-files/" class="md-nav__link">
         
   
   
@@ -981,7 +981,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../guides/querying/" class="md-nav__link">
+      <a href="../../guides/querying/" class="md-nav__link">
         
   
   
@@ -1009,7 +1009,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../guides/query-parameters/" class="md-nav__link">
+      <a href="../../guides/query-parameters/" class="md-nav__link">
         
   
   
@@ -1037,7 +1037,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../guides/streaming-inserts/" class="md-nav__link">
+      <a href="../../guides/streaming-inserts/" class="md-nav__link">
         
   
   
@@ -1065,7 +1065,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../guides/storage-api/" class="md-nav__link">
+      <a href="../../guides/storage-api/" class="md-nav__link">
         
   
   
@@ -1093,7 +1093,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../guides/routines-udfs/" class="md-nav__link">
+      <a href="../../guides/routines-udfs/" class="md-nav__link">
         
   
   
@@ -1121,7 +1121,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../guides/scripting/" class="md-nav__link">
+      <a href="../../guides/scripting/" class="md-nav__link">
         
   
   
@@ -1149,7 +1149,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../guides/partitioning-clustering/" class="md-nav__link">
+      <a href="../../guides/partitioning-clustering/" class="md-nav__link">
         
   
   
@@ -1177,7 +1177,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../guides/time-travel/" class="md-nav__link">
+      <a href="../../guides/time-travel/" class="md-nav__link">
         
   
   
@@ -1205,7 +1205,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../guides/materialized-views/" class="md-nav__link">
+      <a href="../../guides/materialized-views/" class="md-nav__link">
         
   
   
@@ -1233,7 +1233,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../guides/row-access-policies/" class="md-nav__link">
+      <a href="../../guides/row-access-policies/" class="md-nav__link">
         
   
   
@@ -1261,7 +1261,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../guides/authorized-views/" class="md-nav__link">
+      <a href="../../guides/authorized-views/" class="md-nav__link">
         
   
   
@@ -1289,7 +1289,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../guides/information-schema/" class="md-nav__link">
+      <a href="../../guides/information-schema/" class="md-nav__link">
         
   
   
@@ -1317,7 +1317,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../guides/geography-spatial/" class="md-nav__link">
+      <a href="../../guides/geography-spatial/" class="md-nav__link">
         
   
   
@@ -1345,7 +1345,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../guides/range-types/" class="md-nav__link">
+      <a href="../../guides/range-types/" class="md-nav__link">
         
   
   
@@ -1373,7 +1373,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../guides/interval-arithmetic/" class="md-nav__link">
+      <a href="../../guides/interval-arithmetic/" class="md-nav__link">
         
   
   
@@ -1401,7 +1401,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../guides/import-from-real-project/" class="md-nav__link">
+      <a href="../../guides/import-from-real-project/" class="md-nav__link">
         
   
   
@@ -1429,7 +1429,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../guides/admin-endpoints/" class="md-nav__link">
+      <a href="../../guides/admin-endpoints/" class="md-nav__link">
         
   
   
@@ -1457,7 +1457,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../guides/backup-restore/" class="md-nav__link">
+      <a href="../../guides/backup-restore/" class="md-nav__link">
         
   
   
@@ -1485,7 +1485,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../guides/conformance-corpus/" class="md-nav__link">
+      <a href="../../guides/conformance-corpus/" class="md-nav__link">
         
   
   
@@ -1513,7 +1513,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../guides/ci-cd-patterns/" class="md-nav__link">
+      <a href="../../guides/ci-cd-patterns/" class="md-nav__link">
         
   
   
@@ -1541,7 +1541,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../guides/dbt-integration/" class="md-nav__link">
+      <a href="../../guides/dbt-integration/" class="md-nav__link">
         
   
   
@@ -1569,7 +1569,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../guides/airflow-integration/" class="md-nav__link">
+      <a href="../../guides/airflow-integration/" class="md-nav__link">
         
   
   
@@ -1597,7 +1597,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../guides/spark-integration/" class="md-nav__link">
+      <a href="../../guides/spark-integration/" class="md-nav__link">
         
   
   
@@ -1625,7 +1625,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../guides/using-bq-cli/" class="md-nav__link">
+      <a href="../../guides/using-bq-cli/" class="md-nav__link">
         
   
   
@@ -1653,7 +1653,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../guides/observability/" class="md-nav__link">
+      <a href="../../guides/observability/" class="md-nav__link">
         
   
   
@@ -1762,7 +1762,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../reference/compatibility-matrix/" class="md-nav__link">
+      <a href="../../reference/compatibility-matrix/" class="md-nav__link">
         
   
   
@@ -1790,7 +1790,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../reference/conformance-coverage-matrix/" class="md-nav__link">
+      <a href="../../reference/conformance-coverage-matrix/" class="md-nav__link">
         
   
   
@@ -1818,7 +1818,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../reference/api-configuration-coverage-matrix/" class="md-nav__link">
+      <a href="../../reference/api-configuration-coverage-matrix/" class="md-nav__link">
         
   
   
@@ -1846,7 +1846,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../reference/sql-function-mapping/" class="md-nav__link">
+      <a href="../../reference/sql-function-mapping/" class="md-nav__link">
         
   
   
@@ -1874,7 +1874,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../reference/api-coverage/" class="md-nav__link">
+      <a href="../../reference/api-coverage/" class="md-nav__link">
         
   
   
@@ -1902,7 +1902,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../reference/configuration/" class="md-nav__link">
+      <a href="../../reference/configuration/" class="md-nav__link">
         
   
   
@@ -1930,7 +1930,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../reference/cli/" class="md-nav__link">
+      <a href="../../reference/cli/" class="md-nav__link">
         
   
   
@@ -1958,7 +1958,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../reference/out-of-scope/" class="md-nav__link">
+      <a href="../../reference/out-of-scope/" class="md-nav__link">
         
   
   
@@ -1986,7 +1986,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../reference/gap-analysis/" class="md-nav__link">
+      <a href="../../reference/gap-analysis/" class="md-nav__link">
         
   
   
@@ -2014,7 +2014,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../reference/troubleshooting/" class="md-nav__link">
+      <a href="../../reference/troubleshooting/" class="md-nav__link">
         
   
   
@@ -2135,7 +2135,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../architecture/overview/" class="md-nav__link">
+      <a href="../../architecture/overview/" class="md-nav__link">
         
   
   
@@ -2163,7 +2163,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../architecture/storage-model/" class="md-nav__link">
+      <a href="../../architecture/storage-model/" class="md-nav__link">
         
   
   
@@ -2191,7 +2191,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../architecture/sql-translation/" class="md-nav__link">
+      <a href="../../architecture/sql-translation/" class="md-nav__link">
         
   
   
@@ -2219,7 +2219,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../architecture/jobs-lifecycle/" class="md-nav__link">
+      <a href="../../architecture/jobs-lifecycle/" class="md-nav__link">
         
   
   
@@ -2247,7 +2247,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../architecture/storage-read-api/" class="md-nav__link">
+      <a href="../../architecture/storage-read-api/" class="md-nav__link">
         
   
   
@@ -2275,7 +2275,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../architecture/storage-write-api/" class="md-nav__link">
+      <a href="../../architecture/storage-write-api/" class="md-nav__link">
         
   
   
@@ -2303,7 +2303,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../architecture/scripting/" class="md-nav__link">
+      <a href="../../architecture/scripting/" class="md-nav__link">
         
   
   
@@ -2331,7 +2331,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../architecture/udfs/" class="md-nav__link">
+      <a href="../../architecture/udfs/" class="md-nav__link">
         
   
   
@@ -2359,7 +2359,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../architecture/versioning-and-snapshots/" class="md-nav__link">
+      <a href="../../architecture/versioning-and-snapshots/" class="md-nav__link">
         
   
   
@@ -2387,7 +2387,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../architecture/row-access-policies/" class="md-nav__link">
+      <a href="../../architecture/row-access-policies/" class="md-nav__link">
         
   
   
@@ -2415,7 +2415,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../architecture/specialized-types/" class="md-nav__link">
+      <a href="../../architecture/specialized-types/" class="md-nav__link">
         
   
   
@@ -2443,7 +2443,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../architecture/admin-and-import-export/" class="md-nav__link">
+      <a href="../../architecture/admin-and-import-export/" class="md-nav__link">
         
   
   
@@ -2471,7 +2471,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../architecture/observability/" class="md-nav__link">
+      <a href="../../architecture/observability/" class="md-nav__link">
         
   
   
@@ -2499,7 +2499,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../architecture/testing-strategy/" class="md-nav__link">
+      <a href="../../architecture/testing-strategy/" class="md-nav__link">
         
   
   
@@ -2527,7 +2527,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../architecture/conformance-tier/" class="md-nav__link">
+      <a href="../../architecture/conformance-tier/" class="md-nav__link">
         
   
   
@@ -2621,7 +2621,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../architecture/contributing/dev-environment/" class="md-nav__link">
+      <a href="../../architecture/contributing/dev-environment/" class="md-nav__link">
         
   
   
@@ -2649,7 +2649,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../architecture/contributing/release-process/" class="md-nav__link">
+      <a href="../../architecture/contributing/release-process/" class="md-nav__link">
         
   
   
@@ -2677,7 +2677,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../architecture/contributing/adding-sql-functions/" class="md-nav__link">
+      <a href="../../architecture/contributing/adding-sql-functions/" class="md-nav__link">
         
   
   
@@ -2705,7 +2705,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../architecture/contributing/adding-udf-runtimes/" class="md-nav__link">
+      <a href="../../architecture/contributing/adding-udf-runtimes/" class="md-nav__link">
         
   
   
@@ -2733,7 +2733,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../architecture/contributing/adding-conformance-cases/" class="md-nav__link">
+      <a href="../../architecture/contributing/adding-conformance-cases/" class="md-nav__link">
         
   
   
@@ -2761,7 +2761,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../architecture/contributing/debugging/" class="md-nav__link">
+      <a href="../../architecture/contributing/debugging/" class="md-nav__link">
         
   
   
@@ -2801,8 +2801,10 @@
       
   
   
+    
   
   
+  
     
     
       
@@ -2884,19 +2886,22 @@
     
     
       
+        
+        
+      
       
         
       
     
     
-    <li class="md-nav__item md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_7" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_7" checked>
         
           
-          <label class="md-nav__link" for="__nav_7" id="__nav_7_label" tabindex="0">
+          <label class="md-nav__link" for="__nav_7" id="__nav_7_label" tabindex="">
             
   
   
@@ -2914,7 +2919,7 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_7_label" aria-expanded="false">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_7_label" aria-expanded="true">
           <label class="md-nav__title" for="__nav_7">
             <span class="md-nav__icon md-icon"></span>
             
@@ -2932,7 +2937,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../adr/0001-use-duckdb/" class="md-nav__link">
+      <a href="../0001-use-duckdb/" class="md-nav__link">
         
   
   
@@ -2960,7 +2965,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../adr/0002-python-over-go-rust/" class="md-nav__link">
+      <a href="../0002-python-over-go-rust/" class="md-nav__link">
         
   
   
@@ -2988,7 +2993,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../adr/0003-sqlglot-for-translation/" class="md-nav__link">
+      <a href="../0003-sqlglot-for-translation/" class="md-nav__link">
         
   
   
@@ -3016,7 +3021,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../adr/0004-hexagonal-architecture/" class="md-nav__link">
+      <a href="../0004-hexagonal-architecture/" class="md-nav__link">
         
   
   
@@ -3044,7 +3049,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../adr/0005-fastapi-grpcaio-single-process/" class="md-nav__link">
+      <a href="../0005-fastapi-grpcaio-single-process/" class="md-nav__link">
         
   
   
@@ -3072,7 +3077,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../adr/0006-catalog-in-reserved-schema/" class="md-nav__link">
+      <a href="../0006-catalog-in-reserved-schema/" class="md-nav__link">
         
   
   
@@ -3100,7 +3105,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../adr/0007-pytest-fixture-as-dx/" class="md-nav__link">
+      <a href="../0007-pytest-fixture-as-dx/" class="md-nav__link">
         
   
   
@@ -3128,7 +3133,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../adr/0008-snapshot-storage-read-api/" class="md-nav__link">
+      <a href="../0008-snapshot-storage-read-api/" class="md-nav__link">
         
   
   
@@ -3156,7 +3161,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../adr/0009-snapshot-layer-time-travel/" class="md-nav__link">
+      <a href="../0009-snapshot-layer-time-travel/" class="md-nav__link">
         
   
   
@@ -3184,7 +3189,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../adr/0010-py-mini-racer-for-js-udfs/" class="md-nav__link">
+      <a href="../0010-py-mini-racer-for-js-udfs/" class="md-nav__link">
         
   
   
@@ -3212,7 +3217,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../adr/0011-tree-walking-scripting-interpreter/" class="md-nav__link">
+      <a href="../0011-tree-walking-scripting-interpreter/" class="md-nav__link">
         
   
   
@@ -3240,7 +3245,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../adr/0012-bqml-out-of-scope/" class="md-nav__link">
+      <a href="../0012-bqml-out-of-scope/" class="md-nav__link">
         
   
   
@@ -3268,7 +3273,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../adr/0013-write-api-strategies/" class="md-nav__link">
+      <a href="../0013-write-api-strategies/" class="md-nav__link">
         
   
   
@@ -3296,7 +3301,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../adr/0014-udf-materialization-strategy/" class="md-nav__link">
+      <a href="../0014-udf-materialization-strategy/" class="md-nav__link">
         
   
   
@@ -3324,7 +3329,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../adr/0015-scripting-execution-model/" class="md-nav__link">
+      <a href="../0015-scripting-execution-model/" class="md-nav__link">
         
   
   
@@ -3352,7 +3357,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../adr/0016-snapshot-time-semantics/" class="md-nav__link">
+      <a href="../0016-snapshot-time-semantics/" class="md-nav__link">
         
   
   
@@ -3380,7 +3385,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../adr/0017-materialized-view-refresh/" class="md-nav__link">
+      <a href="../0017-materialized-view-refresh/" class="md-nav__link">
         
   
   
@@ -3408,7 +3413,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../adr/0018-caller-identity-and-row-access-enforcement/" class="md-nav__link">
+      <a href="../0018-caller-identity-and-row-access-enforcement/" class="md-nav__link">
         
   
   
@@ -3436,7 +3441,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../adr/0019-specialized-types/" class="md-nav__link">
+      <a href="../0019-specialized-types/" class="md-nav__link">
         
   
   
@@ -3464,7 +3469,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../adr/0020-admin-import-export/" class="md-nav__link">
+      <a href="../0020-admin-import-export/" class="md-nav__link">
         
   
   
@@ -3492,7 +3497,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../adr/0021-chaos-tier-design-contract/" class="md-nav__link">
+      <a href="../0021-chaos-tier-design-contract/" class="md-nav__link">
         
   
   
@@ -3520,7 +3525,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../adr/0022-conformance-corpus-design/" class="md-nav__link">
+      <a href="../0022-conformance-corpus-design/" class="md-nav__link">
         
   
   
@@ -3548,7 +3553,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../adr/0023-conformance-divergence-baseline/" class="md-nav__link">
+      <a href="../0023-conformance-divergence-baseline/" class="md-nav__link">
         
   
   
@@ -3576,7 +3581,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../adr/0024-hll-count-support-strategy/" class="md-nav__link">
+      <a href="../0024-hll-count-support-strategy/" class="md-nav__link">
         
   
   
@@ -3604,7 +3609,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../adr/0025-perf-tier-design-contract/" class="md-nav__link">
+      <a href="../0025-perf-tier-design-contract/" class="md-nav__link">
         
   
   
@@ -3632,7 +3637,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../adr/0026-mutation-tier-design-contract/" class="md-nav__link">
+      <a href="../0026-mutation-tier-design-contract/" class="md-nav__link">
         
   
   
@@ -3660,7 +3665,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../adr/0027-load-extract-avro-orc/" class="md-nav__link">
+      <a href="../0027-load-extract-avro-orc/" class="md-nav__link">
         
   
   
@@ -3688,7 +3693,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../adr/0028-differential-tier-design-contract/" class="md-nav__link">
+      <a href="../0028-differential-tier-design-contract/" class="md-nav__link">
         
   
   
@@ -3716,7 +3721,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../adr/0029-upload-host-endpoints/" class="md-nav__link">
+      <a href="../0029-upload-host-endpoints/" class="md-nav__link">
         
   
   
@@ -3744,7 +3749,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../adr/0030-storage-read-avro-format/" class="md-nav__link">
+      <a href="../0030-storage-read-avro-format/" class="md-nav__link">
         
   
   
@@ -3772,7 +3777,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../adr/0031-fuzz-tier-design-contract/" class="md-nav__link">
+      <a href="../0031-fuzz-tier-design-contract/" class="md-nav__link">
         
   
   
@@ -3800,7 +3805,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../adr/0032-bq-cli-conformance-client/" class="md-nav__link">
+      <a href="../0032-bq-cli-conformance-client/" class="md-nav__link">
         
   
   
@@ -3828,7 +3833,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../adr/0033-storage-read-arrow-ipc-bare-message-contract/" class="md-nav__link">
+      <a href="../0033-storage-read-arrow-ipc-bare-message-contract/" class="md-nav__link">
         
   
   
@@ -3856,7 +3861,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../adr/0034-scio-beam-emulator-routing/" class="md-nav__link">
+      <a href="../0034-scio-beam-emulator-routing/" class="md-nav__link">
         
   
   
@@ -3884,7 +3889,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../adr/0035-code-quality-gates/" class="md-nav__link">
+      <a href="../0035-code-quality-gates/" class="md-nav__link">
         
   
   
@@ -3912,7 +3917,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../adr/0036-complexity-ratchet-to-c/" class="md-nav__link">
+      <a href="../0036-complexity-ratchet-to-c/" class="md-nav__link">
         
   
   
@@ -3920,346 +3925,6 @@
     
   
     0036 Cyclomatic-complexity ratchet to rank C + promote-to-required gate
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../../adr/0037-openssf-scorecard/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    0037 OpenSSF Scorecard adoption + badge
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-          </ul>
-        </nav>
-      
-    </li>
-  
-
-    
-      
-      
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../../rfcs/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    RFCs
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-    
-      
-      
-  
-  
-    
-  
-  
-  
-    
-    
-      
-        
-          
-        
-      
-        
-      
-        
-      
-        
-      
-        
-      
-        
-      
-        
-      
-        
-      
-        
-      
-    
-    
-    
-      
-        
-        
-      
-      
-        
-      
-    
-    
-    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
-      
-        
-        
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_9" checked>
-        
-          
-          <div class="md-nav__link md-nav__container">
-            <a href="../../" class="md-nav__link ">
-              
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Examples
-  
-
-    
-  </span>
-  
-  
-
-            </a>
-            
-              
-              <label class="md-nav__link " for="__nav_9" id="__nav_9_label" tabindex="">
-                <span class="md-nav__icon md-icon"></span>
-              </label>
-            
-          </div>
-        
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_9_label" aria-expanded="true">
-          <label class="md-nav__title" for="__nav_9">
-            <span class="md-nav__icon md-icon"></span>
-            
-  
-    Examples
-  
-
-          </label>
-          <ul class="md-nav__list" data-md-scrollfix>
-            
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../bq-cli-quickstart/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    bq CLI quickstart
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../local-file-load/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Local file load
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-    
-  
-  
-  
-    
-    
-      
-        
-          
-        
-      
-        
-      
-        
-      
-        
-      
-    
-    
-    
-      
-      
-        
-          
-          
-        
-      
-    
-    
-    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
-      
-        
-        
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_9_4" checked>
-        
-          
-          <div class="md-nav__link md-nav__container">
-            <a href="../pytest-integration/" class="md-nav__link ">
-              
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Python
-  
-
-    
-  </span>
-  
-  
-
-            </a>
-            
-              
-              <label class="md-nav__link " for="__nav_9_4" id="__nav_9_4_label" tabindex="">
-                <span class="md-nav__icon md-icon"></span>
-              </label>
-            
-          </div>
-        
-        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_9_4_label" aria-expanded="true">
-          <label class="md-nav__title" for="__nav_9_4">
-            <span class="md-nav__icon md-icon"></span>
-            
-  
-    Python
-  
-
-          </label>
-          <ul class="md-nav__list" data-md-scrollfix>
-            
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../dbt-local/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    dbt local
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../airflow-dag-test/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Airflow DAG test
   
 
     
@@ -4296,7 +3961,7 @@
   <span class="md-ellipsis">
     
   
-    PySpark + BigQuery
+    0037 OpenSSF Scorecard adoption + badge
   
 
     
@@ -4314,7 +3979,7 @@
   <span class="md-ellipsis">
     
   
-    PySpark + BigQuery
+    0037 OpenSSF Scorecard adoption + badge
   
 
     
@@ -4340,10 +4005,10 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#why-this-shape-vs-the-official-spark-bigquery-connector" class="md-nav__link">
+  <a href="#context" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Why this shape (vs. the official spark-bigquery-connector)
+        Context
       
     </span>
   </a>
@@ -4351,10 +4016,193 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#what-it-demonstrates" class="md-nav__link">
+  <a href="#decision" class="md-nav__link">
     <span class="md-ellipsis">
       
-        What it demonstrates
+        Decision
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Decision">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#triggers" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Triggers
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#permissions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Permissions
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#action-pinning" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Action pinning
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#expected-initial-score" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Expected initial score
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#initial-publish-window" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Initial-publish window
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#rationale" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Rationale
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Rationale">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#why-publish-consent-to-publish_results-true" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Why publish (consent to publish_results: true)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#why-a-separate-workflow-rather-than-extending-codeqlyml" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Why a separate workflow rather than extending codeql.yml
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#why-bump-the-badge-cache-bust-on-release" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Why bump the badge cache-bust on release
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#why-the-strict-sha-pin-on-githubcodeql-action" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Why the strict SHA pin on github/codeql-action
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#consequences" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Consequences
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Consequences">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#positive" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Positive
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#negative" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Negative
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#neutral" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Neutral
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#alternatives-considered" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Alternatives considered
       
     </span>
   </a>
@@ -4362,43 +4210,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#layout" class="md-nav__link">
+  <a href="#references" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Layout
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#run" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Run
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#what-to-look-for" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        What to look for
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#storage-read-api-bare-record-batch-ipc-contract-v101" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Storage Read API — bare record-batch IPC contract (v1.0.1)
+        References
       
     </span>
   </a>
@@ -4409,6 +4224,336 @@
   
 </nav>
       
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../rfcs/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    RFCs
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+          
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_9" >
+        
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="../../examples/" class="md-nav__link ">
+              
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Examples
+  
+
+    
+  </span>
+  
+  
+
+            </a>
+            
+              
+              <label class="md-nav__link " for="__nav_9" id="__nav_9_label" tabindex="0">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_9_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_9">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Examples
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../examples/bq-cli-quickstart/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    bq CLI quickstart
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../examples/local-file-load/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Local file load
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+      
+        
+          
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_9_4" >
+        
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="../../examples/python/pytest-integration/" class="md-nav__link ">
+              
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Python
+  
+
+    
+  </span>
+  
+  
+
+            </a>
+            
+              
+              <label class="md-nav__link " for="__nav_9_4" id="__nav_9_4_label" tabindex="0">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_9_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_9_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Python
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../examples/python/dbt-local/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    dbt local
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../examples/python/airflow-dag-test/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Airflow DAG test
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../examples/python/pyspark-bigquery/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    PySpark + BigQuery
+  
+
+    
+  </span>
+  
+  
+
+      </a>
     </li>
   
 
@@ -4443,13 +4588,10 @@
       
       
         
-          
-          
-        
       
     
     
-    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--nested">
       
         
         
@@ -4457,7 +4599,7 @@
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="../../nodejs/nestjs-app/" class="md-nav__link ">
+            <a href="../../examples/nodejs/nestjs-app/" class="md-nav__link ">
               
   
   
@@ -4475,7 +4617,7 @@
             </a>
             
               
-              <label class="md-nav__link " for="__nav_9_5" id="__nav_9_5_label" tabindex="">
+              <label class="md-nav__link " for="__nav_9_5" id="__nav_9_5_label" tabindex="0">
                 <span class="md-nav__icon md-icon"></span>
               </label>
             
@@ -4501,7 +4643,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../nodejs/cloud-run-local/" class="md-nav__link">
+      <a href="../../examples/nodejs/cloud-run-local/" class="md-nav__link">
         
   
   
@@ -4551,13 +4693,10 @@
       
       
         
-          
-          
-        
       
     
     
-    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--nested">
       
         
         
@@ -4565,7 +4704,7 @@
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="../../go/beam-pipeline/" class="md-nav__link ">
+            <a href="../../examples/go/beam-pipeline/" class="md-nav__link ">
               
   
   
@@ -4583,7 +4722,7 @@
             </a>
             
               
-              <label class="md-nav__link " for="__nav_9_6" id="__nav_9_6_label" tabindex="">
+              <label class="md-nav__link " for="__nav_9_6" id="__nav_9_6_label" tabindex="0">
                 <span class="md-nav__icon md-icon"></span>
               </label>
             
@@ -4609,7 +4748,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../go/dataflow-local/" class="md-nav__link">
+      <a href="../../examples/go/dataflow-local/" class="md-nav__link">
         
   
   
@@ -4659,13 +4798,10 @@
       
       
         
-          
-          
-        
       
     
     
-    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--nested">
       
         
         
@@ -4673,7 +4809,7 @@
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="../../java/spring-boot/" class="md-nav__link ">
+            <a href="../../examples/java/spring-boot/" class="md-nav__link ">
               
   
   
@@ -4691,7 +4827,7 @@
             </a>
             
               
-              <label class="md-nav__link " for="__nav_9_7" id="__nav_9_7_label" tabindex="">
+              <label class="md-nav__link " for="__nav_9_7" id="__nav_9_7_label" tabindex="0">
                 <span class="md-nav__icon md-icon"></span>
               </label>
             
@@ -4717,7 +4853,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../java/scio/" class="md-nav__link">
+      <a href="../../examples/java/scio/" class="md-nav__link">
         
   
   
@@ -4765,13 +4901,10 @@
       
       
         
-          
-          
-        
       
     
     
-    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--nested">
       
         
         
@@ -4779,7 +4912,7 @@
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="../../docker-compose/full-stack/" class="md-nav__link ">
+            <a href="../../examples/docker-compose/full-stack/" class="md-nav__link ">
               
   
   
@@ -4842,13 +4975,10 @@
       
       
         
-          
-          
-        
       
     
     
-    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--nested">
       
         
         
@@ -4856,7 +4986,7 @@
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="../../ci-recipes/github-actions/" class="md-nav__link ">
+            <a href="../../examples/ci-recipes/github-actions/" class="md-nav__link ">
               
   
   
@@ -4874,7 +5004,7 @@
             </a>
             
               
-              <label class="md-nav__link " for="__nav_9_9" id="__nav_9_9_label" tabindex="">
+              <label class="md-nav__link " for="__nav_9_9" id="__nav_9_9_label" tabindex="0">
                 <span class="md-nav__icon md-icon"></span>
               </label>
             
@@ -4900,7 +5030,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../ci-recipes/gitlab-ci/" class="md-nav__link">
+      <a href="../../examples/ci-recipes/gitlab-ci/" class="md-nav__link">
         
   
   
@@ -4928,7 +5058,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../ci-recipes/circleci/" class="md-nav__link">
+      <a href="../../examples/ci-recipes/circleci/" class="md-nav__link">
         
   
   
@@ -4971,7 +5101,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../api/" class="md-nav__link">
+      <a href="../../api/" class="md-nav__link">
         
   
   
@@ -5018,10 +5148,10 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#why-this-shape-vs-the-official-spark-bigquery-connector" class="md-nav__link">
+  <a href="#context" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Why this shape (vs. the official spark-bigquery-connector)
+        Context
       
     </span>
   </a>
@@ -5029,10 +5159,193 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#what-it-demonstrates" class="md-nav__link">
+  <a href="#decision" class="md-nav__link">
     <span class="md-ellipsis">
       
-        What it demonstrates
+        Decision
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Decision">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#triggers" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Triggers
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#permissions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Permissions
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#action-pinning" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Action pinning
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#expected-initial-score" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Expected initial score
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#initial-publish-window" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Initial-publish window
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#rationale" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Rationale
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Rationale">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#why-publish-consent-to-publish_results-true" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Why publish (consent to publish_results: true)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#why-a-separate-workflow-rather-than-extending-codeqlyml" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Why a separate workflow rather than extending codeql.yml
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#why-bump-the-badge-cache-bust-on-release" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Why bump the badge cache-bust on release
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#why-the-strict-sha-pin-on-githubcodeql-action" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Why the strict SHA pin on github/codeql-action
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#consequences" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Consequences
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Consequences">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#positive" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Positive
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#negative" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Negative
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#neutral" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Neutral
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#alternatives-considered" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Alternatives considered
       
     </span>
   </a>
@@ -5040,43 +5353,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#layout" class="md-nav__link">
+  <a href="#references" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Layout
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#run" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Run
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#what-to-look-for" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        What to look for
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#storage-read-api-bare-record-batch-ipc-contract-v101" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Storage Read API — bare record-batch IPC contract (v1.0.1)
+        References
       
     </span>
   </a>
@@ -5100,7 +5380,7 @@
 
 
   
-    <a href="https://github.com/jjviscomi/bqemulator/edit/main/docs/examples/python/pyspark-bigquery/README.md" title="Edit this page" class="md-content__button md-icon" rel="edit">
+    <a href="https://github.com/jjviscomi/bqemulator/edit/main/docs/adr/0037-openssf-scorecard.md" title="Edit this page" class="md-content__button md-icon" rel="edit">
       
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M10 20H6V4h7v5h5v3.1l2-2V8l-6-6H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h4zm10.2-7c.1 0 .3.1.4.2l1.3 1.3c.2.2.2.6 0 .8l-1 1-2.1-2.1 1-1c.1-.1.2-.2.4-.2m0 3.9L14.1 23H12v-2.1l6.1-6.1z"/></svg>
     </a>
@@ -5109,74 +5389,390 @@
     
       
     
-    <a href="https://github.com/jjviscomi/bqemulator/raw/main/docs/examples/python/pyspark-bigquery/README.md" title="View source of this page" class="md-content__button md-icon">
+    <a href="https://github.com/jjviscomi/bqemulator/raw/main/docs/adr/0037-openssf-scorecard.md" title="View source of this page" class="md-content__button md-icon">
       
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M17 18c.56 0 1 .44 1 1s-.44 1-1 1-1-.44-1-1 .44-1 1-1m0-3c-2.73 0-5.06 1.66-6 4 .94 2.34 3.27 4 6 4s5.06-1.66 6-4c-.94-2.34-3.27-4-6-4m0 6.5a2.5 2.5 0 0 1-2.5-2.5 2.5 2.5 0 0 1 2.5-2.5 2.5 2.5 0 0 1 2.5 2.5 2.5 2.5 0 0 1-2.5 2.5M9.27 20H6V4h7v5h5v4.07c.7.08 1.36.25 2 .49V8l-6-6H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h4.5a8.2 8.2 0 0 1-1.23-2"/></svg>
     </a>
   
 
 
-<h1 id="pyspark-reading-from-bqemulator">PySpark reading from <code>bqemulator</code><a class="headerlink" href="#pyspark-reading-from-bqemulator" title="Permanent link">&para;</a></h1>
-<p>Reads data from <code>bqemulator</code> via the BigQuery Storage Read API (Arrow
-output) into a PySpark DataFrame using the
-<a href="https://pypi.org/project/google-cloud-bigquery-storage/"><code>google-cloud-bigquery-storage</code></a>
-client and Spark's <code>createDataFrame</code> from an Arrow table.</p>
-<p>Pairs with the <a href="../../../guides/spark-integration/">Spark integration guide</a>.</p>
-<h2 id="why-this-shape-vs-the-official-spark-bigquery-connector">Why this shape (vs. the official <code>spark-bigquery-connector</code>)<a class="headerlink" href="#why-this-shape-vs-the-official-spark-bigquery-connector" title="Permanent link">&para;</a></h2>
-<p>The official
-<a href="https://github.com/GoogleCloudDataproc/spark-bigquery-connector"><code>spark-bigquery-connector</code></a>
-is a Scala/Java JAR that talks to the real BigQuery Storage Read API
-over gRPC. Pointing it at an emulator host requires JVM-level
-<code>--conf</code> overrides that vary by connector version and tend to break
-on upgrades.</p>
-<p>The robust, version-stable pattern is:</p>
+<h1 id="adr-0037-adopt-openssf-scorecard-public-security-posture-score-badge">ADR 0037: Adopt OpenSSF Scorecard — public security-posture score + badge<a class="headerlink" href="#adr-0037-adopt-openssf-scorecard-public-security-posture-score-badge" title="Permanent link">&para;</a></h1>
+<ul>
+<li><strong>Status</strong>: Accepted</li>
+</ul>
+<h2 id="context">Context<a class="headerlink" href="#context" title="Permanent link">&para;</a></h2>
+<p>The project ships security-relevant artefacts every release:
+sigstore-attested PyPI wheels, cosign-keyless GHCR images, signed
+commits + signed annotated tags, SHA-pinned third-party Actions, full
+branch protection on <code>main</code>, CodeQL static analysis, Dependabot, and
+a seven-tier test pyramid with ≥ 90% coverage. Each of those is
+documented in CI workflow files or AGENTS.md, but there is <strong>no
+single, externally-verifiable scorecard</strong> that says "this project
+is doing those things." Downstream consumers — security teams
+auditing the dependency, OSSF tooling
+(<a href="https://deps.dev/"><code>deps.dev</code></a>, Open Source Insights,
+<a href="https://github.com/ossf/allstar"><code>allstar</code></a>) — have to walk every
+file and re-derive the posture themselves.</p>
+<p><a href="https://scorecard.dev/">OpenSSF Scorecard</a> is the standard fix for
+this: an automated checker that grades a public repository against
+~18 security practices and publishes the score (0–10) to a
+public database at
+<code>https://api.securityscorecards.dev/projects/github.com/&lt;owner&gt;/&lt;repo&gt;</code>.
+The score lights up a badge endpoint, surfaces in deps.dev, and is
+treated by OSSF Best Practices as the canonical security-posture
+metric for OSS.</p>
+<p>This ADR adopts Scorecard with publication opt-in and adds the badge
+to the README. The release orchestrator (<code>scripts/release.py</code> via
+<code>scripts/bump_version.py</code>) already bumps shields.io badge
+cache-bust suffixes; this ADR extends the bump to the Scorecard
+badge's distinct <code>?v=X.Y.Z</code> cache-bust pattern.</p>
+<h2 id="decision">Decision<a class="headerlink" href="#decision" title="Permanent link">&para;</a></h2>
+<p>Add a new <code>.github/workflows/scorecard.yml</code> workflow that runs the
+official <code>ossf/scorecard-action</code> against <code>main</code> on every push,
+every published release, and weekly via cron. The workflow:</p>
 <ol>
-<li>Use the
-   <a href="https://github.com/googleapis/python-bigquery-storage"><code>google-cloud-bigquery-storage</code></a>
-   Python client (which respects the standard endpoint override
-   semantics) to read rows out of BigQuery as Arrow record batches.</li>
-<li>Hand the Arrow table to Spark via <code>spark.createDataFrame</code>.</li>
+<li>Computes the Scorecard score (SARIF output).</li>
+<li><strong>Publishes the result</strong> (<code>publish_results: true</code>) to the OSSF
+   public database. The project owner has consented; the
+   project is public anyway so the score is not novel info.</li>
+<li>Uploads the SARIF as a 7-day-retention artefact for offline
+   debugging.</li>
+<li>Uploads the SARIF to GitHub's Security tab via
+   <code>github/codeql-action/upload-sarif</code> so findings appear
+   alongside CodeQL alerts.</li>
 </ol>
-<p>This matches the surface <code>bqemulator</code> exposes (see
-<a href="../../../adr/0030-storage-read-avro-format/">ADR 0030</a>) and is the
-pattern used in the <a href="../../../guides/storage-api/">Storage Read API guide</a>.</p>
-<h2 id="what-it-demonstrates">What it demonstrates<a class="headerlink" href="#what-it-demonstrates" title="Permanent link">&para;</a></h2>
-<ul>
-<li>Seeding a 5-row table via the standard <code>google-cloud-bigquery</code>
-  client against the emulator.</li>
-<li>Reading those rows back via the Storage Read API
-  (<code>google-cloud-bigquery-storage</code>) with <code>DataFormat.ARROW</code>.</li>
-<li>Constructing a Spark <code>DataFrame</code> from the result and running an
-  aggregate.</li>
-<li>Asserting the round-tripped count matches.</li>
-</ul>
-<h2 id="layout">Layout<a class="headerlink" href="#layout" title="Permanent link">&para;</a></h2>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>example.py — full demo: seed, Storage Read, Spark aggregate
+<p>The README badge stack gains a Scorecard badge linking to the
+public viewer:</p>
+<div class="language-markdown highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>[<span class="nt">![OpenSSF Scorecard</span>](<span class="na">https://api.securityscorecards.dev/projects/github.com/jjviscomi/bqemulator/badge?v=X.Y.Z</span>)](https://scorecard.dev/viewer/?uri=github.com/jjviscomi/bqemulator)
 </span></code></pre></div>
-<h2 id="run">Run<a class="headerlink" href="#run" title="Permanent link">&para;</a></h2>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>make<span class="w"> </span><span class="nb">test</span>
-</span></code></pre></div>
-<h2 id="what-to-look-for">What to look for<a class="headerlink" href="#what-to-look-for" title="Permanent link">&para;</a></h2>
+<p>The <code>?v=X.Y.Z</code> query parameter is a GitHub-camo cache-bust suffix —
+<code>api.securityscorecards.dev</code> ignores it but camo keys its image
+cache on the full URL, so bumping <code>v=</code> on release forces readers'
+browsers to refetch the freshly re-scored badge. The bump is
+handled by <code>scripts/bump_version.py</code>'s extended regex
+(<code>_README_SCORECARD_BADGE_RE</code>) alongside the existing shields.io
+PyPI badges.</p>
+<h3 id="triggers">Triggers<a class="headerlink" href="#triggers" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>Trigger</th>
+<th>Why</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>push: main</code></td>
+<td>Re-score on every change to the default branch — catches regressions immediately (e.g. a dropped permission scope, a downgraded action pin).</td>
+</tr>
+<tr>
+<td><code>release: published</code></td>
+<td>Re-score after each tag publishes — the badge then reflects the freshly attested wheel + signed image.</td>
+</tr>
+<tr>
+<td><code>schedule: 47 3 * * 1</code></td>
+<td>Weekly cron picks up dependency drift the per-push runs miss (a transitive dep that was clean Monday and CVE'd Wednesday).</td>
+</tr>
+<tr>
+<td><code>workflow_dispatch</code></td>
+<td>Manual re-run from the Actions UI for one-off rescore requests.</td>
+</tr>
+</tbody>
+</table>
+<h3 id="permissions">Permissions<a class="headerlink" href="#permissions" title="Permanent link">&para;</a></h3>
+<p>Per the Scorecard action's <a href="https://github.com/ossf/scorecard-action#installation">installation guide</a>:</p>
+<table>
+<thead>
+<tr>
+<th>Permission</th>
+<th>Why</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>security-events: write</code></td>
+<td>Required to push SARIF to GitHub Security tab.</td>
+</tr>
+<tr>
+<td><code>id-token: write</code></td>
+<td>Required for sigstore OIDC signature on the published score (proves the score came from THIS workflow, not a forged submission).</td>
+</tr>
+<tr>
+<td><code>contents: read</code></td>
+<td>Source checkout.</td>
+</tr>
+<tr>
+<td><code>actions: read</code></td>
+<td>Dependabot scan reads workflow runs.</td>
+</tr>
+</tbody>
+</table>
+<p>The top-level <code>permissions: read-all</code> follows Scorecard's own
+hardening recommendation — the workflow's outer scope is read-only,
+and the per-job permissions block grants the narrow writes the
+action actually needs.</p>
+<h3 id="action-pinning">Action pinning<a class="headerlink" href="#action-pinning" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>Action</th>
+<th>Pin</th>
+<th>Reason</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>actions/checkout</code></td>
+<td><code>@v4</code></td>
+<td>First-party <code>actions/*</code> — major-tag allowed per AGENTS.md OpenSSF-alignment rule.</td>
+</tr>
+<tr>
+<td><code>actions/upload-artifact</code></td>
+<td><code>@v4</code></td>
+<td>Same.</td>
+</tr>
+<tr>
+<td><code>ossf/scorecard-action</code></td>
+<td><code>@4eaacf0543bb3f2c246792bd56e8cdeffafb205a # v2.4.3</code></td>
+<td>Third-party — full commit SHA + trailing <code># vX.Y.Z</code> comment.</td>
+</tr>
+<tr>
+<td><code>github/codeql-action/upload-sarif</code></td>
+<td><code>@7211b7c8077ea37d8641b6271f6a365a22a5fbfa # v4.36.0</code></td>
+<td><code>github/*</code> is not <code>actions/*</code> — SHA-pinned to match the strict reading of AGENTS.md. (The pre-existing <code>codeql.yml</code> uses <code>@v4</code> for <code>github/codeql-action</code>; surfaced as pre-existing tech debt in PR description, not fixed here.)</td>
+</tr>
+</tbody>
+</table>
+<p>Dependabot already monitors <code>.github/workflows/*.yml</code>, so the two
+SHA pins keep moving forward automatically.</p>
+<h3 id="expected-initial-score">Expected initial score<a class="headerlink" href="#expected-initial-score" title="Permanent link">&para;</a></h3>
+<p>The repo already implements most of what Scorecard checks for:</p>
+<table>
+<thead>
+<tr>
+<th>Check</th>
+<th>Expected</th>
+<th>Why</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Branch-Protection</td>
+<td>9–10</td>
+<td>Ruleset 16726422 enforces signed commits, linear history, no force-push, required status checks.</td>
+</tr>
+<tr>
+<td>Token-Permissions</td>
+<td>9–10</td>
+<td>Every workflow uses scoped <code>permissions:</code> blocks.</td>
+</tr>
+<tr>
+<td>Pinned-Dependencies</td>
+<td>9–10</td>
+<td>All third-party actions SHA-pinned (<code>grep -rEn 'uses:.*@v?[0-9]' .github/workflows/</code> returns no non-<code>actions/*</code> floating tags).</td>
+</tr>
+<tr>
+<td>Signed-Releases</td>
+<td>9–10</td>
+<td>cosign keyless on GHCR, sigstore attestation on PyPI wheels (via Trusted Publishing).</td>
+</tr>
+<tr>
+<td>Code-Review</td>
+<td>9–10</td>
+<td>All commits land via PR; CODEOWNERS enforces review.</td>
+</tr>
+<tr>
+<td>CI-Tests</td>
+<td>10</td>
+<td>27 CI checks per PR.</td>
+</tr>
+<tr>
+<td>SAST</td>
+<td>10</td>
+<td>CodeQL on every PR.</td>
+</tr>
+<tr>
+<td>CII-Best-Practices</td>
+<td>0</td>
+<td>Not yet enrolled — separate follow-up if we ever pursue the badge.</td>
+</tr>
+<tr>
+<td>License</td>
+<td>10</td>
+<td>Apache-2.0 in repo root.</td>
+</tr>
+<tr>
+<td>Maintained</td>
+<td>9–10</td>
+<td>Active commit cadence over the last 90 days.</td>
+</tr>
+<tr>
+<td>Vulnerabilities</td>
+<td>varies</td>
+<td>OSV scan against the dependency tree; surfaces transitive CVEs even if Dependabot hasn't filed PRs yet.</td>
+</tr>
+<tr>
+<td>Dependency-Update-Tool</td>
+<td>10</td>
+<td>Dependabot enabled across pip, github-actions, docker.</td>
+</tr>
+<tr>
+<td>Webhooks</td>
+<td>n/a</td>
+<td>No deprecated webhooks in use.</td>
+</tr>
+<tr>
+<td>Dangerous-Workflow</td>
+<td>10</td>
+<td>No <code>pull_request_target</code> with <code>actions/checkout</code> of forked SHA.</td>
+</tr>
+<tr>
+<td>Fuzzing</td>
+<td>low</td>
+<td>Not formally enrolled in OSS-Fuzz; the <code>tests/fuzz/</code> corpus is local-only. Possible follow-up.</td>
+</tr>
+<tr>
+<td>Packaging</td>
+<td>10</td>
+<td>Published packaged artefacts on PyPI and GHCR.</td>
+</tr>
+<tr>
+<td>Binary-Artifacts</td>
+<td>10</td>
+<td>No committed binaries in repo.</td>
+</tr>
+<tr>
+<td>Contributors</td>
+<td>varies</td>
+<td>Contributor diversity check — single-maintainer projects score lower regardless of practices.</td>
+</tr>
+</tbody>
+</table>
+<p>Realistic initial score: <strong>8–9</strong>. The two checks that drag the
+score are CII-Best-Practices (not enrolled) and Contributors
+(single-maintainer); the actionable ones (pinned deps, signed
+releases, branch protection, SAST, code review) all score high.</p>
+<h3 id="initial-publish-window">Initial-publish window<a class="headerlink" href="#initial-publish-window" title="Permanent link">&para;</a></h3>
+<p>The Scorecard public database takes ~24–48 h to populate the first
+score after the workflow lands. During that window the badge
+endpoint returns 404 and renders as a broken image. This is
+expected; no fix is required.</p>
+<h2 id="rationale">Rationale<a class="headerlink" href="#rationale" title="Permanent link">&para;</a></h2>
+<h3 id="why-publish-consent-to-publish_results-true">Why publish (consent to <code>publish_results: true</code>)<a class="headerlink" href="#why-publish-consent-to-publish_results-true" title="Permanent link">&para;</a></h3>
+<p>The repo is public. Anyone who wants the score can run Scorecard
+against it locally already — publication just makes the result
+visible without that step. Publication also gates entry into
+downstream OSSF tooling (deps.dev, Open Source Insights pull the
+score from the public database; without publication those views
+show "no data"). The project owner explicitly consented during
+chip design.</p>
+<h3 id="why-a-separate-workflow-rather-than-extending-codeqlyml">Why a separate workflow rather than extending <code>codeql.yml</code><a class="headerlink" href="#why-a-separate-workflow-rather-than-extending-codeqlyml" title="Permanent link">&para;</a></h3>
+<p><code>codeql.yml</code> runs CodeQL static analysis on PRs. Scorecard is
+neither static analysis nor PR-scoped — it's a holistic posture
+check that runs against the default-branch state. Sharing a
+workflow would either run Scorecard per-PR (wasteful) or run CodeQL
+weekly (wasteful). Two separate workflows with their own triggers
+is the right shape.</p>
+<h3 id="why-bump-the-badge-cache-bust-on-release">Why bump the badge cache-bust on release<a class="headerlink" href="#why-bump-the-badge-cache-bust-on-release" title="Permanent link">&para;</a></h3>
+<p>The Scorecard badge image is fetched through GitHub camo. Camo's
+TTL is ~24 h keyed on the full URL; the score <em>itself</em> may have
+re-computed within minutes of a release (push-on-main trigger), but
+camo will still serve the stale badge image for up to a day. The
+<code>?v=X.Y.Z</code> cache-bust suffix shifts the URL on every release so
+camo refetches immediately. The Scorecard endpoint itself ignores
+the unknown query param — verified against
+<code>https://api.securityscorecards.dev/projects/github.com/jjviscomi/bqemulator/badge?v=anything</code>.</p>
+<p>This is the <strong>same</strong> cache-bust trick already used on the
+shields.io PyPI badges (PR #47, ADR n/a since that was tactical).
+The only difference is the URL pattern: shields.io accepts
+<code>?cacheSeconds=N&amp;v=X.Y.Z</code> (two params); Scorecard accepts a bare
+<code>?v=X.Y.Z</code>. The <code>_README_SCORECARD_BADGE_RE</code> regex anchors on
+<code>api.securityscorecards.dev/.../badge?v=</code> so it never accidentally
+matches an unrelated URL.</p>
+<h3 id="why-the-strict-sha-pin-on-githubcodeql-action">Why the strict SHA pin on <code>github/codeql-action</code><a class="headerlink" href="#why-the-strict-sha-pin-on-githubcodeql-action" title="Permanent link">&para;</a></h3>
+<p>AGENTS.md's OpenSSF-alignment rule says first-party <code>actions/*</code> may
+use major tags; everything else is SHA-pinned. <code>github/codeql-action</code>
+is published under <code>github/</code>, not <code>actions/</code>, so the strict reading
+of the rule is "SHA-pin it." The existing <code>codeql.yml</code> uses
+<code>github/codeql-action@v4</code> (major tag) — that's pre-existing tech
+debt this ADR notes but does not fix (separate PR if Scorecard's
+Pinned-Dependencies check ever flags it).</p>
+<h2 id="consequences">Consequences<a class="headerlink" href="#consequences" title="Permanent link">&para;</a></h2>
+<h3 id="positive">Positive<a class="headerlink" href="#positive" title="Permanent link">&para;</a></h3>
 <ul>
-<li>The Storage Read client is constructed with a <code>BigQueryReadGrpcTransport</code>
-  wrapping an explicit <code>grpc.insecure_channel(...)</code> — bqemulator
-  serves the Storage Read API over plaintext gRPC, and the default
-  transport wraps every call in TLS (failing the handshake with
-  <code>SSL_ERROR_SSL: WRONG_VERSION_NUMBER</code>).</li>
-<li>Spark runs in local-master mode (<code>local[*]</code>) so the example is
-  hermetic — no Hadoop/YARN cluster required.</li>
+<li><strong>External, machine-readable security-posture signal.</strong> A single
+  URL replaces "trust me bro, we do all the right things."</li>
+<li><strong>Continuous regression detection.</strong> A dropped permission scope,
+  a downgraded action pin, a disabled branch protection rule —
+  Scorecard catches each in its weekly + push-on-main cadence.</li>
+<li><strong>SARIF in GitHub Security tab.</strong> Findings show alongside CodeQL
+  alerts — single triage surface instead of two.</li>
+<li><strong>Downstream tooling lights up.</strong> deps.dev / OSS Insights /
+  allstar all pull from the published database.</li>
+<li><strong>Cheap.</strong> The action is ~30 s per run; one workflow file.</li>
 </ul>
-<h2 id="storage-read-api-bare-record-batch-ipc-contract-v101">Storage Read API — bare record-batch IPC contract (v1.0.1)<a class="headerlink" href="#storage-read-api-bare-record-batch-ipc-contract-v101" title="Permanent link">&para;</a></h2>
-<p>The example uses the canonical
-<code>reader.to_arrow(session)</code> helper from the
-<code>google-cloud-bigquery-storage</code> client. Under v1.0.0 this call tripped
-on a bqemulator wire-format bug (the server packed a full Arrow IPC
-stream into <code>ArrowRecordBatch.serialized_record_batch</code>); v1.0.1
-<a href="https://github.com/jjviscomi/bqemulator/issues/15">#15</a> /
-<a href="../../../adr/0033-storage-read-arrow-ipc-bare-message-contract/">ADR 0033</a>
-shipped the spec-conforming bare record-batch format and removed
-the workaround. If you're pinning to v1.0.0 the helper still trips
-the format mismatch; upgrade to v1.0.1+.</p>
+<h3 id="negative">Negative<a class="headerlink" href="#negative" title="Permanent link">&para;</a></h3>
+<ul>
+<li><strong>Initial-publish window 24–48 h.</strong> The README badge is broken
+  during that window. Documented in PR description; no action
+  required, just patience.</li>
+<li><strong>Score drift on dependency CVEs.</strong> The Vulnerabilities check
+  pulls from OSV — a transient OSV index change can move the score
+  even when nothing in the repo changed. This is true of any
+  third-party scoring; the OSSF database surfaces history so a
+  spike is debuggable.</li>
+<li><strong>One more workflow to maintain.</strong> Pinned by Dependabot; the
+  cost is one occasional PR-merge per upstream Scorecard release.</li>
+</ul>
+<h3 id="neutral">Neutral<a class="headerlink" href="#neutral" title="Permanent link">&para;</a></h3>
+<ul>
+<li>The Pinned-Dependencies check may flag the pre-existing
+  <code>github/codeql-action@v4</code> in <code>codeql.yml</code>. If it does, that's
+  visible motivation to SHA-pin it in a follow-up. The current ADR
+  does not bundle that fix.</li>
+<li>The Scorecard badge endpoint is fetched through camo on every
+  README impression; the <code>?v=</code> cache-bust is what makes the
+  release-time refresh reliable. Without the bump-on-release wiring
+  (added by <code>_README_SCORECARD_BADGE_RE</code> in <code>scripts/bump_version.py</code>)
+  the badge would lag by up to ~24 h after a release.</li>
+</ul>
+<h2 id="alternatives-considered">Alternatives considered<a class="headerlink" href="#alternatives-considered" title="Permanent link">&para;</a></h2>
+<ol>
+<li><strong>Don't adopt Scorecard.</strong> Status quo: the security posture is
+   real but invisible. Downstream consumers re-derive it manually
+   if at all. Rejected — the entire point of OSSF tooling is to
+   centralise this.</li>
+<li><strong>Adopt Scorecard but don't publish (<code>publish_results: false</code>).</strong>
+   Keeps the score private. Loses every downstream benefit
+   (deps.dev, OSS Insights, the public badge). The project owner
+   considered this and chose to publish — the repo is public, so
+   the score isn't novel info.</li>
+<li><strong>Self-host the scoring (run the scorecard CLI in CI without
+   the action).</strong> Equivalent for the score itself, but skips the
+   sigstore OIDC signature on the published result; OSSF database
+   ingestion requires the signature for provenance. Rejected.</li>
+<li><strong>Use CII Best Practices instead of Scorecard.</strong> Different tool,
+   different surface — CII Best Practices is a self-attestation
+   questionnaire, not an automated check. Complementary, not a
+   substitute. Possible future enrolment as a separate ADR.</li>
+<li><strong>Bundle Scorecard into the existing <code>codeql.yml</code>.</strong> Wrong
+   trigger model (per-PR vs default-branch) and wrong cadence
+   (CodeQL = every push; Scorecard = once per default-branch
+   change + weekly). Rejected.</li>
+<li><strong>Skip the cache-bust automation, accept ~24 h badge staleness.</strong>
+   Trivial savings (one regex, ~30 LoC). The badge is the public
+   face of the score; a stale badge is the worst-case UX. Rejected.</li>
+</ol>
+<h2 id="references">References<a class="headerlink" href="#references" title="Permanent link">&para;</a></h2>
+<ul>
+<li><a href="https://scorecard.dev/">scorecard.dev</a> — project home.</li>
+<li><a href="https://github.com/ossf/scorecard"><code>ossf/scorecard</code></a> — scoring engine.</li>
+<li><a href="https://github.com/ossf/scorecard-action"><code>ossf/scorecard-action</code></a> — GHA wrapper used here.</li>
+<li><a href="https://github.com/ossf/scorecard-action#installation">Scorecard installation guide</a> — workflow template + permissions doc.</li>
+<li><a href="../0035-code-quality-gates/">ADR 0035</a> and <a href="../0036-complexity-ratchet-to-c/">ADR 0036</a> — template/shape this ADR follows.</li>
+<li><a href="https://github.com/jjviscomi/bqemulator/pull/47">PR #47</a> — the predecessor PR that introduced the README badge cache-bust automation this ADR extends.</li>
+<li>AGENTS.md "OpenSSF Scorecard alignment" — the project-wide rule that motivates the SHA-pinning convention.</li>
+</ul>
 
 
 
@@ -5238,10 +5834,10 @@ the format mismatch; upgrade to v1.0.1+.</p>
     
       
       
-      <script id="__config" type="application/json">{"annotate": null, "base": "../../..", "features": ["content.action.edit", "content.action.view", "content.code.copy", "content.code.annotate", "content.tabs.link", "navigation.indexes", "navigation.instant", "navigation.sections", "navigation.tabs", "navigation.top", "navigation.tracking", "search.highlight", "search.share", "search.suggest", "toc.follow"], "search": "../../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": {"default": "latest", "provider": "mike"}}</script>
+      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["content.action.edit", "content.action.view", "content.code.copy", "content.code.annotate", "content.tabs.link", "navigation.indexes", "navigation.instant", "navigation.sections", "navigation.tabs", "navigation.top", "navigation.tracking", "search.highlight", "search.share", "search.suggest", "toc.follow"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": {"default": "latest", "provider": "mike"}}</script>
     
     
-      <script src="../../../assets/javascripts/bundle.79ae519e.min.js"></script>
+      <script src="../../assets/javascripts/bundle.79ae519e.min.js"></script>
       
     
   </body>
