@@ -898,6 +898,93 @@ def _apply_default_dataset(
     )
 
 
+def _resolve_write_append_destination(
+    query_config: dict[str, Any],
+    ctx: AppContext,
+    request_project_id: str,
+) -> tuple[Any, set[str]] | None:
+    """Return ``(destination TableMeta, set of destination column names)`` or None.
+
+    Returns ``None`` whenever any of the destination-resolution
+    conditions fail — missing projectId / datasetId / tableId, catalog
+    miss, or the destination doesn't carry a schema. The caller short-
+    circuits the post-processing in any of those cases.
+    """
+    destination = query_config.get("destinationTable")
+    if not isinstance(destination, dict):
+        return None
+    project_id = destination.get("projectId") or request_project_id
+    dataset_id = destination.get("datasetId")
+    table_id = destination.get("tableId")
+    if not (project_id and dataset_id and table_id):
+        return None
+    meta = ctx.catalog.get_table(project_id, dataset_id, table_id)
+    if meta is None:
+        return None
+    dest_table_schema = getattr(meta, "schema_", None)
+    if dest_table_schema is None:
+        return None
+    return meta, {field.name for field in dest_table_schema.fields}
+
+
+def _validate_write_append_schema(
+    arrow_table: Any | None,
+    dest_field_names: set[str],
+    *,
+    allow_field_addition: bool,
+) -> list[Any]:
+    """Validate the SELECT projection against the destination's schema.
+
+    Returns the list of NEW fields (those not already in the
+    destination) — empty unless ``ALLOW_FIELD_ADDITION`` is set. A
+    field not present in the destination AND not opted-in via
+    ``ALLOW_FIELD_ADDITION`` raises BigQuery's
+    ``400 invalid: Invalid schema update. Cannot add fields …`` with
+    the FIRST offending field name (BigQuery surfaces them in
+    projection order, not alphabetised).
+    """
+    added_fields: list[Any] = []
+    if arrow_table is None:
+        return added_fields
+    for field in arrow_table.schema:
+        if field.name in dest_field_names:
+            continue
+        if allow_field_addition:
+            added_fields.append(field)
+            continue
+        message = f"Invalid schema update. Cannot add fields (field: {field.name})"
+        raise ValidationError(
+            message,
+            details=[ErrorDetail(reason="invalid", message=message)],
+        )
+    return added_fields
+
+
+def _combine_write_append_tables(
+    arrow_table: Any | None,
+    existing_table: Any,
+) -> Any | None:
+    """Concat pre-existing rows + SELECT rows, returning the unified table.
+
+    The schemas may differ on column order *and* integer-width (DuckDB
+    infers int32 for inline literals; the destination's catalog schema
+    is int64). Cast SELECT to the destination's schema so
+    ``concat_tables`` accepts both shapes. Returns ``None`` when the
+    schemas can't be aligned — the caller treats that as
+    "skip the combination."
+    """
+    import pyarrow as pa
+
+    if arrow_table is None or not arrow_table.num_rows:
+        return existing_table
+    try:
+        aligned = arrow_table.select(existing_table.schema.names)
+        aligned = aligned.cast(existing_table.schema)
+    except (KeyError, pa.lib.ArrowInvalid):
+        return None
+    return pa.concat_tables([existing_table, aligned])
+
+
 async def _apply_write_append(
     *,
     job_meta: JobMeta,
@@ -931,49 +1018,29 @@ async def _apply_write_append(
     """
     if query_config.get("writeDisposition") != "WRITE_APPEND":
         return job_meta
-    destination = query_config.get("destinationTable")
-    if not isinstance(destination, dict):
+    resolved = _resolve_write_append_destination(query_config, ctx, request_project_id)
+    if resolved is None:
         return job_meta
-    project_id = destination.get("projectId") or request_project_id
-    dataset_id = destination.get("datasetId")
-    table_id = destination.get("tableId")
-    if not (project_id and dataset_id and table_id):
-        return job_meta
-    meta = ctx.catalog.get_table(project_id, dataset_id, table_id)
-    if meta is None:
-        return job_meta
-    dest_table_schema = getattr(meta, "schema_", None)
-    if dest_table_schema is None:
-        return job_meta
-    dest_field_names = {field.name for field in dest_table_schema.fields}
+    meta, dest_field_names = resolved
 
-    # Schema-superset rejection — BQ's WRITE_APPEND requires the
-    # SELECT's projection to be a subset of the destination's schema
-    # unless ``schemaUpdateOptions=['ALLOW_FIELD_ADDITION']`` is set,
-    # in which case the destination evolves to include the new
-    # columns. BigQuery names the FIRST field in the SELECT's
-    # projection order that doesn't appear in the destination, so
-    # we walk the arrow schema in projection order rather than
-    # alphabetising. P7.c follow-up: ``ALLOW_FIELD_ADDITION`` bypass.
+    # Schema-superset rejection — ``ALLOW_FIELD_ADDITION`` bypass
+    # routed through ``_validate_write_append_schema`` (P7.c).
     options = {opt.upper() for opt in (query_config.get("schemaUpdateOptions") or [])}
     allow_field_addition = "ALLOW_FIELD_ADDITION" in options
     arrow_table = JOB_RESULTS.get(job_id)
-    added_fields: list[Any] = []
-    if arrow_table is not None:
-        for field in arrow_table.schema:
-            if field.name in dest_field_names:
-                continue
-            if allow_field_addition:
-                added_fields.append(field)
-                continue
-            message = f"Invalid schema update. Cannot add fields (field: {field.name})"
-            raise ValidationError(
-                message,
-                details=[ErrorDetail(reason="invalid", message=message)],
-            )
+    added_fields = _validate_write_append_schema(
+        arrow_table,
+        dest_field_names,
+        allow_field_addition=allow_field_addition,
+    )
 
     # Read the destination's current content via the executor so
     # the rows match the wire-format encoding used everywhere else.
+    project_id, dataset_id, table_id = (
+        query_config["destinationTable"].get("projectId") or request_project_id,
+        query_config["destinationTable"]["datasetId"],
+        query_config["destinationTable"]["tableId"],
+    )
     sql = f"SELECT * FROM `{project_id}`.`{dataset_id}`.`{table_id}`"
     readback_job_id = f"_writeappend_readback_{job_id}"
     try:
@@ -992,38 +1059,17 @@ async def _apply_write_append(
     if existing_table is None:
         return job_meta
 
-    # Combine: pre-existing rows + SELECT rows. The schemas may
-    # differ on column order *and* integer-width (DuckDB infers
-    # int32 for inline literals; the destination's catalog-driven
-    # schema is int64). Cast SELECT to the destination's schema so
-    # ``concat_tables`` accepts both shapes.
-    #
-    # When ``ALLOW_FIELD_ADDITION`` is set, the SELECT projects new
-    # columns the destination doesn't have. Pad the existing rows
-    # with NULL columns for those new fields so the concat sees a
-    # unified schema, and update the destination's catalog schema
-    # so subsequent reads observe the evolved shape.
-    import pyarrow as pa
-
-    if added_fields and existing_table is not None:
+    # Pad existing rows + evolve destination schema when
+    # ``ALLOW_FIELD_ADDITION`` introduced new columns.
+    if added_fields:
         existing_table = _pad_table_with_null_columns(existing_table, added_fields)
-        _evolve_destination_schema(
-            ctx=ctx,
-            meta=meta,
-            added_fields=added_fields,
-        )
-    if arrow_table is not None and arrow_table.num_rows:
-        try:
-            aligned = arrow_table.select(existing_table.schema.names)
-            aligned = aligned.cast(existing_table.schema)
-        except (KeyError, pa.lib.ArrowInvalid):
-            # If column names or castable types don't align, skip
-            # the combination — the comparator will surface the
-            # mismatch loudly.
-            return job_meta
-        combined = pa.concat_tables([existing_table, aligned])
-    else:
-        combined = existing_table
+        _evolve_destination_schema(ctx=ctx, meta=meta, added_fields=added_fields)
+
+    combined = _combine_write_append_tables(arrow_table, existing_table)
+    if combined is None:
+        # Schemas couldn't be aligned — comparator will surface the
+        # mismatch downstream.
+        return job_meta
     JOB_RESULTS[job_id] = combined
     JOB_SCHEMAS[job_id] = build_response_schema(combined.schema)
     return job_meta
