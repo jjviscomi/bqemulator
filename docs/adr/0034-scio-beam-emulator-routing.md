@@ -7,7 +7,7 @@
 [Issue #17](https://github.com/jjviscomi/bqemulator/issues/17) — closing
 the v1.0.0 "scio test exercises wiring only" caveat — turned out to be
 harder than the original framing suggested. The v1.0.1 investigation
-([CHANGELOG.md](../../CHANGELOG.md) `## [1.0.1]` "Changed" block and
+([CHANGELOG.md](https://github.com/jjviscomi/bqemulator/blob/main/CHANGELOG.md) `## [1.0.1]` "Changed" block and
 ``docs/examples/java/scio/src/test/scala/com/example/bqemu/CustomersPipelineSpec.scala``)
 surfaced three independent blockers that all had to land together
 before ``CustomersPipeline.run(...)`` could drive end-to-end against a

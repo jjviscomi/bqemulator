@@ -215,6 +215,8 @@ nav:
       - "0030 Storage Read Avro output format": adr/0030-storage-read-avro-format.md
       - "0031 Fuzz-tier design contract": adr/0031-fuzz-tier-design-contract.md
       - "0032 bq CLI as a fifth conformance client": adr/0032-bq-cli-conformance-client.md
+      - "0033 Storage Read Arrow IPC bare-message contract": adr/0033-storage-read-arrow-ipc-bare-message-contract.md
+      - "0034 Scio + Beam BigQueryIO routing against bqemulator": adr/0034-scio-beam-emulator-routing.md
   - RFCs: rfcs/README.md
   - Examples:
       - Overview: examples/README.md

@@ -119,6 +119,18 @@ class CustomersPipelineSpec extends AnyFlatSpec with Matchers {
         "/data",
       )
       .withFileSystemBind(sharedDir.toString, "/data", BindMode.READ_WRITE)
+      // Run fake-gcs-server as the same UID/GID as the bqemulator
+      // image's runtime user (``bqemu`` = 1000:1000). fake-gcs-server's
+      // ``writeFile(path, buf, 0o600)`` mode-bits are owner-only; on
+      // Linux CI runners the bind-mounted file lands on the host with
+      // the writer's UID and the bqemulator container (UID 1000) can't
+      // read a UID-0 0600 file. macOS Docker Desktop translates UIDs
+      // transparently and would silently let this slide. Pinning the
+      // fake-gcs-server UID closes the divergence.
+      .withCreateContainerCmdModifier {
+        cmd: com.github.dockerjava.api.command.CreateContainerCmd =>
+          cmd.withUser("1000:1000"); ()
+      }
       .withExposedPorts(4443)
       .waitingFor(Wait.forListeningPort())
 
