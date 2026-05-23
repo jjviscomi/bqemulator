@@ -361,7 +361,12 @@ class TestWriteReadmeBadges:
         readme = _seed_readme(tmp_path, version="1.0.2")
         mtime_before = readme.stat().st_mtime_ns
         count = bump.write_readme_badges(bump.Version(1, 0, 2), readme)
-        assert count == 2  # matches found
+        # Contract: return value counts WRITTEN badges, not regex matches.
+        # The README was already at 1.0.2 → regex matches both badges but
+        # the substituted bytes equal the originals → no write → 0. This
+        # is what suppresses the misleading "Updated N README badge(s)"
+        # message in main() on idempotent re-runs.
+        assert count == 0
         # No write happened — mtime unchanged.
         assert readme.stat().st_mtime_ns == mtime_before
 

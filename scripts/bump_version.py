@@ -186,27 +186,32 @@ def update_readme_text(text: str, new: Version) -> tuple[str, int]:
 
 
 def write_readme_badges(new: Version, file: Path = README_FILE) -> int:
-    """Update the README cache-bust badges to ``new``. Return # replaced.
+    """Update the README cache-bust badges to ``new``. Return # **written**.
 
-    The contract is intentionally tolerant: a missing README returns
-    ``0`` (it's a hand-edited file, not a build artefact, so silent
-    no-op is friendlier than ``FileNotFoundError``). Same for a README
-    that contains no cache-bust badges — returns ``0`` and writes
-    nothing. The only failure mode is permission / I/O against an
-    existing file, which propagates as ``OSError`` to the caller.
+    The return value counts badges whose **bytes actually changed on disk**,
+    not regex matches. That distinction matters because ``main()`` and
+    the orchestrator emit "Updated N README badge(s)" / "bumped N README
+    badge(s)" only when the count is truthy — printing those messages
+    after a no-op write would mislead the operator into thinking the
+    file mutated.
 
-    Idempotent: re-running with the same ``new`` against a README
-    already at that version performs the substitution (which is a
-    no-op byte-for-byte) and skips the write. The skip matters for
-    file-modification-time sensitive build systems and for the
-    operator's mental model of "this script bumped nothing".
+    Three branches all return ``0`` (no write, no message):
+
+    * The README file does not exist (hand-edited, may be renamed).
+    * The README exists but contains no ``?cacheSeconds=N&v=X.Y.Z``
+      badges — regex matches nothing.
+    * The README is already at ``new`` — regex matches, but the
+      substituted bytes equal the originals (idempotent no-op).
+
+    The only failure mode is permission / I/O against an existing
+    file, which propagates as ``OSError`` to the caller.
     """
     if not file.exists():
         return 0
     text = file.read_text(encoding="utf-8")
     updated, count = update_readme_text(text, new)
     if count == 0 or updated == text:
-        return count
+        return 0
     file.write_text(updated, encoding="utf-8")
     return count
 
