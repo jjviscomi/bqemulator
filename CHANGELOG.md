@@ -20,6 +20,8 @@ section and adds the release date.
 
 ## [Unreleased]
 
+## [1.0.2] — 2026-05-23
+
 ### Fixed
 
 - **scio example: end-to-end ``CustomersPipeline.run`` against
