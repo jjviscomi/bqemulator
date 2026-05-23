@@ -1,0 +1,13 @@
+version: 2
+
+models:
+  - name: dim_customers
+    description: "Customer dimension with derived signup year/month."
+    columns:
+      - name: customer_id
+        tests:
+          - not_null
+          - unique
+      - name: signup_year
+        tests:
+          - not_null
