@@ -219,6 +219,7 @@ nav:
       - "0034 Scio + Beam BigQueryIO routing against bqemulator": adr/0034-scio-beam-emulator-routing.md
       - "0035 Non-blocking code-quality gates (complexity / duplication / dead code)": adr/0035-code-quality-gates.md
       - "0036 Cyclomatic-complexity ratchet to rank C + promote-to-required gate": adr/0036-complexity-ratchet-to-c.md
+      - "0037 OpenSSF Scorecard adoption + badge": adr/0037-openssf-scorecard.md
   - RFCs: rfcs/README.md
   - Examples:
       - Overview: examples/README.md

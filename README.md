@@ -12,6 +12,7 @@ DuckDB-backed, SQLGlot-powered, and tested against the real service. Point the o
 [![Docs](https://github.com/jjviscomi/bqemulator/actions/workflows/docs.yml/badge.svg)](https://jjviscomi.github.io/bqemulator/)
 [![PyPI](https://img.shields.io/pypi/v/bqemulator.svg?cacheSeconds=120&v=1.0.2)](https://pypi.org/project/bqemulator/)
 [![Python](https://img.shields.io/pypi/pyversions/bqemulator.svg?cacheSeconds=120&v=1.0.2)](https://pypi.org/project/bqemulator/)
+[![OpenSSF Scorecard](https://api.securityscorecards.dev/projects/github.com/jjviscomi/bqemulator/badge?v=1.0.2)](https://scorecard.dev/viewer/?uri=github.com/jjviscomi/bqemulator)
 [![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](LICENSE)
 [![Ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json)](https://github.com/astral-sh/ruff)
 [![Checked with mypy](https://www.mypy-lang.org/static/mypy_badge.svg)](https://mypy-lang.org/)

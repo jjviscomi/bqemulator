@@ -342,6 +342,47 @@ class TestUpdateReadmeText:
         assert count == 1
         assert updated == "?cacheSeconds=900&v=1.0.0"
 
+    def test_scorecard_badge_bumped(self) -> None:
+        # The Scorecard badge endpoint isn't a shields.io URL, so the
+        # cache-bust is a bare ``?v=`` suffix anchored on the host +
+        # ``/badge`` path. This is the only badge family that uses the
+        # bare-?v= pattern; ``_README_SCORECARD_BADGE_RE`` covers it.
+        text = (
+            "[![Scorecard]"
+            "(https://api.securityscorecards.dev/projects/github.com/owner/repo"
+            "/badge?v=1.0.0)](scorecard-url)\n"
+        )
+        updated, count = bump.update_readme_text(text, bump.Version(1, 0, 2))
+        assert count == 1
+        assert "v=1.0.0" not in updated
+        assert "v=1.0.2" in updated
+
+    def test_mixed_shields_and_scorecard_bumped_together(self) -> None:
+        # End-to-end contract: a single ``update_readme_text`` pass
+        # rewrites BOTH badge families when they coexist (the actual
+        # production README state once PR B lands).
+        text = (
+            "[![PyPI](https://img.shields.io/pypi/v/foo.svg"
+            "?cacheSeconds=120&v=1.0.1)](pypi)\n"
+            "[![Scorecard]"
+            "(https://api.securityscorecards.dev/projects/github.com/owner/repo"
+            "/badge?v=1.0.1)](scorecard-url)\n"
+        )
+        updated, count = bump.update_readme_text(text, bump.Version(1, 0, 2))
+        assert count == 2  # 1 shields + 1 scorecard
+        assert "v=1.0.1" not in updated
+        assert updated.count("v=1.0.2") == 2
+
+    def test_scorecard_regex_does_not_match_unrelated_v_query(self) -> None:
+        # Defensive: a URL with ``?v=X.Y.Z`` that ISN'T a Scorecard
+        # badge (no ``/badge`` path or wrong host) must not match.
+        # Otherwise the regex could rewrite version strings in
+        # documentation links by accident.
+        text = "See https://example.com/docs?v=1.0.0 for details.\n"
+        updated, count = bump.update_readme_text(text, bump.Version(1, 0, 2))
+        assert count == 0
+        assert updated == text
+
 
 class TestWriteReadmeBadges:
     """File-IO wrapper handles the messy real-world inputs cleanly."""
