@@ -15,7 +15,7 @@ language."
 
 But four SDKs is not the full canonical client population.
 Google's
-[`bq` command-line tool](https://cloud.google.com/bigquery/docs/bq-command-line-tool-reference)
+[`bq` command-line tool](https://cloud.google.com/bigquery/docs/reference/bq-cli-reference)
 is the BigQuery CLI — distributed as part of the
 `google-cloud-cli` package, used daily by data engineers, DBAs, CI
 pipelines, ad-hoc shell scripts, and `dbt`/`Airflow`/`Looker`
@@ -33,7 +33,7 @@ configurations that shell out to bq for control-plane operations.
 - Its error renderer prints `BigQuery error in <op>: <reason>` to
   stderr, **not** a JSON error envelope. The
   emulator's
-  [`error_mapper`](https://github.com/jjviscomi/bqemulator/blob/main/src/bqemulator/sql/error_mapper.py) feeds
+  [`error_mapper`](https://github.com/jjviscomi/bqemulator/blob/main/src/bqemulator/jobs/error_mapper.py) feeds
   whatever the SDK clients pretty-print into their own JSON-aware
   parsers — but `bq` parses a different field path out of the
   response, and a regression that broke that field path would leave

@@ -57,12 +57,12 @@ catalog. No row data is copied.
 ## `bqemulator version`
 
 ```
-bqemulator 1.0.0
+bqemulator 1.0.1
 ```
 
 ## Using Google's `bq` CLI against the emulator
 
-Google's [`bq`](https://cloud.google.com/bigquery/docs/bq-command-line-tool-reference)
+Google's [`bq`](https://cloud.google.com/bigquery/docs/reference/bq-cli-reference)
 command-line tool talks to bqemulator unchanged. The full
 configuration recipe — three endpoint-override paths, the
 required auth bypass, a runnable five-command quickstart — lives

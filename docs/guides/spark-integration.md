@@ -22,38 +22,35 @@ df = (
 Storage Write API sink writes are equivalently configured. See the
 example project for a complete Spark job.
 
-## Known limitation — Storage Read IPC format
+## Storage Read API — bare record-batch IPC contract (v1.0.1)
 
-bqemulator currently packs the full Arrow IPC stream (schema framing
-+ batches) into `ReadRowsResponse.arrow_record_batch.serialized_record_batch`
-instead of a single record-batch IPC message. Real BigQuery sends just
-the record-batch bytes — the schema travels on
-`ReadSession.arrow_schema.serialized_schema`. The
-`google-cloud-bigquery-storage` client's high-level
-`reader.to_arrow(session)` helper assumes the real-BigQuery shape and
-trips `Expected IPC message of type record batch but got schema`.
+Under v1.0.0 the server packed a full Arrow IPC stream
+(schema-message + batches + EOS marker) into
+``ReadRowsResponse.arrow_record_batch.serialized_record_batch``. Real
+BigQuery sends only the record-batch bytes — the schema travels on
+``ReadSession.arrow_schema.serialized_schema``. The mismatch tripped
+the canonical ``google-cloud-bigquery-storage``
+``reader.to_arrow(session)`` helper with
+``Expected IPC message of type record batch but got schema``.
 
-Workaround (used by the pyspark-bigquery example): iterate the
-responses by hand and use `pyarrow.ipc.open_stream`, which accepts
-the full IPC stream that bqemulator emits.
+v1.0.1 ([#15](https://github.com/jjviscomi/bqemulator/issues/15) /
+[ADR 0033](../adr/0033-storage-read-arrow-ipc-bare-message-contract.md))
+shipped the spec-conforming bare record-batch format. The canonical
+helper now works against bqemulator unchanged:
 
 ```python
-import pyarrow as pa
-
-batches: list[pa.RecordBatch] = []
-for response in reader:
-    payload = response.arrow_record_batch.serialized_record_batch
-    if not payload:
-        continue
-    with pa.ipc.open_stream(payload) as stream_reader:
-        batches.extend(stream_reader.read_all().to_batches())
-arrow_table = pa.Table.from_batches(batches)
+arrow_table = reader.to_arrow(session)
 ```
 
-Tracked for cleanup in
-[#15](https://github.com/jjviscomi/bqemulator/issues/15) — once the
-server emits the correct format the workaround disappears and
-`reader.to_arrow(session)` works out of the box.
+If you're pinning to v1.0.0 you still need the
+``pyarrow.ipc.open_stream`` workaround — upgrade to v1.0.1+ to use
+the canonical path.
+
+> **Note:** Dictionary-encoded columns (at any nesting depth in
+> structs / lists / maps / unions) are rejected by the v1.0.1
+> producer with a clear ``ValueError`` rather than silently produce
+> a payload the consumer can't decode. See ADR 0033 for the formal
+> contract.
 
 ## Plaintext gRPC
 

@@ -60,19 +60,15 @@ make test
 - Spark runs in local-master mode (`local[*]`) so the example is
   hermetic — no Hadoop/YARN cluster required.
 
-## Known limitation — Storage Read IPC bytes layout
+## Storage Read API — bare record-batch IPC contract (v1.0.1)
 
-bqemulator currently packs the full Arrow IPC stream (schema framing
-+ batches) into `ReadRowsResponse.arrow_record_batch.serialized_record_batch`
-instead of a single record-batch IPC message. The high-level
-`reader.to_arrow(session)` helper assumes the real-BigQuery shape
-(schema lives on `ReadSession.arrow_schema.serialized_schema`,
-batches travel on their own) and trips
-`Expected IPC message of type record batch but got schema`.
-
-The example works around this by iterating responses by hand and
-using `pyarrow.ipc.open_stream`, which accepts the full IPC stream
-that bqemulator emits. Tracked for cleanup in
-[#15](https://github.com/jjviscomi/bqemulator/issues/15) — once the
-server emits the correct format the workaround disappears and the
-natural `reader.to_arrow(session)` call works out of the box.
+The example uses the canonical
+`reader.to_arrow(session)` helper from the
+`google-cloud-bigquery-storage` client. Under v1.0.0 this call tripped
+on a bqemulator wire-format bug (the server packed a full Arrow IPC
+stream into `ArrowRecordBatch.serialized_record_batch`); v1.0.1
+[#15](https://github.com/jjviscomi/bqemulator/issues/15) /
+[ADR 0033](../../../adr/0033-storage-read-arrow-ipc-bare-message-contract.md)
+shipped the spec-conforming bare record-batch format and removed
+the workaround. If you're pinning to v1.0.0 the helper still trips
+the format mismatch; upgrade to v1.0.1+.

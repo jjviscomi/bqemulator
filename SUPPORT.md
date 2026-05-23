@@ -16,13 +16,13 @@ Before posting, please:
 
 1. Check the [documentation](https://jjviscomi.github.io/bqemulator/) —
    especially the
-   [guides](https://jjviscomi.github.io/bqemulator/guides/loading-data/)
+   [guides](https://jjviscomi.github.io/bqemulator/latest/guides/loading-data/)
    and
-   [troubleshooting reference](https://jjviscomi.github.io/bqemulator/reference/troubleshooting/).
+   [troubleshooting reference](https://jjviscomi.github.io/bqemulator/latest/reference/troubleshooting/).
 2. Skim the
-   [compatibility matrix](https://jjviscomi.github.io/bqemulator/reference/compatibility-matrix/)
+   [compatibility matrix](https://jjviscomi.github.io/bqemulator/latest/reference/compatibility-matrix/)
    and
-   [out-of-scope catalogue](https://jjviscomi.github.io/bqemulator/reference/out-of-scope/) —
+   [out-of-scope catalogue](https://jjviscomi.github.io/bqemulator/latest/reference/out-of-scope/) —
    sometimes "this doesn't work" is "this isn't supported."
 3. Search existing [Discussions](https://github.com/jjviscomi/bqemulator/discussions)
    and [Issues](https://github.com/jjviscomi/bqemulator/issues)
@@ -71,7 +71,7 @@ Read [`CONTRIBUTING.md`](CONTRIBUTING.md), then check out:
 - [`good first issue`](https://github.com/jjviscomi/bqemulator/issues?q=is%3Aissue+is%3Aopen+label%3A%22good+first+issue%22)
   tagged issues for entry points.
 - The
-  [conformance coverage matrix](https://jjviscomi.github.io/bqemulator/reference/conformance-coverage-matrix/)
+  [conformance coverage matrix](https://jjviscomi.github.io/bqemulator/latest/reference/conformance-coverage-matrix/)
   — items marked 🔴 / 🟡 are well-scoped fixture-authoring tasks.
 - [`docs/architecture/contributing/`](docs/architecture/contributing/)
   for SQL function additions, UDF runtime additions, conformance

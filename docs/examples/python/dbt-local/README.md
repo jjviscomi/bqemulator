@@ -68,9 +68,9 @@ make test
   `google.oauth2.credentials.Credentials` from it and never calls
   Google's token endpoint — the bearer reaches bqemulator, which
   doesn't validate auth, and the call goes through.
-- The endpoint override is set via the
-  [`BIGQUERY_EMULATOR_HOST`](https://cloud.google.com/bigquery/docs/emulator)
-  env var, prefixed with `http://`. dbt-bigquery forwards the value
+- The endpoint override is set via the `BIGQUERY_EMULATOR_HOST`
+  env var (the Google Cloud Python client libraries recognise it
+  natively), prefixed with `http://`. dbt-bigquery forwards the value
   verbatim into `client_options.api_endpoint`, so the scheme must
   be present (the bare `google-cloud-bigquery` library auto-injects
   `http://` but dbt's wrapper bypasses that branch).

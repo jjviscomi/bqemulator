@@ -1240,9 +1240,7 @@ The 9 residual xfailed entries break down as:
   ``out-of-scope.md`` (``bound_bignumeric_max``).
 
 The ``RANGE_SESSIONIZE`` entry closed via scope-
-expansion #15 (resume prompt at
-[`.resume-prompt-range-sessionize.md`](https://github.com/jjviscomi/bqemulator/blob/main/.resume-prompt-range-sessionize.md)).
-The closure added three new conformance fixtures recorded
+expansion #15. The closure added three new conformance fixtures recorded
 against real BigQuery (``range_sessionize_basic`` /
 ``range_sessionize_grouped`` /
 ``range_sessionize_overlaps_option``) under

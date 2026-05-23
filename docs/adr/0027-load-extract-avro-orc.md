@@ -211,8 +211,7 @@ flow through the standard BigQuery-shape translator unchanged.
 
 - **G2** (multipart/resumable upload endpoints) — closes the
   load-from-local-file path the four client libraries use by
-  default. Independent of G1 but mentioned in
-  [`.resume-prompt-g2-upload-endpoints.md`](https://github.com/jjviscomi/bqemulator/blob/main/.resume-prompt-g2-upload-endpoints.md).
+  default. Independent of G1.
 - **G3** (Storage Read Avro encoding) — extends the Storage Read
   API beyond Arrow. Independent.
 

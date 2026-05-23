@@ -13,11 +13,11 @@ If you're new to the project, start here:
    [`good first issue`](https://github.com/jjviscomi/bqemulator/issues?q=is%3Aissue+is%3Aopen+label%3A%22good+first+issue%22)
    or [`help wanted`](https://github.com/jjviscomi/bqemulator/issues?q=is%3Aissue+is%3Aopen+label%3A%22help+wanted%22).
 2. **Pick a fixture-authoring task** — the
-   [conformance coverage matrix](https://jjviscomi.github.io/bqemulator/reference/conformance-coverage-matrix/)
+   [conformance coverage matrix](https://jjviscomi.github.io/bqemulator/latest/reference/conformance-coverage-matrix/)
    lists every BigQuery surface item with a current fixture count. Items
    tagged 🔴 (uncovered) or 🟡 (sampled) are concrete, well-scoped
    contribution opportunities — see
-   [adding conformance cases](https://jjviscomi.github.io/bqemulator/architecture/contributing/adding-conformance-cases/).
+   [adding conformance cases](https://jjviscomi.github.io/bqemulator/latest/architecture/contributing/adding-conformance-cases/).
 3. **Try an example project** — running any example in
    [`docs/examples/`](docs/examples/) end-to-end is a useful smoke test
    that also surfaces any rough edges worth filing.
