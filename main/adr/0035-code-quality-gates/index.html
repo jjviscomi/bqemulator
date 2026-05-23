@@ -10,13 +10,13 @@
       
       
       
-        <link rel="canonical" href="https://jjviscomi.github.io/bqemulator/main/adr/0018-caller-identity-and-row-access-enforcement/">
+        <link rel="canonical" href="https://jjviscomi.github.io/bqemulator/main/adr/0035-code-quality-gates/">
       
       
-        <link rel="prev" href="../0017-materialized-view-refresh/">
+        <link rel="prev" href="../0034-scio-beam-emulator-routing/">
       
       
-        <link rel="next" href="../0019-specialized-types/">
+        <link rel="next" href="../../rfcs/">
       
       
         
@@ -27,7 +27,7 @@
     
     
       
-        <title>0018 Caller identity + row-access enforcement - bqemulator</title>
+        <title>0035 Non-blocking code-quality gates (complexity / duplication / dead code) - bqemulator</title>
       
     
     
@@ -80,7 +80,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#adr-0018-caller-identity-row-access-policy-enforcement-and-authorized-view-bypass" class="md-skip">
+        <a href="#adr-0035-non-blocking-code-quality-gates-complexity-duplication-dead-code" class="md-skip">
           Skip to content
         </a>
       
@@ -118,7 +118,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              0018 Caller identity + row-access enforcement
+              0035 Non-blocking code-quality gates (complexity / duplication / dead code)
             
           </span>
         </div>
@@ -3406,37 +3406,10 @@
                 
   
   
-    
   
   
-  
-    <li class="md-nav__item md-nav__item--active">
-      
-      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
-      
-      
-        
-      
-      
-        <label class="md-nav__link md-nav__link--active" for="__toc">
-          
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    0018 Caller identity + row-access enforcement
-  
-
-    
-  </span>
-  
-  
-
-          <span class="md-nav__icon md-icon"></span>
-        </label>
-      
-      <a href="./" class="md-nav__link md-nav__link--active">
+    <li class="md-nav__item">
+      <a href="../0018-caller-identity-and-row-access-enforcement/" class="md-nav__link">
         
   
   
@@ -3452,153 +3425,6 @@
   
 
       </a>
-      
-        
-
-<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
-  
-  
-  
-    
-  
-  
-    <label class="md-nav__title" for="__toc">
-      <span class="md-nav__icon md-icon"></span>
-      Table of contents
-    </label>
-    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#context" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Context
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#decision" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Decision
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Decision">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#caller-identity" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Caller identity
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#match-rules" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Match rules
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#combination-semantics" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Combination semantics
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#rewriter-shape" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Rewriter shape
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#authorized-view-bypass-does-not-exist-for-rap-revised" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Authorized-view bypass — does not exist for RAP (revised)
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#authorized-view-bypass-superseded" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Authorized-view bypass — superseded
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#information-schema" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Information schema
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#consequences" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Consequences
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#notes-for-future-phases" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Notes for future phases
-      
-    </span>
-  </a>
-  
-</li>
-      
-    </ul>
-  
-</nav>
-      
     </li>
   
 
@@ -4056,10 +3882,37 @@
                 
   
   
+    
   
   
-    <li class="md-nav__item">
-      <a href="../0035-code-quality-gates/" class="md-nav__link">
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0035 Non-blocking code-quality gates (complexity / duplication / dead code)
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
         
   
   
@@ -4075,6 +3928,253 @@
   
 
       </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#context" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Context
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#decision" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Decision
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Decision">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#1-cyclomatic-complexity-radon-xenon" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. Cyclomatic complexity → radon + xenon
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#2-code-duplication-jscpd" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. Code duplication → jscpd
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#3-dead-code-vulture" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. Dead code → vulture
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#wiring" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Wiring
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#why-non-blocking-first" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Why non-blocking first
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#rationale" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Rationale
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Rationale">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#why-three-separate-tools-not-one" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Why three separate tools, not one
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#why-xenon-over-relaxing-the-ignored-ruff-rules" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Why xenon over relaxing the ignored ruff rules
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#why-jscpd-over-pylint-enableduplicate-code" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Why jscpd over pylint --enable=duplicate-code
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#why-npx-y-jscpd4-rather-than-installing-it" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Why npx -y jscpd@4 rather than installing it
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#why-preserve-the-existing-vulture-config-rather-than-reset-it" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Why preserve the existing vulture config rather than reset it
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#consequences" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Consequences
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Consequences">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#positive" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Positive
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#negative" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Negative
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#neutral" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Neutral
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#alternatives-considered" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Alternatives considered
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#references" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        References
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
     </li>
   
 
@@ -5022,10 +5122,10 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#caller-identity" class="md-nav__link">
+  <a href="#1-cyclomatic-complexity-radon-xenon" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Caller identity
+        1. Cyclomatic complexity → radon + xenon
       
     </span>
   </a>
@@ -5033,10 +5133,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#match-rules" class="md-nav__link">
+  <a href="#2-code-duplication-jscpd" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Match rules
+        2. Code duplication → jscpd
       
     </span>
   </a>
@@ -5044,10 +5144,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#combination-semantics" class="md-nav__link">
+  <a href="#3-dead-code-vulture" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Combination semantics
+        3. Dead code → vulture
       
     </span>
   </a>
@@ -5055,10 +5155,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#rewriter-shape" class="md-nav__link">
+  <a href="#wiring" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Rewriter shape
+        Wiring
       
     </span>
   </a>
@@ -5066,10 +5166,38 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#authorized-view-bypass-does-not-exist-for-rap-revised" class="md-nav__link">
+  <a href="#why-non-blocking-first" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Authorized-view bypass — does not exist for RAP (revised)
+        Why non-blocking first
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#rationale" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Rationale
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Rationale">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#why-three-separate-tools-not-one" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Why three separate tools, not one
       
     </span>
   </a>
@@ -5077,10 +5205,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#authorized-view-bypass-superseded" class="md-nav__link">
+  <a href="#why-xenon-over-relaxing-the-ignored-ruff-rules" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Authorized-view bypass — superseded
+        Why xenon over relaxing the ignored ruff rules
       
     </span>
   </a>
@@ -5088,10 +5216,32 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#information-schema" class="md-nav__link">
+  <a href="#why-jscpd-over-pylint-enableduplicate-code" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Information schema
+        Why jscpd over pylint --enable=duplicate-code
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#why-npx-y-jscpd4-rather-than-installing-it" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Why npx -y jscpd@4 rather than installing it
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#why-preserve-the-existing-vulture-config-rather-than-reset-it" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Why preserve the existing vulture config rather than reset it
       
     </span>
   </a>
@@ -5112,13 +5262,63 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="Consequences">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#positive" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Positive
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#negative" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Negative
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#neutral" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Neutral
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
         <li class="md-nav__item">
-  <a href="#notes-for-future-phases" class="md-nav__link">
+  <a href="#alternatives-considered" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Notes for future phases
+        Alternatives considered
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#references" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        References
       
     </span>
   </a>
@@ -5142,7 +5342,7 @@
 
 
   
-    <a href="https://github.com/jjviscomi/bqemulator/edit/main/docs/adr/0018-caller-identity-and-row-access-enforcement.md" title="Edit this page" class="md-content__button md-icon" rel="edit">
+    <a href="https://github.com/jjviscomi/bqemulator/edit/main/docs/adr/0035-code-quality-gates.md" title="Edit this page" class="md-content__button md-icon" rel="edit">
       
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M10 20H6V4h7v5h5v3.1l2-2V8l-6-6H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h4zm10.2-7c.1 0 .3.1.4.2l1.3 1.3c.2.2.2.6 0 .8l-1 1-2.1-2.1 1-1c.1-.1.2-.2.4-.2m0 3.9L14.1 23H12v-2.1l6.1-6.1z"/></svg>
     </a>
@@ -5151,359 +5351,396 @@
     
       
     
-    <a href="https://github.com/jjviscomi/bqemulator/raw/main/docs/adr/0018-caller-identity-and-row-access-enforcement.md" title="View source of this page" class="md-content__button md-icon">
+    <a href="https://github.com/jjviscomi/bqemulator/raw/main/docs/adr/0035-code-quality-gates.md" title="View source of this page" class="md-content__button md-icon">
       
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M17 18c.56 0 1 .44 1 1s-.44 1-1 1-1-.44-1-1 .44-1 1-1m0-3c-2.73 0-5.06 1.66-6 4 .94 2.34 3.27 4 6 4s5.06-1.66 6-4c-.94-2.34-3.27-4-6-4m0 6.5a2.5 2.5 0 0 1-2.5-2.5 2.5 2.5 0 0 1 2.5-2.5 2.5 2.5 0 0 1 2.5 2.5 2.5 2.5 0 0 1-2.5 2.5M9.27 20H6V4h7v5h5v4.07c.7.08 1.36.25 2 .49V8l-6-6H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h4.5a8.2 8.2 0 0 1-1.23-2"/></svg>
     </a>
   
 
 
-<h1 id="adr-0018-caller-identity-row-access-policy-enforcement-and-authorized-view-bypass">ADR 0018: Caller identity, row access policy enforcement, and authorized-view bypass<a class="headerlink" href="#adr-0018-caller-identity-row-access-policy-enforcement-and-authorized-view-bypass" title="Permanent link">&para;</a></h1>
+<h1 id="adr-0035-non-blocking-code-quality-gates-complexity-duplication-dead-code">ADR 0035: Non-blocking code-quality gates — complexity, duplication, dead code<a class="headerlink" href="#adr-0035-non-blocking-code-quality-gates-complexity-duplication-dead-code" title="Permanent link">&para;</a></h1>
 <ul>
 <li><strong>Status</strong>: Accepted</li>
-<li><strong>Revision</strong>: §"Authorized-view bypass" decision
-  reversed. The P2.d follow-up recorded the 5
-  <code>authz_view_*</code> conformance fixtures against real BigQuery in
-  both same-dataset and cross-dataset topologies, and <strong>all 5 returned
-  0 rows in both</strong> when the calling user was not a grantee of the
-  base table's row-access policy. This proves empirically that real
-  BigQuery enforces row-level security UNIVERSALLY through views
-  (the published docs at
-  <code>cloud.google.com/bigquery/docs/row-level-security-intro#authorized_views_and_row-level_access_policies</code>
-  confirm this — "Row-level access policies applied to the source
-  table are still enforced" even via authorized views). The
-  original decision to bypass RAP when a view was authorized on
-  the base dataset (selected option #2 below) was a misreading of
-  BQ semantics conflating IAM-level read access with row-level
-  enforcement. The §"Authorized-view bypass" section is rewritten
-  in place to reflect the corrected behaviour; the original text
-  is preserved verbatim under
-  §"Authorized-view bypass — superseded". Net code
-  change: removed ~20 lines in
-  <a href="https://github.com/jjviscomi/bqemulator/blob/main/src/bqemulator/sql/rewriter/row_access_filter.py"><code>src/bqemulator/sql/rewriter/row_access_filter.py</code></a>
-  (the <code>is_authorized</code> short-circuit) and unwired the
-  <code>current_view</code> argument that was used only by that
-  short-circuit. The
-  <a href="https://github.com/jjviscomi/bqemulator/blob/main/src/bqemulator/views/authorized_views.py"><code>AuthorizedViewManager</code></a>
-  helper is retained — it's a pure-function-plus-cache utility
-  that may be repurposed for future per-view IAM enforcement.</li>
-<li><strong>Implementation note</strong>: closed the
-  <code>row_access/rap_filter_via_view</code> XFAIL by reliably wiring
-  the rewriter's existing <code>_expand_view</code> branch for <em>every</em>
-  SQL-created view. Pre-fix, <code>CREATE [OR REPLACE] VIEW</code> DDL ran
-  through DuckDB but no catalog record was written, so the rewriter's
-  <code>catalog.get_table(...)</code> lookup returned <code>None</code> for SQL-created
-  views and the view reference passed through unwrapped — DuckDB then
-  expanded the view internally and read the base table with no RAP
-  filtering. The fix lives in
-  <a href="https://github.com/jjviscomi/bqemulator/blob/main/src/bqemulator/catalog/ddl_sync.py"><code>src/bqemulator/catalog/ddl_sync.py</code></a>:
-  a new <code>sync_created_view(bq_sql, project_id, ctx)</code> helper parses
-  <code>CREATE VIEW</code> SQL, introspects the freshly-created DuckDB view's
-  schema, and upserts a <code>TableMeta</code> with <code>table_type='VIEW'</code> and
-  <code>view_query=&lt;body&gt;</code>. Both executor paths — the single-SQL path
-  in <a href="https://github.com/jjviscomi/bqemulator/blob/main/src/bqemulator/jobs/executor.py"><code>src/bqemulator/jobs/executor.py</code></a>
-  and the scripting interpreter's <code>_exec_sql</code> in
-  <a href="https://github.com/jjviscomi/bqemulator/blob/main/src/bqemulator/scripting/interpreter.py"><code>src/bqemulator/scripting/interpreter.py</code></a>
-  — now invoke the new helper alongside the existing
-  <code>sync_created_table</code> call. This is <strong>implementation, not
-  contract</strong>: the rules above stay valid — every view body still
-  reaches the recursive <code>_rewrite_table</code> walk inside
-  <code>_expand_view</code> and applies caller-bound policies on every
-  base-table reference inside. The revision's "RAP applies
-  through every view body regardless of authorization status" rule
-  is preserved verbatim.</li>
 </ul>
 <h2 id="context">Context<a class="headerlink" href="#context" title="Permanent link">&para;</a></h2>
-<p>Phase 8 turns row access policies (RAP) from a stored-but-unenforced
-artefact into an <em>enforced</em> one: a query against a protected table must
-return only the rows the caller's matching policies allow. To do that
-we need three pieces, none of which the emulator has had to answer
-before:</p>
-<ol>
-<li><strong>Who is the caller?</strong> Real BigQuery answers that with IAM (an OAuth
-   bearer token resolves to a Google identity). The emulator
-   deliberately does not enforce IAM
-   (<a href="../../reference/out-of-scope/#iam-enforcement">out-of-scope.md</a>),
-   yet the row-access rewriter still needs a caller identity to decide
-   which policies match. Whatever we choose has to be deterministic
-   for E2E tests in four client languages and round-trippable through
-   both the REST surface and the gRPC surface.</li>
-<li><strong>How do we combine multiple matching policies?</strong> BigQuery
-   documents row access policies as additive — a row is visible when
-   <em>any</em> policy granting the caller matches it. We need to lock the
-   combination semantics so the rewriter and the unit tests agree.</li>
-<li><strong>Where does an authorized view bypass enforcement?</strong> Authorized
-   views are the BigQuery-native escape hatch — a view in an
-   explicitly authorized dataset reads its base tables on behalf of
-   the view, not the caller. We need to encode that bypass without
-   over-applying it.</li>
-</ol>
-<p>Three options were considered for the caller-identity carrier:</p>
-<ol>
-<li><strong><code>Authorization: Bearer &lt;token&gt;</code> parsing.</strong> Reject. Real OAuth
-   tokens are opaque; emulating a token store is far more surface area
-   than Phase 8 needs. Tests would have to mint synthetic tokens, and
-   gRPC clients route auth through metadata that the four client
-   languages handle very differently.</li>
-<li><strong><code>X-Goog-User-Project: &lt;project&gt;</code>.</strong> Reject as the <em>primary</em>
-   identity carrier. The header exists in real BigQuery but its
-   purpose is the <em>billing</em> project (so the operator knows whose quota
-   to charge), not the caller's identity. Reusing it as identity would
-   conflate two unrelated concepts and surprise anyone who ports their
-   integration tests to real BigQuery. Acceptable as a fallback when
-   no other identity is available.</li>
-<li><strong><code>X-Bqemu-Caller: &lt;iam-member&gt;</code> (selected).</strong> A clearly
-   emulator-scoped header carrying an IAM-member-shaped string
-   (<code>user:alice@example.com</code>, <code>serviceAccount:sa@…</code>, <code>group:devs@…</code>,
-   <code>domain:example.com</code>, <code>allAuthenticatedUsers</code>, <code>allUsers</code>). The
-   prefix <code>X-Bqemu-</code> makes it impossible for the header to leak into
-   real BigQuery traffic by accident, and the value uses BigQuery's
-   own IAM-member grammar so policies can be written identically.</li>
-</ol>
-<p>For the policy-combination question we considered:</p>
-<ol>
-<li><strong>AND</strong> — every matching policy's filter must hold. Reject: doesn't
-   match BigQuery's documented "additive" semantics; surprises users
-   migrating from real BigQuery.</li>
-<li><strong>OR</strong> (selected) — a row is visible when <em>any</em> matching policy's
-   filter holds. Matches BigQuery and is the principle of least
-   surprise.</li>
-</ol>
-<p>For "no matching policy on a protected table":</p>
-<ol>
-<li><strong>Pass through (return all rows)</strong> — BigQuery's documented
-   behaviour for <em>unprotected</em> tables.</li>
-<li><strong>Empty (return zero rows)</strong> (selected) — BigQuery's documented
-   behaviour for <em>protected</em> tables when no policy matches the caller:
-   the absence of a grant is denial. The rewriter injects
-   <code>WHERE FALSE</code> (or its emitted equivalent).</li>
-</ol>
-<p>For the authorized-view bypass:</p>
-<ol>
-<li><strong>No bypass.</strong> Reject — fails the ship criterion.</li>
-<li><strong>Bypass only when the view's <em>containing dataset</em> is authorized
-   on the *base table's dataset</strong>* (selected). Matches BigQuery: the
-   <code>access</code> array on the <em>base table's dataset</em> names the view as a
-   reader; the rewriter looks up that array and skips the caller-
-   bound filter when it finds a match. Per-view policies bound to the
-   <em>view's own</em> protected base tables still apply normally.</li>
-</ol>
-<h2 id="decision">Decision<a class="headerlink" href="#decision" title="Permanent link">&para;</a></h2>
-<h3 id="caller-identity">Caller identity<a class="headerlink" href="#caller-identity" title="Permanent link">&para;</a></h3>
-<p>The caller-identity resolver (<code>row_access/identity.py</code>) extracts an
-IAM member string from each request in this order, returning the first
-hit:</p>
-<ol>
-<li><code>X-Bqemu-Caller: &lt;iam-member&gt;</code> — primary, emulator-specific,
-   value is the IAM member string used by the row-access matcher.</li>
-<li><code>X-Goog-User-Project: &lt;project&gt;</code> — fallback, mapped to the
-   synthetic identity <code>user:caller@&lt;project&gt;.iam.gserviceaccount.com</code>.
-   This lets clients that already pass the billing-project header
-   (the standard BigQuery client libraries) trigger <em>different</em>
-   per-project rewriting without mutating their request code, while
-   making it clear the value is synthetic.</li>
-<li>Default — <code>user:anonymous@bqemulator.local</code>. Tests written before
-   Phase 8 (Phase 0–7) keep working because the default identity
-   never matches any user-defined grantee.</li>
-</ol>
-<p>The same resolver is used by the FastAPI and gRPC adapters. The gRPC
-adapter reads the value from gRPC metadata using the same lower-cased
-keys (<code>x-bqemu-caller</code> / <code>x-goog-user-project</code>) that the FastAPI
-adapter reads from HTTP headers — gRPC normalises metadata keys to
-lower case, so the two adapters share a single resolver.</p>
-<p>The resolver returns a <code>CallerIdentity</code> value containing:
-- <code>principal: str</code> — the IAM member string ("user:…", "group:…",
-  "domain:…", "serviceAccount:…", "allUsers", "allAuthenticatedUsers",
-  or "anonymous@bqemulator.local").
-- <code>domains: tuple[str,...]</code> — the domain part of <code>principal</code> (if
-  any), used by <code>domain:</code> matching.
-- <code>is_authenticated: bool</code> — <code>False</code> only for the default fallback
-  identity.</p>
-<h3 id="match-rules">Match rules<a class="headerlink" href="#match-rules" title="Permanent link">&para;</a></h3>
-<p>A grantee <code>G</code> matches caller <code>C</code> when <strong>any</strong> of:</p>
-<ul>
-<li><code>G == "allUsers"</code>.</li>
-<li><code>G == "allAuthenticatedUsers"</code> AND <code>C.is_authenticated</code>.</li>
-<li><code>G</code> and <code>C.principal</code> are both <code>user:…</code> or both <code>serviceAccount:…</code>
-  and the email parts are equal (case-insensitive on the domain part
-  only — local part is case-sensitive per RFC 5321).</li>
-<li><code>G == "domain:&lt;d&gt;"</code> AND <code>C</code> is a <code>user:</code> or <code>serviceAccount:</code> whose
-  email host equals <code>&lt;d&gt;</code> (case-insensitive). Group/domain identities
-  do NOT inherit domain matches.</li>
-<li><code>G == "group:&lt;email&gt;"</code> AND the request supplied
-  <code>X-Bqemu-Groups: &lt;comma-separated-emails&gt;</code> containing <code>&lt;email&gt;</code>.
-  This is an emulator-only escape hatch — real BigQuery walks Google
-  Workspace group membership, which the emulator obviously can't do.</li>
-</ul>
-<p>Anything else is a non-match.</p>
-<h3 id="combination-semantics">Combination semantics<a class="headerlink" href="#combination-semantics" title="Permanent link">&para;</a></h3>
-<p>Inside a single table, the matching policies' <code>filter_predicate</code>s are
-combined with <strong>OR</strong>. A row is visible when any matching policy's
-filter holds.</p>
-<p>When a query touches a table that <strong>has</strong> policies but <strong>no</strong> policy
-matches the caller, the rewriter injects a guaranteed-false predicate.
-That preserves the protected table's schema (the response still has
-columns, just zero rows) and matches BigQuery's documented "absence
-of a grant is denial" behaviour. Tables with <strong>no</strong> policies are left
-alone.</p>
-<h3 id="rewriter-shape">Rewriter shape<a class="headerlink" href="#rewriter-shape" title="Permanent link">&para;</a></h3>
-<p><code>sql/rewriter/row_access_filter.py</code> runs as a pre-translator pass on
-the BigQuery SQL string (alongside the time-travel rewriter). It:</p>
-<ol>
-<li>Short-circuits when the catalog has zero policies (the hot path
-   for the overwhelming majority of queries).</li>
-<li>Parses the SQL with SQLGlot in BigQuery dialect.</li>
-<li>Walks every <code>exp.Table</code> reference. For each one:</li>
-<li>Resolves the qualified <code>(project, dataset, table)</code> triple,
-   defaulting <code>project</code> to the request's project_id and skipping
-   references that lack a dataset (CTEs, function-call wrappers,
-   etc.).</li>
-<li>Looks up the table in the catalog. If the table is a <code>VIEW</code>,
-   replaces the reference with a derived subquery built from the
-   view's body, recursively rewriting that body with the bypass
-   rules below.</li>
-<li>For leaf tables (<code>TABLE</code>, <code>MATERIALIZED_VIEW</code>, <code>SNAPSHOT</code>,
-   <code>CLONE</code>, or unknown / external), looks up the policies for
-   that table and replaces the reference with
-   <code>(SELECT * FROM &lt;ref&gt; WHERE &lt;filter&gt;) AS &lt;alias&gt;</code>. The alias
-   preserves the user's original alias (or the table id if
-   unaliased) so identifier resolution in downstream clauses keeps
-   working.</li>
-<li>Emits the rewritten BigQuery SQL.</li>
-</ol>
-<p>The wrapping-as-derived-subquery shape is critical: it means the
-caller's WHERE / SELECT / JOIN clauses see exactly the rows allowed
-by the policy and can never re-read a row the policy filtered out.
-Wrapping in a subquery (rather than appending an additional <code>AND</code>
-to the user's WHERE) also preserves correctness for <code>OUTER JOIN</code>,
-<code>UNION ALL</code>, and <code>WITH … AS</code> references, where pushing a predicate
-into the wrong scope can change the result set.</p>
-<h3 id="authorized-view-bypass-does-not-exist-for-rap-revised">Authorized-view bypass — does not exist for RAP (revised)<a class="headerlink" href="#authorized-view-bypass-does-not-exist-for-rap-revised" title="Permanent link">&para;</a></h3>
-<p>Real BigQuery does <strong>not</strong> bypass row-level security for authorized
-views. The <code>access_entries</code> array on a base dataset confers
-<em>IAM-level read access</em> on the underlying data: a caller who queries
-an authorized view does not need direct <code>bigquery.dataViewer</code> on the
-base dataset because the access entry confers it transitively. But
-row-level security — the per-row filter predicates declared by row
-access policies — is enforced <strong>per calling user</strong>, against every
-base-table read, regardless of whether the read is direct or through
-a view. This was confirmed empirically by the 5 <code>authz_view_*</code>
-conformance fixtures (P2.d follow-up #1): both
-same-dataset and cross-dataset authorized-view recordings returned 0
-rows from real BQ when the calling user had no matching RAP grant,
-matching the documented BQ behaviour at
-<a href="https://cloud.google.com/bigquery/docs/row-level-security-intro">cloud.google.com/bigquery/docs/row-level-security-intro</a>
-("Row-level access policies applied to the source table are still
-enforced" when the user queries through an authorized view).</p>
-<p>The rewriter therefore applies caller-bound RAP enforcement to every
-base-table reference inside a view body — same as if the caller had
-queried the base table directly. Views that reference views are
-expanded depth-first up to a recursion limit (8); the recursive
-walk applies RAP at each level.</p>
-<p>Per-view RAP entries (policies attached to the view <em>itself</em> as a
-<code>TableMeta</code>) still apply when the view is referenced directly —
-those go through the leaf-table path unchanged.</p>
-<h3 id="authorized-view-bypass-superseded">Authorized-view bypass — superseded<a class="headerlink" href="#authorized-view-bypass-superseded" title="Permanent link">&para;</a></h3>
-<p>Below is the original decision text, preserved for the
-audit trail. The implementation it described was removed when this
-ADR was revised.</p>
-<blockquote>
-<p>When the rewriter expands a <code>VIEW</code>, each base table inside the view's
-body is checked for authorization:</p>
-<ul>
-<li>Read the <em>base table's</em> dataset's <code>access_entries</code> (the dataset
-doing the granting; matches BigQuery's "share-from" model).</li>
-<li>If any entry is <code>{view: {projectId, datasetId, tableId}}</code> matching
-the <em>outer view</em>, skip caller-bound RAP application for that base
-table. Per-view RAP entries that target the view itself still
-apply.</li>
-</ul>
-<p>The bypass is checked at one level of view nesting. Views that
-reference views are expanded depth-first up to a sane recursion limit
-(8) — the emulator does not attempt to detect cyclic view definitions.
-A cyclic definition would already fail the SQL translator before
-reaching the rewriter.</p>
-</blockquote>
-<h3 id="information-schema">Information schema<a class="headerlink" href="#information-schema" title="Permanent link">&para;</a></h3>
-<p><code>INFORMATION_SCHEMA.ROW_ACCESS_POLICIES</code> is implemented as an inline
-<code>VALUES</code> rewrite, mirroring the
-<code>INFORMATION_SCHEMA.MATERIALIZED_VIEWS</code> pattern from Phase 7. The
-columns match the published BigQuery schema:</p>
+<p>The current pre-commit gate chain (<code>make lint</code> →
+ruff + mypy --strict + bandit + pip-audit + interrogate + typos, plus
+<code>test-unit</code> / <code>test-coverage</code> / <code>test-patch-coverage</code>) is dense but
+leaves three holes:</p>
 <table>
 <thead>
 <tr>
-<th>Column</th>
-<th>Type</th>
+<th>Concern</th>
+<th>Current coverage</th>
+<th>Gap</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td><code>table_catalog</code></td>
-<td>STRING</td>
+<td><strong>Cyclomatic complexity</strong></td>
+<td>ruff has the <a href="https://docs.astral.sh/ruff/rules/complex-structure/">mccabe <code>C901</code></a> rule plus <a href="https://docs.astral.sh/ruff/rules/too-many-return-statements/"><code>PLR0911</code></a>, <a href="https://docs.astral.sh/ruff/rules/too-many-branches/"><code>PLR0912</code></a>, <a href="https://docs.astral.sh/ruff/rules/too-many-arguments/"><code>PLR0913</code></a>, <a href="https://docs.astral.sh/ruff/rules/too-many-statements/"><code>PLR0915</code></a>. All four of the first set are deliberately <strong>ignored</strong> in <code>pyproject.toml</code> — the rationale is that type-dispatch and route-handler signatures are naturally branchy and adding per-function <code>noqa</code> is noise. Only <code>PLR0915</code> (50-statement ceiling) actively enforces anything.</td>
+<td>No per-function rank ceiling; a function can climb to complexity 30+ without surfacing.</td>
 </tr>
 <tr>
-<td><code>table_schema</code></td>
-<td>STRING</td>
+<td><strong>Code duplication / DRY violations</strong></td>
+<td>None. CodeQL doesn't catch it, ruff doesn't detect cross-file clones, Codecov doesn't model it.</td>
+<td>A whole category — "this should've been a helper" — is invisible.</td>
 </tr>
 <tr>
-<td><code>table_name</code></td>
-<td>STRING</td>
-</tr>
-<tr>
-<td><code>policy_name</code></td>
-<td>STRING</td>
-</tr>
-<tr>
-<td><code>grantees</code></td>
-<td>STRING</td>
-</tr>
-<tr>
-<td><code>filter_predicate</code></td>
-<td>STRING</td>
-</tr>
-<tr>
-<td><code>creation_time</code></td>
-<td>TIMESTAMP</td>
-</tr>
-<tr>
-<td><code>last_modified_time</code></td>
-<td>TIMESTAMP</td>
+<td><strong>Dead code (unused names)</strong></td>
+<td><code>vulture&gt;=2.11</code> is in the dev-deps and <code>[tool.vulture]</code> config exists, but the tool is <strong>not</strong> invoked anywhere — not in <code>make lint</code>, not in any CI workflow. Dormant.</td>
+<td>Same surface, but worse: the dependency is paid for without any return.</td>
 </tr>
 </tbody>
 </table>
-<p>Grantees are emitted as a comma-separated string (the form BigQuery
-emits when reading the column through SQL).</p>
-<h2 id="consequences">Consequences<a class="headerlink" href="#consequences" title="Permanent link">&para;</a></h2>
+<p>The user concern that prompted this ADR was specifically "tools we have do
+not do a good job at catching cyclomatic complexity, bad patterns, or
+DRY violations across the codebase." Verified against the actual
+<code>pyproject.toml</code> ignore list, which confirms the gap.</p>
+<p>SonarCloud was considered explicitly and declined — the existing stack
+(ruff + bandit + CodeQL + Codecov + CodeRabbit + the seven-tier test
+pyramid) already covers most of what SonarCloud catches; the
+marginal value over what the three targeted tools below provide is
+mostly dashboard convenience, not bug-catching.</p>
+<h2 id="decision">Decision<a class="headerlink" href="#decision" title="Permanent link">&para;</a></h2>
+<p>Add three external gates, wired as <strong>non-blocking</strong> quality checks
+behind a single <code>make quality</code> umbrella target and a dedicated
+<code>.github/workflows/code-quality.yml</code> workflow. None of the three
+become part of <code>make verify</code> in this ADR — that gate stays the strict
+pre-merge contract. Promote-to-required is a separate follow-up PR
+once a baseline cycle on <code>main</code> confirms the thresholds.</p>
+<h3 id="1-cyclomatic-complexity-radon-xenon">1. Cyclomatic complexity → <code>radon</code> + <code>xenon</code><a class="headerlink" href="#1-cyclomatic-complexity-radon-xenon" title="Permanent link">&para;</a></h3>
+<p><code>xenon</code> wraps <code>radon</code>'s per-function complexity scoring with hard
+threshold flags suitable for CI. It assigns each block a rank A–F
+where the bands are:</p>
+<table>
+<thead>
+<tr>
+<th>Rank</th>
+<th>Cyclomatic complexity</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>A</td>
+<td>1–5</td>
+</tr>
+<tr>
+<td>B</td>
+<td>6–10</td>
+</tr>
+<tr>
+<td>C</td>
+<td>11–20</td>
+</tr>
+<tr>
+<td>D</td>
+<td>21–30</td>
+</tr>
+<tr>
+<td>E</td>
+<td>31–40</td>
+</tr>
+<tr>
+<td>F</td>
+<td>≥41</td>
+</tr>
+</tbody>
+</table>
+<p>Baseline measured against the v1.0.2 codebase (1,531 blocks):</p>
+<table>
+<thead>
+<tr>
+<th>Metric</th>
+<th>Value</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Project-wide average complexity</td>
+<td>A (3.44)</td>
+</tr>
+<tr>
+<td>Worst-ranked module average</td>
+<td>C (<code>storage/arrow_bridge.py</code>, <code>versioning/time_travel.py</code>, <code>sql/rewriter/unnest_offset.py</code>, <code>sql/rewriter/timestamp_iso_helpers.py</code>)</td>
+</tr>
+<tr>
+<td>Worst-ranked single function</td>
+<td>E (39) — <code>storage/arrow_bridge._format_bq_value</code></td>
+</tr>
+<tr>
+<td>Blocks at rank ≥ C</td>
+<td>65 / 1,531 (4.2%)</td>
+</tr>
+<tr>
+<td>Blocks at rank ≥ D</td>
+<td>10 / 1,531 (0.7%)</td>
+</tr>
+<tr>
+<td>Blocks at rank ≥ E</td>
+<td>3 / 1,531 (0.2%)</td>
+</tr>
+</tbody>
+</table>
+<p>Thresholds chosen against that baseline so the gate passes today but
+catches regression:</p>
+<div class="language-make highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="err">xenon</span><span class="w"> </span><span class="err">--max-absolute</span><span class="w"> </span><span class="err">E</span><span class="w"> </span><span class="err">--max-modules</span><span class="w"> </span><span class="err">C</span><span class="w"> </span><span class="err">--max-average</span><span class="w"> </span><span class="err">A</span><span class="w"> </span><span class="err">src/bqemulator</span>
+</span></code></pre></div>
 <ul>
-<li><strong>Positive.</strong> A single short-circuit (<code>catalog.list_all_policies()</code>
-  empty) keeps the hot path identical to Phase 7 for everyone who
-  hasn't created a policy.</li>
-<li><strong>Positive.</strong> The same resolver covers REST, gRPC Read, and gRPC
-  Write because the metadata keys are identical between the two
-  surfaces.</li>
-<li><strong>Positive.</strong> The wrapping-subquery shape composes with the
-  time-travel rewriter (which redirects table references <em>to a
-  snapshot</em> before RAP runs) — a query against a snapshot still has
-  RAP applied because the snapshot's protected-base-table policies
-  carry over via the catalog lookup.</li>
-<li><strong>Negative.</strong> Group membership cannot be modelled fully. The
-  <code>X-Bqemu-Groups</code> escape hatch is a Phase-8-only compromise; it is
-  not a real IAM substitute and is documented as such in the guide.</li>
-<li><strong>Negative.</strong> A view whose body uses dynamic SQL (parameter
-  substitution, <code>EXECUTE IMMEDIATE</code>) will not have its base tables
-  detected and therefore cannot be authorized. Phase 8 documents
-  this; a future RFC could add view-resolved scanning.</li>
-<li><strong>Negative.</strong> The rewriter pays a one-time SQLGlot parse on every
-  query that has <em>any</em> row access policy in the project. The
-  short-circuit avoids it when there are no policies at all.</li>
+<li><code>--max-absolute E</code> — no function above rank E (a new F-rank function
+  fails).</li>
+<li><code>--max-modules C</code> — no module averaging above rank C (a new high-
+  complexity module fails even if no single function trips the absolute
+  ceiling).</li>
+<li><code>--max-average A</code> — project-wide average must stay rank A. Today's
+  number is 3.44 — comfortable headroom before the A/B boundary at 5.</li>
 </ul>
-<h2 id="notes-for-future-phases">Notes for future phases<a class="headerlink" href="#notes-for-future-phases" title="Permanent link">&para;</a></h2>
+<p>These are the <strong>first-PR baseline</strong>. The follow-up promote-to-required
+PR will tune them downward once we see the noise floor on <code>main</code>.</p>
+<p><code>xenon</code> provides what the ignored ruff rules (<code>C901</code> / <code>PLR0911</code> /
+<code>PLR0912</code>) can't: a per-function ceiling without requiring
+per-occurrence <code>noqa</code>. The existing ruff ignores stay — they exist
+because the type-dispatch pattern is structurally branchy, and that
+pattern is exactly what produces D-rank functions today. The xenon
+ceiling caps the worst case while leaving the pattern itself
+unflagged.</p>
+<h3 id="2-code-duplication-jscpd">2. Code duplication → <code>jscpd</code><a class="headerlink" href="#2-code-duplication-jscpd" title="Permanent link">&para;</a></h3>
+<p><code>jscpd</code> is the only Python-capable cross-file clone detector with
+mature CI ergonomics. The Python-native alternative
+(<code>pylint --disable=all --enable=duplicate-code</code>) is slower, has
+weaker reporting, and runs against an already-loaded ruff/mypy
+toolchain that does not include pylint.</p>
+<p><code>jscpd</code> is JS-based — wired via <code>npx -y jscpd@4</code> so the gate adds
+zero permanent JS deps to the Python project. CI installs node 20
+alongside Python via <code>actions/setup-node@v6</code>.</p>
+<p>Baseline (v1.0.2, default thresholds 10 lines / 70 tokens):</p>
+<table>
+<thead>
+<tr>
+<th>Metric</th>
+<th>Value</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Total clones</td>
+<td>7 (when grouped pair-wise) — <code>consoleFull</code> reporter expands to 19 fragment-level pairs</td>
+</tr>
+<tr>
+<td>Duplicated lines</td>
+<td>112</td>
+</tr>
+<tr>
+<td>Project duplication ratio</td>
+<td>0.36%</td>
+</tr>
+</tbody>
+</table>
+<p>All seven baseline clones are 11–22 lines, structurally
+template-shaped (paired streaming strategies, route-handler CRUD
+shapes, paired SQL-rule helpers). Refactoring would introduce
+premature abstraction — the structural-similarity-but-semantic-
+distinctness is intentional. The threshold is set to <strong>1.0%</strong> —
+today passes (0.36%), but any meaningful regression fails.</p>
+<p>Config lives at <code>.jscpd.json</code>:</p>
+<div class="language-json highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="p">{</span>
+</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="w">  </span><span class="nt">&quot;pattern&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;src/bqemulator/**/*.py&quot;</span><span class="p">,</span>
+</span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="w">  </span><span class="nt">&quot;ignore&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;**/tests/**&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;**/conformance/**&quot;</span><span class="p">,</span><span class="w"> </span><span class="err">...</span><span class="p">],</span>
+</span><span id="__span-1-4"><a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="w">  </span><span class="nt">&quot;min-lines&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">10</span><span class="p">,</span>
+</span><span id="__span-1-5"><a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a><span class="w">  </span><span class="nt">&quot;min-tokens&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">70</span><span class="p">,</span>
+</span><span id="__span-1-6"><a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a><span class="w">  </span><span class="nt">&quot;threshold&quot;</span><span class="p">:</span><span class="w"> </span><span class="mf">1.0</span>
+</span><span id="__span-1-7"><a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a><span class="p">}</span>
+</span></code></pre></div>
+<h3 id="3-dead-code-vulture">3. Dead code → <code>vulture</code><a class="headerlink" href="#3-dead-code-vulture" title="Permanent link">&para;</a></h3>
+<p><code>vulture</code> is already a dev-dep with <code>[tool.vulture]</code> config in
+<code>pyproject.toml</code> — but it was never wired into any target. This ADR
+flips that on.</p>
+<p>Baseline: <strong>1 finding</strong> at <code>min_confidence = 80</code> —
+<code>jobs/executor.py:251: unused variable 'use_cache'</code>. The variable is
+a reserved kwarg for future query-cache integration, documented
+inline with <code># noqa: ARG001</code>. vulture's "unused variable" check
+fires independently of ruff's unused-argument suppression, so the
+existing config doesn't catch it.</p>
+<p>A new <code>.vulture_whitelist.py</code> lists the name with an inline
+justification linked back to the source comment. Each future
+whitelist entry lands via PR review only — that's the contract that
+keeps the gate trustworthy.</p>
+<p>The whitelist file is added to <code>[tool.vulture] paths</code>:</p>
+<div class="language-toml highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="k">[tool.vulture]</span>
+</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="n">paths</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;src/bqemulator&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;.vulture_whitelist.py&quot;</span><span class="p">]</span>
+</span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="n">min_confidence</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">80</span>
+</span><span id="__span-2-4"><a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="n">ignore_decorators</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;@app.*&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;@router.*&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;@pytest.fixture&quot;</span><span class="p">]</span>
+</span><span id="__span-2-5"><a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a><span class="n">ignore_names</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;*Command&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;*Request&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;*Response&quot;</span><span class="p">]</span>
+</span></code></pre></div>
+<h3 id="wiring">Wiring<a class="headerlink" href="#wiring" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>Surface</th>
+<th>Where</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>make quality-complexity</code></td>
+<td><code>xenon ...</code></td>
+</tr>
+<tr>
+<td><code>make quality-duplication</code></td>
+<td><code>npx -y jscpd@4 --config .jscpd.json</code></td>
+</tr>
+<tr>
+<td><code>make quality-dead-code</code></td>
+<td><code>vulture</code> (reads <code>[tool.vulture]</code>)</td>
+</tr>
+<tr>
+<td><code>make quality</code></td>
+<td>Umbrella over all three</td>
+</tr>
+<tr>
+<td><code>.github/workflows/code-quality.yml</code></td>
+<td>Per-PR + push-to-main + nightly + manual; each step has <code>continue-on-error: true</code>; aggregated outcomes in <code>$GITHUB_STEP_SUMMARY</code></td>
+</tr>
+<tr>
+<td><code>make verify</code></td>
+<td><strong>Unchanged</strong>. The three gates are non-blocking — they don't gate releases yet.</td>
+</tr>
+</tbody>
+</table>
+<h3 id="why-non-blocking-first">Why non-blocking first<a class="headerlink" href="#why-non-blocking-first" title="Permanent link">&para;</a></h3>
+<p>Per the v1.0 charter the project follows a <strong>no-deferral principle</strong>
+on feature scope, but introducing new gates is operationally
+different: a gate that fires on every PR without justification
+trains developers to ignore it. The non-blocking phase exists to
+let the thresholds settle against <code>main</code> over several normal
+merges and to surface noise (false positives, structural-pattern
+hits) before a regression starts blocking merges.</p>
+<p>The follow-up promote-to-required PR will:</p>
+<ol>
+<li>Tighten thresholds based on observed noise (e.g. drop
+   <code>--max-absolute E</code> to <code>--max-absolute D</code> if no D-rank function
+   merged in the meantime).</li>
+<li>Add the relevant <code>make quality-*</code> step to <code>make verify</code>.</li>
+<li>Add the check name to the branch protection ruleset's required
+   list (<code>gh api repos/jjviscomi/bqemulator/rulesets/...</code>).</li>
+<li>Re-confirm against the cycle's main HEAD.</li>
+</ol>
+<h2 id="rationale">Rationale<a class="headerlink" href="#rationale" title="Permanent link">&para;</a></h2>
+<h3 id="why-three-separate-tools-not-one">Why three separate tools, not one<a class="headerlink" href="#why-three-separate-tools-not-one" title="Permanent link">&para;</a></h3>
+<p>The three concerns are independent. SonarQube / SonarCloud bundle
+all three into one dashboard, but the marginal value over three
+focused tools is low and the operational cost (SaaS billing,
+token management, another bot reviewer) is non-trivial. The user
+explicitly declined SonarCloud during the design discussion.</p>
+<h3 id="why-xenon-over-relaxing-the-ignored-ruff-rules">Why xenon over relaxing the ignored ruff rules<a class="headerlink" href="#why-xenon-over-relaxing-the-ignored-ruff-rules" title="Permanent link">&para;</a></h3>
+<p>The ignored rules (<code>C901</code> / <code>PLR0911</code> / <code>PLR0912</code> / <code>PLR0913</code>) are
+<strong>per-function</strong> checks. Their failure mode is "this function
+crosses threshold X" with no escape hatch except <code># noqa: &lt;rule&gt;</code> on
+the offending function. The current ignore list captures the
+project-wide judgement that type-dispatch functions earn the
+branch budget; surfacing them as warnings on every PR would
+require landing dozens of <code>noqa</code> annotations across the rule
+registry alone.</p>
+<p>xenon's <code>--max-absolute E</code> instead caps the <strong>worst case</strong> in the
+whole codebase — a D-rank type-dispatch function still passes; only
+a brand-new function at F-rank (≥41 complexity) fails. Different
+contract, more usable.</p>
+<h3 id="why-jscpd-over-pylint-enableduplicate-code">Why jscpd over pylint --enable=duplicate-code<a class="headerlink" href="#why-jscpd-over-pylint-enableduplicate-code" title="Permanent link">&para;</a></h3>
+<p>Performance: pylint loads the whole project's AST and runs ~100
+other checks before reaching duplicate-code. jscpd is a focused
+clone detector that finishes the same scan in &lt;1s on this
+codebase. Output quality: jscpd's <code>consoleFull</code> reporter prints
+the actual cloned line ranges side-by-side; pylint's
+duplicate-code reporter is more terse and less actionable.</p>
+<h3 id="why-npx-y-jscpd4-rather-than-installing-it">Why <code>npx -y jscpd@4</code> rather than installing it<a class="headerlink" href="#why-npx-y-jscpd4-rather-than-installing-it" title="Permanent link">&para;</a></h3>
+<p>The Python project has no other JS deps. Pinning jscpd through a
+package-lock here would add a permanent maintenance surface (renovate
+PRs, audit warnings on lockfile vulnerabilities) for a single
+non-blocking gate. <code>npx -y</code> pulls the published package on demand;
+CI's <code>actions/setup-node@v6</code> cache makes subsequent runs sub-second.
+The local dev experience matches: any developer with node already
+has npx. The <code>@4</code> major-version pin keeps the gate reproducible
+without a lockfile: jscpd 4.x is stable; a future 5.x release that
+breaks our config schema or threshold semantics requires a deliberate
+opt-in bump.</p>
+<h3 id="why-preserve-the-existing-vulture-config-rather-than-reset-it">Why preserve the existing vulture config rather than reset it<a class="headerlink" href="#why-preserve-the-existing-vulture-config-rather-than-reset-it" title="Permanent link">&para;</a></h3>
+<p>The existing <code>ignore_decorators</code> / <code>ignore_names</code> patterns
+(<code>@app.*</code>, <code>@router.*</code>, <code>@pytest.fixture</code>, <code>*Command</code> / <code>*Request</code> /
+<code>*Response</code>) reflect actual project conventions — the decorators
+mark FastAPI endpoint registrations (referenced reflectively), the
+suffix patterns mark command/transport DTO classes that pydantic
+serializes. Resetting them would generate false positives that the
+whitelist would then have to absorb. Keep the suppressions, add
+the missing whitelist for the one new finding.</p>
+<h2 id="consequences">Consequences<a class="headerlink" href="#consequences" title="Permanent link">&para;</a></h2>
+<h3 id="positive">Positive<a class="headerlink" href="#positive" title="Permanent link">&para;</a></h3>
 <ul>
-<li>Phase 9+ adds <code>setIamPolicy</code> against the row-access-policy resource;
-  the policy-combination rules above are the contract any setIamPolicy
-  flow must respect.</li>
-<li>A future RFC could add <code>principalSet:</code> / workforce-pool support
-  alongside <code>user:</code> / <code>group:</code> / <code>domain:</code> matching.</li>
+<li>Three real categories of code-quality drift now have an observable
+  signal — promoted-to-required in a follow-up they'll have a
+  preventive signal too.</li>
+<li>The user concern that prompted this work has a documented answer:
+  <code>make quality</code> reports complexity / duplication / dead code; CI
+  surfaces the same on every PR.</li>
+<li>vulture stops being a dev-dep that costs install bandwidth but
+  produces nothing.</li>
+<li>The three tools' configs are independent — promoting any one
+  alone to required doesn't depend on the others.</li>
+</ul>
+<h3 id="negative">Negative<a class="headerlink" href="#negative" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Three more tools to keep current. radon / xenon / vulture all
+  follow the standard pip update cadence; jscpd is fetched fresh
+  by npx every CI run so it tracks upstream automatically (and
+  can therefore break on a major-version jscpd release — pin via
+  <code>jscpd@4</code> if that becomes a problem).</li>
+<li>node + npm installed in the code-quality CI job — adds ~10-15s
+  to that job's runtime. Acceptable: the workflow is non-blocking
+  and not on the release path.</li>
+<li>The three baselines (xenon thresholds, jscpd 1.0%, vulture
+  whitelist) capture a snapshot of v1.0.2. Each will need a
+  revisit pass after some commits land on <code>main</code> — the promote-
+  to-required PR is when that revisit happens.</li>
+</ul>
+<h3 id="neutral">Neutral<a class="headerlink" href="#neutral" title="Permanent link">&para;</a></h3>
+<ul>
+<li>The Vulture whitelist file (<code>.vulture_whitelist.py</code>) is real
+  Python source — it imports nothing and references names as
+  bare statements. Ruff's S101/B018 fires on it without
+  in-file suppressions; the file already carries the right
+  <code># noqa: F821, B018</code> annotations.</li>
+</ul>
+<h2 id="alternatives-considered">Alternatives considered<a class="headerlink" href="#alternatives-considered" title="Permanent link">&para;</a></h2>
+<ol>
+<li><strong>SonarQube / SonarCloud.</strong> Dashboards + bundled checks, but
+   overlaps with existing stack. Declined by the project owner
+   during the design discussion.</li>
+<li><strong>Add C901 / PLR0911 / PLR0912 / PLR0913 back to ruff with
+   per-function <code>noqa</code> waivers.</strong> Higher friction per regression
+   (every type-dispatch function needs an inline annotation);
+   doesn't give a project-wide ceiling. Rejected.</li>
+<li><strong>Promote the gates to required in the same PR as adding them.</strong>
+   Locks in baselines that haven't seen a cycle on <code>main</code> yet —
+   any noise we miss now would block PRs immediately. The
+   prompt-design intent (the user task that drove this ADR)
+   explicitly called for non-blocking-first.</li>
+<li><strong>pylint full run for everything.</strong> Slow, redundant with ruff
+   for the rules ruff already covers, and the bits ruff doesn't
+   (<code>duplicate-code</code>) are weaker than <code>jscpd</code>. Rejected.</li>
+<li><strong>SonarCloud (free for OSS) + community quality-gate badge.</strong>
+   Same overlap argument as #1; the marginal value is dashboard
+   convenience, not bug-catching. Re-openable via RFC.</li>
+</ol>
+<h2 id="references">References<a class="headerlink" href="#references" title="Permanent link">&para;</a></h2>
+<ul>
+<li><a href="https://github.com/jjviscomi/bqemulator/pull/42">Issue #17 closure / v1.0.2 (PR #42)</a> — the release this ADR sequences after.</li>
+<li><a href="../0033-storage-read-arrow-ipc-bare-message-contract/">ADR 0033</a> and
+  <a href="../0034-scio-beam-emulator-routing/">ADR 0034</a> — the template/shape this ADR follows.</li>
+<li><a href="https://radon.readthedocs.io/en/latest/"><code>radon</code> docs</a> — rank tier definitions.</li>
+<li><a href="https://xenon.readthedocs.io/en/latest/"><code>xenon</code> docs</a> — CLI thresholds.</li>
+<li><a href="https://github.com/kucherenko/jscpd"><code>jscpd</code> docs</a> — config schema.</li>
+<li><a href="https://github.com/jendrikseipp/vulture"><code>vulture</code> docs</a> — whitelist semantics.</li>
+<li>AGENTS.md "Pre-commit gate (mandatory)" — the contract this ADR
+  carefully <strong>doesn't</strong> extend yet.</li>
 </ul>
 
 
