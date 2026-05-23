@@ -76,7 +76,7 @@ takes the scio path and writes via the real GCS staging bucket.
 
 ## Layout
 
-```
+```text
 build.sbt                                             — sbt build definition
 project/build.properties                              — sbt version pin
 src/main/scala/com/example/bqemu/CustomersPipeline.scala

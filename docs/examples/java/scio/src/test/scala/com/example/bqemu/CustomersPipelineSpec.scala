@@ -149,9 +149,13 @@ class CustomersPipelineSpec extends AnyFlatSpec with Matchers {
       .withExposedPorts(9050, 9060)
       .waitingFor(Wait.forHttp("/healthz").forPort(9050))
 
-    fakeGcs.start()
-    bqemu.start()
+    // Start the containers inside the guarded block. A failure in
+    // ``bqemu.start()`` after ``fakeGcs.start()`` succeeded would
+    // otherwise leak the fake-gcs container plus the network — the
+    // ``finally`` arm only runs when control is inside the ``try``.
     try {
+      fakeGcs.start()
+      bqemu.start()
       val rest =
         s"http://${bqemu.getHost}:${bqemu.getMappedPort(9050)}"
       // Beam's ``Transport.newStorageClient`` splits the endpoint URL
@@ -306,9 +310,22 @@ class CustomersPipelineSpec extends AnyFlatSpec with Matchers {
       // serialises all scalar column values as JSON strings.
       countResp.body() should include(""""v":"3"""")
     } finally {
-      bqemu.stop()
-      fakeGcs.stop()
-      net.close()
+      // Each cleanup runs in its own try/catch — a stop() failure on
+      // one resource shouldn't block the others. Testcontainers'
+      // Ryuk session reaper catches anything that still leaks at JVM
+      // exit, but ``finally`` doing best-effort cleanup keeps the
+      // common case clean. Cleanup exceptions are intentionally
+      // swallowed (logged to stderr instead of thrown) so a primary
+      // test-body failure stays the surfaced exception.
+      def safeStop(label: String, action: => Unit): Unit =
+        try action
+        catch {
+          case t: Throwable =>
+            System.err.println(s"[cleanup] $label failed: $t")
+        }
+      safeStop("bqemu.stop", bqemu.stop())
+      safeStop("fakeGcs.stop", fakeGcs.stop())
+      safeStop("net.close", net.close())
     }
   }
 }

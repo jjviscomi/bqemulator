@@ -81,7 +81,7 @@ fake-gcs-server's filesystem backend stores objects at
 The scio spec bind-mounts a single host directory into both
 containers at their respective roots:
 
-```
+```text
 fake-gcs-server -filesystem-root /data  ┐
                                          ├── /tmp/bqemu-gcs-staging-{rand}
 bqemulator BQEMU_GCS_LOCAL_ROOT=/var/lib/bqemu-gcs ┘
