@@ -20,6 +20,33 @@ section and adds the release date.
 
 ## [Unreleased]
 
+### Fixed
+
+- **scio example: end-to-end ``CustomersPipeline.run`` against
+  bqemulator** (#17). The v1.0.1 wiring-only smoke flips to a real
+  Beam BigQueryIO BATCH_LOADS round-trip — 3 rows written, 3 rows
+  read back via ``jobs.query``. No emulator-side code change: the
+  fix is contained in the scio example via (a) a new
+  ``EmulatorBigQueryServices`` class in ``org.apache.beam.sdk.io.gcp.bigquery``
+  that supplies the Apiary ``Bigquery`` client with
+  ``setRootUrl(emulator)``, attached via
+  ``BigQueryIO.Write.withTestServices(...)`` because Beam 2.55.1's
+  Java SDK has no native ``BIGQUERY_EMULATOR_HOST`` support
+  ([apache/beam#34037](https://github.com/apache/beam/pull/34037)
+  is Go-side only); (b) a ``fsouza/fake-gcs-server`` testcontainers
+  sidecar that handles Beam's GCS staging step for the BATCH_LOADS
+  write method, bind-mounted into a shared directory with
+  bqemulator's existing ``BQEMU_GCS_LOCAL_ROOT`` shim so the
+  LOAD-job source URIs resolve to the same physical bytes Beam
+  staged; (c) ``--gcpCredentialFactoryClass=NoopCredentialFactory``
+  to short-circuit OAuth2 refresh against ``oauth2.googleapis.com``;
+  (d) a ``testcontainers`` 1.20.4 → 1.21.4 bump because Docker 29+
+  rejects docker-java clients announcing API < 1.40. See
+  [ADR 0034](docs/adr/0034-scio-beam-emulator-routing.md) for the
+  full design; the
+  [scio example README](docs/examples/java/scio/README.md) has the
+  user-facing recipe.
+
 ## [1.0.1] — 2026-05-23
 
 ### Fixed
@@ -206,26 +233,19 @@ v1.0.1 release:
   ``python/pyspark-bigquery`` example dropped its inline
   workaround. See [ADR 0033](docs/adr/0033-storage-read-arrow-ipc-bare-message-contract.md)
   for the formal contract. ([#15](https://github.com/jjviscomi/bqemulator/issues/15))
-- ⏳ **Scio test exercises wiring only** — **DEFERRED to v1.0.2+**.
-  v1.0.1 investigation (see ``Changed`` block above + the
-  ``CustomersPipelineSpec`` header comment) found the end-to-end
-  path requires three independent fixes, not the single
-  flag/env-var the v1.0.0 limitation note suggested:
-  ``--bigQueryEndpoint`` does override the Apiary client's
-  ``rootUrl`` (✅), but Beam's auth refresh fires before the
-  redirected HTTP call (``OAuth2Credentials.refresh()`` 400s
-  even with ``NoopCredentialFactory``), and
-  ``BigQueryIO.Write`` defaults to ``BATCH_LOADS`` which stages
-  rows to GCS — the emulator has no GCS-compatible shim. Likely
-  v1.0.2 path: integrate a GCS emulator (e.g.
-  ``fsouza/fake-gcs-server``) for staging + finish auth
-  suppression + decide between staying on ``BATCH_LOADS`` (via
-  GCS shim) or pivoting to ``STREAMING_INSERTS``. The
-  ``CustomersPipeline.run`` source itself stays production-ready
-  for users running against real BigQuery or a long-lived
-  bqemulator with a stable port + real GCS bucket. The scio
-  example test continues to assert the wiring-only smoke
-  bqemulator owns (container up, REST reachable, dataset
-  creation works). Tracked in
-  [#17](https://github.com/jjviscomi/bqemulator/issues/17).
+- ✅ **Scio test exercises wiring only** — **CLOSED in v1.0.2**
+  (see ``Fixed`` block under [Unreleased] above). The
+  ``CustomersPipelineSpec`` now drives ``CustomersPipeline.run``
+  end-to-end: 3 rows written via Beam BigQueryIO BATCH_LOADS, 3
+  rows read back via ``jobs.query``. The v1.0.1 hypothesis that
+  ``--bigQueryEndpoint`` worked turned out to be wrong (Beam
+  Java SDK 2.55.1 has no such option — only the Go SDK has
+  ``BIGQUERY_EMULATOR_HOST``); the actual fix uses
+  ``BigQueryIO.Write.withTestServices(EmulatorBigQueryServices(
+  endpoint))`` from a Beam-package-scoped helper in the scio
+  example, plus a ``fake-gcs-server`` sidecar bind-mounted into
+  bqemulator's existing ``BQEMU_GCS_LOCAL_ROOT`` shim for the
+  BATCH_LOADS staging step. See
+  [ADR 0034](docs/adr/0034-scio-beam-emulator-routing.md) for the
+  decision record. ([#17](https://github.com/jjviscomi/bqemulator/issues/17))
 

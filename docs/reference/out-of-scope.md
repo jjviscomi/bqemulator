@@ -702,6 +702,47 @@ extension for INFORMATION_SCHEMA). Goccy's
 `bigquery-emulator` also defers this surface; the emulator's
 parity-with-goccy stance keeps it out of scope.
 
+### Google Cloud Storage emulation
+
+**Status**: Excluded permanently — the emulator's charter is BigQuery,
+not GCS.
+
+bqemulator implements the BigQuery REST + gRPC surface. Real BigQuery
+treats Google Cloud Storage as an external service; the emulator
+follows the same separation. Implementing a GCS HTTP/JSON-API surface
+inside the emulator would expand scope from "BigQuery" to "BigQuery +
+GCS" — a substantially larger maintenance surface for a feature real
+BigQuery doesn't include.
+
+The emulator's existing ``BQEMU_GCS_LOCAL_ROOT`` shim
+([ADR 0027](../adr/0027-load-extract-avro-orc.md)) is a *filesystem
+resolver* for ``gs://`` URIs that appear in LOAD / EXTRACT
+``sourceUris`` — it maps ``gs://bucket/path`` to a local filesystem
+path, so a test that pre-stages files on disk can load them. It is
+not a GCS API emulator. Anything that needs the actual GCS JSON API
+(Beam's ``BigQueryIO.Write`` BATCH_LOADS staging step, the Java SDK's
+``Storage.objects.insert``, signed URLs, multipart uploads) must
+target a separate GCS emulator.
+
+**Workaround** for Beam BigQueryIO BATCH_LOADS specifically:
+[fsouza/fake-gcs-server](https://github.com/fsouza/fake-gcs-server)
+ships a Docker image that implements the GCS HTTP/JSON API and stores
+objects at ``{root}/{bucket}/{object}`` — byte-identical with
+``BQEMU_GCS_LOCAL_ROOT``'s expected layout. The scio example
+([`docs/examples/java/scio/`](../examples/java/scio/README.md)) brings
+both containers up with a shared bind mount: Beam stages BATCH_LOADS
+shards via fake-gcs-server (which materialises them on disk),
+bqemulator's LOAD job reads the same bytes via its filesystem
+resolver. See [ADR 0034](../adr/0034-scio-beam-emulator-routing.md)
+for the full design.
+
+**Reconsidering**: an in-process GCS emulation surface would need an
+[RFC](../rfcs/README.md) demonstrating use cases the sidecar pattern
+does not cover. The sidecar adds one container to a test fixture; the
+in-process alternative would add an entire HTTP/JSON API + multipart
+upload + signed URL surface to bqemulator. The cost/benefit currently
+favours the sidecar.
+
 ### Native Windows containers
 
 The published image (`ghcr.io/jjviscomi/bqemulator`) is a multi-arch
