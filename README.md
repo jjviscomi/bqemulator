@@ -200,8 +200,8 @@ See the [`docker-compose/full-stack`](docs/examples/docker-compose/full-stack/) 
 
 ## What works today
 
-`bqemulator` is at **v1.0.0** — the initial production-stable
-release. SemVer applies: breaking changes ship only in MAJOR,
+`bqemulator` is at **v1.0.1** — first patch on the production-stable
+line. SemVer applies: breaking changes ship only in MAJOR,
 deprecations live ≥2 MINOR or 6 months. The [compatibility matrix](https://jjviscomi.github.io/bqemulator/latest/reference/compatibility-matrix/) is auto-generated from the conformance corpus on every CI run; the [conformance coverage matrix](https://jjviscomi.github.io/bqemulator/latest/reference/conformance-coverage-matrix/) breaks down support by surface item.
 
 | Surface | Status |
@@ -270,14 +270,14 @@ Every example under [`docs/examples/`](docs/examples/) is a complete, runnable p
 
 ## Project status
 
-`bqemulator` is at **v1.0.0** — the initial production-stable
-release. SemVer applies: breaking changes ship only in MAJOR
+`bqemulator` is at **v1.0.1** — first patch on the production-stable
+line. SemVer applies: breaking changes ship only in MAJOR
 versions, preceded by ≥1 MINOR with deprecation warnings;
 deprecated APIs remain for ≥2 MINOR versions or 6 months.
 
 Maturity signals:
 
-- ✅ 32 Architecture Decision Records covering every non-obvious design choice (`docs/adr/0001`–`0032`).
+- ✅ 33 Architecture Decision Records covering every non-obvious design choice (`docs/adr/0001`–`0033`).
 - ✅ ≥90% line + branch coverage gated by CI (`make verify`).
 - ✅ 7 test tiers passing (unit + property + integration + conformance + e2e + perf + chaos).
 - ✅ 5-client e2e matrix (Python · Node.js · Go · Java · `bq` CLI).
@@ -285,8 +285,8 @@ Maturity signals:
 - ✅ Fuzz-tier (`Atheris`) harnesses on the SQL translator, dynamic-protobuf decoder, and Arrow bridge.
 - ✅ Differential-tier row-order perturbation of the entire conformance corpus passes.
 - ✅ Performance baselines committed for `darwin-arm64`, with regression gates (`pytest-benchmark` `--benchmark-compare-fail=median:10%`).
-- ✅ PyPI publish via Trusted Publishing (sigstore-attested wheels) — `pip install bqemulator==1.0.0` resolves from [PyPI](https://pypi.org/project/bqemulator/).
-- ✅ GHCR publish with keyless cosign signatures — `docker pull ghcr.io/jjviscomi/bqemulator:1.0.0` resolves and the image is cosign-verifiable.
+- ✅ PyPI publish via Trusted Publishing (sigstore-attested wheels) — `pip install bqemulator==1.0.1` resolves from [PyPI](https://pypi.org/project/bqemulator/).
+- ✅ GHCR publish with keyless cosign signatures — `docker pull ghcr.io/jjviscomi/bqemulator:1.0.1` resolves and the image is cosign-verifiable.
 
 See [`CHANGELOG.md`](CHANGELOG.md) for the complete v1.0 inventory.
 
