@@ -20,6 +20,7 @@ from __future__ import annotations
 
 from datetime import UTC, date, datetime, time
 from decimal import Decimal
+from collections.abc import Callable
 from typing import Any
 
 import pyarrow as pa
@@ -156,6 +157,97 @@ def _format_range_value(value: Any, bq_elem: str) -> str | None:
     return f"[{_format_range_endpoint(start, bq_elem)}, {_format_range_endpoint(end, bq_elem)})"
 
 
+def _fmt_bq_binary(value: Any, _arrow_type: pa.DataType, _field: pa.Field | None) -> Any:
+    """Format a BYTES value as base64 per the BigQuery REST contract."""
+    import base64
+
+    if isinstance(value, (bytes, bytearray)):
+        return base64.b64encode(value).decode("ascii")
+    return str(value)
+
+
+def _fmt_bq_date(value: Any, _arrow_type: pa.DataType, _field: pa.Field | None) -> Any:
+    """Format a DATE value as ``YYYY-MM-DD``."""
+    if isinstance(value, date):
+        return value.isoformat()
+    return str(value)
+
+
+def _fmt_bq_time(value: Any, _arrow_type: pa.DataType, _field: pa.Field | None) -> Any:
+    """Format a TIME value as ``HH:MM:SS[.ffffff]``."""
+    if isinstance(value, time):
+        return value.isoformat()
+    return str(value)
+
+
+def _fmt_bq_timestamp(value: Any, arrow_type: pa.DataType, _field: pa.Field | None) -> Any:
+    """Format a TIMESTAMP / DATETIME Arrow value for the BigQuery REST wire.
+
+    - Arrow TIMESTAMP with a ``tz`` is BigQuery TIMESTAMP — emitted as
+      a microseconds-since-epoch integer string. We compute the delta
+      in integer microseconds (not ``timestamp() * 1_000_000``) to
+      avoid float-precision drift at the year-9999 boundary; the
+      official Python client decodes via ``_EPOCH + timedelta(microseconds=int(value))``.
+    - Arrow TIMESTAMP without a ``tz`` is BigQuery DATETIME — emitted
+      via ``isoformat()`` so year-1 / year-9999 boundaries parse
+      correctly through the Python client's ``strptime`` chain (and
+      ``isoformat`` always zero-pads ``%Y`` to four digits).
+    """
+    if not isinstance(value, datetime):
+        return str(value)
+    if arrow_type.tz is not None:
+        ts = value
+        if ts.tzinfo is None:
+            ts = ts.replace(tzinfo=UTC)
+        delta = ts - _UNIX_EPOCH
+        micros = delta.days * 86_400_000_000 + delta.seconds * 1_000_000 + delta.microseconds
+        return str(micros)
+    return value.isoformat()
+
+
+def _fmt_bq_list(value: Any, arrow_type: pa.DataType, _field: pa.Field | None) -> Any:
+    """Format an ARRAY value as ``[{"v": ...}, ...]`` (recursive)."""
+    if not isinstance(value, list):
+        return str(value)
+    element_type = arrow_type.value_type
+    element_field = arrow_type.value_field if hasattr(arrow_type, "value_field") else None
+    return [{"v": _format_bq_value(elem, element_type, field=element_field)} for elem in value]
+
+
+def _fmt_bq_struct(value: Any, arrow_type: pa.DataType, _field: pa.Field | None) -> Any:
+    """Format a STRUCT value as ``{"f": [{"v": ...}, ...]}`` (recursive)."""
+    if not isinstance(value, dict):
+        return str(value)
+    fields = []
+    for i in range(arrow_type.num_fields):
+        child_field = arrow_type.field(i)
+        field_value = value.get(child_field.name)
+        fields.append(
+            {"v": _format_bq_value(field_value, child_field.type, field=child_field)},
+        )
+    return {"f": fields}
+
+
+# Predicate → formatter dispatch for ``_format_bq_value``. Order matters
+# in principle but in practice the Arrow type predicates are mutually
+# exclusive (a type is never both a list and a struct, etc.); the
+# ordering below mirrors the original procedural chain for parity with
+# the pre-refactor reading order.
+_BQ_TYPE_FORMATTERS: tuple[tuple[Callable[[pa.DataType], bool], Callable[..., Any]], ...] = (
+    (pa.types.is_integer, lambda v, _t, _f: str(v)),
+    (pa.types.is_floating, lambda v, _t, _f: str(v)),
+    (pa.types.is_decimal, lambda v, _t, _f: str(v)),
+    (pa.types.is_boolean, lambda v, _t, _f: "true" if v else "false"),
+    (lambda t: pa.types.is_string(t) or pa.types.is_large_string(t), lambda v, _t, _f: str(v)),
+    (lambda t: pa.types.is_binary(t) or pa.types.is_large_binary(t), _fmt_bq_binary),
+    (pa.types.is_date, _fmt_bq_date),
+    (pa.types.is_time, _fmt_bq_time),
+    (pa.types.is_timestamp, _fmt_bq_timestamp),
+    (lambda t: pa.types.is_list(t) or pa.types.is_large_list(t), _fmt_bq_list),
+    (pa.types.is_struct, _fmt_bq_struct),
+)
+
+
 def _format_bq_value(
     value: Any,
     arrow_type: pa.DataType,
@@ -185,8 +277,10 @@ def _format_bq_value(
       parser iterates the value unconditionally.
     - STRUCT<…> → ``{"f": [{"v": ...}, ...]}`` (recursive).
     """
-    range_meta = _bq_range_metadata(field)
-
+    # Pre-checks driven by ``field`` metadata or by Arrow-internal
+    # types whose handlers don't fit the regular dispatch shape (they
+    # consult the BigQuery RANGE / GEOGRAPHY / INTERVAL metadata, not
+    # the Arrow column type alone).
     if value is None:
         if pa.types.is_list(arrow_type) or pa.types.is_large_list(arrow_type):
             return []
@@ -195,6 +289,7 @@ def _format_bq_value(
     # ADR 0023 §1.G — BigQuery RANGE columns surface on the wire as a
     # single string (``[start, end)``). For a REPEATED RANGE the
     # element string is wrapped in the usual ``{"v": ...}`` form.
+    range_meta = _bq_range_metadata(field)
     if range_meta is not None:
         bq_elem, is_repeated = range_meta
         if is_repeated:
@@ -207,108 +302,19 @@ def _format_bq_value(
     if field is not None and _is_geometry_field(field) and isinstance(value, (bytes, bytearray)):
         return wkb_to_wkt(value)
 
-    # INTERVAL — Arrow month_day_nano interval.
+    # INTERVAL — Arrow month_day_nano interval (a struct in pyarrow's
+    # internal representation, so the dispatch table's struct
+    # predicate would otherwise capture it).
     if pa.types.is_interval(arrow_type):
-        # pyarrow returns a MonthDayNano namedtuple-like object.
         months = getattr(value, "months", 0)
         days = getattr(value, "days", 0)
         nanos = getattr(value, "nanoseconds", 0)
         return format_bq_interval(int(months), int(days), int(nanos))
 
-    # Integers
-    if pa.types.is_integer(arrow_type):
-        return str(value)
-
-    # Floats
-    if pa.types.is_floating(arrow_type):
-        return str(value)
-
-    # Decimals (NUMERIC / BIGNUMERIC)
-    if pa.types.is_decimal(arrow_type):
-        if isinstance(value, Decimal):
-            return str(value)
-        return str(value)
-
-    # Boolean
-    if pa.types.is_boolean(arrow_type):
-        return "true" if value else "false"
-
-    # String
-    if pa.types.is_string(arrow_type) or pa.types.is_large_string(arrow_type):
-        return str(value)
-
-    # Binary / Bytes (non-GEOGRAPHY).
-    if pa.types.is_binary(arrow_type) or pa.types.is_large_binary(arrow_type):
-        import base64
-
-        if isinstance(value, (bytes, bytearray)):
-            return base64.b64encode(value).decode("ascii")
-        return str(value)
-
-    # Date
-    if pa.types.is_date(arrow_type):
-        if isinstance(value, date):
-            return value.isoformat()
-        return str(value)
-
-    # Time
-    if pa.types.is_time(arrow_type):
-        if isinstance(value, time):
-            return value.isoformat()
-        return str(value)
-
-    # Timestamp (with or without timezone)
-    if pa.types.is_timestamp(arrow_type):
-        if isinstance(value, datetime):
-            if arrow_type.tz is not None:
-                # BigQuery TIMESTAMP wire format: microseconds-since-epoch
-                # as an integer string. The official Python client's
-                # ``timestamp_to_py`` decodes it via ``_EPOCH +
-                # timedelta(microseconds=int(value))`` which supports the
-                # full BigQuery TIMESTAMP range (0001-01-01 through
-                # 9999-12-31). We compute the delta in integer
-                # microseconds to avoid the float-precision drift the
-                # ``ts.timestamp() * 1_000_000`` form exhibits at the
-                # 9999 boundary.
-                ts = value
-                if ts.tzinfo is None:
-                    ts = ts.replace(tzinfo=UTC)
-                delta = ts - _UNIX_EPOCH
-                micros = (
-                    delta.days * 86_400_000_000 + delta.seconds * 1_000_000 + delta.microseconds
-                )
-                return str(micros)
-            # BigQuery DATETIME format: ``YYYY-MM-DDTHH:MM:SS[.ffffff]``.
-            # Use ``isoformat()`` (always zero-pads the year) over
-            # ``strftime("%Y-...")`` so the year-1 / year-9999
-            # boundary cases parse correctly through the Python
-            # client's ``strptime`` chain. See the matching note in
-            # ``_format_range_endpoint`` above.
-            return value.isoformat()
-        return str(value)
-
-    # List / Array
-    if pa.types.is_list(arrow_type) or pa.types.is_large_list(arrow_type):
-        element_type = arrow_type.value_type
-        element_field = arrow_type.value_field if hasattr(arrow_type, "value_field") else None
-        if isinstance(value, list):
-            return [
-                {"v": _format_bq_value(elem, element_type, field=element_field)} for elem in value
-            ]
-        return str(value)
-
-    # Struct
-    if pa.types.is_struct(arrow_type):
-        if isinstance(value, dict):
-            fields = []
-            for i in range(arrow_type.num_fields):
-                child_field = arrow_type.field(i)
-                field_value = value.get(child_field.name)
-                fields.append(
-                    {"v": _format_bq_value(field_value, child_field.type, field=child_field)},
-                )
-            return {"f": fields}
-        return str(value)
+    # Regular Arrow-type dispatch.
+    for predicate, formatter in _BQ_TYPE_FORMATTERS:
+        if predicate(arrow_type):
+            return formatter(value, arrow_type, field)
 
     # Fallback for unhandled types (JSON etc. — as string).
     return str(value)
@@ -359,6 +365,99 @@ def bq_rows_to_arrow(
     return pa.table(arrays, schema=schema)
 
 
+def _coerce_arrow_boolean(value: Any, _arrow_type: pa.DataType, _field: pa.Field | None) -> Any:
+    """Coerce a BigQuery REST value to a Python bool."""
+    if isinstance(value, bool):
+        return value
+    if isinstance(value, str):
+        return value.lower() in ("true", "1", "yes")
+    return bool(value)
+
+
+def _coerce_arrow_binary(value: Any, _arrow_type: pa.DataType, _field: pa.Field | None) -> Any:
+    """Coerce a BigQuery BYTES value (base64 string) to Python ``bytes``."""
+    import base64
+
+    if isinstance(value, str):
+        return base64.b64decode(value)
+    return bytes(value)
+
+
+def _coerce_arrow_list(value: Any, arrow_type: pa.DataType, _field: pa.Field | None) -> Any:
+    """Coerce a BigQuery REST ARRAY into a Python ``list`` of coerced elements."""
+    if not isinstance(value, list):
+        return value
+    element_field = arrow_type.value_field if hasattr(arrow_type, "value_field") else None
+    return [
+        _coerce_to_arrow_value(v, arrow_type.value_type, field=element_field) for v in value
+    ]
+
+
+def _coerce_arrow_struct(value: Any, arrow_type: pa.DataType, _field: pa.Field | None) -> Any:
+    """Coerce a BigQuery REST STRUCT into a Python ``dict`` of coerced fields."""
+    if not isinstance(value, dict):
+        return value
+    return {
+        arrow_type.field(i).name: _coerce_to_arrow_value(
+            value.get(arrow_type.field(i).name),
+            arrow_type.field(i).type,
+            field=arrow_type.field(i),
+        )
+        for i in range(arrow_type.num_fields)
+    }
+
+
+def _coerce_arrow_timestamp(value: Any, _arrow_type: pa.DataType, _field: pa.Field | None) -> Any:
+    """Parse BigQuery's TIMESTAMP/DATETIME string forms into Python ``datetime``."""
+    if not isinstance(value, str):
+        return value
+    # BigQuery sends both "2026-04-15T00:00:00Z" and "2026-04-15 00:00:00 UTC" forms.
+    cleaned = value.replace(" UTC", "+00:00").replace("Z", "+00:00")
+    try:
+        return datetime.fromisoformat(cleaned)
+    except ValueError:
+        return value
+
+
+def _coerce_arrow_date(value: Any, _arrow_type: pa.DataType, _field: pa.Field | None) -> Any:
+    """Parse BigQuery's DATE string form into Python ``date``."""
+    if not isinstance(value, str):
+        return value
+    try:
+        return date.fromisoformat(value)
+    except ValueError:
+        return value
+
+
+def _coerce_arrow_time(value: Any, _arrow_type: pa.DataType, _field: pa.Field | None) -> Any:
+    """Parse BigQuery's TIME string form into Python ``time``."""
+    if not isinstance(value, str):
+        return value
+    try:
+        return time.fromisoformat(value)
+    except ValueError:
+        return value
+
+
+# Predicate → coercer dispatch for ``_coerce_to_arrow_value``. The
+# ordering mirrors the original procedural chain — Arrow type
+# predicates are mutually exclusive so order is documentation-only,
+# but readers expect to find INT64 / FLOAT64 first.
+_ARROW_TYPE_COERCERS: tuple[tuple[Callable[[pa.DataType], bool], Callable[..., Any]], ...] = (
+    (pa.types.is_integer, lambda v, _t, _f: int(v)),
+    (pa.types.is_floating, lambda v, _t, _f: float(v)),
+    (pa.types.is_decimal, lambda v, _t, _f: Decimal(str(v))),
+    (pa.types.is_boolean, _coerce_arrow_boolean),
+    (lambda t: pa.types.is_string(t) or pa.types.is_large_string(t), lambda v, _t, _f: str(v)),
+    (lambda t: pa.types.is_binary(t) or pa.types.is_large_binary(t), _coerce_arrow_binary),
+    (lambda t: pa.types.is_list(t) or pa.types.is_large_list(t), _coerce_arrow_list),
+    (pa.types.is_struct, _coerce_arrow_struct),
+    (pa.types.is_timestamp, _coerce_arrow_timestamp),
+    (pa.types.is_date, _coerce_arrow_date),
+    (pa.types.is_time, _coerce_arrow_time),
+)
+
+
 def _coerce_to_arrow_value(
     value: Any,
     arrow_type: pa.DataType,
@@ -385,98 +484,15 @@ def _coerce_to_arrow_value(
         return _wkt_to_wkb_hex(str(value))
 
     # INTERVAL — accept BigQuery canonical strings or pre-built tuples.
+    # ``bq_type == "INTERVAL"`` covers the case where the Arrow column
+    # type didn't preserve the interval-ness (e.g. struct-encoded).
     if pa.types.is_interval(arrow_type) or bq_type == "INTERVAL":
         return _coerce_interval(value)
 
-    # Integers
-    if pa.types.is_integer(arrow_type):
-        return int(value)
-
-    # Floats
-    if pa.types.is_floating(arrow_type):
-        return float(value)
-
-    # Decimals
-    if pa.types.is_decimal(arrow_type):
-        return Decimal(str(value))
-
-    # Boolean
-    if pa.types.is_boolean(arrow_type):
-        if isinstance(value, bool):
-            return value
-        if isinstance(value, str):
-            return value.lower() in ("true", "1", "yes")
-        return bool(value)
-
-    # String
-    if pa.types.is_string(arrow_type) or pa.types.is_large_string(arrow_type):
-        return str(value)
-
-    # Binary
-    if pa.types.is_binary(arrow_type) or pa.types.is_large_binary(arrow_type):
-        import base64
-
-        if isinstance(value, str):
-            return base64.b64decode(value)
-        return bytes(value)
-
-    # List / Array
-    if pa.types.is_list(arrow_type) or pa.types.is_large_list(arrow_type):
-        element_field = arrow_type.value_field if hasattr(arrow_type, "value_field") else None
-        if isinstance(value, list):
-            return [
-                _coerce_to_arrow_value(v, arrow_type.value_type, field=element_field) for v in value
-            ]
-        return value
-
-    # Struct
-    if pa.types.is_struct(arrow_type):
-        if isinstance(value, dict):
-            return {
-                arrow_type.field(i).name: _coerce_to_arrow_value(
-                    value.get(arrow_type.field(i).name),
-                    arrow_type.field(i).type,
-                    field=arrow_type.field(i),
-                )
-                for i in range(arrow_type.num_fields)
-            }
-        return value
-
-    # Timestamp
-    if pa.types.is_timestamp(arrow_type):
-        if isinstance(value, str):
-            from datetime import datetime as dt
-
-            # Parse ISO-8601 strings. BigQuery sends both "2026-04-15T00:00:00Z"
-            # and "2026-04-15 00:00:00 UTC" formats.
-            cleaned = value.replace(" UTC", "+00:00").replace("Z", "+00:00")
-            try:
-                return dt.fromisoformat(cleaned)
-            except ValueError:
-                return value
-        return value
-
-    # Date
-    if pa.types.is_date(arrow_type):
-        if isinstance(value, str):
-            from datetime import date as d
-
-            try:
-                return d.fromisoformat(value)
-            except ValueError:
-                return value
-        return value
-
-    # Time
-    if pa.types.is_time(arrow_type):
-        if isinstance(value, str):
-            from datetime import time as tm
-
-            try:
-                return tm.fromisoformat(value)
-            except ValueError:
-                return value
-        return value
+    # Regular Arrow-type dispatch.
+    for predicate, coercer in _ARROW_TYPE_COERCERS:
+        if predicate(arrow_type):
+            return coercer(value, arrow_type, field)
 
     # Fallback (JSON, unknown types) — return as-is and let pyarrow
     # handle it or raise a clean error.
