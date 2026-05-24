@@ -27,7 +27,17 @@ on:
       - ".vulture_whitelist.py"
       - ".jscpd.json"
       - "Makefile"
-      - ".github/workflows/code-quality.yml"
+      # Run on every workflow / dependabot example change too, so the
+      # ``Quality gates`` job emits a status on PRs that only touch
+      # ``.github/workflows/*`` or ``docs/examples/**``. Without these
+      # patterns the required-check is "missing" rather than green for
+      # those PRs and even ``gh pr merge --admin`` can't bypass it
+      # (GitHub treats a never-reported required-check as unresolvable).
+      # Worst case: ~1 min of unnecessary quality-complexity run on a
+      # workflow- or dependabot-only PR — cheap relative to the
+      # never-merge blocker the prior filter caused.
+      - ".github/workflows/**"
+      - "docs/examples/**"
   push:
     branches: [main]
     paths:
@@ -37,7 +47,17 @@ on:
       - ".vulture_whitelist.py"
       - ".jscpd.json"
       - "Makefile"
-      - ".github/workflows/code-quality.yml"
+      # Run on every workflow / dependabot example change too, so the
+      # ``Quality gates`` job emits a status on PRs that only touch
+      # ``.github/workflows/*`` or ``docs/examples/**``. Without these
+      # patterns the required-check is "missing" rather than green for
+      # those PRs and even ``gh pr merge --admin`` can't bypass it
+      # (GitHub treats a never-reported required-check as unresolvable).
+      # Worst case: ~1 min of unnecessary quality-complexity run on a
+      # workflow- or dependabot-only PR — cheap relative to the
+      # never-merge blocker the prior filter caused.
+      - ".github/workflows/**"
+      - "docs/examples/**"
   schedule:
     - cron: "13 7 * * *"  # 07:13 UTC — off the hour to avoid contention
   workflow_dispatch:
