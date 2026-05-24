@@ -23,6 +23,50 @@ new release.
 See [`docs/architecture/contributing/documentation-style-guide.md`](docs/architecture/contributing/documentation-style-guide.md)
 for the full entry-form rules and worked examples.
 
+## [1.1.0]
+
+### Changed
+
+- Promote the cyclomatic-complexity gate from non-blocking rank E to required rank C; refactor ten functions to comply.
+- Switch the release flow from per-PR `Unreleased` accumulation to release-time CHANGELOG authoring.
+- Rewrite `scripts/changelog.py` from `Unreleased` promotion into an operator-authored section validator and date stamper.
+- Sweep docstrings and inline comments across `src/bqemulator/**` to comply with the new documentation style guide.
+- Sweep reference and architecture documentation to comply with the new documentation style guide.
+
+### Added
+
+- Resolve `SESSION_USER()` as a SQL function with caller-aware substitution for row-access-policy filters.
+- Recognise `CURRENT_USER()` and `@@session.user` as aliases for `SESSION_USER()`.
+- Thread the caller identity into Storage Read `row_restriction` filters so RAP-via-`SESSION_USER` row filters honour the `X-Bqemu-Caller` gRPC header.
+- Expose `INFORMATION_SCHEMA.SCHEMATA`, `TABLES`, `COLUMNS`, `TABLE_OPTIONS`, `VIEWS`, and `PARTITIONS` as virtual views in the catalog rewriter.
+- Ship 11 TPC-DS conformance fixtures (q12, q20, q37, q45, q57, q65, q79, q81, q82, q93, q98).
+- Ship 18 `INFORMATION_SCHEMA` conformance fixtures recorded against real BigQuery.
+- Publish OpenSSF Scorecard reports + a public badge in the README.
+- Sign GitHub Release artefacts with SLSA v1.0 Build Provenance attestations.
+- Add a non-blocking code-quality umbrella (`radon` / `xenon` complexity, `jscpd` duplication, `vulture` dead-code) under `make quality`.
+- Add a documentation style guide at `docs/architecture/contributing/documentation-style-guide.md` covering docstrings, code comments, reference docs, and the changelog.
+- Automate the README shields.io badge cache-bust suffix on every version bump.
+
+### Fixed
+
+- Emit the closing backtick in `INFORMATION_SCHEMA` rewriter patterns so backtick-quoted references tokenise cleanly downstream.
+- Type the empty-rows `(VALUES (NULL, ...))` form in `INFORMATION_SCHEMA` virtual views via `CAST(NULL AS <type>)` so schema introspection returns BigQuery-documented column types instead of `INTEGER`.
+- Round-trip DDL `NOT NULL` constraints from `CREATE TABLE` into `TableFieldSchema.mode` so `INFORMATION_SCHEMA.COLUMNS.is_nullable` reports the authored mode.
+- Extract `PARTITION BY`, `description`, `require_partition_filter`, and `partition_expiration_days` from `CREATE TABLE` DDL into `TableMeta` so `INFORMATION_SCHEMA.TABLE_OPTIONS` projects from them.
+- Render `STRUCT` and `ARRAY` column types correctly in `INFORMATION_SCHEMA.COLUMNS` (previously flattened to `STRING`).
+- Resolve repo-self-reference links in lychee link-checking via `--remap` so docs that reference files added in the same PR no longer 404 against `main`.
+
+### Security
+
+- Scope every workflow's top-level `permissions:` to least-privilege; move write scopes per-job.
+- SHA-pin every GitHub Action reference and the `Dockerfile` base-image digest.
+- Tighten Python example dependency floors to clear OSV-scanner findings.
+- Bump `github.com/docker/docker` to v28.5.2, `golang.org/x/net` to v0.55.0, and the Go toolchain to 1.25.10 in Go example modules.
+- Bump `@google-cloud/bigquery` to v8, `@google-cloud/bigquery-storage` to v5, and `google-auth-library` to v10 in Node example/test projects; the modern chain no longer transitively depends on `uuid` v9.
+- Bump `testcontainers-go` to v0.42.0 (uses `github.com/moby/moby/client` rather than removed `docker/docker/api/types`).
+- Pin the example `python:3.11-slim` and `node:20-slim` images by digest; hash-pin `pip install --require-hashes` in the compose example; switch the cloud-run-local example to `npm ci`.
+- Add `osv-scanner.toml` documenting five unpatched `docker/docker` advisories (transitive of `testcontainers-go` in example code only; no upstream fix available).
+
 ## [1.0.2] - 2026-05-23
 
 ### Fixed
