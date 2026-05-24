@@ -46,16 +46,15 @@ rows are 5+ tables, multi-CTE chains, or ROLLUP/GROUPING SETS.
 | 31 | q80 | 8 tables: store_sales / web_sales / catalog_sales each + their returns + date_dim + item + promotion. Returns ratio UNION ALL across 3 channels with ROLLUP. | hard |
 | 32 | q81 | 4 tables: store_returns, customer, customer_address, date_dim. Top-100 customers by return-amt with address fragments. | easier |
 | 33 | q82 | 5 tables: item, inventory, date_dim, store_sales. Item dependency on store sales over date-range. | easier |
-| 34 | q86 | 3 tables: web_sales, date_dim, item. ROLLUP over item class + category with rank window. | medium |
-| 35 | q89 | 4 tables: item, store_sales, date_dim, store. Year-over-year monthly trend with AVG window. | medium |
-| 36 | q91 | 5 tables: call_center, catalog_returns, date_dim, customer, customer_address, customer_demographics, household_demographics. Call-center returns by manager. | hard |
-| 37 | q92 | 4 tables: web_sales, item, date_dim. SUM(ws_ext_discount_amt) > 1.3 × AVG correlated subquery. | medium |
-| 38 | q93 | 3 tables: store_sales, store_returns, reason. UPDATE-style net-amount per customer with reason filter. | easier |
-| 39 | q94 | 4 tables: web_sales, web_returns, date_dim, customer_address, web_site. State-filtered returns ratio. | medium |
-| 40 | q95 | 5 tables: web_sales, web_returns, date_dim, customer_address, web_site. Adds late-shipped filter on top of q94's shape. | medium |
-| 41 | q98 | 3 tables: store_sales, item, date_dim. ROLLUP over item-class with retail-price ratio. | easier |
+| 34 | q89 | 4 tables: item, store_sales, date_dim, store. Year-over-year monthly trend with AVG window. | medium |
+| 35 | q91 | 5 tables: call_center, catalog_returns, date_dim, customer, customer_address, customer_demographics, household_demographics. Call-center returns by manager. | hard |
+| 36 | q92 | 4 tables: web_sales, item, date_dim. SUM(ws_ext_discount_amt) > 1.3 × AVG correlated subquery. | medium |
+| 37 | q93 | 3 tables: store_sales, store_returns, reason. UPDATE-style net-amount per customer with reason filter. | easier |
+| 38 | q94 | 4 tables: web_sales, web_returns, date_dim, customer_address, web_site. State-filtered returns ratio. | medium |
+| 39 | q95 | 5 tables: web_sales, web_returns, date_dim, customer_address, web_site. Adds late-shipped filter on top of q94's shape. | medium |
+| 40 | q98 | 3 tables: store_sales, item, date_dim. ROLLUP over item-class with retail-price ratio. | easier |
 
-Counts: 12 easier, 19 medium, 9 hard.
+Counts: 11 easier, 20 medium, 9 hard.
 
 **Recommended execution order:** ascending complexity within family,
 so the easiest fixtures land first, prove the toolchain, and the hard
@@ -120,7 +119,7 @@ emulator's corpus deliberately uses **minimal seeded data** (a few
 rows per dimension; a few rows per fact) so:
 
 * Each recording job scans < 1 MiB (well under the cap).
-* The total cost of recording all 40 fixtures is ~$0.001 (PyPI/SF=1
+* The total cost of recording all 40 fixtures is ~$0.001 (TPC-DS SF=1
   scan cost would be ~$5).
 * The recorded result rows fit in a hand-readable ``expected.json``
   (typically 5-30 rows).
