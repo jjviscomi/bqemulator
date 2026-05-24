@@ -179,7 +179,10 @@ section and adds the release date.
   ``coursier/setup-action@v3``) had drifted from policy. Both
   classes now pin to the latest patch within their current major
   version, with trailing ``# vX.Y.Z`` comments for Dependabot
-  upgrade-anchor compatibility:
+  upgrade-anchor compatibility (SHAs below are abbreviated to the
+  first 8 hex characters for readability; the actual workflow-file
+  references are full 40-character commit SHAs per the policy
+  documented in [AGENTS.md](AGENTS.md)):
 
   - ``actions/checkout`` v4 → ``@34e11487 # v4.3.1``
   - ``actions/setup-python`` v5 → ``@a26af69b # v5.6.0``
