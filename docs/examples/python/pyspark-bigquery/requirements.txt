@@ -1,5 +1,18 @@
-pyspark>=3.5,<4.0
+# Floors picked against OSV (2026-05-23) so the entire declared
+# range is CVE-clean per OSV-scanner v2.2.4:
+# - pyspark 3.5.2 closes PYSEC-2025-184 (second range covers 3.5.0
+#   → 3.5.2). Cap stays at <4.0 because pyspark 4.x has API
+#   changes the example's job script isn't ready for.
+# - pyarrow 17.0 closes PYSEC-2024-161 (4.0.0 → 17.0.0) and
+#   GHSA-5wvp-7f3h-6wmm / CVE-2023-47248 (RCE, fixed 14.0.1). Cap
+#   stays at <18.0 because pyarrow 18.x dropped pandas<2 support
+#   and the example's pandas floor is 2.x — fine inside the
+#   constraint.
+# - google-cloud-bigquery / google-cloud-bigquery-storage / pandas
+#   are already at floors with no known CVEs; left untouched so we
+#   don't force user upgrades for a non-issue.
+pyspark>=3.5.2,<4.0
 google-cloud-bigquery>=3.20,<4.0
 google-cloud-bigquery-storage>=2.24,<3.0
-pyarrow>=14.0,<18.0
+pyarrow>=17.0,<18.0
 pandas>=2.0,<3.0
