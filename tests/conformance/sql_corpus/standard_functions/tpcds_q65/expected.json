@@ -1,0 +1,75 @@
+{
+  "fixture_version": 2,
+  "bigquery": {
+    "project": "perigon-health-nonprod-svc",
+    "job_id": "bd744464-5acd-4a5b-9310-0858be12fa2c",
+    "location": "US",
+    "total_bytes_processed": 810,
+    "total_bytes_billed": 41943040,
+    "duration_ms": 774
+  },
+  "schema": [
+    {
+      "name": "s_store_name",
+      "type": "STRING",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "i_item_desc",
+      "type": "STRING",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "revenue",
+      "type": "NUMERIC",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "i_current_price",
+      "type": "NUMERIC",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "i_wholesale_cost",
+      "type": "NUMERIC",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "i_brand",
+      "type": "STRING",
+      "mode": "NULLABLE"
+    }
+  ],
+  "rows": [
+    {
+      "s_store_name": "able",
+      "i_item_desc": "Niche Avantgarde Album",
+      "revenue": "5",
+      "i_current_price": "12",
+      "i_wholesale_cost": "6",
+      "i_brand": "amalg #3"
+    },
+    {
+      "s_store_name": "able",
+      "i_item_desc": "Obscure Documentary",
+      "revenue": "8",
+      "i_current_price": "10",
+      "i_wholesale_cost": "5",
+      "i_brand": "amalg #4"
+    },
+    {
+      "s_store_name": "ation",
+      "i_item_desc": "Obscure Documentary",
+      "revenue": "5",
+      "i_current_price": "10",
+      "i_wholesale_cost": "5",
+      "i_brand": "amalg #4"
+    }
+  ],
+  "row_count": 3,
+  "duration_class": "fast",
+  "job_metadata": {
+    "cache_hit": false,
+    "statement_type": "SELECT"
+  }
+}

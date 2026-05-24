@@ -1,0 +1,83 @@
+{
+  "fixture_version": 2,
+  "bigquery": {
+    "project": "perigon-health-nonprod-svc",
+    "job_id": "581f4e2d-ab01-47ae-8487-ead5b2136f3d",
+    "location": "US",
+    "total_bytes_processed": 919,
+    "total_bytes_billed": 52428800,
+    "duration_ms": 877
+  },
+  "schema": [
+    {
+      "name": "c_last_name",
+      "type": "STRING",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "c_first_name",
+      "type": "STRING",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "city",
+      "type": "STRING",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "ss_ticket_number",
+      "type": "INTEGER",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "amt",
+      "type": "NUMERIC",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "profit",
+      "type": "NUMERIC",
+      "mode": "NULLABLE"
+    }
+  ],
+  "rows": [
+    {
+      "c_last_name": "Anderson",
+      "c_first_name": "Alice",
+      "city": "Midway",
+      "ss_ticket_number": 10001,
+      "amt": "5",
+      "profit": "50"
+    },
+    {
+      "c_last_name": "Brown",
+      "c_first_name": "Bob",
+      "city": "Midway",
+      "ss_ticket_number": 10002,
+      "amt": "3",
+      "profit": "70"
+    },
+    {
+      "c_last_name": "Carter",
+      "c_first_name": "Carol",
+      "city": "Fairview",
+      "ss_ticket_number": 10003,
+      "amt": "8",
+      "profit": "40"
+    },
+    {
+      "c_last_name": "Davis",
+      "c_first_name": "David",
+      "city": "Fairview",
+      "ss_ticket_number": 10004,
+      "amt": "2",
+      "profit": "90"
+    }
+  ],
+  "row_count": 4,
+  "duration_class": "fast",
+  "job_metadata": {
+    "cache_hit": false,
+    "statement_type": "SELECT"
+  }
+}

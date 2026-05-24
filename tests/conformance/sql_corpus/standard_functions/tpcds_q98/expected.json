@@ -1,0 +1,101 @@
+{
+  "fixture_version": 2,
+  "bigquery": {
+    "project": "perigon-health-nonprod-svc",
+    "job_id": "6a7b8ed9-5c33-46ae-9085-890f17ee7b0d",
+    "location": "US",
+    "total_bytes_processed": 725,
+    "total_bytes_billed": 31457280,
+    "duration_ms": 900
+  },
+  "schema": [
+    {
+      "name": "i_item_id",
+      "type": "STRING",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "i_item_desc",
+      "type": "STRING",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "i_category",
+      "type": "STRING",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "i_class",
+      "type": "STRING",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "i_current_price",
+      "type": "NUMERIC",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "itemrevenue",
+      "type": "NUMERIC",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "revenueratio",
+      "type": "NUMERIC",
+      "mode": "NULLABLE"
+    }
+  ],
+  "rows": [
+    {
+      "i_item_id": "ITEM003",
+      "i_item_desc": "Books novel",
+      "i_category": "Books",
+      "i_class": "fiction",
+      "i_current_price": "15",
+      "itemrevenue": "80",
+      "revenueratio": "40"
+    },
+    {
+      "i_item_id": "ITEM004",
+      "i_item_desc": "Books cookbook",
+      "i_category": "Books",
+      "i_class": "fiction",
+      "i_current_price": "25",
+      "itemrevenue": "120",
+      "revenueratio": "60"
+    },
+    {
+      "i_item_id": "ITEM005",
+      "i_item_desc": "Home lamp",
+      "i_category": "Home",
+      "i_class": "lighting",
+      "i_current_price": "40",
+      "itemrevenue": "170",
+      "revenueratio": "100"
+    },
+    {
+      "i_item_id": "ITEM001",
+      "i_item_desc": "Sports football",
+      "i_category": "Sports",
+      "i_class": "athletic",
+      "i_current_price": "20",
+      "itemrevenue": "160",
+      "revenueratio": "42.105263158"
+    },
+    {
+      "i_item_id": "ITEM002",
+      "i_item_desc": "Sports tennis racket",
+      "i_category": "Sports",
+      "i_class": "athletic",
+      "i_current_price": "55",
+      "itemrevenue": "220",
+      "revenueratio": "57.894736842"
+    }
+  ],
+  "row_count": 5,
+  "duration_class": "fast",
+  "job_metadata": {
+    "cache_hit": false,
+    "statement_type": "SELECT"
+  }
+}

@@ -1,0 +1,83 @@
+{
+  "fixture_version": 2,
+  "bigquery": {
+    "project": "perigon-health-nonprod-svc",
+    "job_id": "52ffe7f2-a65a-4f04-9491-3e357ee53c08",
+    "location": "US",
+    "total_bytes_processed": 785,
+    "total_bytes_billed": 41943040,
+    "duration_ms": 695
+  },
+  "schema": [
+    {
+      "name": "i_category",
+      "type": "STRING",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "i_brand",
+      "type": "STRING",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "cc_name",
+      "type": "STRING",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "d_year",
+      "type": "INTEGER",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "d_moy",
+      "type": "INTEGER",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "avg_monthly_sales",
+      "type": "NUMERIC",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "sum_sales",
+      "type": "NUMERIC",
+      "mode": "NULLABLE"
+    }
+  ],
+  "rows": [
+    {
+      "i_category": "Books",
+      "i_brand": "scholaramalgamalg #14",
+      "cc_name": "Mid Atlantic",
+      "d_year": 1999,
+      "d_moy": 4,
+      "avg_monthly_sales": "132.142857143",
+      "sum_sales": "110"
+    },
+    {
+      "i_category": "Books",
+      "i_brand": "scholaramalgamalg #14",
+      "cc_name": "Mid Atlantic",
+      "d_year": 1999,
+      "d_moy": 2,
+      "avg_monthly_sales": "132.142857143",
+      "sum_sales": "150"
+    },
+    {
+      "i_category": "Books",
+      "i_brand": "scholaramalgamalg #14",
+      "cc_name": "Mid Atlantic",
+      "d_year": 1999,
+      "d_moy": 3,
+      "avg_monthly_sales": "132.142857143",
+      "sum_sales": "200"
+    }
+  ],
+  "row_count": 3,
+  "duration_class": "fast",
+  "job_metadata": {
+    "cache_hit": false,
+    "statement_type": "SELECT"
+  }
+}
