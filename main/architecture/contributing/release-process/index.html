@@ -13,7 +13,7 @@
         <link rel="canonical" href="https://jjviscomi.github.io/bqemulator/main/architecture/contributing/release-process/">
       
       
-        <link rel="prev" href="../dev-environment/">
+        <link rel="prev" href="../documentation-style-guide/">
       
       
         <link rel="next" href="../adding-sql-functions/">
@@ -2578,6 +2578,8 @@
       
         
       
+        
+      
     
     
     
@@ -2641,6 +2643,34 @@
     
   
     Dev environment
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../documentation-style-guide/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Documentation style guide
   
 
     
@@ -5426,16 +5456,24 @@ a dedicated exit code):</p>
 <li><code>make verify</code> exits 0 — the full release gate chain (lint + unit +
    property + integration + docker + e2e + docs).</li>
 <li>The computed target version is strictly greater than the current.</li>
-<li><code>CHANGELOG.md</code>'s <code>Unreleased</code> section has at least one entry
-   (override with <code>--allow-empty-changelog</code> for zero-impact patches).</li>
+<li>A new <code>## [X.Y.Z] - YYYY-MM-DD</code> section has been prepended to
+   <code>CHANGELOG.md</code> with at least one entry. The section is authored
+   during this release process (step 1 below) — not in the
+   individual PRs that landed during the cycle.</li>
 </ol>
 <h2 id="step-by-step-with-the-orchestrator">Step-by-step (with the orchestrator)<a class="headerlink" href="#step-by-step-with-the-orchestrator" title="Permanent link">&para;</a></h2>
 <ol>
 <li>
-<p><strong>Prepare the changelog.</strong> Every PR that lands during the release
-   cycle must add an entry under <code>## [Unreleased]</code>
-   (<code>Added</code> / <code>Changed</code> / <code>Deprecated</code> / <code>Removed</code> / <code>Fixed</code> /
-   <code>Security</code>).</p>
+<p><strong>Author the changelog section.</strong> Read <code>git log &lt;prev-tag&gt;..HEAD</code>
+   to enumerate user-visible changes since the previous release.
+   Synthesise one bullet per change under <code>### Changed</code> /
+   <code>### Added</code> / <code>### Removed</code> / <code>### Fixed</code> (Common Changelog
+   ordering — breaking changes most important). Entries follow the
+   <a href="../documentation-style-guide/#changelog">documentation style guide</a>:
+   imperative mood, single line, no per-entry sub-headings, no PR
+   references, no fixture counts. Prepend the new section under
+   the <code># Changelog</code> heading; there is no <code>## [Unreleased]</code> section
+   between releases.</p>
 </li>
 <li>
 <p><strong>Pre-release doc sweep.</strong> The release orchestrator only mutates
