@@ -22,6 +22,23 @@ section and adds the release date.
 
 ### Added
 
+- **TPC-DS expansion plan documented** — new
+  [`docs/architecture/contributing/tpcds-expansion-plan.md`](docs/architecture/contributing/tpcds-expansion-plan.md)
+  tracks the planned 59 → 99 TPC-DS coverage expansion. Lists the 40
+  missing queries in numerical order with per-query complexity
+  hints (table count + key SQL feature), documents the per-fixture
+  authoring recipe, BigQuery adaptation patterns from the TPC-DS
+  reference SQL, seed-data sizing rules, cost guardrails (~$0.01
+  total for all 40 against an operator-supplied GCP project), and
+  the three resolved scope questions (include all 40, cost de
+  minimis, no periodic re-record cadence). No fixtures
+  recorded in this PR; the plan is the durable artefact so the work
+  survives session boundaries. `docs/architecture/testing-strategy.md`
+  updated to reference the plan. No new SQL rules are anticipated —
+  every missing query uses features already supported by the
+  92-rule translator (verified against the existing 59-fixture
+  subset).
+
 - **`SESSION_USER()` SQL function + canonical RAP-via-SESSION_USER
   e2e coverage** (ADR 0038). The function was documented in the
   surface inventory but had zero implementation and zero tests —
