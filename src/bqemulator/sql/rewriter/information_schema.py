@@ -33,7 +33,7 @@ deliberately out of scope — see
 from __future__ import annotations
 
 import re
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Final
 
 if TYPE_CHECKING:
     from bqemulator.catalog.models import (
@@ -425,7 +425,7 @@ _SCHEMATA_COLUMNS: tuple[str, ...] = (
 
 # Per-column BigQuery types for the empty-view CAST(NULL AS <type>) form.
 # Order matches ``_SCHEMATA_COLUMNS`` 1:1.
-_SCHEMATA_COLUMN_TYPES: tuple[tuple[str, str], ...] = (
+_SCHEMATA_COLUMN_TYPES: Final[tuple[tuple[str, str], ...]] = (
     ("catalog_name", "STRING"),
     ("schema_name", "STRING"),
     ("schema_owner", "STRING"),
@@ -524,7 +524,7 @@ _TABLES_COLUMNS: tuple[str, ...] = (
 
 # Per-column BigQuery types for the empty-view CAST(NULL AS <type>) form.
 # Order matches ``_TABLES_COLUMNS`` 1:1.
-_TABLES_COLUMN_TYPES: tuple[tuple[str, str], ...] = (
+_TABLES_COLUMN_TYPES: Final[tuple[tuple[str, str], ...]] = (
     ("table_catalog", "STRING"),
     ("table_schema", "STRING"),
     ("table_name", "STRING"),
@@ -656,7 +656,7 @@ _COLUMNS_COLUMNS: tuple[str, ...] = (
 
 # Per-column BigQuery types for the empty-view CAST(NULL AS <type>) form.
 # Order matches ``_COLUMNS_COLUMNS`` 1:1.
-_COLUMNS_COLUMN_TYPES: tuple[tuple[str, str], ...] = (
+_COLUMNS_COLUMN_TYPES: Final[tuple[tuple[str, str], ...]] = (
     ("table_catalog", "STRING"),
     ("table_schema", "STRING"),
     ("table_name", "STRING"),
@@ -832,7 +832,7 @@ _TABLE_OPTIONS_COLUMNS: tuple[str, ...] = (
 
 # Per-column BigQuery types for the empty-view CAST(NULL AS <type>) form.
 # Order matches ``_TABLE_OPTIONS_COLUMNS`` 1:1.
-_TABLE_OPTIONS_COLUMN_TYPES: tuple[tuple[str, str], ...] = (
+_TABLE_OPTIONS_COLUMN_TYPES: Final[tuple[tuple[str, str], ...]] = (
     ("table_catalog", "STRING"),
     ("table_schema", "STRING"),
     ("table_name", "STRING"),
@@ -983,7 +983,7 @@ _VIEWS_COLUMNS: tuple[str, ...] = (
 
 # Per-column BigQuery types for the empty-view CAST(NULL AS <type>) form.
 # Order matches ``_VIEWS_COLUMNS`` 1:1.
-_VIEWS_COLUMN_TYPES: tuple[tuple[str, str], ...] = (
+_VIEWS_COLUMN_TYPES: Final[tuple[tuple[str, str], ...]] = (
     ("table_catalog", "STRING"),
     ("table_schema", "STRING"),
     ("table_name", "STRING"),
@@ -1070,7 +1070,7 @@ _PARTITIONS_COLUMNS: tuple[str, ...] = (
 
 # Per-column BigQuery types for the empty-view CAST(NULL AS <type>) form.
 # Order matches ``_PARTITIONS_COLUMNS`` 1:1.
-_PARTITIONS_COLUMN_TYPES: tuple[tuple[str, str], ...] = (
+_PARTITIONS_COLUMN_TYPES: Final[tuple[tuple[str, str], ...]] = (
     ("table_catalog", "STRING"),
     ("table_schema", "STRING"),
     ("table_name", "STRING"),

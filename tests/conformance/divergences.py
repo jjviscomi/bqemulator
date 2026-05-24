@@ -212,7 +212,7 @@ divergence via ``sync_created_view``. Two ``out-of-scope.md`` sections
 (``#ingestion-time-partition-pseudo-columns`` and
 ``#st_maxdistance-not-yet-implemented``) were removed in the same PR.
 
-The registry's **current state is 15 entries** — all permanent
+The registry's **current state is 13 entries** — all permanent
 design-decision divergences with no closure plan for v1.0:
 
 * **11 spheroidal** (ADR 0019; sphere-vs-planar GEOGRAPHY): the 3
