@@ -195,6 +195,61 @@ section and adds the release date.
 
 ### Changed
 
+- **All GitHub Actions + Dockerfile base images SHA-pinned**
+  (OpenSSF Scorecard `Pinned-Dependencies` sweep). The
+  pre-sweep audit found 113 `uses:` references across 14 workflow
+  files using floating tags — first-party `actions/*` were
+  previously exempt from SHA-pinning per AGENTS.md's pragmatic
+  compromise, and a few third-party pins (``softprops/action-gh-release@v2``,
+  ``pypa/gh-action-pypi-publish@release/v1``, ``actions/cache@v4``,
+  ``docker/setup-buildx-action@v3``, ``docker/build-push-action@v7``,
+  ``coursier/setup-action@v3``) had drifted from policy. Both
+  classes now pin to the latest patch within their current major
+  version, with trailing ``# vX.Y.Z`` comments for Dependabot
+  upgrade-anchor compatibility (SHAs below are abbreviated to the
+  first 8 hex characters for readability; the actual workflow-file
+  references are full 40-character commit SHAs per the policy
+  documented in [AGENTS.md](AGENTS.md)):
+
+  - ``actions/checkout`` v4 → ``@34e11487 # v4.3.1``
+  - ``actions/setup-python`` v5 → ``@a26af69b # v5.6.0``
+  - ``actions/setup-node`` v6 → ``@48b55a01 # v6.4.0``
+  - ``actions/setup-go`` v5 → ``@40f1582b # v5.6.0``
+  - ``actions/setup-java`` v5 → ``@be666c2f # v5.2.0``
+  - ``actions/cache`` v4 → ``@0057852b # v4.3.0``
+  - ``actions/upload-artifact`` v4 → ``@ea165f8d # v4.6.2``
+  - ``actions/download-artifact`` v8 → ``@3e5f45b2 # v8.0.1``
+  - ``coursier/setup-action`` v3 → ``@fd1707a7 # v3.0.0``
+  - ``docker/setup-buildx-action`` v3 → ``@8d2750c6 # v3.12.0``
+    (consistency with the existing pin in ``docker.yml``)
+  - ``docker/build-push-action`` v7 → ``@f9f30427 # v7.2.0``
+    (same)
+
+  ``Dockerfile``'s two ``FROM python:3.14-slim-bookworm`` lines
+  also gain a ``@sha256:a9bee15510a3641…`` digest pin per the
+  OCI multi-arch index for the May 20 2026 push. Dependabot's
+  ``docker`` ecosystem updater bumps both the tag and digest
+  together on each upstream release.
+
+  ``AGENTS.md``'s "GitHub Actions pinning" section updated to
+  reflect the post-sweep policy: **every** ``uses:`` reference is
+  SHA-pinned (no first-party exemption). The relaxed-actions/*
+  rule was a pragmatic compromise based on the smaller threat
+  model for GitHub-owned actions — but Scorecard scores full
+  credit only for commit-SHA pins regardless of action provenance,
+  and there's no operational cost to extending the rule (Dependabot
+  handles both alike).
+
+  Expected Scorecard impact: ``Pinned-Dependencies`` lifts from
+  ~4-5/10 (partial credit for major-tag pins) to ~9-10/10 on next
+  weekly run. Composite score lift ~+1 point.
+
+  Three actions remain un-pinned at this commit, all covered by
+  the in-flight PR #57 (artifact attestations + SHA-pin sweep):
+  ``softprops/action-gh-release@v2``,
+  ``pypa/gh-action-pypi-publish@release/v1``,
+  ``actions/attest-build-provenance@v1`` (in ``docker.yml``).
+
 - **Python example requirements tightened to CVE-clean floors.** The
   OpenSSF Scorecard `Vulnerabilities` check (added in PR #48) reported
   ~100 historical PYSEC / GHSA IDs against the `docs/examples/python/`

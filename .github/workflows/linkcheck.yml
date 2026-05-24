@@ -48,14 +48,14 @@ jobs:
       # fires on the scheduled trigger.
       issues: write
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
 
       - name: Restore lychee cache
         # The cache key combines the .lychee.toml hash so a config
         # change invalidates the cache (we want fresh recheck of
         # newly-included URLs). Otherwise we reuse the day's prior
         # response cache to stay friendly to upstream CDNs.
-        uses: actions/cache@v4
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
         with:
           path: .lycheecache
           key: lychee-${{ hashFiles('.lychee.toml') }}-${{ github.run_id }}
@@ -87,7 +87,7 @@ jobs:
 
       - name: Upload report
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: lychee-report
           path: lychee-report.md

@@ -75,7 +75,7 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
         with:
           # Scorecard's hardening guidance — drops the default
           # GITHUB_TOKEN from .git/config so the subsequent
@@ -96,7 +96,7 @@ jobs:
       # debug score changes locally without trusting GitHub's
       # Security-tab UI.
       - name: Upload SARIF artefact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: scorecard-sarif
           path: results.sarif
