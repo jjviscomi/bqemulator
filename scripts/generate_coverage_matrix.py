@@ -85,8 +85,8 @@ VARIATION_DEPTH_MIN_FIXTURES = 3
 #: when only fixture counts change. ``HAPPY_PATH`` leads because it is
 #: the default tag and reading the histogram from left to right
 #: surfaces "is this fixture set mostly happy-path?" at a glance.
-#: ``TIMEZONE`` is the most-recent tag (P8.e, 2026-05-20) and lands at
-#: the tail so the existing left-to-right reading order is preserved.
+#: ``TIMEZONE`` lands at the tail so the left-to-right reading order
+#: is stable as new tags are appended.
 _VARIATION_DISPLAY_ORDER: tuple[VariationTag, ...] = (
     VariationTag.HAPPY_PATH,
     VariationTag.NULL_INPUT,
@@ -126,10 +126,10 @@ def _fixture_text(fixture: Fixture) -> str:
     The detector regexes are matched against SQL plus the serialized
     ``setup_rest.json`` (so REST-only surfaces like
     ``rowAccessPolicies`` are detectable) plus the ``parameters.json``
-    payload (so parameter-bound wire-format surfaces are detectable;
-    P2.e) plus the ``expected.json`` (so error-shape surfaces match
-    against the recorded ``error.reason`` value). Joining with newlines
-    gives the regexes sensible boundaries.
+    payload (so parameter-bound wire-format surfaces are detectable)
+    plus the ``expected.json`` (so error-shape surfaces match against
+    the recorded ``error.reason`` value). Joining with newlines gives
+    the regexes sensible boundaries.
     """
     parts: list[str] = []
     if fixture.setup_sql:
@@ -266,9 +266,9 @@ def render(
 ) -> str:
     """Build the full Markdown document.
 
-    ``variation_tags`` carries the per-fixture taxonomy classification
-    (P8.a). When provided, the matrix gains a "Variation" column on
-    every per-category row and a new top-level "Variation depth" report
+    ``variation_tags`` carries the per-fixture taxonomy classification.
+    When provided, the matrix gains a "Variation" column on every
+    per-category row and a top-level "Variation depth" report
     enumerating broad-but-shallow surfaces. When omitted (legacy / test
     helper callers), the matrix renders without the variation axis.
     """
@@ -422,7 +422,7 @@ def _render_variation_depth(
     hits: dict[str, list[str]],
     variation_tags: dict[str, frozenset[VariationTag]],
 ) -> str:
-    """The "Variation depth" report — broad-but-shallow surfaces (P8.a).
+    """The "Variation depth" report — broad-but-shallow surfaces.
 
     Lists every deterministic surface item whose fixture set has
     ``>= VARIATION_DEPTH_MIN_FIXTURES`` fixtures BUT whose union of
@@ -433,7 +433,8 @@ def _render_variation_depth(
     case-folding, error-shape parity) is reliably missed.
 
     Sorted by fixture count descending so the highest-value targets
-    surface first. This is the picklist P8.b — P8.e read.
+    surface first. This is the picklist edge-case fixtures are
+    authored against.
     """
     lines: list[str] = []
     lines.append("")
@@ -447,8 +448,8 @@ def _render_variation_depth(
         "typical BigQuery-vs-DuckDB divergence (NULL propagation, empty "
         "inputs, ±Inf / NaN, timezone arithmetic, Unicode case-folding, "
         "error-shape parity) lives in scenarios a happy-path-only sweep "
-        "reliably misses. P8.b — P8.e read this list and author the "
-        "missing edge-case fixtures. The taxonomy lives in "
+        "reliably misses. Add edge-case fixtures targeting these "
+        "scenarios to close the gap. The taxonomy lives in "
         "[`tests/conformance/_corpus.py`]("
         + _GITHUB_BLOB
         + "/tests/conformance/_corpus.py) and is locked by "
@@ -586,8 +587,8 @@ def _render_category(
     still sees them in context.
 
     The ``Variation`` column carries the per-fixture taxonomy
-    histogram (P8.a) — see :data:`_VARIATION_DISPLAY_ORDER` for the
-    column ordering and the classifier in
+    histogram — see :data:`_VARIATION_DISPLAY_ORDER` for the column
+    ordering and the classifier in
     :func:`tests.conformance._corpus.classify_variation` for the
     detection contract.
     """

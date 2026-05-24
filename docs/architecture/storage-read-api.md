@@ -12,7 +12,7 @@ Implementation in `src/bqemulator/grpc_api/read_servicer.py` +
  * `ARROW` (Python / Go / Node default; also the proto3 default for
    an unset field) — session emits Arrow IPC.
  * `AVRO` (Java client default) — session emits naked Avro binary
-   rows (G3 / ADR 0030).
+   rows (ADR 0030).
  * Any other value → `INVALID_ARGUMENT`.
 3. Servicer builds a projection+filter query and executes it against
    DuckDB, materializing a `pyarrow.Table`.
@@ -35,7 +35,7 @@ stream's row range, and streams chunks in the session's chosen format:
 - **Arrow IPC**: via `pyarrow.ipc.RecordBatchStreamWriter` into a
   `BytesIO` buffer; each chunk carries an `ArrowRecordBatch` and the
   first chunk additionally carries the `arrow_schema`.
-- **Avro**: via `fastavro.schemaless_writer` (G3 / ADR 0030); each
+- **Avro**: via `fastavro.schemaless_writer` (ADR 0030); each
   chunk carries an `AvroRows.serialized_binary_rows` payload and the
   first chunk additionally carries the `avro_schema`. The bytes are
   **naked** — NO Object Container File header per chunk — per

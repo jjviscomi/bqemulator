@@ -95,7 +95,7 @@ a dedicated exit code):
    | [`README.md`](https://github.com/jjviscomi/bqemulator/blob/main/README.md) — "Conformance corpus depth" header | If the snapshot date is older than ~30 days, regenerate with `make coverage-matrix` and update the prose. |
    | [`docs/getting-started.md`](https://github.com/jjviscomi/bqemulator/blob/main/docs/getting-started.md) + [`docs/reference/cli.md`](https://github.com/jjviscomi/bqemulator/blob/main/docs/reference/cli.md) | Example outputs that hard-code a version string (`{"status":"ok","version":"0.1.0"}`, `bqemulator 0.1.0`). |
    | All four auto-generated reference docs ([`conformance-coverage-matrix`](https://github.com/jjviscomi/bqemulator/blob/main/docs/reference/conformance-coverage-matrix.md), [`compatibility-matrix`](https://github.com/jjviscomi/bqemulator/blob/main/docs/reference/compatibility-matrix.md), [`sql-function-mapping`](https://github.com/jjviscomi/bqemulator/blob/main/docs/reference/sql-function-mapping.md), [`api-coverage`](https://github.com/jjviscomi/bqemulator/blob/main/docs/reference/api-coverage.md)) | Run `make matrix coverage-matrix` and commit any diff. The umbrella `make matrix` covers compat-matrix + function-mapping + api-coverage in one call; `make coverage-matrix` is separate because it walks the conformance corpus. The Docs-drift CI gate runs the matching `--check` modes on every PR. |
-   | [`docs/reference/api-configuration-coverage-matrix.md`](https://github.com/jjviscomi/bqemulator/blob/main/docs/reference/api-configuration-coverage-matrix.md) | Manually-maintained audit doc (labelled "Audit dated" at the top — not auto-generated). Skim for new configuration knobs the release added; refresh the audit date if any new entry lands. |
+   | [`docs/reference/api-configuration-coverage-matrix.md`](https://github.com/jjviscomi/bqemulator/blob/main/docs/reference/api-configuration-coverage-matrix.md) | Manually-maintained audit doc (not auto-generated). Skim for new configuration knobs the release added; add a row whenever a new configuration surface lands. |
    | `.dev/STATUS.md`, `.dev/v1-confidence-plan.md` | Internal status trackers — update before any external version claim references them. |
 
    Land this sweep as a pre-release housekeeping PR **before** running
@@ -210,19 +210,18 @@ a dedicated exit code):
 
 ### README "Project status" flip (folded into the release PR)
 
-Earlier iterations of this process kept the README's
-*aspirational-vs-factual* wording in a **separate post-release
-PR** that landed after step 10's smoke-tests. That meant every
-release shipped a chicken-and-egg gap: the release commit
-referenced a `vX.Y.Z-rc` README, and a follow-up PR had to land
-with the same release notes to flip ⚪ → ✅. v1.0.0 collapsed the
-two into a single PR; the convention since is to do the README
-flip **before** running the orchestrator (step 3), so the bump
-commit and the wording flip land in the same merge.
+The README's *aspirational-vs-factual* wording flips on the
+release branch as the **first commit**, before `make release`
+runs. The bump commit created by the orchestrator stacks on top,
+and squash-merge collapses both into a single commit on `main`.
+Folding the wording flip into the release PR avoids a
+chicken-and-egg gap where the release commit would otherwise
+reference a `vX.Y.Z-rc` README that a follow-up PR has to flip
+⚪ → ✅.
 
 The actionable list of strings to flip is the inverse of step 2's
 pre-release sweep — the entries below can only be true after the
-publish workflows finish, but we now write them in the release
+publish workflows finish, but they are written in the release
 commit anyway:
 
 | File | What to flip (release branch, first commit, before `make release`) |

@@ -66,20 +66,19 @@ Scenario coverage enumerated in the
 ## Tier 5 — Conformance (`tests/conformance/`)
 
 Replays recorded baselines against the emulator with row-for-row,
-type-aware tolerance. The corpus ships **1215 active fixtures** as of — **1141 SQL + 48 HTTP + 26 gRPC** (plus 18 G4
-INFORMATION_SCHEMA fixture stubs awaiting operator-side recording,
-exercised in the meantime by Tier 3 integration tests). 13 documented
-XFAILs are pinned as permanent design-decision divergences in
+type-aware tolerance. The corpus ships **1215 active fixtures** —
+**1141 SQL + 48 HTTP + 26 gRPC** (plus 18 INFORMATION_SCHEMA
+fixture stubs currently unrecorded; the same surfaces are
+exercised by Tier 3 integration tests). 13 documented XFAILs are
+pinned as permanent design-decision divergences in
 [`tests/conformance/divergences.py`](https://github.com/jjviscomi/bqemulator/blob/main/tests/conformance/divergences.py).
 
-The corpus includes full TPC-H (22/22 queries via P8.c) and a
-59-of-99 TPC-DS subset (via P8.d expansion). The remaining 40 TPC-DS
-queries are planned per
-[tpcds-expansion-plan.md](contributing/tpcds-expansion-plan.md) —
-that document tracks the missing query list (numerical order, with
-complexity hints), the per-query authoring recipe, BigQuery
-adaptation patterns, cost guardrails, and the open questions to
-resolve before bulk recording. Replay is **per-PR** in CI (no
+The corpus includes full TPC-H (22/22 queries) and a 59-of-99
+TPC-DS subset. The remaining 40 TPC-DS queries are tracked in
+[tpcds-expansion-plan.md](contributing/tpcds-expansion-plan.md),
+which lists the missing queries (numerical order, with complexity
+hints), the per-query authoring recipe, BigQuery adaptation
+patterns, and cost guardrails. Replay is **per-PR** in CI (no
 external credentials needed — the baselines are committed).
 Re-recording is the deliberate operator action `make
 record-conformance`, gated on `GOOGLE_APPLICATION_CREDENTIALS` +

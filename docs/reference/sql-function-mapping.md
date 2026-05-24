@@ -22,7 +22,7 @@ how rules are registered, and
 [contributing/adding-sql-functions.md](../architecture/contributing/adding-sql-functions.md)
 for a walkthrough of adding a new rule.
 
-## INFORMATION_SCHEMA rewriter mapping (G4)
+## INFORMATION_SCHEMA rewriter mapping
 
 The INFORMATION_SCHEMA family of virtual catalog views is
 implemented by the pre-translation rewriter at

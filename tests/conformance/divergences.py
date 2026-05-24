@@ -650,9 +650,9 @@ KNOWN_DIVERGENCES: dict[str, str] = {
     # so it returns the policy definitions. Fundamental BQ-vs-emulator
     # difference, not a fix.
     "row_access/caller_information_schema_visibility": (
-        "P2.d: INFORMATION_SCHEMA.ROW_ACCESS_POLICIES requires "
-        "bigquery.rowAccessPolicies.list IAM permission. Recording "
-        "account got 404 NotFound from real BigQuery; emulator returns "
+        "INFORMATION_SCHEMA.ROW_ACCESS_POLICIES requires "
+        "bigquery.rowAccessPolicies.list IAM permission. Real BigQuery "
+        "returns 404 NotFound to non-admin callers; emulator returns "
         "the policy row (IAM not enforced per out-of-scope.md#iam-"
         "enforcement). Pinned as a fundamental divergence."
     ),
