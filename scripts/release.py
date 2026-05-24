@@ -1,9 +1,8 @@
 #!/usr/bin/env python3
-"""Orchestrate a bqemulator release: verify, bump, finalize changelog, commit, tag.
+"""Orchestrate a bqemulator release: verify, bump, stamp changelog, commit, tag.
 
-P4.c (2026-05-21) — third leg of the release-tooling triad
-(`bump_version.py` + `changelog.py` + this script). Wraps the three
-pieces of an end-to-end release in a single guarded entry point.
+Wraps the bump / changelog-stamp / commit / tag pieces of an
+end-to-end release into a single guarded entry point.
 
 Usage::
 
@@ -12,31 +11,24 @@ Usage::
     python scripts/release.py --apply --next patch
     python scripts/release.py --apply --version 1.0.0 --skip-verify
 
-The default mode is ``--dry-run`` — it runs every read-only check
-(working-tree clean, ``make verify``) and renders a preview of the
-proposed ``__init__.py`` + ``CHANGELOG.md`` mutations, the commit
-message, and the tag name, without writing any file or touching git.
-``--apply`` runs the full pipeline including the commit and tag.
+The default mode is ``--dry-run`` — it runs read-only checks
+(working-tree clean, ``make verify``) and previews the proposed
+``__init__.py`` + ``CHANGELOG.md`` mutations, the commit message, and
+the tag name without writing anything. ``--apply`` runs the full
+pipeline including the commit and tag.
 
 Steps (in ``--apply`` mode):
 
 1. Verify the working tree is clean (``git status --porcelain``).
 2. Compute the target version from ``--version`` or ``--next``.
-3. Run ``make verify`` (full release gate chain), unless
-   ``--skip-verify`` is passed.
+3. Run ``make verify`` unless ``--skip-verify`` is passed.
 4. Bump ``__version__`` via :mod:`scripts.bump_version`.
-5. Finalise ``CHANGELOG.md`` via :mod:`scripts.changelog`.
+5. Validate and date-stamp the ``## [X.Y.Z]`` CHANGELOG section
+   pre-authored by the operator via :mod:`scripts.changelog`.
 6. ``git add -A && git commit -m "release: bump to vX.Y.Z"``.
 7. ``git tag vX.Y.Z`` (signed if ``git config commit.gpgsign true``).
-8. Print push instructions — the operator is responsible for the
-   actual ``git push origin vX.Y.Z`` step. The release workflow
-   (``.github/workflows/release.yml``) takes over once the tag lands
-   on the remote.
-
-In ``--dry-run`` mode, steps 4-7 are simulated: the script computes
-what each step would do and prints a diff-style preview to stdout, but
-no files are modified and no git commands run beyond the read-only
-``git status``.
+8. Print push instructions — the operator pushes the tag; the
+   release workflow takes over once the tag lands on the remote.
 
 Hard preconditions (the script aborts on any of these):
 
@@ -44,8 +36,10 @@ Hard preconditions (the script aborts on any of these):
 - Working tree has uncommitted changes.
 - ``make verify`` exits non-zero.
 - The computed version is not strictly greater than the current.
-- ``CHANGELOG.md``'s ``Unreleased`` section is empty (use
-  ``--allow-empty-changelog`` only for true zero-impact patches).
+- ``CHANGELOG.md`` has no ``## [X.Y.Z]`` section for the target
+  version, or the section has no bullet entries. The operator
+  must pre-author the section under the preamble before invoking
+  the release flow.
 """
 
 from __future__ import annotations
@@ -112,7 +106,6 @@ class ReleaseOptions:
     repo_root: Path
     dry_run: bool
     skip_verify: bool
-    allow_empty_changelog: bool
     explicit_version: str | None
     bump_kind: str | None
     release_date: str | None
@@ -280,17 +273,12 @@ def _preview_changelog(plan: ReleasePlan, opts: ReleaseOptions) -> None:
     changelog_path = opts.repo_root / "CHANGELOG.md"
     text = changelog_path.read_text(encoding="utf-8")
     try:
-        cl.finalize(
-            text,
-            version=str(plan.target),
-            date=plan.release_date,
-            allow_empty=opts.allow_empty_changelog,
-        )
+        cl.stamp(text, version=str(plan.target), date=plan.release_date)
     except cl.ChangelogError as exc:
         msg = f"changelog preview failed: {exc}"
         raise RuntimeError(msg) from exc
     _emit(
-        f"would finalise CHANGELOG.md: [Unreleased] -> [{plan.target}] — {plan.release_date}",
+        f"would stamp CHANGELOG.md: [{plan.target}] - {plan.release_date}",
         prefix="[dry-run]",
     )
 
@@ -341,21 +329,16 @@ def _apply_bump(plan: ReleasePlan, opts: ReleaseOptions) -> int:
 
 
 def _apply_changelog(plan: ReleasePlan, opts: ReleaseOptions) -> int:
-    """Rewrite ``CHANGELOG.md`` to promote Unreleased into a versioned section."""
+    """Validate and date-stamp the operator-authored ``## [X.Y.Z]`` section."""
     changelog_path = opts.repo_root / "CHANGELOG.md"
     try:
         text = changelog_path.read_text(encoding="utf-8")
-        updated = cl.finalize(
-            text,
-            version=str(plan.target),
-            date=plan.release_date,
-            allow_empty=opts.allow_empty_changelog,
-        )
+        updated = cl.stamp(text, version=str(plan.target), date=plan.release_date)
         changelog_path.write_text(updated, encoding="utf-8")
     except (cl.ChangelogError, ValueError) as exc:
-        print(f"error: changelog finalisation failed: {exc}", file=sys.stderr)
+        print(f"error: changelog stamping failed: {exc}", file=sys.stderr)
         return EXIT_CHANGELOG_FAILED
-    _emit(f"finalised CHANGELOG: [Unreleased] -> [{plan.target}] — {plan.release_date}")
+    _emit(f"stamped CHANGELOG: [{plan.target}] - {plan.release_date}")
     return EXIT_OK
 
 
@@ -550,15 +533,6 @@ def _build_parser() -> argparse.ArgumentParser:
         help="Skip ``make verify``. NOT RECOMMENDED — only for debugging release tooling.",
     )
     parser.add_argument(
-        "--allow-empty-changelog",
-        action="store_true",
-        help=(
-            "Allow finalising the CHANGELOG when Unreleased is empty. Only "
-            "appropriate for zero-impact patches (the new section will say "
-            f"``{cl.PLACEHOLDER_BODY}``)."
-        ),
-    )
-    parser.add_argument(
         "--repo-root",
         type=Path,
         default=_REPO_ROOT,
@@ -583,7 +557,6 @@ def main(argv: list[str] | None = None) -> int:
         repo_root=args.repo_root,
         dry_run=dry_run,
         skip_verify=args.skip_verify,
-        allow_empty_changelog=args.allow_empty_changelog,
         explicit_version=args.explicit_version,
         bump_kind=args.bump_kind,
         release_date=args.date,

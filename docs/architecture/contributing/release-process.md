@@ -18,7 +18,7 @@ Three Python scripts back the release flow:
 | Script | Responsibility |
 |---|---|
 | [`scripts/bump_version.py`](https://github.com/jjviscomi/bqemulator/blob/main/scripts/bump_version.py) | Update `__version__` in `src/bqemulator/__init__.py` **and** the `?cacheSeconds=N&v=X.Y.Z` cache-bust suffix on the README's shields.io PyPI / Python-versions badges (`README.md`). The README rewrite is idempotent and silent when the pattern is absent. Validates the new version is strictly greater than the current. |
-| [`scripts/changelog.py`](https://github.com/jjviscomi/bqemulator/blob/main/scripts/changelog.py) | Move the `## [Unreleased]` body into a new `## [X.Y.Z] — YYYY-MM-DD` section. Refuses to finalise an empty `Unreleased` section by default. |
+| [`scripts/changelog.py`](https://github.com/jjviscomi/bqemulator/blob/main/scripts/changelog.py) | Validate the operator-authored `## [X.Y.Z]` section and stamp today's date into its header (`## [X.Y.Z] - YYYY-MM-DD`). Refuses to stamp a missing or empty section. |
 | [`scripts/release.py`](https://github.com/jjviscomi/bqemulator/blob/main/scripts/release.py) | Orchestrator. Runs `make verify`, calls the two scripts above, and creates the release commit + tag. Default mode is `--dry-run`; pass `--apply` to mutate state. |
 
 All three scripts emit distinct exit codes per failure mode so
@@ -146,7 +146,7 @@ a dedicated exit code):
     This re-runs steps 4–5 of the dry-run for real, then:
 
     - Writes the new `__version__`.
-    - Rewrites `CHANGELOG.md` (`Unreleased` → `[X.Y.Z] — YYYY-MM-DD`).
+    - Stamps the release date into the operator-authored `## [X.Y.Z]` section in `CHANGELOG.md`.
     - Stages every change with `git add -A`.
     - Creates the release commit (`release: bump to vX.Y.Z`).
     - Creates an annotated tag (`vX.Y.Z`). When
@@ -265,10 +265,9 @@ Exit codes:
 ### `scripts/changelog.py`
 
 ```bash
-python scripts/changelog.py 1.0.0                 # finalise
+python scripts/changelog.py 1.0.0                 # stamp release date
 python scripts/changelog.py 1.0.0 --date YYYY-MM-DD
 python scripts/changelog.py 1.0.0 --check         # validate only
-python scripts/changelog.py 1.0.0 --allow-empty   # empty Unreleased OK
 ```
 
 Exit codes:
@@ -277,9 +276,9 @@ Exit codes:
 |---|---|
 | 0 | OK |
 | 2 | Usage error (malformed version or date, missing file) |
-| 3 | No `## [Unreleased]` section in the changelog |
-| 4 | `## [Unreleased]` has no entries (use `--allow-empty` to override) |
-| 5 | The `## [X.Y.Z]` section already exists |
+| 3 | No `## [X.Y.Z]` section in the changelog |
+| 4 | `## [X.Y.Z]` section has no bullet entries |
+| 5 | Topmost section's version does not match the release target |
 
 ### `scripts/release.py`
 
@@ -289,8 +288,6 @@ python scripts/release.py --apply --next patch       # full pipeline
 python scripts/release.py --apply --version 1.0.0    # explicit version
 python scripts/release.py --apply --next minor --skip-verify
                                                      # skip ``make verify``
-python scripts/release.py --apply --next minor --allow-empty-changelog
-                                                     # ship a no-changelog patch
 ```
 
 Exit codes:

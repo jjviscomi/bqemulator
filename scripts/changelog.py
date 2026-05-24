@@ -1,37 +1,27 @@
 #!/usr/bin/env python3
-"""Move ``CHANGELOG.md``'s ``## [Unreleased]`` entries into a new versioned section.
+"""Validate and date-stamp a release-time CHANGELOG section.
 
-P4.c (2026-05-21) — second leg of the release-tooling triad. Reads
-[`CHANGELOG.md`](../CHANGELOG.md), captures the body of the
-``## [Unreleased]`` section, and rewrites the file with:
+The release operator authors a new ``## [X.Y.Z]`` section under the
+preamble before invoking the release flow, populating
+``### Changed`` / ``### Added`` / ``### Removed`` / ``### Fixed``
+bullets synthesised from ``git log <prev-tag>..HEAD``. This script
+validates the section exists, has body content, matches the target
+version, and stamps today's release date into the header.
 
-1. An empty placeholder ``## [Unreleased]`` section (so the operator
-   has a clean slate to log the next release's entries under).
-2. A new ``## [X.Y.Z] — YYYY-MM-DD`` section carrying the captured
-   body verbatim.
+The script does not invent entries from git history — synthesis is
+the operator's job. See
+[`docs/architecture/contributing/documentation-style-guide.md`](../docs/architecture/contributing/documentation-style-guide.md)
+for the entry-form rules.
 
 Usage::
 
     python scripts/changelog.py 1.0.0
     python scripts/changelog.py 1.0.0 --date 2026-05-21
     python scripts/changelog.py 1.0.0 --check       # validate; no write
-    python scripts/changelog.py 1.0.0 --allow-empty # finalise without unreleased content
 
-Refuses to finalise an empty ``Unreleased`` section by default — the
-operator should land release notes under ``Unreleased`` before
-finalising. ``--allow-empty`` is the escape hatch for emergency
-patches that ship without observable behaviour changes (the entry then
-contains only the ``_No user-facing changes._`` sentinel line).
-
-The script is intentionally narrow:
-
-- It does **not** mutate ``__version__`` — that is
-  ``scripts/bump_version.py``'s job.
-- It does **not** create git commits or tags — that is
-  ``scripts/release.py``'s job.
-- It does **not** invent entries from git history — operators are
-  expected to write release notes manually under ``Unreleased`` as PRs
-  merge (per [`CHANGELOG.md`](../CHANGELOG.md)'s preamble).
+Idempotent: a section already stamped with the supplied date is a
+no-op; an existing date is overwritten with the supplied one so
+retries after a failed release converge.
 """
 
 from __future__ import annotations
@@ -45,75 +35,49 @@ import sys
 _REPO_ROOT = Path(__file__).resolve().parent.parent
 CHANGELOG_PATH = _REPO_ROOT / "CHANGELOG.md"
 
-#: Header strings — kept as constants so the regex stays in sync with
-#: the rewriter and the placeholder text never drifts.
-UNRELEASED_HEADER = "## [Unreleased]"
-PLACEHOLDER_BODY = "_No user-facing changes._"
-
-#: Matches the ``## [Unreleased]`` header line and captures the body
-#: until the next ``## `` heading (or end of file). The body capture is
-#: greedy across newlines but stops at the first subsequent line
-#: starting with ``## `` (any level-2 markdown heading).
-_UNRELEASED_BLOCK_RE = re.compile(
-    r"(?P<header>^## \[Unreleased\][^\n]*\n)(?P<body>.*?)(?=^## |\Z)",
+#: Matches the first ``## [X.Y.Z]`` (optionally followed by ``- YYYY-MM-DD``)
+#: heading after the preamble, capturing the version, an optional date
+#: suffix, and the body until the next ``## `` heading or end of file.
+_SECTION_BLOCK_RE = re.compile(
+    r"(?P<header>^## \[(?P<version>\d+\.\d+\.\d+)\]"
+    r"(?:[ \t]*-[ \t]*(?P<date>\d{4}-\d{2}-\d{2}))?[^\n]*\n)"
+    r"(?P<body>.*?)(?=^## |\Z)",
     re.DOTALL | re.MULTILINE,
 )
 
-#: Strict ``X.Y.Z`` regex — mirrors bump_version's parser. Pre-release
-#: + build-metadata suffixes are rejected so the release tag namespace
-#: stays canonical.
 _VERSION_RE = re.compile(r"^\d+\.\d+\.\d+$")
-
-#: ISO-8601 calendar date pattern (``YYYY-MM-DD``).
 _DATE_RE = re.compile(r"^\d{4}-\d{2}-\d{2}$")
 
-#: CLI exit codes.
 EXIT_OK = 0
 EXIT_USAGE = 2
-EXIT_NO_UNRELEASED = 3
-EXIT_EMPTY_UNRELEASED = 4
-EXIT_DUPLICATE_VERSION = 5
+EXIT_NO_SECTION = 3
+EXIT_EMPTY_SECTION = 4
+EXIT_VERSION_MISMATCH = 5
 
 
 class ChangelogError(RuntimeError):
-    """Base class for all changelog-finalisation errors."""
+    """Base class for changelog validation errors."""
 
 
-class NoUnreleasedSectionError(ChangelogError):
-    """Raised when the changelog has no ``## [Unreleased]`` section to finalise."""
+class NoSectionError(ChangelogError):
+    """Raised when no ``## [X.Y.Z]`` section is present at the top of the file."""
 
 
-class EmptyUnreleasedSectionError(ChangelogError):
-    """Raised when the ``## [Unreleased]`` section has no entries.
-
-    The release captain is expected to land release notes under
-    ``Unreleased`` before finalising. The ``--allow-empty`` flag is the
-    escape hatch.
-    """
+class EmptySectionError(ChangelogError):
+    """Raised when the target section has no bullet entries."""
 
 
-class DuplicateVersionError(ChangelogError):
-    """Raised when the target ``## [X.Y.Z]`` section already exists in the file.
-
-    A duplicate version section would indicate a bug in the release
-    pipeline (re-finalising the same version) or a hand-edit that
-    landed the same version section before the script ran.
-    """
+class VersionMismatchError(ChangelogError):
+    """Raised when the topmost section's version does not match the release target."""
 
 
 def _has_entries(body: str) -> bool:
-    """Return True when ``body`` carries any non-whitespace content.
-
-    Whitespace-only bodies (the post-finalisation state after the
-    previous release) count as "empty". A body containing only the
-    ``PLACEHOLDER_BODY`` sentinel is treated as empty too — that's the
-    sentinel ``--allow-empty`` writes; it must not be promoted as a
-    real entry.
-    """
-    stripped = body.strip()
-    if not stripped:
-        return False
-    return stripped != PLACEHOLDER_BODY
+    """Return True when the section body contains at least one bullet line."""
+    for line in body.splitlines():
+        stripped = line.strip()
+        if stripped.startswith("- ") or stripped.startswith("* "):
+            return True
+    return False
 
 
 def _today_iso() -> str:
@@ -121,23 +85,25 @@ def _today_iso() -> str:
     return _dt.datetime.now(_dt.UTC).date().isoformat()
 
 
-def finalize(
+def stamp(
     text: str,
     *,
     version: str,
     date: str | None = None,
-    allow_empty: bool = False,
 ) -> str:
-    """Return a new changelog text with ``Unreleased`` moved to a versioned section.
+    """Return a new changelog with the topmost section's date stamped.
 
-    Raises :class:`NoUnreleasedSectionError` when the input has no
-    ``## [Unreleased]`` header, :class:`EmptyUnreleasedSectionError`
-    when the section is empty and ``allow_empty`` is False, and
-    :class:`DuplicateVersionError` when ``## [version]`` already
-    exists.
+    Validates that the topmost ``## [X.Y.Z]`` section matches
+    ``version`` and contains bullet entries. If the section header
+    carries no date, stamps the supplied (or today's) date. If it
+    already carries a date, the date is overwritten — retries
+    converge.
 
-    The version + date pair are validated against the canonical
-    formats — ``ValueError`` is raised on malformed input.
+    Raises :class:`NoSectionError` when no versioned section exists,
+    :class:`EmptySectionError` when the section has no bullet
+    entries, :class:`VersionMismatchError` when the topmost
+    section's version is not ``version``. Raises ``ValueError`` on
+    malformed version or date arguments.
     """
     if not _VERSION_RE.match(version):
         msg = f"version must be canonical X.Y.Z; got {version!r}"
@@ -147,51 +113,42 @@ def finalize(
         msg = f"date must be ISO-8601 YYYY-MM-DD; got {release_date!r}"
         raise ValueError(msg)
 
-    if f"## [{version}]" in text:
-        msg = f"a ``## [{version}]`` section already exists in the changelog"
-        raise DuplicateVersionError(msg)
-
-    match = _UNRELEASED_BLOCK_RE.search(text)
+    match = _SECTION_BLOCK_RE.search(text)
     if match is None:
-        msg = "no ``## [Unreleased]`` section found in the changelog"
-        raise NoUnreleasedSectionError(msg)
+        msg = "no ``## [X.Y.Z]`` section found in the changelog"
+        raise NoSectionError(msg)
+
+    found_version = match.group("version")
+    if found_version != version:
+        msg = (
+            f"topmost changelog section is ``## [{found_version}]`` "
+            f"but the release target is ``{version}``. Prepend a "
+            f"``## [{version}]`` section under the preamble before "
+            "running the release flow."
+        )
+        raise VersionMismatchError(msg)
 
     body = match.group("body")
-    if not allow_empty and not _has_entries(body):
+    if not _has_entries(body):
         msg = (
-            "``## [Unreleased]`` has no entries — refuse to finalise. "
-            "Land release notes under Unreleased first, or pass "
-            "``--allow-empty`` for an emergency-patch release with "
-            "no user-facing changes."
+            f"``## [{version}]`` section has no bullet entries. "
+            "Populate ``### Changed`` / ``### Added`` / ``### Removed`` "
+            "/ ``### Fixed`` bullets before running the release flow."
         )
-        raise EmptyUnreleasedSectionError(msg)
+        raise EmptySectionError(msg)
 
-    if allow_empty and not _has_entries(body):
-        body_to_version = f"\n{PLACEHOLDER_BODY}\n\n"
-    else:
-        # Preserve the captured body byte-for-byte, but normalise the
-        # trailing whitespace so the rendered file has exactly one
-        # blank line before the next ``## `` header.
-        body_to_version = body.rstrip() + "\n\n"
-
-    new_unreleased = f"{UNRELEASED_HEADER}\n\n"
-    new_version_header = f"## [{version}] — {release_date}\n"
-    new_block = (
-        f"{new_unreleased}"  # placeholder Unreleased (intentionally empty)
-        f"{new_version_header}"  # versioned header
-        f"{body_to_version}"  # the captured body
-    )
-    return text[: match.start()] + new_block + text[match.end() :]
+    new_header = f"## [{version}] - {release_date}\n"
+    return text[: match.start("header")] + new_header + text[match.end("header") :]
 
 
 def main(argv: list[str] | None = None) -> int:
     """CLI entry point. Returns :data:`EXIT_OK` (0) on success."""
     parser = argparse.ArgumentParser(
-        description=__doc__.splitlines()[0] if __doc__ else "Finalise CHANGELOG Unreleased.",
+        description="Validate and date-stamp a release-time CHANGELOG section.",
     )
     parser.add_argument(
         "version",
-        help="Canonical X.Y.Z to promote ``[Unreleased]`` into.",
+        help="Canonical X.Y.Z of the release section to stamp.",
     )
     parser.add_argument(
         "--date",
@@ -199,17 +156,9 @@ def main(argv: list[str] | None = None) -> int:
         help="Release date in ISO-8601 (YYYY-MM-DD). Defaults to today (UTC).",
     )
     parser.add_argument(
-        "--allow-empty",
-        action="store_true",
-        help=(
-            "Finalise even when ``Unreleased`` has no entries. The new section "
-            f"will carry only ``{PLACEHOLDER_BODY}``."
-        ),
-    )
-    parser.add_argument(
         "--check",
         action="store_true",
-        help="Validate without writing. Exits 0 when the changelog is ready to finalise.",
+        help="Validate without writing. Exits 0 when the section is well-formed.",
     )
     parser.add_argument(
         "--file",
@@ -226,32 +175,27 @@ def main(argv: list[str] | None = None) -> int:
         return EXIT_USAGE
 
     try:
-        updated = finalize(
-            text,
-            version=args.version,
-            date=args.date,
-            allow_empty=args.allow_empty,
-        )
-    except ValueError as exc:  # malformed inputs
+        updated = stamp(text, version=args.version, date=args.date)
+    except ValueError as exc:
         print(f"error: {exc}", file=sys.stderr)
         return EXIT_USAGE
-    except NoUnreleasedSectionError as exc:
+    except NoSectionError as exc:
         print(f"error: {exc}", file=sys.stderr)
-        return EXIT_NO_UNRELEASED
-    except EmptyUnreleasedSectionError as exc:
+        return EXIT_NO_SECTION
+    except EmptySectionError as exc:
         print(f"error: {exc}", file=sys.stderr)
-        return EXIT_EMPTY_UNRELEASED
-    except DuplicateVersionError as exc:
+        return EXIT_EMPTY_SECTION
+    except VersionMismatchError as exc:
         print(f"error: {exc}", file=sys.stderr)
-        return EXIT_DUPLICATE_VERSION
+        return EXIT_VERSION_MISMATCH
 
     if args.check:
-        print(f"OK: changelog ready to finalise as {args.version} (--check)")
+        print(f"OK: CHANGELOG section [{args.version}] is well-formed (--check)")
         return EXIT_OK
 
     args.file.write_text(updated, encoding="utf-8")
     release_date = args.date if args.date is not None else _today_iso()
-    print(f"Finalised CHANGELOG: [Unreleased] -> [{args.version}] — {release_date}")
+    print(f"Stamped CHANGELOG: [{args.version}] - {release_date}")
     return EXIT_OK
 
 
