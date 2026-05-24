@@ -10,31 +10,31 @@
       
       
       
-        <link rel="canonical" href="https://jjviscomi.github.io/bqemulator/main/examples/python/pyspark-bigquery/">
+        <link rel="canonical" href="https://jjviscomi.github.io/bqemulator/main/adr/0039-artifact-attestations/">
       
       
-        <link rel="prev" href="../airflow-dag-test/">
+        <link rel="prev" href="../0038-session-user/">
       
       
-        <link rel="next" href="../../nodejs/nestjs-app/">
+        <link rel="next" href="../../rfcs/">
       
       
         
       
       
-      <link rel="icon" href="../../../assets/images/favicon.png">
+      <link rel="icon" href="../../assets/images/favicon.png">
       <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.6">
     
     
       
-        <title>PySpark + BigQuery - bqemulator</title>
+        <title>0039 SLSA Build Provenance on GitHub Release assets - bqemulator</title>
       
     
     
-      <link rel="stylesheet" href="../../../assets/stylesheets/main.484c7ddc.min.css">
+      <link rel="stylesheet" href="../../assets/stylesheets/main.484c7ddc.min.css">
       
         
-        <link rel="stylesheet" href="../../../assets/stylesheets/palette.ab4e12ef.min.css">
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.ab4e12ef.min.css">
       
       
 
@@ -53,9 +53,9 @@
       
     
     
-      <link rel="stylesheet" href="../../../assets/_mkdocstrings.css">
+      <link rel="stylesheet" href="../../assets/_mkdocstrings.css">
     
-    <script>__md_scope=new URL("../../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
     
       
 
@@ -80,7 +80,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#pyspark-reading-from-bqemulator" class="md-skip">
+        <a href="#adr-0039-slsa-build-provenance-attestations-on-github-release-assets" class="md-skip">
           Skip to content
         </a>
       
@@ -98,7 +98,7 @@
 
 <header class="md-header" data-md-component="header">
   <nav class="md-header__inner md-grid" aria-label="Header">
-    <a href="../../.." title="bqemulator" class="md-header__button md-logo" aria-label="bqemulator" data-md-component="logo">
+    <a href="../.." title="bqemulator" class="md-header__button md-logo" aria-label="bqemulator" data-md-component="logo">
       
   
   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
@@ -118,7 +118,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              PySpark + BigQuery
+              0039 SLSA Build Provenance on GitHub Release assets
             
           </span>
         </div>
@@ -236,7 +236,7 @@
   
   
     <li class="md-tabs__item">
-      <a href="../../.." class="md-tabs__link">
+      <a href="../.." class="md-tabs__link">
         
   
   
@@ -255,7 +255,7 @@
   
   
     <li class="md-tabs__item">
-      <a href="../../../getting-started/" class="md-tabs__link">
+      <a href="../../getting-started/" class="md-tabs__link">
         
   
   
@@ -276,7 +276,7 @@
     
     
       <li class="md-tabs__item">
-        <a href="../../../quickstart/python/" class="md-tabs__link">
+        <a href="../../quickstart/python/" class="md-tabs__link">
           
   
   
@@ -298,7 +298,7 @@
     
     
       <li class="md-tabs__item">
-        <a href="../../../guides/loading-data/" class="md-tabs__link">
+        <a href="../../guides/loading-data/" class="md-tabs__link">
           
   
   
@@ -320,7 +320,7 @@
     
     
       <li class="md-tabs__item">
-        <a href="../../../reference/compatibility-matrix/" class="md-tabs__link">
+        <a href="../../reference/compatibility-matrix/" class="md-tabs__link">
           
   
   
@@ -342,7 +342,7 @@
     
     
       <li class="md-tabs__item">
-        <a href="../../../architecture/overview/" class="md-tabs__link">
+        <a href="../../architecture/overview/" class="md-tabs__link">
           
   
   
@@ -360,11 +360,13 @@
   
   
   
+    
+  
   
     
     
-      <li class="md-tabs__item">
-        <a href="../../../adr/0001-use-duckdb/" class="md-tabs__link">
+      <li class="md-tabs__item md-tabs__item--active">
+        <a href="../0001-use-duckdb/" class="md-tabs__link">
           
   
   
@@ -384,7 +386,7 @@
   
   
     <li class="md-tabs__item">
-      <a href="../../../rfcs/" class="md-tabs__link">
+      <a href="../../rfcs/" class="md-tabs__link">
         
   
   
@@ -401,13 +403,11 @@
   
   
   
-    
-  
   
     
     
-      <li class="md-tabs__item md-tabs__item--active">
-        <a href="../../" class="md-tabs__link">
+      <li class="md-tabs__item">
+        <a href="../../examples/" class="md-tabs__link">
           
   
   
@@ -427,7 +427,7 @@
   
   
     <li class="md-tabs__item">
-      <a href="../../../api/" class="md-tabs__link">
+      <a href="../../api/" class="md-tabs__link">
         
   
   
@@ -462,7 +462,7 @@
 
 <nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
   <label class="md-nav__title" for="__drawer">
-    <a href="../../.." title="bqemulator" class="md-nav__button md-logo" aria-label="bqemulator" data-md-component="logo">
+    <a href="../.." title="bqemulator" class="md-nav__button md-logo" aria-label="bqemulator" data-md-component="logo">
       
   
   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
@@ -492,7 +492,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../.." class="md-nav__link">
+      <a href="../.." class="md-nav__link">
         
   
   
@@ -519,7 +519,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../getting-started/" class="md-nav__link">
+      <a href="../../getting-started/" class="md-nav__link">
         
   
   
@@ -614,7 +614,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../quickstart/python/" class="md-nav__link">
+      <a href="../../quickstart/python/" class="md-nav__link">
         
   
   
@@ -642,7 +642,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../quickstart/nodejs/" class="md-nav__link">
+      <a href="../../quickstart/nodejs/" class="md-nav__link">
         
   
   
@@ -670,7 +670,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../quickstart/go/" class="md-nav__link">
+      <a href="../../quickstart/go/" class="md-nav__link">
         
   
   
@@ -698,7 +698,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../quickstart/java/" class="md-nav__link">
+      <a href="../../quickstart/java/" class="md-nav__link">
         
   
   
@@ -726,7 +726,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../quickstart/pytest/" class="md-nav__link">
+      <a href="../../quickstart/pytest/" class="md-nav__link">
         
   
   
@@ -754,7 +754,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../quickstart/docker-compose/" class="md-nav__link">
+      <a href="../../quickstart/docker-compose/" class="md-nav__link">
         
   
   
@@ -782,7 +782,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../quickstart/testcontainers/" class="md-nav__link">
+      <a href="../../quickstart/testcontainers/" class="md-nav__link">
         
   
   
@@ -925,7 +925,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../guides/loading-data/" class="md-nav__link">
+      <a href="../../guides/loading-data/" class="md-nav__link">
         
   
   
@@ -953,7 +953,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../guides/loading-from-local-files/" class="md-nav__link">
+      <a href="../../guides/loading-from-local-files/" class="md-nav__link">
         
   
   
@@ -981,7 +981,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../guides/querying/" class="md-nav__link">
+      <a href="../../guides/querying/" class="md-nav__link">
         
   
   
@@ -1009,7 +1009,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../guides/query-parameters/" class="md-nav__link">
+      <a href="../../guides/query-parameters/" class="md-nav__link">
         
   
   
@@ -1037,7 +1037,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../guides/streaming-inserts/" class="md-nav__link">
+      <a href="../../guides/streaming-inserts/" class="md-nav__link">
         
   
   
@@ -1065,7 +1065,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../guides/storage-api/" class="md-nav__link">
+      <a href="../../guides/storage-api/" class="md-nav__link">
         
   
   
@@ -1093,7 +1093,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../guides/routines-udfs/" class="md-nav__link">
+      <a href="../../guides/routines-udfs/" class="md-nav__link">
         
   
   
@@ -1121,7 +1121,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../guides/scripting/" class="md-nav__link">
+      <a href="../../guides/scripting/" class="md-nav__link">
         
   
   
@@ -1149,7 +1149,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../guides/partitioning-clustering/" class="md-nav__link">
+      <a href="../../guides/partitioning-clustering/" class="md-nav__link">
         
   
   
@@ -1177,7 +1177,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../guides/time-travel/" class="md-nav__link">
+      <a href="../../guides/time-travel/" class="md-nav__link">
         
   
   
@@ -1205,7 +1205,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../guides/materialized-views/" class="md-nav__link">
+      <a href="../../guides/materialized-views/" class="md-nav__link">
         
   
   
@@ -1233,7 +1233,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../guides/row-access-policies/" class="md-nav__link">
+      <a href="../../guides/row-access-policies/" class="md-nav__link">
         
   
   
@@ -1261,7 +1261,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../guides/authorized-views/" class="md-nav__link">
+      <a href="../../guides/authorized-views/" class="md-nav__link">
         
   
   
@@ -1289,7 +1289,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../guides/information-schema/" class="md-nav__link">
+      <a href="../../guides/information-schema/" class="md-nav__link">
         
   
   
@@ -1317,7 +1317,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../guides/geography-spatial/" class="md-nav__link">
+      <a href="../../guides/geography-spatial/" class="md-nav__link">
         
   
   
@@ -1345,7 +1345,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../guides/range-types/" class="md-nav__link">
+      <a href="../../guides/range-types/" class="md-nav__link">
         
   
   
@@ -1373,7 +1373,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../guides/interval-arithmetic/" class="md-nav__link">
+      <a href="../../guides/interval-arithmetic/" class="md-nav__link">
         
   
   
@@ -1401,7 +1401,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../guides/import-from-real-project/" class="md-nav__link">
+      <a href="../../guides/import-from-real-project/" class="md-nav__link">
         
   
   
@@ -1429,7 +1429,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../guides/admin-endpoints/" class="md-nav__link">
+      <a href="../../guides/admin-endpoints/" class="md-nav__link">
         
   
   
@@ -1457,7 +1457,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../guides/backup-restore/" class="md-nav__link">
+      <a href="../../guides/backup-restore/" class="md-nav__link">
         
   
   
@@ -1485,7 +1485,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../guides/conformance-corpus/" class="md-nav__link">
+      <a href="../../guides/conformance-corpus/" class="md-nav__link">
         
   
   
@@ -1513,7 +1513,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../guides/ci-cd-patterns/" class="md-nav__link">
+      <a href="../../guides/ci-cd-patterns/" class="md-nav__link">
         
   
   
@@ -1541,7 +1541,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../guides/dbt-integration/" class="md-nav__link">
+      <a href="../../guides/dbt-integration/" class="md-nav__link">
         
   
   
@@ -1569,7 +1569,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../guides/airflow-integration/" class="md-nav__link">
+      <a href="../../guides/airflow-integration/" class="md-nav__link">
         
   
   
@@ -1597,7 +1597,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../guides/spark-integration/" class="md-nav__link">
+      <a href="../../guides/spark-integration/" class="md-nav__link">
         
   
   
@@ -1625,7 +1625,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../guides/using-bq-cli/" class="md-nav__link">
+      <a href="../../guides/using-bq-cli/" class="md-nav__link">
         
   
   
@@ -1653,7 +1653,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../guides/observability/" class="md-nav__link">
+      <a href="../../guides/observability/" class="md-nav__link">
         
   
   
@@ -1762,7 +1762,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../reference/compatibility-matrix/" class="md-nav__link">
+      <a href="../../reference/compatibility-matrix/" class="md-nav__link">
         
   
   
@@ -1790,7 +1790,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../reference/conformance-coverage-matrix/" class="md-nav__link">
+      <a href="../../reference/conformance-coverage-matrix/" class="md-nav__link">
         
   
   
@@ -1818,7 +1818,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../reference/api-configuration-coverage-matrix/" class="md-nav__link">
+      <a href="../../reference/api-configuration-coverage-matrix/" class="md-nav__link">
         
   
   
@@ -1846,7 +1846,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../reference/sql-function-mapping/" class="md-nav__link">
+      <a href="../../reference/sql-function-mapping/" class="md-nav__link">
         
   
   
@@ -1874,7 +1874,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../reference/api-coverage/" class="md-nav__link">
+      <a href="../../reference/api-coverage/" class="md-nav__link">
         
   
   
@@ -1902,7 +1902,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../reference/configuration/" class="md-nav__link">
+      <a href="../../reference/configuration/" class="md-nav__link">
         
   
   
@@ -1930,7 +1930,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../reference/cli/" class="md-nav__link">
+      <a href="../../reference/cli/" class="md-nav__link">
         
   
   
@@ -1958,7 +1958,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../reference/out-of-scope/" class="md-nav__link">
+      <a href="../../reference/out-of-scope/" class="md-nav__link">
         
   
   
@@ -1986,7 +1986,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../reference/gap-analysis/" class="md-nav__link">
+      <a href="../../reference/gap-analysis/" class="md-nav__link">
         
   
   
@@ -2014,7 +2014,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../reference/troubleshooting/" class="md-nav__link">
+      <a href="../../reference/troubleshooting/" class="md-nav__link">
         
   
   
@@ -2135,7 +2135,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../architecture/overview/" class="md-nav__link">
+      <a href="../../architecture/overview/" class="md-nav__link">
         
   
   
@@ -2163,7 +2163,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../architecture/storage-model/" class="md-nav__link">
+      <a href="../../architecture/storage-model/" class="md-nav__link">
         
   
   
@@ -2191,7 +2191,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../architecture/sql-translation/" class="md-nav__link">
+      <a href="../../architecture/sql-translation/" class="md-nav__link">
         
   
   
@@ -2219,7 +2219,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../architecture/jobs-lifecycle/" class="md-nav__link">
+      <a href="../../architecture/jobs-lifecycle/" class="md-nav__link">
         
   
   
@@ -2247,7 +2247,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../architecture/storage-read-api/" class="md-nav__link">
+      <a href="../../architecture/storage-read-api/" class="md-nav__link">
         
   
   
@@ -2275,7 +2275,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../architecture/storage-write-api/" class="md-nav__link">
+      <a href="../../architecture/storage-write-api/" class="md-nav__link">
         
   
   
@@ -2303,7 +2303,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../architecture/scripting/" class="md-nav__link">
+      <a href="../../architecture/scripting/" class="md-nav__link">
         
   
   
@@ -2331,7 +2331,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../architecture/udfs/" class="md-nav__link">
+      <a href="../../architecture/udfs/" class="md-nav__link">
         
   
   
@@ -2359,7 +2359,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../architecture/versioning-and-snapshots/" class="md-nav__link">
+      <a href="../../architecture/versioning-and-snapshots/" class="md-nav__link">
         
   
   
@@ -2387,7 +2387,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../architecture/row-access-policies/" class="md-nav__link">
+      <a href="../../architecture/row-access-policies/" class="md-nav__link">
         
   
   
@@ -2415,7 +2415,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../architecture/specialized-types/" class="md-nav__link">
+      <a href="../../architecture/specialized-types/" class="md-nav__link">
         
   
   
@@ -2443,7 +2443,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../architecture/admin-and-import-export/" class="md-nav__link">
+      <a href="../../architecture/admin-and-import-export/" class="md-nav__link">
         
   
   
@@ -2471,7 +2471,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../architecture/observability/" class="md-nav__link">
+      <a href="../../architecture/observability/" class="md-nav__link">
         
   
   
@@ -2499,7 +2499,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../architecture/testing-strategy/" class="md-nav__link">
+      <a href="../../architecture/testing-strategy/" class="md-nav__link">
         
   
   
@@ -2527,7 +2527,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../architecture/conformance-tier/" class="md-nav__link">
+      <a href="../../architecture/conformance-tier/" class="md-nav__link">
         
   
   
@@ -2623,7 +2623,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../architecture/contributing/dev-environment/" class="md-nav__link">
+      <a href="../../architecture/contributing/dev-environment/" class="md-nav__link">
         
   
   
@@ -2651,7 +2651,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../architecture/contributing/release-process/" class="md-nav__link">
+      <a href="../../architecture/contributing/release-process/" class="md-nav__link">
         
   
   
@@ -2679,7 +2679,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../architecture/contributing/adding-sql-functions/" class="md-nav__link">
+      <a href="../../architecture/contributing/adding-sql-functions/" class="md-nav__link">
         
   
   
@@ -2707,7 +2707,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../architecture/contributing/adding-udf-runtimes/" class="md-nav__link">
+      <a href="../../architecture/contributing/adding-udf-runtimes/" class="md-nav__link">
         
   
   
@@ -2735,7 +2735,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../architecture/contributing/adding-conformance-cases/" class="md-nav__link">
+      <a href="../../architecture/contributing/adding-conformance-cases/" class="md-nav__link">
         
   
   
@@ -2763,7 +2763,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../architecture/contributing/tpcds-expansion-plan/" class="md-nav__link">
+      <a href="../../architecture/contributing/tpcds-expansion-plan/" class="md-nav__link">
         
   
   
@@ -2791,7 +2791,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../architecture/contributing/debugging/" class="md-nav__link">
+      <a href="../../architecture/contributing/debugging/" class="md-nav__link">
         
   
   
@@ -2831,8 +2831,10 @@
       
   
   
+    
   
   
+  
     
     
       
@@ -2918,19 +2920,22 @@
     
     
       
+        
+        
+      
       
         
       
     
     
-    <li class="md-nav__item md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_7" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_7" checked>
         
           
-          <label class="md-nav__link" for="__nav_7" id="__nav_7_label" tabindex="0">
+          <label class="md-nav__link" for="__nav_7" id="__nav_7_label" tabindex="">
             
   
   
@@ -2948,7 +2953,7 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_7_label" aria-expanded="false">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_7_label" aria-expanded="true">
           <label class="md-nav__title" for="__nav_7">
             <span class="md-nav__icon md-icon"></span>
             
@@ -2966,7 +2971,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../adr/0001-use-duckdb/" class="md-nav__link">
+      <a href="../0001-use-duckdb/" class="md-nav__link">
         
   
   
@@ -2994,7 +2999,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../adr/0002-python-over-go-rust/" class="md-nav__link">
+      <a href="../0002-python-over-go-rust/" class="md-nav__link">
         
   
   
@@ -3022,7 +3027,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../adr/0003-sqlglot-for-translation/" class="md-nav__link">
+      <a href="../0003-sqlglot-for-translation/" class="md-nav__link">
         
   
   
@@ -3050,7 +3055,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../adr/0004-hexagonal-architecture/" class="md-nav__link">
+      <a href="../0004-hexagonal-architecture/" class="md-nav__link">
         
   
   
@@ -3078,7 +3083,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../adr/0005-fastapi-grpcaio-single-process/" class="md-nav__link">
+      <a href="../0005-fastapi-grpcaio-single-process/" class="md-nav__link">
         
   
   
@@ -3106,7 +3111,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../adr/0006-catalog-in-reserved-schema/" class="md-nav__link">
+      <a href="../0006-catalog-in-reserved-schema/" class="md-nav__link">
         
   
   
@@ -3134,7 +3139,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../adr/0007-pytest-fixture-as-dx/" class="md-nav__link">
+      <a href="../0007-pytest-fixture-as-dx/" class="md-nav__link">
         
   
   
@@ -3162,7 +3167,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../adr/0008-snapshot-storage-read-api/" class="md-nav__link">
+      <a href="../0008-snapshot-storage-read-api/" class="md-nav__link">
         
   
   
@@ -3190,7 +3195,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../adr/0009-snapshot-layer-time-travel/" class="md-nav__link">
+      <a href="../0009-snapshot-layer-time-travel/" class="md-nav__link">
         
   
   
@@ -3218,7 +3223,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../adr/0010-py-mini-racer-for-js-udfs/" class="md-nav__link">
+      <a href="../0010-py-mini-racer-for-js-udfs/" class="md-nav__link">
         
   
   
@@ -3246,7 +3251,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../adr/0011-tree-walking-scripting-interpreter/" class="md-nav__link">
+      <a href="../0011-tree-walking-scripting-interpreter/" class="md-nav__link">
         
   
   
@@ -3274,7 +3279,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../adr/0012-bqml-out-of-scope/" class="md-nav__link">
+      <a href="../0012-bqml-out-of-scope/" class="md-nav__link">
         
   
   
@@ -3302,7 +3307,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../adr/0013-write-api-strategies/" class="md-nav__link">
+      <a href="../0013-write-api-strategies/" class="md-nav__link">
         
   
   
@@ -3330,7 +3335,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../adr/0014-udf-materialization-strategy/" class="md-nav__link">
+      <a href="../0014-udf-materialization-strategy/" class="md-nav__link">
         
   
   
@@ -3358,7 +3363,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../adr/0015-scripting-execution-model/" class="md-nav__link">
+      <a href="../0015-scripting-execution-model/" class="md-nav__link">
         
   
   
@@ -3386,7 +3391,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../adr/0016-snapshot-time-semantics/" class="md-nav__link">
+      <a href="../0016-snapshot-time-semantics/" class="md-nav__link">
         
   
   
@@ -3414,7 +3419,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../adr/0017-materialized-view-refresh/" class="md-nav__link">
+      <a href="../0017-materialized-view-refresh/" class="md-nav__link">
         
   
   
@@ -3442,7 +3447,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../adr/0018-caller-identity-and-row-access-enforcement/" class="md-nav__link">
+      <a href="../0018-caller-identity-and-row-access-enforcement/" class="md-nav__link">
         
   
   
@@ -3470,7 +3475,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../adr/0019-specialized-types/" class="md-nav__link">
+      <a href="../0019-specialized-types/" class="md-nav__link">
         
   
   
@@ -3498,7 +3503,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../adr/0020-admin-import-export/" class="md-nav__link">
+      <a href="../0020-admin-import-export/" class="md-nav__link">
         
   
   
@@ -3526,7 +3531,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../adr/0021-chaos-tier-design-contract/" class="md-nav__link">
+      <a href="../0021-chaos-tier-design-contract/" class="md-nav__link">
         
   
   
@@ -3554,7 +3559,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../adr/0022-conformance-corpus-design/" class="md-nav__link">
+      <a href="../0022-conformance-corpus-design/" class="md-nav__link">
         
   
   
@@ -3582,7 +3587,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../adr/0023-conformance-divergence-baseline/" class="md-nav__link">
+      <a href="../0023-conformance-divergence-baseline/" class="md-nav__link">
         
   
   
@@ -3610,7 +3615,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../adr/0024-hll-count-support-strategy/" class="md-nav__link">
+      <a href="../0024-hll-count-support-strategy/" class="md-nav__link">
         
   
   
@@ -3638,7 +3643,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../adr/0025-perf-tier-design-contract/" class="md-nav__link">
+      <a href="../0025-perf-tier-design-contract/" class="md-nav__link">
         
   
   
@@ -3666,7 +3671,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../adr/0026-mutation-tier-design-contract/" class="md-nav__link">
+      <a href="../0026-mutation-tier-design-contract/" class="md-nav__link">
         
   
   
@@ -3694,7 +3699,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../adr/0027-load-extract-avro-orc/" class="md-nav__link">
+      <a href="../0027-load-extract-avro-orc/" class="md-nav__link">
         
   
   
@@ -3722,7 +3727,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../adr/0028-differential-tier-design-contract/" class="md-nav__link">
+      <a href="../0028-differential-tier-design-contract/" class="md-nav__link">
         
   
   
@@ -3750,7 +3755,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../adr/0029-upload-host-endpoints/" class="md-nav__link">
+      <a href="../0029-upload-host-endpoints/" class="md-nav__link">
         
   
   
@@ -3778,7 +3783,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../adr/0030-storage-read-avro-format/" class="md-nav__link">
+      <a href="../0030-storage-read-avro-format/" class="md-nav__link">
         
   
   
@@ -3806,7 +3811,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../adr/0031-fuzz-tier-design-contract/" class="md-nav__link">
+      <a href="../0031-fuzz-tier-design-contract/" class="md-nav__link">
         
   
   
@@ -3834,7 +3839,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../adr/0032-bq-cli-conformance-client/" class="md-nav__link">
+      <a href="../0032-bq-cli-conformance-client/" class="md-nav__link">
         
   
   
@@ -3862,7 +3867,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../adr/0033-storage-read-arrow-ipc-bare-message-contract/" class="md-nav__link">
+      <a href="../0033-storage-read-arrow-ipc-bare-message-contract/" class="md-nav__link">
         
   
   
@@ -3890,7 +3895,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../adr/0034-scio-beam-emulator-routing/" class="md-nav__link">
+      <a href="../0034-scio-beam-emulator-routing/" class="md-nav__link">
         
   
   
@@ -3918,7 +3923,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../adr/0035-code-quality-gates/" class="md-nav__link">
+      <a href="../0035-code-quality-gates/" class="md-nav__link">
         
   
   
@@ -3946,7 +3951,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../adr/0036-complexity-ratchet-to-c/" class="md-nav__link">
+      <a href="../0036-complexity-ratchet-to-c/" class="md-nav__link">
         
   
   
@@ -3974,7 +3979,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../adr/0037-openssf-scorecard/" class="md-nav__link">
+      <a href="../0037-openssf-scorecard/" class="md-nav__link">
         
   
   
@@ -4002,7 +4007,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../adr/0038-session-user/" class="md-nav__link">
+      <a href="../0038-session-user/" class="md-nav__link">
         
   
   
@@ -4010,346 +4015,6 @@
     
   
     0038 SESSION_USER() pre-translator substitution
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../../adr/0039-artifact-attestations/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    0039 SLSA Build Provenance on GitHub Release assets
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-          </ul>
-        </nav>
-      
-    </li>
-  
-
-    
-      
-      
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../../rfcs/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    RFCs
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-    
-      
-      
-  
-  
-    
-  
-  
-  
-    
-    
-      
-        
-          
-        
-      
-        
-      
-        
-      
-        
-      
-        
-      
-        
-      
-        
-      
-        
-      
-        
-      
-    
-    
-    
-      
-        
-        
-      
-      
-        
-      
-    
-    
-    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
-      
-        
-        
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_9" checked>
-        
-          
-          <div class="md-nav__link md-nav__container">
-            <a href="../../" class="md-nav__link ">
-              
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Examples
-  
-
-    
-  </span>
-  
-  
-
-            </a>
-            
-              
-              <label class="md-nav__link " for="__nav_9" id="__nav_9_label" tabindex="">
-                <span class="md-nav__icon md-icon"></span>
-              </label>
-            
-          </div>
-        
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_9_label" aria-expanded="true">
-          <label class="md-nav__title" for="__nav_9">
-            <span class="md-nav__icon md-icon"></span>
-            
-  
-    Examples
-  
-
-          </label>
-          <ul class="md-nav__list" data-md-scrollfix>
-            
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../bq-cli-quickstart/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    bq CLI quickstart
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../local-file-load/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Local file load
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-    
-  
-  
-  
-    
-    
-      
-        
-          
-        
-      
-        
-      
-        
-      
-        
-      
-    
-    
-    
-      
-      
-        
-          
-          
-        
-      
-    
-    
-    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
-      
-        
-        
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_9_4" checked>
-        
-          
-          <div class="md-nav__link md-nav__container">
-            <a href="../pytest-integration/" class="md-nav__link ">
-              
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Python
-  
-
-    
-  </span>
-  
-  
-
-            </a>
-            
-              
-              <label class="md-nav__link " for="__nav_9_4" id="__nav_9_4_label" tabindex="">
-                <span class="md-nav__icon md-icon"></span>
-              </label>
-            
-          </div>
-        
-        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_9_4_label" aria-expanded="true">
-          <label class="md-nav__title" for="__nav_9_4">
-            <span class="md-nav__icon md-icon"></span>
-            
-  
-    Python
-  
-
-          </label>
-          <ul class="md-nav__list" data-md-scrollfix>
-            
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../dbt-local/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    dbt local
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../airflow-dag-test/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Airflow DAG test
   
 
     
@@ -4386,7 +4051,7 @@
   <span class="md-ellipsis">
     
   
-    PySpark + BigQuery
+    0039 SLSA Build Provenance on GitHub Release assets
   
 
     
@@ -4404,7 +4069,7 @@
   <span class="md-ellipsis">
     
   
-    PySpark + BigQuery
+    0039 SLSA Build Provenance on GitHub Release assets
   
 
     
@@ -4430,10 +4095,10 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#why-this-shape-vs-the-official-spark-bigquery-connector" class="md-nav__link">
+  <a href="#context" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Why this shape (vs. the official spark-bigquery-connector)
+        Context
       
     </span>
   </a>
@@ -4441,10 +4106,38 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#what-it-demonstrates" class="md-nav__link">
+  <a href="#decision" class="md-nav__link">
     <span class="md-ellipsis">
       
-        What it demonstrates
+        Decision
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Decision">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#three-implementation-options-considered" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Three implementation options considered
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#why-this-pr-also-touches-dockeryml" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Why this PR also touches docker.yml
       
     </span>
   </a>
@@ -4452,10 +4145,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#layout" class="md-nav__link">
+  <a href="#expected-scorecard-impact" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Layout
+        Expected Scorecard impact
       
     </span>
   </a>
@@ -4463,10 +4156,132 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#run" class="md-nav__link">
+  <a href="#rationale" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Run
+        Rationale
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Rationale">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#why-store-the-attestation-as-a-release-asset-not-just-on-the" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Why store the attestation as a Release asset (not just on the
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#why-subject-path-dist-and-not-per-file" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Why subject-path: 'dist/*' and not per-file
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#sha-pinning-even-for-actions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        SHA pinning even for actions/*
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#why-v410-the-latest" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Why v4.1.0 (the latest)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#why-the-bump-in-softpropsaction-gh-releases-files-is" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Why the bump in softprops/action-gh-release's files: is
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#consequences" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Consequences
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Consequences">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#positive" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Positive
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#negative" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Negative
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#neutral" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Neutral
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#alternatives-considered" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Alternatives considered
       
     </span>
   </a>
@@ -4474,21 +4289,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#what-to-look-for" class="md-nav__link">
+  <a href="#references" class="md-nav__link">
     <span class="md-ellipsis">
       
-        What to look for
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#storage-read-api-bare-record-batch-ipc-contract-v101" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Storage Read API — bare record-batch IPC contract (v1.0.1)
+        References
       
     </span>
   </a>
@@ -4499,6 +4303,336 @@
   
 </nav>
       
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../rfcs/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    RFCs
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+          
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_9" >
+        
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="../../examples/" class="md-nav__link ">
+              
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Examples
+  
+
+    
+  </span>
+  
+  
+
+            </a>
+            
+              
+              <label class="md-nav__link " for="__nav_9" id="__nav_9_label" tabindex="0">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_9_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_9">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Examples
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../examples/bq-cli-quickstart/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    bq CLI quickstart
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../examples/local-file-load/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Local file load
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+      
+        
+          
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_9_4" >
+        
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="../../examples/python/pytest-integration/" class="md-nav__link ">
+              
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Python
+  
+
+    
+  </span>
+  
+  
+
+            </a>
+            
+              
+              <label class="md-nav__link " for="__nav_9_4" id="__nav_9_4_label" tabindex="0">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_9_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_9_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Python
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../examples/python/dbt-local/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    dbt local
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../examples/python/airflow-dag-test/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Airflow DAG test
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../examples/python/pyspark-bigquery/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    PySpark + BigQuery
+  
+
+    
+  </span>
+  
+  
+
+      </a>
     </li>
   
 
@@ -4533,13 +4667,10 @@
       
       
         
-          
-          
-        
       
     
     
-    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--nested">
       
         
         
@@ -4547,7 +4678,7 @@
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="../../nodejs/nestjs-app/" class="md-nav__link ">
+            <a href="../../examples/nodejs/nestjs-app/" class="md-nav__link ">
               
   
   
@@ -4565,7 +4696,7 @@
             </a>
             
               
-              <label class="md-nav__link " for="__nav_9_5" id="__nav_9_5_label" tabindex="">
+              <label class="md-nav__link " for="__nav_9_5" id="__nav_9_5_label" tabindex="0">
                 <span class="md-nav__icon md-icon"></span>
               </label>
             
@@ -4591,7 +4722,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../nodejs/cloud-run-local/" class="md-nav__link">
+      <a href="../../examples/nodejs/cloud-run-local/" class="md-nav__link">
         
   
   
@@ -4641,13 +4772,10 @@
       
       
         
-          
-          
-        
       
     
     
-    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--nested">
       
         
         
@@ -4655,7 +4783,7 @@
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="../../go/beam-pipeline/" class="md-nav__link ">
+            <a href="../../examples/go/beam-pipeline/" class="md-nav__link ">
               
   
   
@@ -4673,7 +4801,7 @@
             </a>
             
               
-              <label class="md-nav__link " for="__nav_9_6" id="__nav_9_6_label" tabindex="">
+              <label class="md-nav__link " for="__nav_9_6" id="__nav_9_6_label" tabindex="0">
                 <span class="md-nav__icon md-icon"></span>
               </label>
             
@@ -4699,7 +4827,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../go/dataflow-local/" class="md-nav__link">
+      <a href="../../examples/go/dataflow-local/" class="md-nav__link">
         
   
   
@@ -4749,13 +4877,10 @@
       
       
         
-          
-          
-        
       
     
     
-    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--nested">
       
         
         
@@ -4763,7 +4888,7 @@
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="../../java/spring-boot/" class="md-nav__link ">
+            <a href="../../examples/java/spring-boot/" class="md-nav__link ">
               
   
   
@@ -4781,7 +4906,7 @@
             </a>
             
               
-              <label class="md-nav__link " for="__nav_9_7" id="__nav_9_7_label" tabindex="">
+              <label class="md-nav__link " for="__nav_9_7" id="__nav_9_7_label" tabindex="0">
                 <span class="md-nav__icon md-icon"></span>
               </label>
             
@@ -4807,7 +4932,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../java/scio/" class="md-nav__link">
+      <a href="../../examples/java/scio/" class="md-nav__link">
         
   
   
@@ -4855,13 +4980,10 @@
       
       
         
-          
-          
-        
       
     
     
-    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--nested">
       
         
         
@@ -4869,7 +4991,7 @@
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="../../docker-compose/full-stack/" class="md-nav__link ">
+            <a href="../../examples/docker-compose/full-stack/" class="md-nav__link ">
               
   
   
@@ -4932,13 +5054,10 @@
       
       
         
-          
-          
-        
       
     
     
-    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--nested">
       
         
         
@@ -4946,7 +5065,7 @@
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="../../ci-recipes/github-actions/" class="md-nav__link ">
+            <a href="../../examples/ci-recipes/github-actions/" class="md-nav__link ">
               
   
   
@@ -4964,7 +5083,7 @@
             </a>
             
               
-              <label class="md-nav__link " for="__nav_9_9" id="__nav_9_9_label" tabindex="">
+              <label class="md-nav__link " for="__nav_9_9" id="__nav_9_9_label" tabindex="0">
                 <span class="md-nav__icon md-icon"></span>
               </label>
             
@@ -4990,7 +5109,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../ci-recipes/gitlab-ci/" class="md-nav__link">
+      <a href="../../examples/ci-recipes/gitlab-ci/" class="md-nav__link">
         
   
   
@@ -5018,7 +5137,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../ci-recipes/circleci/" class="md-nav__link">
+      <a href="../../examples/ci-recipes/circleci/" class="md-nav__link">
         
   
   
@@ -5061,7 +5180,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../api/" class="md-nav__link">
+      <a href="../../api/" class="md-nav__link">
         
   
   
@@ -5108,10 +5227,10 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#why-this-shape-vs-the-official-spark-bigquery-connector" class="md-nav__link">
+  <a href="#context" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Why this shape (vs. the official spark-bigquery-connector)
+        Context
       
     </span>
   </a>
@@ -5119,10 +5238,38 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#what-it-demonstrates" class="md-nav__link">
+  <a href="#decision" class="md-nav__link">
     <span class="md-ellipsis">
       
-        What it demonstrates
+        Decision
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Decision">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#three-implementation-options-considered" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Three implementation options considered
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#why-this-pr-also-touches-dockeryml" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Why this PR also touches docker.yml
       
     </span>
   </a>
@@ -5130,10 +5277,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#layout" class="md-nav__link">
+  <a href="#expected-scorecard-impact" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Layout
+        Expected Scorecard impact
       
     </span>
   </a>
@@ -5141,10 +5288,132 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#run" class="md-nav__link">
+  <a href="#rationale" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Run
+        Rationale
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Rationale">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#why-store-the-attestation-as-a-release-asset-not-just-on-the" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Why store the attestation as a Release asset (not just on the
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#why-subject-path-dist-and-not-per-file" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Why subject-path: 'dist/*' and not per-file
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#sha-pinning-even-for-actions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        SHA pinning even for actions/*
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#why-v410-the-latest" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Why v4.1.0 (the latest)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#why-the-bump-in-softpropsaction-gh-releases-files-is" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Why the bump in softprops/action-gh-release's files: is
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#consequences" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Consequences
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Consequences">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#positive" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Positive
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#negative" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Negative
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#neutral" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Neutral
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#alternatives-considered" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Alternatives considered
       
     </span>
   </a>
@@ -5152,21 +5421,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#what-to-look-for" class="md-nav__link">
+  <a href="#references" class="md-nav__link">
     <span class="md-ellipsis">
       
-        What to look for
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#storage-read-api-bare-record-batch-ipc-contract-v101" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Storage Read API — bare record-batch IPC contract (v1.0.1)
+        References
       
     </span>
   </a>
@@ -5190,7 +5448,7 @@
 
 
   
-    <a href="https://github.com/jjviscomi/bqemulator/edit/main/docs/examples/python/pyspark-bigquery/README.md" title="Edit this page" class="md-content__button md-icon" rel="edit">
+    <a href="https://github.com/jjviscomi/bqemulator/edit/main/docs/adr/0039-artifact-attestations.md" title="Edit this page" class="md-content__button md-icon" rel="edit">
       
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M10 20H6V4h7v5h5v3.1l2-2V8l-6-6H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h4zm10.2-7c.1 0 .3.1.4.2l1.3 1.3c.2.2.2.6 0 .8l-1 1-2.1-2.1 1-1c.1-.1.2-.2.4-.2m0 3.9L14.1 23H12v-2.1l6.1-6.1z"/></svg>
     </a>
@@ -5199,74 +5457,295 @@
     
       
     
-    <a href="https://github.com/jjviscomi/bqemulator/raw/main/docs/examples/python/pyspark-bigquery/README.md" title="View source of this page" class="md-content__button md-icon">
+    <a href="https://github.com/jjviscomi/bqemulator/raw/main/docs/adr/0039-artifact-attestations.md" title="View source of this page" class="md-content__button md-icon">
       
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M17 18c.56 0 1 .44 1 1s-.44 1-1 1-1-.44-1-1 .44-1 1-1m0-3c-2.73 0-5.06 1.66-6 4 .94 2.34 3.27 4 6 4s5.06-1.66 6-4c-.94-2.34-3.27-4-6-4m0 6.5a2.5 2.5 0 0 1-2.5-2.5 2.5 2.5 0 0 1 2.5-2.5 2.5 2.5 0 0 1 2.5 2.5 2.5 2.5 0 0 1-2.5 2.5M9.27 20H6V4h7v5h5v4.07c.7.08 1.36.25 2 .49V8l-6-6H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h4.5a8.2 8.2 0 0 1-1.23-2"/></svg>
     </a>
   
 
 
-<h1 id="pyspark-reading-from-bqemulator">PySpark reading from <code>bqemulator</code><a class="headerlink" href="#pyspark-reading-from-bqemulator" title="Permanent link">&para;</a></h1>
-<p>Reads data from <code>bqemulator</code> via the BigQuery Storage Read API (Arrow
-output) into a PySpark DataFrame using the
-<a href="https://pypi.org/project/google-cloud-bigquery-storage/"><code>google-cloud-bigquery-storage</code></a>
-client and Spark's <code>createDataFrame</code> from an Arrow table.</p>
-<p>Pairs with the <a href="../../../guides/spark-integration/">Spark integration guide</a>.</p>
-<h2 id="why-this-shape-vs-the-official-spark-bigquery-connector">Why this shape (vs. the official <code>spark-bigquery-connector</code>)<a class="headerlink" href="#why-this-shape-vs-the-official-spark-bigquery-connector" title="Permanent link">&para;</a></h2>
-<p>The official
-<a href="https://github.com/GoogleCloudDataproc/spark-bigquery-connector"><code>spark-bigquery-connector</code></a>
-is a Scala/Java JAR that talks to the real BigQuery Storage Read API
-over gRPC. Pointing it at an emulator host requires JVM-level
-<code>--conf</code> overrides that vary by connector version and tend to break
-on upgrades.</p>
-<p>The robust, version-stable pattern is:</p>
+<h1 id="adr-0039-slsa-build-provenance-attestations-on-github-release-assets">ADR 0039: SLSA Build Provenance attestations on GitHub Release assets<a class="headerlink" href="#adr-0039-slsa-build-provenance-attestations-on-github-release-assets" title="Permanent link">&para;</a></h1>
+<ul>
+<li><strong>Status</strong>: Accepted</li>
+</ul>
+<h2 id="context">Context<a class="headerlink" href="#context" title="Permanent link">&para;</a></h2>
+<p>OpenSSF Scorecard (adopted by <a href="../0037-openssf-scorecard/">ADR 0037</a>)
+scores the project's release-signing posture via the
+<code>Signed-Releases</code> check. The check inspects the <strong>last 5 GitHub
+Releases</strong> and looks for signature files attached as release assets:
+<code>.sig</code> / <code>.asc</code> / <code>.minisig</code> / <code>.sigstore</code> / <code>.intoto.jsonl</code>
+suffixes. A release counts as "signed" only when one of these files
+is attached <strong>on the GitHub Release itself</strong>, not on the downstream
+distribution.</p>
+<p>Pre-PR audit of the project's signing surface revealed three
+asymmetries:</p>
+<ul>
+<li>✅ <strong>GHCR container image</strong> — already attested via
+  <code>actions/attest-build-provenance@v1</code> in
+  <code>.github/workflows/docker.yml</code>, plus a cosign keyless signature
+  via OIDC. Scorecard recognises both.</li>
+<li>✅ <strong>PyPI wheel + sdist</strong> — sigstore-attested via Trusted
+  Publishing (<code>attestations: true</code> on <code>pypa/gh-action-pypi-publish</code>
+  in <code>.github/workflows/release.yml</code>). The attestations live on
+  PyPI's side and are visible to <code>pypi</code> / <code>sigstore</code> tooling —
+  but <strong>not</strong> to Scorecard, which only inspects the GitHub Release
+  page.</li>
+<li>❌ <strong>GitHub Release assets</strong> — every published tag (v1.0.0 / v1.0.1
+  / v1.0.2) attaches the wheel + sdist via
+  <code>softprops/action-gh-release@v2</code> but does <strong>not</strong> attach any
+  signature file. From Scorecard's view the release is unsigned even
+  though the wheel was sigstore-signed on PyPI five lines earlier.</li>
+</ul>
+<p>The closure: add a GitHub-native attestation step in the
+<code>github-release</code> job so the same artifacts Scorecard inspects
+carry a discoverable signature.</p>
+<h2 id="decision">Decision<a class="headerlink" href="#decision" title="Permanent link">&para;</a></h2>
+<p>Add <code>actions/attest-build-provenance</code> to the <code>github-release</code>
+job in <code>.github/workflows/release.yml</code>, run it on every file under
+<code>dist/</code> (the wheel + sdist), and upload the resulting
+<code>.intoto.jsonl</code> SLSA Build Provenance bundle to the GitHub Release
+alongside the artifacts. Pin by full commit SHA + trailing
+<code># vX.Y.Z</code> comment per the OpenSSF-Scorecard-strict reading of
+AGENTS.md (see "SHA pinning even for actions/*" below); same pin
+applied to the existing <code>docker.yml</code> call site for consistency.</p>
+<p>The pinned version is
+<code>actions/attest-build-provenance@a2bbfa25375fe432b6a289bc6b6cd05ecd0c4c32 # v4.1.0</code>
+— the latest stable as of 2026-05-23, producing SLSA Build
+Provenance v1.0 schema. Dependabot already monitors
+<code>.github/workflows/*.yml</code> so the SHA moves forward automatically.</p>
+<p>The workflow now:</p>
 <ol>
-<li>Use the
-   <a href="https://github.com/googleapis/python-bigquery-storage"><code>google-cloud-bigquery-storage</code></a>
-   Python client (which respects the standard endpoint override
-   semantics) to read rows out of BigQuery as Arrow record batches.</li>
-<li>Hand the Arrow table to Spark via <code>spark.createDataFrame</code>.</li>
+<li>Builds <code>dist/</code> via <code>python -m build</code> (<code>build</code> job).</li>
+<li>Publishes to PyPI with sigstore attestations (<code>publish-pypi</code>
+   job).</li>
+<li><strong>NEW</strong>: Generates a SLSA Build Provenance attestation covering
+   every file in <code>dist/</code> (<code>github-release</code> job, <code>attest</code> step).</li>
+<li>Attaches both the artifacts AND the attestation bundle to the
+   GitHub Release.</li>
 </ol>
-<p>This matches the surface <code>bqemulator</code> exposes (see
-<a href="../../../adr/0030-storage-read-avro-format/">ADR 0030</a>) and is the
-pattern used in the <a href="../../../guides/storage-api/">Storage Read API guide</a>.</p>
-<h2 id="what-it-demonstrates">What it demonstrates<a class="headerlink" href="#what-it-demonstrates" title="Permanent link">&para;</a></h2>
-<ul>
-<li>Seeding a 5-row table via the standard <code>google-cloud-bigquery</code>
-  client against the emulator.</li>
-<li>Reading those rows back via the Storage Read API
-  (<code>google-cloud-bigquery-storage</code>) with <code>DataFormat.ARROW</code>.</li>
-<li>Constructing a Spark <code>DataFrame</code> from the result and running an
-  aggregate.</li>
-<li>Asserting the round-tripped count matches.</li>
-</ul>
-<h2 id="layout">Layout<a class="headerlink" href="#layout" title="Permanent link">&para;</a></h2>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>example.py — full demo: seed, Storage Read, Spark aggregate
+<p>After this lands, every release tag will surface an
+<code>attestation.intoto.jsonl</code> file on the GitHub Release page.
+Downstream consumers can verify with:</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>gh<span class="w"> </span>attestation<span class="w"> </span>verify<span class="w"> </span>dist/bqemulator-X.Y.Z-py3-none-any.whl<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="w">    </span>--owner<span class="w"> </span>jjviscomi
 </span></code></pre></div>
-<h2 id="run">Run<a class="headerlink" href="#run" title="Permanent link">&para;</a></h2>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>make<span class="w"> </span><span class="nb">test</span>
-</span></code></pre></div>
-<h2 id="what-to-look-for">What to look for<a class="headerlink" href="#what-to-look-for" title="Permanent link">&para;</a></h2>
+<p>and Scorecard's <code>Signed-Releases</code> check will count the release as
+signed.</p>
+<h3 id="three-implementation-options-considered">Three implementation options considered<a class="headerlink" href="#three-implementation-options-considered" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>Option</th>
+<th>Shape</th>
+<th>Decision</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>A — GitHub Artifact Attestations</strong></td>
+<td><code>actions/attest-build-provenance</code> natively populates GitHub's attestations API + emits a <code>.intoto.jsonl</code> bundle we upload to the Release. SLSA v1.0 provenance schema. Sigstore keyless via OIDC.</td>
+<td>✅ <strong>Chosen.</strong></td>
+</tr>
+<tr>
+<td><strong>B — sigstore-python sign + upload</strong></td>
+<td>Install <code>sigstore</code> Python CLI, run <code>sigstore sign</code> against each dist file, upload <code>.sigstore</code> bundles to the Release. Equivalent score impact; sigstore-only (no SLSA schema).</td>
+<td>Rejected. More moving parts (extra dep) for the same Scorecard outcome.</td>
+</tr>
+<tr>
+<td><strong>C — GPG-sign + <code>.asc</code> files</strong></td>
+<td>Old-school PGP signatures. Requires a managed signing key.</td>
+<td>Rejected. Key management overhead with no marginal score benefit.</td>
+</tr>
+</tbody>
+</table>
+<p>Option A wins on three axes:</p>
+<ol>
+<li><strong>First-party GitHub action</strong> (<code>actions/*</code>) — actively
+   maintained by GitHub itself + Dependabot tracks it. Pinned by
+   full commit SHA in this PR despite AGENTS.md's relaxed
+   major-tag rule for <code>actions/*</code>, because OpenSSF Scorecard's
+   <code>Pinned-Dependencies</code> check rewards commit-SHA pinning
+   regardless of action provenance (see SHA-pinning section
+   below).</li>
+<li><strong>SLSA v1.0 provenance</strong> — strictly more information than a bare
+   signature (includes builder identity, source repo, ref, workflow
+   run URL). Future SLSA-aware tools (deps.dev, in-toto verifiers)
+   light up automatically.</li>
+<li><strong>Verifiable without external tooling</strong> — <code>gh attestation
+   verify</code> ships with the GitHub CLI; no separate sigstore install
+   required by consumers.</li>
+</ol>
+<h2 id="why-this-pr-also-touches-dockeryml">Why this PR also touches <code>docker.yml</code><a class="headerlink" href="#why-this-pr-also-touches-dockeryml" title="Permanent link">&para;</a></h2>
+<p><code>docker.yml</code> already runs <code>actions/attest-build-provenance</code>
+against the container image digest, but at floating <code>@v1</code> (SLSA
+Build Provenance v0.2 schema). Two reasons to roll the bump into
+this same PR:</p>
+<ol>
+<li><strong>Consistency</strong>: both call sites should target the same
+   version. Splitting them creates a window where the wheel +
+   sdist attestation uses SLSA v1.0 while the container
+   attestation still uses v0.2 — confusing for verifiers.</li>
+<li><strong>Single SHA pin to maintain</strong>: Dependabot bumps a pin in N
+   files at once, so having both at the same SHA from day one
+   keeps the cycle clean.</li>
+</ol>
+<p>The bump moves <code>docker.yml</code> from floating <code>@v1</code> → SHA-pinned
+<code>@a2bbfa25375fe432b6a289bc6b6cd05ecd0c4c32 # v4.1.0</code>. SLSA v1.0
+is a strictly richer schema than v0.2; downstream verifiers
+recognise both, so this is forward-compatible.</p>
+<h2 id="expected-scorecard-impact">Expected Scorecard impact<a class="headerlink" href="#expected-scorecard-impact" title="Permanent link">&para;</a></h2>
+<p>The <code>Signed-Releases</code> check inspects the <strong>last 5 releases</strong>.
+Recovery trajectory once this lands and v1.1.0 publishes:</p>
+<table>
+<thead>
+<tr>
+<th>After release</th>
+<th>Signed of last 5</th>
+<th><code>Signed-Releases</code> score</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>v1.0.2 (today)</td>
+<td>0/3</td>
+<td>~0/10</td>
+</tr>
+<tr>
+<td>v1.1.0</td>
+<td>&frac14;</td>
+<td>~2/10</td>
+</tr>
+<tr>
+<td>v1.1.1</td>
+<td>&#8534;</td>
+<td>~4/10</td>
+</tr>
+<tr>
+<td>v1.1.2</td>
+<td>&#8535;</td>
+<td>~6/10</td>
+</tr>
+<tr>
+<td>v1.1.3</td>
+<td>&#8536;</td>
+<td>~8/10</td>
+</tr>
+<tr>
+<td>v1.1.4</td>
+<td>5/5</td>
+<td><strong>10/10</strong></td>
+</tr>
+</tbody>
+</table>
+<p>Tags are immutable on GitHub so we can't retroactively attest
+v1.0.0–v1.0.2. The recovery is gradual but monotone — every new
+tag improves the score until the rolling 5-release window
+contains only signed entries.</p>
+<p>Composite Scorecard score lift: ~+1.5 immediately after v1.1.0;
+~+2.5 by v1.1.4.</p>
+<h2 id="rationale">Rationale<a class="headerlink" href="#rationale" title="Permanent link">&para;</a></h2>
+<h3 id="why-store-the-attestation-as-a-release-asset-not-just-on-the">Why store the attestation as a Release asset (not just on the<a class="headerlink" href="#why-store-the-attestation-as-a-release-asset-not-just-on-the" title="Permanent link">&para;</a></h3>
+<p>attestations API)</p>
+<p>GitHub's attestations API (<code>gh attestation verify</code>) is the
+canonical verification surface — it reads the same data
+<code>actions/attest-build-provenance</code> writes. But Scorecard
+specifically inspects <strong>release assets</strong> for known signature
+suffixes. Without uploading the <code>.intoto.jsonl</code> bundle to the
+Release, the API contains the attestation but Scorecard can't see
+it. Belt-and-suspenders: bundle goes to BOTH the attestations API
+AND the Release page.</p>
+<h3 id="why-subject-path-dist-and-not-per-file">Why <code>subject-path: 'dist/*'</code> and not per-file<a class="headerlink" href="#why-subject-path-dist-and-not-per-file" title="Permanent link">&para;</a></h3>
+<p><code>actions/attest-build-provenance</code> accepts a glob and produces a
+SINGLE attestation bundle referencing all matched subjects. The
+resulting <code>.intoto.jsonl</code> contains one statement per file (each
+with its sha256 digest). Consumers verifying any specific file get
+the same bundle; the action de-duplicates the upload step.</p>
+<h3 id="sha-pinning-even-for-actions">SHA pinning even for <code>actions/*</code><a class="headerlink" href="#sha-pinning-even-for-actions" title="Permanent link">&para;</a></h3>
+<p>AGENTS.md's OpenSSF-alignment rule allows first-party <code>actions/*</code>
+to use floating major tags (<code>@v4</code>) on the rationale that
+Dependabot tracks them aggressively. That rule is a pragmatic
+compromise, not the ceiling. <strong>OpenSSF Scorecard's
+<code>Pinned-Dependencies</code> check gives full credit for commit-SHA
+pinning regardless of action provenance</strong>; major-tag pins earn
+partial credit. For Scorecard score optimisation (which is the
+proximate driver of this PR), SHA-pinning is strictly better.</p>
+<p>Decision: SHA-pin <code>actions/attest-build-provenance</code> in both
+<code>release.yml</code> and <code>docker.yml</code>. The pre-existing
+<code>actions/checkout@v4</code> / <code>actions/setup-python@v5</code> /
+<code>actions/upload-artifact@v8</code> etc. major-tag pins are
+out-of-scope for this PR (separate sweep if we want to maximise
+the <code>Pinned-Dependencies</code> score).</p>
+<h3 id="why-v410-the-latest">Why v4.1.0 (the latest)<a class="headerlink" href="#why-v410-the-latest" title="Permanent link">&para;</a></h3>
+<p>v4.1.0 (released 2026-02-26) is the current stable. Earlier v3.x
+also produces SLSA v1.0 but lacks fixes for two edge cases the v4
+line addressed (multi-subject batch upload + transparency-log
+inclusion proof). No reason to pin to anything older than v4.1.0.</p>
+<h3 id="why-the-bump-in-softpropsaction-gh-releases-files-is">Why the bump in <code>softprops/action-gh-release</code>'s <code>files:</code> is<a class="headerlink" href="#why-the-bump-in-softpropsaction-gh-releases-files-is" title="Permanent link">&para;</a></h3>
+<p>multi-line</p>
+<p>YAML's <code>files: dist/*</code> single-line form does NOT expand to also
+include <code>${{ steps.attest.outputs.bundle-path }}</code> — those are
+separate paths. The multi-line <code>files: | dist/* ${{ ... }}</code> form
+unions both. The action accepts shell-glob + explicit paths
+together.</p>
+<h2 id="consequences">Consequences<a class="headerlink" href="#consequences" title="Permanent link">&para;</a></h2>
+<h3 id="positive">Positive<a class="headerlink" href="#positive" title="Permanent link">&para;</a></h3>
 <ul>
-<li>The Storage Read client is constructed with a <code>BigQueryReadGrpcTransport</code>
-  wrapping an explicit <code>grpc.insecure_channel(...)</code> — bqemulator
-  serves the Storage Read API over plaintext gRPC, and the default
-  transport wraps every call in TLS (failing the handshake with
-  <code>SSL_ERROR_SSL: WRONG_VERSION_NUMBER</code>).</li>
-<li>Spark runs in local-master mode (<code>local[*]</code>) so the example is
-  hermetic — no Hadoop/YARN cluster required.</li>
+<li>Every release tag from this PR onwards surfaces a SLSA Build
+  Provenance attestation as a discoverable release asset.</li>
+<li>Scorecard's <code>Signed-Releases</code> check trajectory: 0 → 10 over 5
+  releases.</li>
+<li>Downstream consumers gain a first-class verification path via
+  <code>gh attestation verify</code> — no separate sigstore install
+  required.</li>
+<li>SLSA v1.0 provenance unlocks downstream SLSA-aware verifiers
+  (in-toto, slsa-verifier) without additional work.</li>
 </ul>
-<h2 id="storage-read-api-bare-record-batch-ipc-contract-v101">Storage Read API — bare record-batch IPC contract (v1.0.1)<a class="headerlink" href="#storage-read-api-bare-record-batch-ipc-contract-v101" title="Permanent link">&para;</a></h2>
-<p>The example uses the canonical
-<code>reader.to_arrow(session)</code> helper from the
-<code>google-cloud-bigquery-storage</code> client. Under v1.0.0 this call tripped
-on a bqemulator wire-format bug (the server packed a full Arrow IPC
-stream into <code>ArrowRecordBatch.serialized_record_batch</code>); v1.0.1
-<a href="https://github.com/jjviscomi/bqemulator/issues/15">#15</a> /
-<a href="../../../adr/0033-storage-read-arrow-ipc-bare-message-contract/">ADR 0033</a>
-shipped the spec-conforming bare record-batch format and removed
-the workaround. If you're pinning to v1.0.0 the helper still trips
-the format mismatch; upgrade to v1.0.1+.</p>
+<h3 id="negative">Negative<a class="headerlink" href="#negative" title="Permanent link">&para;</a></h3>
+<ul>
+<li>~10s extra runtime per release (sigstore OIDC handshake +
+  bundle upload).</li>
+<li>One more failure surface — if the attestation step errors, the
+  <code>github-release</code> job fails and the tag's release page won't
+  publish until the issue is fixed. Mitigation: the failure mode
+  is loud + the tag is immutable, so a fix-forward via re-run is
+  the operator's path (same as any other workflow failure today).</li>
+</ul>
+<h3 id="neutral">Neutral<a class="headerlink" href="#neutral" title="Permanent link">&para;</a></h3>
+<ul>
+<li>The PyPI Trusted Publishing sigstore attestations are
+  preserved unchanged. PyPI consumers still get PyPI-native
+  signatures via <code>pip install</code> verification flows. The
+  GitHub-Release attestation is the GitHub-visible parallel — not a
+  replacement.</li>
+<li><code>docker.yml</code> updated to the same SHA-pinned v4.1.0 as the new
+  <code>release.yml</code> step — both call sites are now consistent (same
+  schema, same pinned commit, same Dependabot upgrade cadence).</li>
+</ul>
+<h2 id="alternatives-considered">Alternatives considered<a class="headerlink" href="#alternatives-considered" title="Permanent link">&para;</a></h2>
+<ol>
+<li><strong>Option B — <code>sigstore</code> Python CLI sign + upload.</strong>
+   Equivalent score impact, more moving parts, same outcome.
+   Rejected.</li>
+<li><strong>Option C — GPG <code>.asc</code> signatures.</strong> Requires a managed
+   signing key + key rotation. No marginal score benefit.
+   Rejected.</li>
+<li><strong>Skip the GitHub-Release attestation and accept the
+   low score.</strong> Fastest, but fails the user-mandated "improve
+   Scorecard posture" requirement.</li>
+<li><strong>Move PyPI sigstore attestations onto the GitHub Release.</strong>
+   PyPI's <code>gh-action-pypi-publish</code> doesn't expose its sigstore
+   bundles as outputs the way <code>actions/attest-build-provenance</code>
+   does. Possible but more code; the action-based approach is
+   cleaner.</li>
+</ol>
+<h2 id="references">References<a class="headerlink" href="#references" title="Permanent link">&para;</a></h2>
+<ul>
+<li><a href="https://github.com/actions/attest-build-provenance"><code>actions/attest-build-provenance</code></a> — the action used here.</li>
+<li><a href="https://slsa.dev/spec/v1.0/provenance">SLSA Build Provenance v1.0 spec</a> — the schema this attestation produces.</li>
+<li><a href="https://github.com/ossf/scorecard/blob/main/docs/checks.md#signed-releases">OpenSSF Scorecard <code>Signed-Releases</code> check</a> — what we're scoring against.</li>
+<li><a href="../0037-openssf-scorecard/">ADR 0037</a> — the Scorecard adoption that surfaced this gap.</li>
+<li><a href="https://cli.github.com/manual/gh_attestation_verify"><code>gh attestation verify</code></a> — consumer-side verification path.</li>
+</ul>
 
 
 
@@ -5328,10 +5807,10 @@ the format mismatch; upgrade to v1.0.1+.</p>
     
       
       
-      <script id="__config" type="application/json">{"annotate": null, "base": "../../..", "features": ["content.action.edit", "content.action.view", "content.code.copy", "content.code.annotate", "content.tabs.link", "navigation.indexes", "navigation.instant", "navigation.sections", "navigation.tabs", "navigation.top", "navigation.tracking", "search.highlight", "search.share", "search.suggest", "toc.follow"], "search": "../../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": {"default": "latest", "provider": "mike"}}</script>
+      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["content.action.edit", "content.action.view", "content.code.copy", "content.code.annotate", "content.tabs.link", "navigation.indexes", "navigation.instant", "navigation.sections", "navigation.tabs", "navigation.top", "navigation.tracking", "search.highlight", "search.share", "search.suggest", "toc.follow"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": {"default": "latest", "provider": "mike"}}</script>
     
     
-      <script src="../../../assets/javascripts/bundle.79ae519e.min.js"></script>
+      <script src="../../assets/javascripts/bundle.79ae519e.min.js"></script>
       
     
   </body>
