@@ -118,8 +118,7 @@ def _expand_call(match: re.Match[str]) -> str:
     projected out via ``SELECT * EXCEPT`` so the call site sees only
     the original columns plus ``session_range``.
 
-    NULL-bridge semantic (P2.a closure-bug follow-up, 2026-05-18):
-    BigQuery's ``RANGE_SESSIONIZE`` collapses every non-NULL row in
+    NULL-bridge semantic: BigQuery's ``RANGE_SESSIONIZE`` collapses every non-NULL row in
     a partition into a single session spanning
     ``[min(start), max(end)]`` whenever any NULL range is present in
     that partition; the NULL rows themselves return

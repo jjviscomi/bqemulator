@@ -13,7 +13,7 @@ This module:
 3. Wraps NULL-valued parameters in ``CAST(? AS <duckdb-type>)`` so the
    BigQuery schema renderer surfaces the declared type rather than
    DuckDB's default-inferred type (which falls back to BIGINT for a
-   bare NULL parameter regardless of the BQ-declared type). P2.e.
+   bare NULL parameter regardless of the BQ-declared type).
 """
 
 from __future__ import annotations
@@ -276,8 +276,8 @@ def _extract_value(param: dict[str, Any]) -> Any:
 
         return Decimal(str(raw))
 
-    # P2.e: DATE / DATETIME / TIME / TIMESTAMP parameters must be
-    # converted to typed Python objects, not left as strings. DuckDB
+    # DATE / DATETIME / TIME / TIMESTAMP parameters must be converted
+    # to typed Python objects, not left as strings. DuckDB
     # infers a prepared-statement parameter's column type from the
     # Python value's type — a plain string binds as VARCHAR, which the
     # BigQuery schema renderer surfaces as ``STRING`` rather than the

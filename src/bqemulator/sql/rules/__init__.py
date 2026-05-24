@@ -33,10 +33,8 @@ def get_all_rules() -> list[TranslationRule]:
     return [cls() for cls in _REGISTRY]
 
 
-# Phase 1 rule modules — imported AFTER register() is defined so the
+# Rule modules — imported AFTER register() is defined so the
 # @register decorator is available at class-definition time.
-# Phase 9 rule modules.
-# Phase 11 (Bucket J closure) rule modules.
 from bqemulator.sql.rules import aggregate_types as _aggregate_types  # noqa: E402, F401
 from bqemulator.sql.rules import array_helpers as _array_helpers  # noqa: E402, F401
 from bqemulator.sql.rules import datetime_semantics as _datetime_semantics  # noqa: E402, F401

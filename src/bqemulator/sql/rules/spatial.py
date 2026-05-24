@@ -99,9 +99,9 @@ class StAsGeoJsonStringTypeRule(TranslationRule):
     DuckDB-spatial's ``ST_AsGeoJSON`` returns a value whose Arrow
     output is a VARCHAR string but whose DuckDB *logical* type is
     ``JSON`` (verifiable via ``SELECT typeof(ST_AsGeoJSON(...))``).
-    The engine's ``bqemu.duckdb_type`` field-metadata override (added
-    in the Bucket J closure) reads that logical type and tags the
-    column as ``JSON`` on the wire — but BigQuery's ``ST_AsGeoJSON``
+    The engine's ``bqemu.duckdb_type`` field-metadata override reads
+    that logical type and tags the column as ``JSON`` on the wire —
+    but BigQuery's ``ST_AsGeoJSON``
     returns ``STRING``, so the schema check in the conformance
     comparison helper fails.
 
@@ -188,10 +188,9 @@ class StAsGeoJsonStringTypeRule(TranslationRule):
            recorded ``ST_AsGeoJSON`` output for non-equatorial,
            non-meridian edges.
 
-        The existing JSON-shaped STRING tolerance (ADR 0022 §3,
-        extended in P3.d-followup with float-ULP tolerance) absorbs
-        the inter-token whitespace / key-order / int-vs-float /
-        libm-vs-S2 ULP drift on the populated body.
+        The JSON-shaped STRING tolerance (ADR 0022 §3, with float-ULP
+        tolerance) absorbs the inter-token whitespace / key-order /
+        int-vs-float / libm-vs-S2 ULP drift on the populated body.
         """
         normalised = exp.Anonymous(
             this="bqemu_geojson_geodesic_interp",
@@ -607,10 +606,9 @@ class StMaxDistanceRule(TranslationRule):
 
     Multi-point and shape-shape combinations (MaxDistance between two
     POLYGONs is the diameter of the bounding-arc of all vertex pairs)
-    aren't exercised yet; the helper returns ``NULL`` for those and
+    are unsupported; the helper returns ``NULL`` for those shapes and
     the surrounding query surfaces the unsupported combination to the
-    user rather than silently returning a planar value. P7.c follow-up
-    — closes ``specialized_types/st_maxdistance_basic``.
+    user rather than silently returning a planar value.
     """
 
     name = "ST_MAXDISTANCE"

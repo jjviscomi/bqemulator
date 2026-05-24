@@ -144,12 +144,11 @@ class EmulatorServer:
         )
         # Storage Write API stream registry shared between the gRPC servicer
         # (which owns lifecycle) and the admin /admin/streams endpoint
-        # (which reads it for diagnostics). Phase 10 lifts construction out
-        # of the servicer so both consumers see the same instance; the
-        # servicer wires the metric-cleanup callback after AppContext is
-        # built (see ``BigQueryWriteHandler.__init__``).
+        # (which reads it for diagnostics). The servicer wires the
+        # metric-cleanup callback after AppContext is built (see
+        # ``BigQueryWriteHandler.__init__``).
         write_stream_manager = WriteStreamManager()
-        # G2 — upload host (resumable / multipart). The manager owns the
+        # Upload host (resumable / multipart). The manager owns the
         # in-memory session map and the temp staging directory under
         # ``Settings.upload_staging_dir`` (or the system tempdir when
         # unset). See ADR 0029.

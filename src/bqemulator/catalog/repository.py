@@ -45,9 +45,9 @@ class CatalogRepository(Protocol):
     def list_all_datasets(self) -> tuple[DatasetMeta, ...]:
         """Return every dataset across every project (possibly empty).
 
-        Used by the Phase 10 admin / export / seed paths that need a
-        full catalog walk without knowing the project ids in advance.
-        Order is implementation-defined.
+        Used by the admin / export / seed paths that need a full catalog
+        walk without knowing the project ids in advance. Order is
+        implementation-defined.
         """
         ...
 
@@ -127,7 +127,7 @@ class CatalogRepository(Protocol):
     def list_views(self, project_id: str, dataset_id: str) -> tuple[TableMeta, ...]:
         """Return all VIEW-typed tables in the dataset (possibly empty).
 
-        This is the G4 ``INFORMATION_SCHEMA.VIEWS`` source. The returned
+        Backs ``INFORMATION_SCHEMA.VIEWS``. The returned
         :class:`TableMeta` instances carry ``table_type='VIEW'`` and
         ``view_query`` populated with the BigQuery SQL view definition.
         """

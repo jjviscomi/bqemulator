@@ -1,7 +1,7 @@
 """Materialized-view registry, refresh, and staleness tracking.
 
-Implements the Phase 7 MV model locked in by ADR 0017 — event-driven
-staleness flagging plus lazy recompute on read.
+Implements the MV model from ADR 0017 — event-driven staleness
+flagging plus lazy recompute on read.
 
 Lifecycle:
 

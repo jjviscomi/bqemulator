@@ -1,4 +1,4 @@
-"""DuckDB/SQLGlot → BigQuery-shape error translator (P3.a, ADR 0022 §3).
+"""DuckDB/SQLGlot → BigQuery-shape error translator (see ADR 0022 §3).
 
 This mapper closes the wire-format gap between the emulator's underlying
 engines (DuckDB for execution, SQLGlot for parsing/transpilation) and
@@ -166,11 +166,8 @@ _JS_UDF_ERROR_RE = re.compile(
 #: DuckDB's ICU extension rejects an unrecognised timezone (named zone or
 #: numeric offset) with ``Not implemented Error: Unknown TimeZone '<zone>'!``
 #: plus a trailing ``Candidate time zones: …`` list. BigQuery's documented
-#: form is the short prefix ``Invalid time zone: <zone>``. Workstream P8.e
-#: (2026-05-20) added the mapping after fixtures ``tz_error_unknown_zone``
-#: (named ``Mars/Olympus_Mons``) and ``tz_parse_timestamp_with_named_zone``
-#: (named ``IST``) both recorded the BQ error envelope. The captured value
-#: feeds the rewritten BQ-shape message.
+#: form is the short prefix ``Invalid time zone: <zone>``. The captured
+#: value feeds the rewritten BQ-shape message.
 _UNKNOWN_TIMEZONE_RE = re.compile(
     r"Unknown TimeZone '(?P<zone>[^']+)'",
 )
@@ -372,12 +369,12 @@ def translate_runtime_error(
         )
 
     if (tz_match := _UNKNOWN_TIMEZONE_RE.search(raw)) is not None:
-        # Workstream P8.e (2026-05-20). DuckDB's ICU rejection of an
-        # unrecognised zone leaks the candidate-zones list, which would
-        # break the conformance ``message_pattern`` regex match against
-        # BigQuery's clean ``Invalid time zone: <zone>`` form. The
-        # captured zone name is preserved so the user-facing message
-        # still points at the offending input.
+        # DuckDB's ICU rejection of an unrecognised zone leaks the
+        # candidate-zones list, which would break the conformance
+        # ``message_pattern`` regex match against BigQuery's clean
+        # ``Invalid time zone: <zone>`` form. The captured zone name
+        # is preserved so the user-facing message still points at the
+        # offending input.
         return InvalidQueryError(
             f"Invalid time zone: {tz_match['zone']}",
             location="query",

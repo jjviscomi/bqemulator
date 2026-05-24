@@ -62,7 +62,7 @@ _Caller = Annotated[CallerIdentity, Depends(get_caller)]
 
 #: DomainError subclasses that real BigQuery surfaces as
 #: ``Job.status.errorResult`` rather than a direct HTTP 4xx response
-#: (P3.a, ADR 0022 §3 ``Error parity``). The Python client maps
+#: (see ADR 0022 §3 ``Error parity``). The Python client maps
 #: ``reason`` → exception class when polling a DONE+ERROR job, so the
 #: shape needs to match real BQ. Request-level errors
 #: (UnsupportedFeatureError, ValidationError) continue to surface as
@@ -214,19 +214,19 @@ async def query(
     dry_run: bool = body.get("dryRun", False)
     max_results: int = body.get("maxResults", 10000)
     query_params = body.get("queryParameters")
-    # P7.c — surface a fresh session token when ``createSession=true``
-    # is set on the request body. The synchronous ``jobs.query`` shape
-    # accepts the field at the top level (the asynchronous
-    # ``jobs.insert`` shape places it under ``configuration.query``).
+    # Surface a fresh session token when ``createSession=true`` is set
+    # on the request body. The synchronous ``jobs.query`` shape accepts
+    # the field at the top level (the asynchronous ``jobs.insert``
+    # shape places it under ``configuration.query``).
     _validate_session_id(body)
     session_id = _maybe_mint_session(body)
 
-    # P7.c follow-up — when ``useLegacySql=true`` is set, run the
-    # narrow legacy-to-standard rewriter that handles the type-cast
-    # function subset (INTEGER/FLOAT/STRING/BOOLEAN/BYTES) and the
+    # When ``useLegacySql=true`` is set, run the narrow legacy-to-
+    # standard rewriter that handles the type-cast function subset
+    # (INTEGER/FLOAT/STRING/BOOLEAN/BYTES) and the
     # ``[project:dataset.table]`` reference shape. Queries using
     # other legacy-SQL features still surface a translation error
-    # downstream, but the simple compat-mode SELECTs now PASS.
+    # downstream, but the simple compat-mode SELECTs work.
     if use_legacy_sql:
         from bqemulator.sql.rewriter.legacy_sql import rewrite_legacy_to_standard
 
@@ -258,7 +258,7 @@ async def query(
             caller=caller,
         )
     except _SQL_EXECUTION_DOMAIN_ERRORS as exc:
-        # P3.a / ADR 0022 §3: surface SQL execution failures as
+        # ADR 0022 §3: surface SQL execution failures as
         # ``status.errorResult`` on the job rather than a direct HTTP
         # error. This matches real BigQuery's behaviour and is what
         # the BQ Python client expects for jobs.query — without this
@@ -302,15 +302,15 @@ async def query(
         "rows": rows,
         "totalRows": str(total_rows),
     }
-    # P7.b — surface the new response-metadata fields on jobs.query so
-    # the BQ Python client populates ``QueryJob.cache_hit``,
+    # Surface the response-metadata fields on jobs.query so the BQ
+    # Python client populates ``QueryJob.cache_hit``,
     # ``QueryJob.statement_type``, and ``QueryJob.num_dml_affected_rows``.
     # The values come from the executor's ``statistics.query`` block;
     # we mirror them onto the top-level body since the Python client
     # reads both shapes on the synchronous query path.
     _attach_query_metadata(response, job_meta)
-    # P7.c — attach the minted session token to the response shape and
-    # to the persisted JobMeta so async polls find the same id.
+    # Attach the minted session token to the response shape and to the
+    # persisted JobMeta so async polls find the same id.
     if session_id is not None:
         job_meta.statistics.setdefault("sessionInfo", {"sessionId": session_id})
         response["sessionInfo"] = {"sessionId": session_id}
@@ -379,7 +379,7 @@ async def _dry_run_response(
         # Dry-run resolver errors surface through the dry-run-specific
         # wire shape: ``error.location="q"`` (single character, not
         # ``"query"``) and the original identifier case from the BQ SQL
-        # (DuckDB lowercases identifiers through its parser). P7.c.
+        # (DuckDB lowercases identifiers through its parser).
         try:
             job_meta = await execute_query_job(
                 project_id,
@@ -400,13 +400,12 @@ async def _dry_run_response(
         captured = job_meta.statistics.get("query", {}).get("statementType")
         statement_type = captured or statement_type
     elif is_destructive:
-        # P7.b phase 2 follow-up #1 — destructive statements skip
-        # execution to avoid committing side effects, but BigQuery
-        # still reconstructs the schema preview from the DDL column
-        # list (CREATE TABLE) or the destination table's catalog
-        # entry (INSERT/UPDATE/DELETE/MERGE). Walk the AST in
-        # :func:`_destructive_dry_run_schema` to mirror the wire
-        # shape without running the statement.
+        # Destructive statements skip execution to avoid committing
+        # side effects, but BigQuery still reconstructs the schema
+        # preview from the DDL column list (CREATE TABLE) or the
+        # destination table's catalog entry (INSERT/UPDATE/DELETE/
+        # MERGE). Walk the AST in :func:`_destructive_dry_run_schema`
+        # to mirror the wire shape without running the statement.
         schema_fields = _destructive_dry_run_schema(
             bq_sql=bq_sql,
             statement_type=statement_type,
@@ -425,10 +424,9 @@ async def _dry_run_response(
     }
     if statement_type:
         body["statementType"] = statement_type
-        # P7.b phase 2 follow-up #1 — surface ddlOperationPerformed on
-        # the dry-run preview for DDL statements; the comparator's
-        # ``_compare_job_metadata`` reads this key when present on the
-        # recorded baseline.
+        # Surface ddlOperationPerformed on the dry-run preview for DDL
+        # statements; the comparator's ``_compare_job_metadata`` reads
+        # this key when present on the recorded baseline.
         from bqemulator.jobs.executor import _ddl_operation_for  # local import to avoid cycle
 
         ddl_op = _ddl_operation_for(statement_type)
@@ -446,7 +444,7 @@ async def _dry_run_response(
 #: Match ``Function not found: <name> at [L:C]`` where ``<name>`` is
 #: an unquoted identifier. The mapper renders this shape with DuckDB's
 #: lower-cased identifier; the rewrite below recovers the original
-#: casing from the BQ source SQL. P7.c.
+#: casing from the BQ source SQL.
 _FUNCTION_NOT_FOUND_RE = re.compile(
     r"Function not found: (?P<name>[A-Za-z_][A-Za-z0-9_]*)",
 )
@@ -466,8 +464,7 @@ def _rewrite_for_dry_run(exc: DomainError, *, bq_sql: str) -> None:
        caller's casing. The recorded BigQuery baseline carries the
        original case (e.g. ``BQEMU_NONEXISTENT_FUNCTION``), so we scan
        the BQ SQL for any identifier whose lower-cased form matches the
-       error's name and substitute back. Closes the P7.c
-       ``api_configuration/dry_run_invalid_function`` follow-up.
+       error's name and substitute back.
     """
     if exc.location == "query":
         exc.location = "q"
@@ -519,7 +516,6 @@ def _destructive_dry_run_schema(
 
     Returns an empty list when the AST shape doesn't match a known
     pattern — the caller falls back to the existing 0-col preview.
-    P7.b phase 2 follow-up #1.
     """
     import sqlglot
 
@@ -731,7 +727,7 @@ _DESTRUCTIVE_STATEMENT_TYPES = frozenset(
 #: base64-encoded protobuf, but clients treat the value as opaque so we
 #: mint a URL-safe random token and round-trip it verbatim. The catalog
 #: is process-local — sessions don't survive an emulator restart, same
-#: as TEMP TABLES and declared variables. P7.b phase 2 follow-up #1.
+#: as TEMP TABLES and declared variables.
 _SESSION_CATALOG: set[str] = set()
 
 
@@ -771,7 +767,7 @@ def _maybe_mint_session(query_config: dict[str, Any]) -> str | None:
     The token gets added to :data:`_SESSION_CATALOG` so subsequent jobs
     that reference it via ``connectionProperties.session_id`` survive
     the :func:`_validate_session_id` check. Returns ``None`` when the
-    caller did not request a new session. P7.c.
+    caller did not request a new session.
     """
     if not query_config.get("createSession"):
         return None
@@ -786,7 +782,7 @@ def _attach_session_info(statistics: dict[str, Any], session_id: str | None) -> 
     — the BQ Python client reads that field via
     ``QueryJob.session_info.session_id`` and feeds it into the next
     job's ``connectionProperties``. The emulator mirrors the shape so
-    a round-trip client survives unchanged. P7.c.
+    a round-trip client survives unchanged.
     """
     if session_id is None:
         return
@@ -804,7 +800,7 @@ def _check_schema_update_options(query_config: dict[str, Any]) -> None:
     disposition, or with WRITE_TRUNCATE disposition on a table
     partition."``. The emulator mirrors the rule so clients that rely
     on the rejection (idempotent re-writes, accidental-truncate
-    guard-rails) see the same wire shape. P7.c follow-up.
+    guard-rails) see the same wire shape.
     """
     options = query_config.get("schemaUpdateOptions")
     if not options:
@@ -837,7 +833,7 @@ def _validate_destination_layout_columns(
     schema.``; ``timePartitioning.field`` surfaces as
     ``The field specified for partitioning cannot be found in the
     schema.``. The emulator parses the SELECT's output schema via
-    sqlglot to recover the projected column names. P7.c follow-up.
+    sqlglot to recover the projected column names.
     """
     clustering = query_config.get("clustering") or {}
     clustering_fields = (clustering.get("fields") if isinstance(clustering, dict) else None) or []
@@ -905,7 +901,7 @@ def _apply_default_dataset(
     and fail with ``Referenced column / table not found``. The
     closure here rewrites the SQL through the
     :func:`qualify_unqualified_tables` pre-translator before the
-    executor sees it. P7.b phase 2 follow-up #1.
+    executor sees it.
     """
     default_dataset = query_config.get("defaultDataset")
     if not isinstance(default_dataset, dict):
@@ -1038,8 +1034,6 @@ async def _apply_write_append(
     WRITE_TRUNCATE doesn't need a post-processing step — the
     truncate-then-write semantic makes post-write = SELECT, which is
     already what the executor returns.
-
-    P7.b phase 2 follow-up #1.
     """
     if query_config.get("writeDisposition") != "WRITE_APPEND":
         return job_meta
@@ -1049,7 +1043,7 @@ async def _apply_write_append(
     meta, dest_field_names = resolved
 
     # Schema-superset rejection — ``ALLOW_FIELD_ADDITION`` bypass
-    # routed through ``_validate_write_append_schema`` (P7.c).
+    # routed through ``_validate_write_append_schema``.
     options = {opt.upper() for opt in (query_config.get("schemaUpdateOptions") or [])}
     allow_field_addition = "ALLOW_FIELD_ADDITION" in options
     arrow_table = JOB_RESULTS.get(job_id)
@@ -1106,7 +1100,7 @@ def _pad_table_with_null_columns(table: Any, new_fields: list[Any]) -> Any:
     BigQuery's ``ALLOW_FIELD_ADDITION`` semantics fill pre-existing
     rows with NULL for the newly-added columns. The arrow concat
     needs both tables to share a schema, so we pad the existing
-    table here before the concat. P7.c follow-up.
+    table here before the concat.
     """
     import pyarrow as pa
 
@@ -1129,7 +1123,7 @@ def _evolve_destination_schema(
     schema in place — future reads see the new columns. The emulator
     mirrors the mutation by composing a new ``TableSchema`` with the
     new fields appended (NULLABLE because the column didn't exist for
-    pre-existing rows). P7.c follow-up.
+    pre-existing rows).
     """
     from bqemulator.catalog.models import TableFieldSchema, TableSchema
     from bqemulator.storage.type_map import _DUCKDB_TO_BQ as _ARROW_TO_BQ
@@ -1161,7 +1155,6 @@ def _check_create_disposition(
     executing the query and rejects with ``404 notFound`` when the
     table does not exist and the disposition forbids creating it.
     Composes with both ``WRITE_TRUNCATE`` and ``WRITE_APPEND``.
-    P7.b phase 2 follow-up #1.
     """
     if query_config.get("createDisposition") != "CREATE_NEVER":
         return
@@ -1214,22 +1207,22 @@ async def insert_job(  # noqa: PLR0915 — linear job-type dispatch + async erro
         bq_sql = query_config.get("query", "")
         use_legacy_sql = query_config.get("useLegacySql", False)
         query_params = query_config.get("queryParameters")
-        # P7.b phase 2 follow-up #1 — pre-execution validations that
-        # match real BigQuery's submission-time rejections. These run
-        # before the dry-run / execution path so an invalid request
-        # gets the documented error envelope without touching the
-        # executor or persisting a job.
+        # Pre-execution validations that match real BigQuery's
+        # submission-time rejections. These run before the dry-run /
+        # execution path so an invalid request gets the documented
+        # error envelope without touching the executor or persisting
+        # a job.
         _validate_session_id(query_config)
-        # P7.c follow-up — schemaUpdateOptions are only legal with
-        # WRITE_APPEND (or WRITE_TRUNCATE on a partition decorator).
+        # schemaUpdateOptions are only legal with WRITE_APPEND (or
+        # WRITE_TRUNCATE on a partition decorator).
         _check_schema_update_options(query_config)
-        # P7.c follow-up — clustering / partitioning column references
-        # must exist on the SELECT projection.
+        # Clustering / partitioning column references must exist on
+        # the SELECT projection.
         _validate_destination_layout_columns(bq_sql, query_config)
-        # P7.c — mint a session token if ``createSession=true``; the
-        # token will be attached to ``statistics.sessionInfo.sessionId``
-        # on the response so the client can route follow-up jobs to
-        # the same session via ``connectionProperties.session_id``.
+        # Mint a session token if ``createSession=true``; the token
+        # will be attached to ``statistics.sessionInfo.sessionId`` on
+        # the response so the client can route follow-up jobs to the
+        # same session via ``connectionProperties.session_id``.
         session_id = _maybe_mint_session(query_config)
         if not dry_run:
             _check_create_disposition(
@@ -1237,15 +1230,14 @@ async def insert_job(  # noqa: PLR0915 — linear job-type dispatch + async erro
                 ctx=ctx,
                 request_project_id=project_id,
             )
-        # P7.b phase 2 follow-up #1 — apply ``defaultDataset`` to
-        # unqualified table refs in the SQL body. BigQuery's parser
-        # does this at submission time; the emulator's translator
-        # doesn't have access to the job-level config, so we rewrite
-        # before handing the SQL to the executor.
+        # Apply ``defaultDataset`` to unqualified table refs in the SQL
+        # body. BigQuery's parser does this at submission time; the
+        # emulator's translator doesn't have access to the job-level
+        # config, so we rewrite before handing the SQL to the executor.
         bq_sql = _apply_default_dataset(bq_sql, query_config, request_project_id=project_id)
 
-        # P7.c follow-up — narrow legacy-to-standard SQL rewriter for
-        # the ``useLegacySql=true`` compat-mode case (see the matching
+        # Narrow legacy-to-standard SQL rewriter for the
+        # ``useLegacySql=true`` compat-mode case (see the matching
         # branch in ``query`` above for the rationale).
         if use_legacy_sql:
             from bqemulator.sql.rewriter.legacy_sql import rewrite_legacy_to_standard
@@ -1253,7 +1245,7 @@ async def insert_job(  # noqa: PLR0915 — linear job-type dispatch + async erro
             bq_sql = rewrite_legacy_to_standard(bq_sql)
 
         if dry_run:
-            # P7.b — populate the schema preview + statementType + cacheHit
+            # Populate the schema preview + statementType + cacheHit
             # so the wire shape matches real BigQuery. Reuse the
             # ``_dry_run_response`` helper used by ``jobs.query``; the
             # ``insert`` shape adds a persisted JobMeta on top so async
@@ -1276,9 +1268,9 @@ async def insert_job(  # noqa: PLR0915 — linear job-type dispatch + async erro
             }
             if preview.get("statementType"):
                 statistics["query"]["statementType"] = preview["statementType"]
-            # P7.b phase 2 follow-up #1 — propagate ddlOperationPerformed
-            # so the recorded job_metadata diff for DDL dry-runs has
-            # the same key as a real BigQuery dry-run preview.
+            # Propagate ddlOperationPerformed so the recorded
+            # job_metadata diff for DDL dry-runs has the same key as a
+            # real BigQuery dry-run preview.
             if preview.get("ddlOperationPerformed"):
                 statistics["query"]["ddlOperationPerformed"] = preview["ddlOperationPerformed"]
             job_meta = JobMeta(
@@ -1293,8 +1285,8 @@ async def insert_job(  # noqa: PLR0915 — linear job-type dispatch + async erro
                 end_time=now,
                 etag=generate_etag(project_id, job_id, str(now)),
             )
-            # P7.c — even on a dry-run, BigQuery surfaces the minted
-            # session token on the response so the client can chain a
+            # Even on a dry-run, BigQuery surfaces the minted session
+            # token on the response so the client can chain a
             # subsequent (non-dry-run) job that references it.
             _attach_session_info(job_meta.statistics, session_id)
             ctx.catalog.upsert_job(job_meta)
@@ -1315,14 +1307,14 @@ async def insert_job(  # noqa: PLR0915 — linear job-type dispatch + async erro
                 caller=caller,
             )
         except _SQL_EXECUTION_DOMAIN_ERRORS as exc:
-            # P3.a / ADR 0022 §3: persist SQL execution failures on
-            # the job's ``status.errorResult`` so the BQ Python
-            # client's retry logic on POST /jobs (which retries on
-            # 409 / 503) sees a settled DONE+ERROR state instead of
-            # polling for a never-completing job. See the matching
-            # branch in the POST /queries handler above. Request-level
-            # errors (UnsupportedFeatureError, ValidationError)
-            # continue to surface as direct HTTP responses.
+            # ADR 0022 §3: persist SQL execution failures on the
+            # job's ``status.errorResult`` so the BQ Python client's
+            # retry logic on POST /jobs (which retries on 409 / 503)
+            # sees a settled DONE+ERROR state instead of polling for a
+            # never-completing job. See the matching branch in the
+            # POST /queries handler above. Request-level errors
+            # (UnsupportedFeatureError, ValidationError) continue to
+            # surface as direct HTTP responses.
             job_meta = _failed_job_meta(
                 project_id=project_id,
                 job_id=job_id,
@@ -1332,13 +1324,12 @@ async def insert_job(  # noqa: PLR0915 — linear job-type dispatch + async erro
                 now=ctx.clock.now(),
             )
         else:
-            # P7.b phase 2 follow-up #1 — SELECT-with-destination +
-            # WRITE_APPEND. BigQuery returns the destination's
-            # post-write content (pre-existing rows + SELECT rows)
-            # and enforces schema-superset rejection. Run AFTER the
-            # SELECT so we can compare its projection schema to the
-            # destination's. WRITE_TRUNCATE's wire shape happens to
-            # equal the SELECT projection (BQ truncates then writes,
+            # SELECT-with-destination + WRITE_APPEND. BigQuery returns
+            # the destination's post-write content (pre-existing rows +
+            # SELECT rows) and enforces schema-superset rejection. Run
+            # AFTER the SELECT so we can compare its projection schema
+            # to the destination's. WRITE_TRUNCATE's wire shape happens
+            # to equal the SELECT projection (BQ truncates then writes,
             # so post-write = SELECT) so the existing path covers it.
             job_meta = await _apply_write_append(
                 job_meta=job_meta,
@@ -1348,24 +1339,24 @@ async def insert_job(  # noqa: PLR0915 — linear job-type dispatch + async erro
                 caller=caller,
                 request_project_id=project_id,
             )
-        # P7.c — surface the session token on the JobMeta's statistics
-        # for both the success path and the error-result path so a
+        # Surface the session token on the JobMeta's statistics for
+        # both the success path and the error-result path so a
         # subsequent ``jobs.get`` poll finds the same field shape the
         # ``jobs.insert`` synchronous response carried.
         _attach_session_info(job_meta.statistics, session_id)
 
     elif "load" in config:
-        # G1 follow-up (2026-05-20): match BQ's async load wire shape —
-        # source-file processing errors return HTTP 200 with the
-        # job's ``status.errorResult`` populated rather than a 5xx.
-        # Validation errors (UnsupportedFeatureError /
-        # InvalidQueryError("Unknown source format ...") / missing
-        # destination) still bubble out as direct HTTP responses so
-        # existing tests (test_load_unsupported_format_returns_error)
-        # and the AVRO/ORC missing-extension fallback keep their 400
-        # / 501 contracts. Engine-level exceptions (DuckDB conversion
-        # / IO / binder errors, fastavro decode errors) get the
-        # async envelope treatment.
+        # Match BQ's async load wire shape — source-file processing
+        # errors return HTTP 200 with the job's ``status.errorResult``
+        # populated rather than a 5xx. Validation errors
+        # (UnsupportedFeatureError / InvalidQueryError("Unknown source
+        # format ...") / missing destination) still bubble out as
+        # direct HTTP responses so existing tests
+        # (test_load_unsupported_format_returns_error) and the
+        # AVRO/ORC missing-extension fallback keep their 400 / 501
+        # contracts. Engine-level exceptions (DuckDB conversion / IO
+        # / binder errors, fastavro decode errors) get the async
+        # envelope treatment.
         try:
             job_meta = await execute_load_job(project_id, job_id, config, ctx)
         except (UnsupportedFeatureError, InvalidQueryError, ValidationError):
@@ -1567,12 +1558,9 @@ def delete_job_canonical(
     """Delete a job (canonical BigQuery REST API path with ``/delete`` suffix).
 
     See https://cloud.google.com/bigquery/docs/reference/rest/v2/jobs/delete.
-    Real BigQuery returns ``200 OK`` with an empty JSON body (``{}``); the
-    trailing ``/delete`` segment and the success body's wire shape were
-    both surfaced by P2.f recording when the previous ``204``-with-no-
-    suffix shape returned ``404 Not Found`` against the live service.
-    The :func:`delete_job` alias below stays for back-compat with
-    earlier emulator releases that documented the short form.
+    Real BigQuery returns ``200 OK`` with an empty JSON body (``{}``)
+    on the ``/delete``-suffixed path. The :func:`delete_job` alias
+    below carries the short form for back-compat.
     """
     ctx.catalog.delete_job(project_id, job_id)
     JOB_RESULTS.pop(job_id, None)

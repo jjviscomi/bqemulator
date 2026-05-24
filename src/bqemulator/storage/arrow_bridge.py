@@ -390,10 +390,9 @@ def _coerce_arrow_binary(value: Any, _arrow_type: pa.DataType, _field: pa.Field 
       already validated the wire encoding upstream and a strict
       base64 check would mis-fire on the binary payload.
 
-    Any other type raises ``TypeError`` — previously such values went
-    through ``bytes(value)`` which tolerated iterables of ints and
-    masked real bugs. Strictness here matches the BigQuery contract
-    and surfaces caller errors loudly.
+    Any other type raises ``TypeError``. Tolerating arbitrary iterables
+    of ints would mask real caller bugs; strictness here matches the
+    BigQuery contract and surfaces those errors loudly.
     """
     import base64
 
@@ -521,7 +520,7 @@ def _coerce_to_arrow_value(
 
 
 # ---------------------------------------------------------------------------
-# Phase 9 specialized-type coercion helpers.
+# Specialized-type coercion helpers (GEOGRAPHY, RANGE, INTERVAL).
 # ---------------------------------------------------------------------------
 
 

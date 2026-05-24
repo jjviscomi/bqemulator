@@ -52,9 +52,9 @@ class TableFieldSchema(_Frozen):
     default_value_expression: str | None = None
     collation: str | None = None
     rounding_mode: str | None = None
-    # Phase 9 — RANGE field subtype. Required when ``type == "RANGE"``;
-    # the inner type is one of DATE / DATETIME / TIMESTAMP. Matches
-    # BigQuery's REST ``rangeElementType`` shape.
+    # RANGE field subtype. Required when ``type == "RANGE"``; the inner
+    # type is one of DATE / DATETIME / TIMESTAMP. Matches BigQuery's
+    # REST ``rangeElementType`` shape.
     range_element_type: TableFieldSchema | None = None
 
 
@@ -191,7 +191,7 @@ class TableMeta(_Frozen):
 
 
 # ---------------------------------------------------------------------------
-# Snapshot (Phase 7 — time travel + explicit snapshots)
+# Snapshot — time travel + explicit snapshots
 # ---------------------------------------------------------------------------
 
 

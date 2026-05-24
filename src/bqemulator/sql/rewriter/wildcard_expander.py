@@ -4,25 +4,17 @@ Rewrites BigQuery wildcard-table references like ``FROM dataset.events_*``
 into a ``UNION ALL`` of all matching tables, with ``_TABLE_SUFFIX``
 injected as a literal column per source table.
 
-Phase 3 shipped the basic expansion: every matching table is included,
-row-level ``_TABLE_SUFFIX`` filters apply after expansion.
-
-Phase 6 adds the advanced form — **``_TABLE_SUFFIX`` predicate pushdown**.
 When the query's WHERE clause references ``_TABLE_SUFFIX`` with an
-equality, range, or ``IN (...)`` predicate, we evaluate the predicate
+equality, range, or ``IN (...)`` predicate, the predicate is evaluated
 on the suffix list *before* building the UNION ALL, so only matching
 tables appear in the expansion. This matches BigQuery's cost model
 (only scanned tables bill bytes) and is essential for workloads that
 query date-sharded tables across large windows.
 
-Phase 11 (Bucket C closure 2026-05-15) generalises the predicate so
-the rewriter now also engages on fully-qualified 3-part references
-(``project.dataset.events_*``, optionally wrapped in a single pair of
-backticks) and on every wildcard reference in the query — not just
-the first. The pre-closure predicate looked only at the trailing
-2-part shape and a single ``re.search`` match, which left self-joins
-and project-qualified fixtures stranded with
-``Catalog Error: Table with name events_* does not exist``.
+The rewriter engages on every wildcard reference in the query and on
+all qualifier shapes (1-/2-/3-part, with or without backticks; whole-
+reference or per-segment backticked), so self-joins and project-
+qualified references resolve consistently with bare ones.
 
 This rewriter operates on the ORIGINAL BigQuery SQL (before SQLGlot
 transpilation) because SQLGlot strips the ``*`` during AST parsing.
@@ -103,8 +95,8 @@ def expand_wildcard_tables(
         if not matching_ids:
             return match.group(0)
 
-        # Phase 6 advanced form: restrict the matching set using any
-        # _TABLE_SUFFIX predicate present in the outer WHERE clause.
+        # Restrict the matching set using any _TABLE_SUFFIX predicate
+        # in the outer WHERE clause (pre-expansion pushdown).
         matching_ids = _apply_table_suffix_pushdown(matching_ids, prefix, bq_sql)
 
         if not matching_ids:

@@ -3,13 +3,9 @@
 BigQuery exposes a family of virtual tables under
 ``{project}.{dataset}.INFORMATION_SCHEMA.*`` that describe the catalog.
 
-Coverage shipped per phase:
-
-* Phase 6 — ``ROUTINES``.
-* Phase 7 — ``MATERIALIZED_VIEWS``.
-* Phase 8 — ``ROW_ACCESS_POLICIES``.
-* G4 (this module's 2026-05-21 expansion) — ``SCHEMATA``, ``TABLES``,
-  ``COLUMNS``, ``TABLE_OPTIONS``, ``VIEWS``, ``PARTITIONS``.
+Supported views: ``ROUTINES``, ``MATERIALIZED_VIEWS``,
+``ROW_ACCESS_POLICIES``, ``SCHEMATA``, ``TABLES``, ``COLUMNS``,
+``TABLE_OPTIONS``, ``VIEWS``, ``PARTITIONS``.
 
 This rewriter runs as a PRE-translation pass on the original BigQuery
 SQL (same stage as the wildcard expander). When it detects a reference
@@ -55,8 +51,7 @@ def _build_patterns(view_name: str) -> tuple[re.Pattern[str], re.Pattern[str], r
     so a fully-quoted reference like
     ``` `dataset.INFORMATION_SCHEMA.TABLES` ``` is consumed cleanly
     (without the trailing backtick, the substitution leaves a stray
-    closing backtick that breaks the downstream SQLGlot tokeniser —
-    pinned by the G4 fixture replay step).
+    closing backtick that breaks the downstream SQLGlot tokeniser).
     """
     escaped = re.escape(view_name.upper())
     project_ds = re.compile(
@@ -97,9 +92,11 @@ def expand_information_schema(
 ) -> str:
     """Replace every supported ``INFORMATION_SCHEMA.*`` virtual table inline.
 
-    The orchestrator chains all nine supported view expanders in
-    a fixed order: the three Phase 6/7/8 surfaces first (preserving
-    existing semantics) followed by the six G4 additions.
+    Chains the nine view expanders in a fixed order (``ROUTINES`` →
+    ``MATERIALIZED_VIEWS`` → ``ROW_ACCESS_POLICIES`` → ``SCHEMATA`` →
+    ``TABLES`` → ``COLUMNS`` → ``TABLE_OPTIONS`` → ``VIEWS`` →
+    ``PARTITIONS``) so each pass operates on the output of the
+    previous one.
     """
     out = expand_information_schema_routines(bq_sql, project_id, catalog)
     out = expand_information_schema_materialized_views(out, project_id, catalog)

@@ -642,10 +642,9 @@ class AtTimeZoneNumericOffsetRule(TranslationRule):
     DuckDB's ICU build does not accept numeric-offset literals such as
     ``'-04:30'`` or ``'+05:45'`` as a zone — it errors with
     ``Not implemented Error: Unknown TimeZone``. BigQuery accepts the
-    numeric-offset form natively, so workstream P8.e (2026-05-20)
-    rewrites ``ts AT TIME ZONE '<sign>HH:MM'`` to the algebraic
-    equivalent ``(ts AT TIME ZONE 'UTC') + INTERVAL '<sign>HH:MM' HOUR
-    TO MINUTE``.
+    numeric-offset form natively, so this rule rewrites
+    ``ts AT TIME ZONE '<sign>HH:MM'`` to the algebraic equivalent
+    ``(ts AT TIME ZONE 'UTC') + INTERVAL '<sign>HH:MM' HOUR TO MINUTE``.
 
     The input ``ts`` is a TIMESTAMPTZ (the BigQuery-emitted form after
     the SQLGlot transpile lifts the literal into a ``CAST AS TIMESTAMPTZ``).
@@ -725,9 +724,10 @@ class TimestampTruncWeekZoneSundayRule(TranslationRule):
     fixture, a separate AST pattern (no inner ``AtTimeZone``) will be
     needed.
 
-    Workstream P8.e (2026-05-20) added this rule once
-    ``tz_timestamp_trunc_named_zone_week`` recorded a Sunday baseline
-    that DuckDB's ISO-week truncation got wrong by one day.
+    BigQuery's WEEK starts on Sunday; DuckDB's ISO-week truncation
+    rounds to Monday, off by one day. This rule re-pivots the
+    ``TIMESTAMP_TRUNC`` to a Sunday-anchored boundary before
+    reapplying the zone.
     """
 
     name = "TIMESTAMP_TRUNC_WEEK_ZONE_SUNDAY"

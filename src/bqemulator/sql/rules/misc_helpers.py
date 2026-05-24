@@ -1,33 +1,32 @@
-"""Translation rules for the miscellaneous Bucket J builtins.
+"""Translation rules for miscellaneous GoogleSQL builtins.
 
 Functions covered:
 
-* ``IEEE_DIVIDE(a, b)`` — BigQuery semantic: IEEE-754 division that
-  returns ``±Inf`` / ``NaN`` instead of raising. We emit
+* ``IEEE_DIVIDE(a, b)`` — IEEE-754 division returning ``±Inf`` / ``NaN``
+  instead of raising on zero. Emits
   ``CAST(a AS DOUBLE) / CAST(b AS DOUBLE)`` so DuckDB's natural float
   arithmetic produces ``±Inf`` for zero divisors and ``NaN`` for
   ``0/0``. DuckDB does not raise on float division by zero.
 
 * ``FARM_FINGERPRINT(s)`` — BigQuery's FarmHash ``Fingerprint64``.
-  DuckDB ships no native FarmHash, so we route through the Python
-  helper ``bqemu_farm_fingerprint`` registered in
+  DuckDB ships no native FarmHash; routes through the Python helper
+  ``bqemu_farm_fingerprint`` registered in
   :mod:`bqemulator.sql.builtin_udfs`. The helper emits a deterministic
-  64-bit signed hash derived from SHA-256; the bit-pattern will *not*
-  match real BigQuery, so the fixture cascades to ADR 0023 §1.I (bit-
-  exact mismatch) once this rule is in place.
+  64-bit signed hash derived from SHA-256; bit-patterns are not
+  expected to match real BigQuery, so dependent fixtures cascade to
+  ADR 0023 §1.I (bit-exact mismatch).
 
-* ``RANGE_BUCKET(point, boundaries)`` — BigQuery contract: returns the
-  count of boundaries ≤ ``point``. We emit
+* ``RANGE_BUCKET(point, boundaries)`` — returns the count of
+  boundaries ≤ ``point``. Emits
   ``len(list_filter(boundaries, x -> x <= point))`` which mirrors the
-  semantic for the half-open [10, 20) → bucket 1 example.
+  semantic for the half-open ``[10, 20) → bucket 1`` example.
 
 * ``APPROX_TOP_SUM(value, weight, k)`` — BigQuery returns an array of
   ``{value, sum}`` STRUCT records ordered by weighted sum descending.
-  DuckDB ships only ``approx_top_k(value, k)`` (no weight). We rewrite
-  ``APPROX_TOP_SUM(value, weight, k)`` to ``approx_top_k(value, k)``
-  and let the fixture cascade to ADR 0023 §1.I (different ranking) —
-  the conformance fixture only asserts the result's *length* so the
-  array_length assertion still flips to XPASS.
+  DuckDB ships only ``approx_top_k(value, k)`` (no weight). Rewrites
+  ``APPROX_TOP_SUM(value, weight, k)`` to ``approx_top_k(value, k)``;
+  dependent fixtures cascade to ADR 0023 §1.I for the ranking
+  difference.
 """
 
 from __future__ import annotations
@@ -77,8 +76,8 @@ class FarmFingerprintRule(TranslationRule):
     """``FARM_FINGERPRINT(s)`` → ``bqemu_farm_fingerprint(s)``.
 
     Bit-pattern compatibility with real BigQuery is *not* guaranteed —
-    the helper uses a SHA-256-derived hash. The fixture cascades to
-    Bucket I (bit-exact value mismatch) once this rule lands.
+    the helper uses a SHA-256-derived hash. Dependent fixtures
+    cascade to ADR 0023 §1.I (bit-exact value mismatch).
     """
 
     name = "FARM_FINGERPRINT"
@@ -106,15 +105,13 @@ class RangeBucketRule(TranslationRule):
     Mirrors BigQuery's contract: returns the number of boundary
     entries that are less than or equal to *point*. The DuckDB
     expression evaluates the same predicate over the boundaries array
-    and returns the count. **P8.b NULL-propagation closure**: BigQuery's
-    contract is "if *point* is NULL or *boundaries* is NULL, returns
-    NULL". The bare ``list_filter`` over a NULL point would emit ``0``
-    (every ``x <= NULL`` predicate evaluates to NULL → falsy → filtered
-    out, leaving a 0-length array), which masks the NULL-propagation
-    semantic. The rewrite wraps the result in a ``CASE`` that returns
-    ``NULL`` when either input is NULL so the conformance fixture
-    ``math_range_bucket_null`` lands PASS without changing the happy
-    path.
+    and returns the count. BigQuery returns ``NULL`` when either
+    *point* or *boundaries* is ``NULL``; DuckDB's bare ``list_filter``
+    over a ``NULL`` point would emit ``0`` (every ``x <= NULL``
+    predicate evaluates to ``NULL`` → falsy → filtered out, leaving a
+    0-length array), masking the NULL-propagation semantic. The
+    rewrite wraps the result in a ``CASE`` that returns ``NULL`` when
+    either input is ``NULL``.
     """
 
     name = "RANGE_BUCKET"
@@ -133,7 +130,7 @@ class RangeBucketRule(TranslationRule):
             expressions=[exp.Column(this=exp.Identifier(this="x", quoted=False))],
         )
         happy_branch = _anon("len", _anon("list_filter", boundaries, lambda_expr))
-        # P8.b — NULL propagation guard. BigQuery returns NULL for
+        # NULL propagation guard: BigQuery returns NULL for
         # RANGE_BUCKET(NULL, …) and RANGE_BUCKET(…, NULL); DuckDB's bare
         # list_filter emits 0 in both cases.
         null_guard = exp.Or(
@@ -150,23 +147,19 @@ class RangeBucketRule(TranslationRule):
 class SignFloatTypeRule(TranslationRule):
     """``SIGN(<float_arg>)`` → NaN-aware FLOAT64 wrapper.
 
-    **P8.b type-preservation + NaN-propagation closure**: BigQuery's
-    ``SIGN(x)`` returns the same type as ``x`` (``INT64 → INT64``,
-    ``FLOAT64 → FLOAT64``, ``NUMERIC → NUMERIC``) and propagates
-    ``NaN`` (``SIGN(NaN) = NaN``). DuckDB's ``sign(x)`` always returns
-    ``TINYINT`` and emits ``0`` for ``NaN`` inputs. For FLOAT64-typed
-    arguments — explicit ``CAST(... AS FLOAT64)``, FLOAT64 literals
-    (``±Infinity`` / ``NaN`` string-cast), and FLOAT64 columns — the
-    rewrite emits ``CASE WHEN isnan(arg) THEN arg ELSE
-    CAST(SIGN(arg) AS DOUBLE) END`` so the result column surfaces as
-    FLOAT and ``NaN`` propagates. The ``math_sign_null`` /
-    ``math_sign_inf`` fixtures land PASS without disturbing the INT64
-    happy path. Detection is conservative: the rule only fires when
-    the immediate argument is a ``CAST`` whose target type contains
-    ``FLOAT`` or ``DOUBLE`` — the literal-cast pattern used by every
-    recorded fixture. A future closure can widen detection (column
-    type look-up, NUMERIC preservation); the rule's narrow scope keeps
-    it from disturbing the existing INT64 happy path.
+    BigQuery's ``SIGN(x)`` returns the same type as ``x`` (``INT64 →
+    INT64``, ``FLOAT64 → FLOAT64``, ``NUMERIC → NUMERIC``) and
+    propagates ``NaN`` (``SIGN(NaN) = NaN``). DuckDB's ``sign(x)``
+    always returns ``TINYINT`` and emits ``0`` for ``NaN`` inputs. For
+    FLOAT64-typed arguments — explicit ``CAST(... AS FLOAT64)``,
+    FLOAT64 literals (``±Infinity`` / ``NaN`` string-cast), and
+    FLOAT64 columns — the rewrite emits ``CASE WHEN isnan(arg) THEN
+    arg ELSE CAST(SIGN(arg) AS DOUBLE) END`` so the result column
+    surfaces as FLOAT and ``NaN`` propagates. Detection is
+    conservative: the rule fires only when the immediate argument is
+    a ``CAST`` whose target type contains ``FLOAT`` or ``DOUBLE``;
+    other FLOAT64-bearing shapes (column references, NUMERIC inputs)
+    fall back to DuckDB's TINYINT result.
     """
 
     name = "SIGN_FLOAT_TYPE"
@@ -214,17 +207,15 @@ class SignFloatTypeRule(TranslationRule):
 class CountIfEmptyZeroRule(TranslationRule):
     """``COUNTIF(p)`` → ``COALESCE(COUNTIF(p), 0)`` (wrapped only when needed).
 
-    **P8.b empty-input closure**: BigQuery's ``COUNTIF`` returns ``0``
-    for an empty input (the aggregate never sees a row, but the
-    grouping-key-less ``SELECT COUNTIF(...) FROM empty_t`` still emits
-    one row with ``0``). DuckDB's transpiled equivalent — typically
+    BigQuery's ``COUNTIF`` returns ``0`` for an empty input (the
+    aggregate never sees a row, but the grouping-key-less
+    ``SELECT COUNTIF(...) FROM empty_t`` still emits one row with
+    ``0``). DuckDB's transpiled equivalent — typically
     ``COUNT(*) FILTER (WHERE p)`` or ``SUM(CASE WHEN p THEN 1 END)``
     via SQLGlot — emits ``NULL`` for the same shape. Wrapping the
     typed ``CountIf`` node in ``COALESCE(..., 0)`` recovers
-    BigQuery's "always-INT64, never NULL" contract so the
-    ``agg_countif_empty`` fixture lands PASS without disturbing the
-    happy-path COUNTIF over non-empty sources (where ``COALESCE`` is a
-    no-op).
+    BigQuery's "always-INT64, never NULL" contract; on non-empty
+    sources the ``COALESCE`` is a no-op.
     """
 
     name = "COUNTIF_EMPTY_ZERO"
@@ -250,11 +241,11 @@ class CountIfEmptyZeroRule(TranslationRule):
 class ApproxTopSumRule(TranslationRule):
     """``APPROX_TOP_SUM(value, weight, k)`` → ``approx_top_k(value, k)``.
 
-    DuckDB has no weighted equivalent. The non-weighted top-k stand-in
-    preserves the BigQuery output shape (``ARRAY<value>``) so callers
-    that only inspect the array length (the slice-2 fixture pattern)
-    pass; queries that depend on the ranking value cascade to Bucket
-    I.
+    DuckDB has no weighted equivalent. The non-weighted top-k
+    stand-in preserves the BigQuery output shape (``ARRAY<value>``).
+    Callers that only inspect the array length recover the expected
+    cardinality; callers that depend on the ranking weight see
+    BigQuery's weighted ordering replaced by DuckDB's unweighted one.
     """
 
     name = "APPROX_TOP_SUM"

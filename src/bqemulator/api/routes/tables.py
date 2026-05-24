@@ -69,11 +69,11 @@ def _table_to_rest(t: TableMeta) -> dict[str, Any]:
         "lastModifiedTime": str(int(t.last_modified_time.timestamp() * 1000)),
         "numRows": str(t.num_rows),
         "numBytes": str(t.num_bytes),
-        # P7.c follow-up — BigQuery emits four additional byte-count
-        # fields on the table resource. The emulator has no
-        # logical-vs-physical storage model, so we mirror ``numBytes``
-        # across all four. Wire-shape parity for clients that key on
-        # the field names; values are not load-bearing.
+        # BigQuery emits four additional byte-count fields on the table
+        # resource. The emulator has no logical-vs-physical storage
+        # model, so we mirror ``numBytes`` across all four. Wire-shape
+        # parity for clients that key on the field names; values are
+        # not load-bearing.
         "numActiveLogicalBytes": str(t.num_bytes),
         "numTotalLogicalBytes": str(t.num_bytes),
         "numLongTermBytes": "0",
@@ -438,7 +438,7 @@ async def delete_table(
     async with ctx.engine.write_lock():
         ctx.engine.execute(f"DROP TABLE IF EXISTS {target_ref}")
         ctx.catalog.delete_table(project_id, dataset_id, table_id)
-        # Phase 7: clean up the AUTO snapshots for this table and any
+        # Clean up the AUTO snapshots for this table and any
         # MV-dependency rows — no point in retaining snapshots of a
         # dropped table. USER snapshots survive only if they were
         # already materialised in other datasets.

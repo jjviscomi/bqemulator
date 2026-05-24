@@ -4,8 +4,8 @@ The :class:`RowAccessPolicyManager` is the only place that mutates
 :class:`RowAccessPolicyMeta` rows in the catalog. It enforces:
 
 * The target table exists (raises :class:`NotFoundError` otherwise).
-* The target table is not a SNAPSHOT or MATERIALIZED_VIEW (Phase 7
-  rejects DML on those types; row access policies on read-only
+* The target table is not a SNAPSHOT or MATERIALIZED_VIEW (DML is
+  rejected on those types; row access policies on read-only
   artefacts would have no point of attachment).
 * ``policy_id`` matches BigQuery's grammar (``[A-Za-z0-9_]+``, max
   256 chars).

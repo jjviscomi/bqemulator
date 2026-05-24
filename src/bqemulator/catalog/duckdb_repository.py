@@ -19,9 +19,8 @@ so concurrent readers see the new state immediately. On
 :meth:`ensure_ready` the cache is hydrated by reading each catalog
 table and reconstructing the Pydantic models from the JSON column.
 
-Earlier work promoted this from an in-memory shim (the Phase 0 placeholder)
-to true persistence — backup/restore and seed/export round-trip the
-catalog because every entity now lands in DuckDB.
+Backup/restore and seed/export round-trip the catalog because every
+entity lands in DuckDB.
 """
 
 from __future__ import annotations
@@ -381,12 +380,12 @@ class DuckDBCatalogRepository(CatalogRepository):
                 )
                 # Cascade-delete every dataset-scoped resource. Without
                 # these, deleting+recreating the same ``(project, dataset)``
-                # leaks Phase 7 (snapshots, MVs, MV deps) and Phase 8 (RAPs)
-                # rows past the dataset drop. The next REST POST against
-                # the same table returns 409 Conflict because the legacy
-                # row is still keyed by the same triple. The in-memory
-                # cache cascade above already handles its mirror; this
-                # block keeps the persistent DuckDB-backed catalog in sync.
+                # leaks snapshots, MVs, MV deps, and RAPs past the dataset
+                # drop. The next REST POST against the same table returns
+                # 409 Conflict because the orphaned row is still keyed by
+                # the same triple. The in-memory cache cascade above
+                # already handles its mirror; this block keeps the
+                # persistent DuckDB-backed catalog in sync.
                 self._engine.execute(
                     f'DELETE FROM "{CATALOG_SCHEMA}"."row_access_policies" '
                     f"WHERE project_id = ? AND dataset_id = ?",

@@ -175,9 +175,9 @@ class Settings(BaseSettings):
         default=True,
         description=(
             "Install and load DuckDB's ``avro`` extension at engine boot "
-            "(G1 — load/extract Avro). Disable in constrained deployments "
-            "that cannot reach the DuckDB extension repository at "
-            "``extensions.duckdb.org``. When disabled, ``AVRO`` load + "
+            "(needed for Avro load/extract). Disable in constrained "
+            "deployments that cannot reach the DuckDB extension repository "
+            "at ``extensions.duckdb.org``. When disabled, ``AVRO`` load + "
             "extract jobs surface ``UnsupportedFeatureError``; ``ORC`` "
             "load continues to work because it uses the Python "
             "``pyorc`` package (optional ``[orc]`` extra) rather than a "
@@ -185,7 +185,7 @@ class Settings(BaseSettings):
         ),
     )
 
-    # -- Upload host (G2 — multipart / resumable upload endpoints) ---------
+    # -- Upload host (multipart / resumable upload endpoints) -------------
     upload_max_bytes: int = Field(
         default=1024 * 1024 * 1024,
         ge=1024,

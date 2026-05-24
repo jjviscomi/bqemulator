@@ -1,4 +1,4 @@
-"""Phase 8 — row access policy + dataset access-entries catalog schema.
+"""Row access policy + dataset access-entries catalog schema.
 
 Adds two persistent tables under the reserved ``_bqemulator_catalog``
 schema:
@@ -34,11 +34,11 @@ if TYPE_CHECKING:  # pragma: no cover
 __all__ = ["DESCRIPTION", "VERSION", "up"]
 
 VERSION = 3
-DESCRIPTION = "Phase 8 — row access policy + dataset access-entries catalog tables"
+DESCRIPTION = "row access policy + dataset access-entries catalog tables"
 
 
 def up(engine: DuckDBEngine) -> None:
-    """Create the Phase 8 catalog tables."""
+    """Create the row access + dataset access-entries catalog tables."""
     engine.execute(
         f"""
         CREATE TABLE IF NOT EXISTS "{CATALOG_SCHEMA}"."row_access_policies" (

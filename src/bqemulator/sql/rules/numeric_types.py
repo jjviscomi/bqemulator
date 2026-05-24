@@ -11,8 +11,9 @@
   UDF (see :mod:`bqemulator.sql.builtin_udfs`) which is registered with
   return type ``DECIMAL(38, 10)`` so the REST schema renderer surfaces
   the column as BIGNUMERIC (any DECIMAL whose ``scale > 9`` is BIGNUMERIC
-  per ADR 0023 §1.B closure). Values exceeding DECIMAL(38, …)'s
-  38-digit cap still cannot be represented — those cascade to Bucket I.
+  per ADR 0023 §1.B). Values exceeding DECIMAL(38, …)'s 38-digit cap
+  cannot be represented and cascade to ADR 0023 §1.I (bit-exact value
+  mismatch).
 
 The rules match the typed SQLGlot nodes ``exp.ParseJSON``-style — for
 ``PARSE_NUMERIC`` / ``PARSE_BIGNUMERIC`` SQLGlot does not synthesise a

@@ -35,10 +35,10 @@ GROUPS_HEADER = "x-bqemu-groups"
 Each entry may be either a bare email (``admins@example.com``) or
 the full IAM-member form (``group:admins@example.com``); the parser
 strips the ``group:`` prefix so the matcher always sees bare emails.
-This dual-form tolerance lets P2.d conformance fixtures that
-substitute ``${GROUP}`` (which carries ``group:<addr>``) into
-``headers.json`` produce the same caller identity as integration
-tests that pass bare emails.
+This dual-form tolerance lets conformance fixtures that substitute
+``${GROUP}`` (which carries ``group:<addr>``) into ``headers.json``
+produce the same caller identity as integration tests that pass bare
+emails.
 """
 
 DEFAULT_CALLER = "user:anonymous@bqemulator.local"

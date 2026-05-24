@@ -1,9 +1,9 @@
-r"""Avro row-format serializer for the Storage Read API (G3 / ADR 0030).
+r"""Avro row-format serializer for the Storage Read API (ADR 0030).
 
 Real BigQuery's Storage Read API supports two wire formats:
 
-* **Arrow IPC** — Python / Go / Node default. Phase 4 ships this.
-* **Apache Avro** — Java client default. G3 closes this gap.
+* **Arrow IPC** — Python / Go / Node default.
+* **Apache Avro** — Java client default.
 
 The Storage Read Avro wire contract is "schema-once on the session,
 naked binary rows per response chunk":

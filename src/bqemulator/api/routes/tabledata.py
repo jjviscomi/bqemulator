@@ -28,7 +28,7 @@ _Ctx = Annotated[AppContext, Depends(get_context)]
 def _build_arrow_schema(fields_raw: list[dict[str, Any]]) -> pa.Schema:
     """Build a pyarrow schema from BigQuery REST schema fields.
 
-    Phase 9 specialized types are stamped with metadata so the
+    Specialized BigQuery types are stamped with metadata so the
     arrow_bridge coercer can dispatch on the BigQuery type when
     converting JSON input. GEOGRAPHY backs onto ``pa.string()`` and
     carries ``bq_type=GEOGRAPHY`` so the coercer turns inbound WKT
@@ -169,11 +169,10 @@ async def insert_all(
     ]
     arrow_schema = _build_arrow_schema(fields_raw)
 
-    # P7.c follow-up — when ``skipInvalidRows=true`` is set, attempt
-    # to convert each row individually and capture the per-row error
-    # so the request returns a partial success (matching BigQuery's
-    # ``insertErrors[]`` wire shape). Without the flag, the historical
-    # behaviour is preserved: the first bad row aborts the whole
+    # When ``skipInvalidRows=true`` is set, attempt to convert each row
+    # individually and capture the per-row error so the request returns
+    # a partial success (matching BigQuery's ``insertErrors[]`` wire
+    # shape). Without the flag, the first bad row aborts the whole
     # request with an internal error.
     insert_errors: list[dict[str, Any]] = []
     if skip_invalid_rows:
@@ -219,10 +218,9 @@ async def insert_all(
         updated = table_meta.model_copy(update={"num_rows": new_count})
         ctx.catalog.update_table(updated)
 
-        # Phase 7: capture a snapshot and emit TableDataChanged (the
-        # latter was already being emitted — snapshots.record_change
-        # publishes it again, but the event bus is cheap and
-        # subscribers must be idempotent).
+        # Capture a snapshot and emit TableDataChanged.
+        # ``snapshots.record_change`` publishes the event; subscribers
+        # are required to be idempotent.
         ctx.snapshots.record_change(project_id, dataset_id, table_id)
 
     response: dict[str, Any] = {"kind": "bigquery#tableDataInsertAllResponse"}
@@ -244,8 +242,7 @@ def _format_insert_error(
     Real BigQuery returns ``{index, errors: [{reason, location, debugInfo,
     message}, ...]}`` per failing row. The emulator's best-effort
     location is the first column name from the request's ``json``
-    payload — clients use this to highlight the offending field. P7.c
-    follow-up.
+    payload — clients use this to highlight the offending field.
     """
     location = ""
     bad_value: Any = None
@@ -265,7 +262,7 @@ def _format_insert_error(
     # (bad value): <value>``. Rebuild the message in that shape using
     # the failing field's declared type + the offending value, falling
     # back to the raw exception text when the location isn't a known
-    # column. P7.c follow-up.
+    # column.
     message = str(exc)
     if location:
         try:
@@ -293,7 +290,7 @@ def _bq_type_name_for(arrow_type: Any) -> str:
 
     The mapping covers the primitive types the emulator's insertAll
     converter rejects; the fallback name is the arrow type's
-    ``str(...)``. P7.c follow-up.
+    ``str(...)``.
     """
     name = str(arrow_type)
     return _ARROW_TO_BQ_USER_NAME.get(name, name)
@@ -332,7 +329,7 @@ def list_tabledata(
     Supports BigQuery's ``selectedFields`` (CSV column projection) and
     ``pageToken`` (opaque continuation token). The emulator's
     ``pageToken`` is a literal stringified offset — opaque to clients,
-    cheap to compute, and consistent across re-reads. P7.c follow-up.
+    cheap to compute, and consistent across re-reads.
     """
     table_meta = ctx.catalog.get_table(project_id, dataset_id, table_id)
     if table_meta is None:
@@ -383,7 +380,6 @@ def _parse_selected_fields(selected_fields: str | None, table_meta: Any) -> str:
     emulator passes the request through to DuckDB which raises
     ``Catalog Error`` — the existing error mapper translates that to
     the BQ wire shape. Returns ``"*"`` when no projection is requested.
-    P7.c follow-up.
     """
     if not selected_fields:
         return "*"

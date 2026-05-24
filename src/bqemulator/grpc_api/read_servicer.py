@@ -236,13 +236,11 @@ class BigQueryReadHandler(grpc.GenericRpcHandler):
         # Resolve the caller from gRPC metadata up-front so both the
         # row_restriction filter pre-pass (inside ``_build_read_sql``)
         # and the row-access policy rewrite below see the same
-        # ``CallerIdentity``. Pre-ADR-0040 the caller was resolved
-        # *after* ``_build_read_sql`` ran, so any caller-identity
-        # function (``SESSION_USER()``, ``CURRENT_USER()``,
-        # ``@@session.user``) inside a ``row_restriction`` folded to
-        # the ``ANONYMOUS_CALLER`` sentinel regardless of the actual
-        # ``X-Bqemu-Caller`` header. Hoisting the resolution closes
-        # that gap.
+        # ``CallerIdentity``. Caller-identity functions
+        # (``SESSION_USER()``, ``CURRENT_USER()``, ``@@session.user``)
+        # inside a ``row_restriction`` must fold to the value provided
+        # by the ``X-Bqemu-Caller`` header rather than the
+        # ``ANONYMOUS_CALLER`` sentinel; resolving here guarantees that.
         caller = resolve_caller_from_metadata(
             list(context.invocation_metadata())
             if hasattr(context, "invocation_metadata")
@@ -251,11 +249,11 @@ class BigQueryReadHandler(grpc.GenericRpcHandler):
 
         sql = _build_read_sql(target_ref, selected_fields, read_session, caller=caller)
 
-        # Phase 8: enforce row access policies on the Storage Read API
-        # too. The caller was already resolved above. The rewriter
-        # wraps the protected table in a derived subquery with the
-        # policy's filter (or WHERE FALSE on no-match). We then run
-        # that rewritten SQL against DuckDB. Tables with no policies
+        # Enforce row access policies on the Storage Read path. The
+        # caller was already resolved above. The rewriter wraps the
+        # protected table in a derived subquery with the policy's
+        # filter (or WHERE FALSE on no-match). We then run that
+        # rewritten SQL against DuckDB. Tables with no policies
         # short-circuit at the rewriter so the cheap-path keeps the
         # original DuckDB SQL.
         if self._ctx.catalog.list_all_row_access_policies():
@@ -349,10 +347,10 @@ class BigQueryReadHandler(grpc.GenericRpcHandler):
         # Build the response. Real BigQuery echoes ``read_options`` back on
         # the session so clients can confirm the projection / filter /
         # compression they asked for; the wire-format conformance suite
-        # asserts that shape (P3.d). The schema field carried on the
-        # session depends on the chosen wire format — Arrow sessions
-        # carry ``arrow_schema``, Avro sessions carry ``avro_schema``
-        # (proto oneof).
+        # asserts that shape. The schema field carried on the session
+        # depends on the chosen wire format — Arrow sessions carry
+        # ``arrow_schema``, Avro sessions carry ``avro_schema`` (proto
+        # oneof).
         session_kwargs: dict[str, Any] = {
             "name": state.session_name,
             "table": read_session.table,
@@ -398,8 +396,8 @@ class BigQueryReadHandler(grpc.GenericRpcHandler):
         # so a stateless client can deserialise the payload without
         # re-fetching the session; subsequent messages omit it. Real
         # BigQuery also surfaces a ``stats.progress`` heartbeat on
-        # every message — the wire-format conformance suite (P3.d)
-        # asserts both keys are present.
+        # every message — the wire-format conformance suite asserts
+        # both keys are present.
         from bqemulator.streaming.avro_serializer import (
             serialize_arrow_table_to_avro_rows,
         )
@@ -419,8 +417,8 @@ class BigQueryReadHandler(grpc.GenericRpcHandler):
             # documented as ``[deprecated = true]`` and real BigQuery
             # omits them (proto3 default-skip). The outer
             # ``ReadRowsResponse.row_count`` carries the canonical row
-            # count; the wire-format conformance suite (P3.d) asserts
-            # the inner field stays at its default.
+            # count; the wire-format conformance suite asserts the inner
+            # field stays at its default.
             kwargs: dict[str, Any] = {
                 "row_count": batch.num_rows,
                 "stats": types.StreamStats(
@@ -475,8 +473,8 @@ class BigQueryReadHandler(grpc.GenericRpcHandler):
         fraction. The emulator implements a stub: it mints two fresh
         stream names that route ReadRows back to the same underlying
         data (effectively a no-op split). This is sufficient for
-        wire-format conformance (P3.d) — clients that rely on the
-        split semantics for parallelism are out of scope per the
+        wire-format conformance — clients that rely on the split
+        semantics for parallelism are out of scope per the
         compatibility matrix.
         """
         from google.cloud.bigquery_storage_v1 import types

@@ -1,4 +1,4 @@
-"""Upload-host REST routes — G2 (multipart + resumable upload).
+"""Upload-host REST routes — multipart + resumable upload.
 
 The official BigQuery client libraries (Python, Node, Go, Java) all
 issue ``client.load_table_from_file(...)`` style calls through a

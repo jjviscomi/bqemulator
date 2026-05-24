@@ -32,17 +32,10 @@ Column-count mismatch — fewer schema columns than ``SELECT``
 projections, or vice versa — is intentionally left alone. SQLGlot's
 transpile will still hand the original combined form to DuckDB and
 the user will see the same DuckDB parser error they saw before, which
-is no worse than the pre-rewriter behaviour. A future iteration could
-emit a BigQuery-shaped error here, but matching BQ's exact wording
-across "column count" / "type mismatch" / "duplicate column" surface
-area is its own piece of work.
-
-Discovery: 2026-05-17 during P2.d Phase 8 conformance recording. All
-20 authored fixtures used the combined form; all 20 failed conformance
-with the DuckDB parse error. The fixtures were temporarily rewritten
-to the bare form so P2.d could close; this rewriter closes the
-underlying gap so future fixture authors (and end-users running
-DDL through the emulator) can use the canonical BigQuery idiom.
+is no worse than the pre-rewriter behaviour. Matching BQ's exact
+wording for the "column count" / "type mismatch" / "duplicate column"
+shapes is outside the scope of this rewriter; the bare CTAS path
+surfaces those errors via the standard pipeline.
 """
 
 from __future__ import annotations

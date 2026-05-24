@@ -20,8 +20,7 @@ The rewrite is conservative: it only touches the bare identifier
 spellings (``_PARTITIONDATE`` / ``_PARTITIONTIME``), case-insensitive,
 word-bounded. References inside backtick-quoted strings or string
 literals are left alone — they're already not pseudo-column
-references. P7.c follow-up — closes the three
-``partitioning_clustering/partition_prune_*`` XFAILs.
+references.
 """
 
 from __future__ import annotations

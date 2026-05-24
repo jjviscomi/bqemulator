@@ -35,10 +35,10 @@ The function short-circuits when the SQL contains nothing that needs
 rewriting (the common case for queries that don't touch INTERVAL or
 RANGE syntax).
 
-Other Phase 9 transforms (``ST_*`` renames, ``RANGE_*`` expansions,
-``JUSTIFY_*``) all happen in the *post-translator* rule pass because
-their syntax parses cleanly under DuckDB's grammar — only the names
-and call shapes need rewriting.
+Other specialized-type transforms (``ST_*`` renames, ``RANGE_*``
+expansions, ``JUSTIFY_*``) happen in the *post-translator* rule pass
+because their syntax parses cleanly under DuckDB's grammar — only the
+names and call shapes need rewriting.
 """
 
 from __future__ import annotations

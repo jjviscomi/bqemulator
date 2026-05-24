@@ -70,7 +70,7 @@ _SESSIONS: dict[str, ReadSessionState] = {}
 # Real BigQuery returns 1 stream regardless of ``max_stream_count``
 # when the underlying table is under this size — empirically ~1 MB.
 # Matched by :func:`create_read_session` so the wire-format
-# conformance suite (P3.d) holds for small fixtures.
+# conformance suite holds for small fixtures.
 _SMALL_TABLE_BYTE_THRESHOLD = 1_000_000
 
 
@@ -121,7 +121,7 @@ def create_read_session(
     # ``max_stream_count`` as an upper bound and returns fewer streams
     # when the table is too small to benefit from parallel reads —
     # empirically, tables under ~1 MB get 1 stream regardless. Match
-    # that contract so the gRPC-corpus wire-format diff (P3.d) holds.
+    # that contract so the gRPC-corpus wire-format diff holds.
     num_rows = arrow_table.num_rows
     table_bytes = arrow_table.nbytes
     requested = max(max_streams, 1)
@@ -215,9 +215,9 @@ def split_stream(stream_name: str, fraction: float) -> tuple[str, str] | None:
     Both are registered with the owning session so subsequent
     ``ReadRows`` calls route through :func:`get_stream_data`. Returns
     ``None`` if the stream is not found. The wire-format conformance
-    suite (P3.d) asserts that ``SplitReadStream`` returns a non-empty
-    response shape; the emulator does not optimise parallelism (the
-    BQ compatibility matrix flags this as a hint-only surface).
+    suite asserts that ``SplitReadStream`` returns a non-empty response
+    shape; the emulator does not optimise parallelism (the BQ
+    compatibility matrix flags this as a hint-only surface).
     """
     session_name = "/".join(stream_name.split("/")[:-2])
     state = _SESSIONS.get(session_name)
@@ -280,14 +280,13 @@ def serialize_arrow_record_batch(batch: pa.RecordBatch) -> bytes:
     separately via ``ReadSession.arrow_schema.serialized_schema`` and
     the first ``ReadRowsResponse.arrow_schema`` field.
 
-    Earlier (≤ v1.0.0) the read servicer packed a full IPC stream
-    (schema framing + batches + EOS marker) into ``serialized_record_batch``.
-    Real Storage Read clients tripped on the format mismatch — e.g.
-    ``google-cloud-bigquery-storage``'s ``reader.to_arrow(session)``
-    calls ``pyarrow.ipc.read_record_batch(...)`` which raises
-    ``OSError: Expected IPC message of type record batch but got schema``.
-    This function emits the documented format so those clients work
-    unchanged. See issue #15.
+    Packing a full IPC stream (schema framing + batches + EOS marker)
+    into ``serialized_record_batch`` would trip real Storage Read
+    clients — e.g. ``google-cloud-bigquery-storage``'s
+    ``reader.to_arrow(session)`` calls ``pyarrow.ipc.read_record_batch(...)``
+    which raises ``OSError: Expected IPC message of type record batch
+    but got schema``. This function emits the documented format so
+    those clients work unchanged.
 
     The implementation writes the batch through ``pa.ipc.new_stream``
     to a transient buffer, then re-reads the stream with a

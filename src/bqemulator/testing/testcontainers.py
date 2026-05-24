@@ -55,12 +55,12 @@ class BigQueryEmulatorContainer(DockerContainer):
         self.with_env("BQEMU_GRPC_HOST", "0.0.0.0")  # noqa: S104
         self.with_env("BQEMU_REST_PORT", str(rest_port))
         self.with_env("BQEMU_GRPC_PORT", str(grpc_port))
-        # Phase 10 admin endpoints are off by default in the published
-        # image. The testcontainer wrapper always opts them in so the
-        # Python / Node / Go / Java E2E suites can exercise the
-        # ``/admin/*`` surface without a custom image build.
+        # Admin endpoints are off by default in the published image.
+        # The testcontainer wrapper always opts them in so the Python /
+        # Node / Go / Java E2E suites can exercise the ``/admin/*``
+        # surface without a custom image build.
         self.with_env("BQEMU_ADMIN_ENABLED", "1")
-        # G1: load/extract jobs that reference ``gs://`` URIs need a
+        # Load/extract jobs that reference ``gs://`` URIs need a
         # host→container bind mount so the file the test writes on the
         # host is visible to the executor inside the container. The
         # caller passes a host directory; the wrapper mounts it at

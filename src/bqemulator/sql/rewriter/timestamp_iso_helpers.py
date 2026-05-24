@@ -8,13 +8,13 @@ DuckDB's own ``STRFTIME`` / ``STRPTIME`` reject the BigQuery-only
 silently accept ``%Z`` named-zone abbreviations such as ``IST`` that
 real BigQuery rejects with ``Invalid time zone: <zone>``.
 
-Workstream **P8.e (2026-05-20)** added this pre-translator to route
-the affected calls through Python-backed helpers
-(:func:`bqemulator.sql.builtin_udfs.bqemu_format_timestamp_iso` and
-:func:`bqemulator.sql.builtin_udfs.bqemu_parse_timestamp_iso`) while
-the BigQuery AST still carries the zone argument. The helpers handle
-``%Ez`` natively, preserve the zone conversion, and validate ``%Z``
-named zones against ``zoneinfo.ZoneInfo`` (strict IANA semantics).
+This pre-translator routes the affected calls through Python-backed
+helpers (:func:`bqemulator.sql.builtin_udfs.bqemu_format_timestamp_iso`
+and :func:`bqemulator.sql.builtin_udfs.bqemu_parse_timestamp_iso`)
+while the BigQuery AST still carries the zone argument. The helpers
+handle ``%Ez`` natively, preserve the zone conversion, and validate
+``%Z`` named zones against ``zoneinfo.ZoneInfo`` (strict IANA
+semantics).
 
 The rewriter short-circuits when no ``FORMAT_TIMESTAMP`` /
 ``PARSE_TIMESTAMP`` reference appears in the input.

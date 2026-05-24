@@ -1,7 +1,7 @@
 """gRPC server factory.
 
 Hosts the standard health service plus the BigQuery Storage Read API
-(Phase 4+) and Storage Write API (Phase 5+).
+and Storage Write API.
 """
 
 from __future__ import annotations

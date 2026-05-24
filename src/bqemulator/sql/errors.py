@@ -3,7 +3,7 @@
 These wrap the domain-error hierarchy with convenience constructors
 for common SQL failure modes.
 
-P3.a / ADR 0022 §3 ``Error parity``: :func:`sql_parse_error` rewrites
+ADR 0022 §3 ``Error parity``: :func:`sql_parse_error` rewrites
 common SQLGlot parse-error wordings to BigQuery's documented
 ``Syntax error: <kind> at [L:C]`` wire format and always sets
 ``location="query"`` so the recorded conformance fixtures match. The
@@ -47,8 +47,8 @@ _SQLGLOT_UNTERMINATED_STRING_RE = re.compile(
 )
 #: SQLGlot's ``Required keyword: 'expressions' missing for ... Concat``,
 #: emitted when ``CONCAT()`` is called with zero arguments. BigQuery
-#: replies with the multi-line signature-not-found message, which the
-#: P3.a recorder captured as a fixed-text ``message_pattern``.
+#: replies with the multi-line signature-not-found message that
+#: conformance fixtures pin as a fixed-text ``message_pattern``.
 _SQLGLOT_CONCAT_NO_ARGS_RE = re.compile(
     r"Required keyword: 'expressions' missing for .*Concat",
     re.IGNORECASE,

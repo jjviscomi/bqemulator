@@ -1,12 +1,12 @@
-"""DDL router for Phase 7 statements.
+"""DDL router for versioning statements.
 
 ``CREATE SNAPSHOT TABLE``, ``CREATE TABLE ... CLONE``,
 ``CREATE MATERIALIZED VIEW``, ``REFRESH MATERIALIZED VIEW``, ``DROP
-SNAPSHOT TABLE``, and ``DROP MATERIALIZED VIEW`` are all Phase-7
+SNAPSHOT TABLE``, and ``DROP MATERIALIZED VIEW`` are versioning DDL
 statements that SQLGlot either round-trips opaquely or rejects. They
 never go through the regular SQL translator — instead, the job
 executor asks this module whether the incoming statement is a
-Phase-7 DDL, and if so delegates the whole job to the matching
+versioning DDL, and if so delegates the whole job to the matching
 manager.
 
 The detection is regex-based (similar in spirit to
@@ -193,10 +193,10 @@ class VersioningDDLRouter:
             return self._project_id, parts[0], parts[1]
         if len(parts) == _PARTS_BARE:
             raise InvalidQueryError(
-                "Phase 7 DDL requires a fully-qualified or dataset-qualified table reference",
+                "Versioning DDL requires a fully-qualified or dataset-qualified table reference",
             )
         raise InvalidQueryError(
-            f"Could not parse Phase 7 DDL target: {raw!r}",
+            f"Could not parse versioning DDL target: {raw!r}",
         )
 
 

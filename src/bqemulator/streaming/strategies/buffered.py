@@ -91,7 +91,7 @@ class BufferedWriteStrategy:
 
         ``offset`` is the exclusive upper bound in BigQuery's semantics:
         every row at index ``< offset`` becomes visible. ``offset`` must be
-        strictly greater than the previously flushed offset and at most
+        strictly greater than the prior flushed offset and at most
         ``next_offset`` (the count of rows buffered so far).
         """
         if stream.state is not WriteStreamState.OPEN:
@@ -102,8 +102,8 @@ class BufferedWriteStrategy:
         # Real BigQuery wording for an out-of-range FlushRows offset is
         # "Offset N is beyond the end of the stream Entity: <stream>"
         # — including the entity name in the message itself so the
-        # error surfaces from one log line. The gRPC-corpus
-        # conformance suite (P3.d) asserts this contract.
+        # error surfaces from one log line. The gRPC-corpus conformance
+        # suite asserts this contract.
         if offset > stream.next_offset:
             return FlushOutcome(
                 ok=False,
