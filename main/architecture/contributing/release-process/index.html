@@ -5410,7 +5410,7 @@ remain for ≥2 MINOR versions or 6 months.</p>
 </tr>
 <tr>
 <td><a href="https://github.com/jjviscomi/bqemulator/blob/main/scripts/changelog.py"><code>scripts/changelog.py</code></a></td>
-<td>Move the <code>## [Unreleased]</code> body into a new <code>## [X.Y.Z] — YYYY-MM-DD</code> section. Refuses to finalise an empty <code>Unreleased</code> section by default.</td>
+<td>Validate the operator-authored <code>## [X.Y.Z]</code> section and stamp today's date into its header (<code>## [X.Y.Z] - YYYY-MM-DD</code>). Refuses to stamp a missing or empty section.</td>
 </tr>
 <tr>
 <td><a href="https://github.com/jjviscomi/bqemulator/blob/main/scripts/release.py"><code>scripts/release.py</code></a></td>
@@ -5569,7 +5569,7 @@ a dedicated exit code):</p>
 <p>This re-runs steps 4–5 of the dry-run for real, then:</p>
 <ul>
 <li>Writes the new <code>__version__</code>.</li>
-<li>Rewrites <code>CHANGELOG.md</code> (<code>Unreleased</code> → <code>[X.Y.Z] — YYYY-MM-DD</code>).</li>
+<li>Stamps the release date into the operator-authored <code>## [X.Y.Z]</code> section in <code>CHANGELOG.md</code>.</li>
 <li>Stages every change with <code>git add -A</code>.</li>
 <li>Creates the release commit (<code>release: bump to vX.Y.Z</code>).</li>
 <li>Creates an annotated tag (<code>vX.Y.Z</code>). When
@@ -5705,10 +5705,9 @@ the next commit on <code>main</code> is the README revert, not a separate
 </tbody>
 </table>
 <h3 id="scriptschangelogpy"><code>scripts/changelog.py</code><a class="headerlink" href="#scriptschangelogpy" title="Permanent link">&para;</a></h3>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a>python<span class="w"> </span>scripts/changelog.py<span class="w"> </span><span class="m">1</span>.0.0<span class="w">                 </span><span class="c1"># finalise</span>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a>python<span class="w"> </span>scripts/changelog.py<span class="w"> </span><span class="m">1</span>.0.0<span class="w">                 </span><span class="c1"># stamp release date</span>
 </span><span id="__span-6-2"><a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a>python<span class="w"> </span>scripts/changelog.py<span class="w"> </span><span class="m">1</span>.0.0<span class="w"> </span>--date<span class="w"> </span>YYYY-MM-DD
 </span><span id="__span-6-3"><a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a>python<span class="w"> </span>scripts/changelog.py<span class="w"> </span><span class="m">1</span>.0.0<span class="w"> </span>--check<span class="w">         </span><span class="c1"># validate only</span>
-</span><span id="__span-6-4"><a id="__codelineno-6-4" name="__codelineno-6-4" href="#__codelineno-6-4"></a>python<span class="w"> </span>scripts/changelog.py<span class="w"> </span><span class="m">1</span>.0.0<span class="w"> </span>--allow-empty<span class="w">   </span><span class="c1"># empty Unreleased OK</span>
 </span></code></pre></div>
 <p>Exit codes:</p>
 <table>
@@ -5729,15 +5728,15 @@ the next commit on <code>main</code> is the README revert, not a separate
 </tr>
 <tr>
 <td>3</td>
-<td>No <code>## [Unreleased]</code> section in the changelog</td>
+<td>No <code>## [X.Y.Z]</code> section in the changelog</td>
 </tr>
 <tr>
 <td>4</td>
-<td><code>## [Unreleased]</code> has no entries (use <code>--allow-empty</code> to override)</td>
+<td><code>## [X.Y.Z]</code> section has no bullet entries</td>
 </tr>
 <tr>
 <td>5</td>
-<td>The <code>## [X.Y.Z]</code> section already exists</td>
+<td>Topmost section's version does not match the release target</td>
 </tr>
 </tbody>
 </table>
@@ -5747,8 +5746,6 @@ the next commit on <code>main</code> is the README revert, not a separate
 </span><span id="__span-7-3"><a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a>python<span class="w"> </span>scripts/release.py<span class="w"> </span>--apply<span class="w"> </span>--version<span class="w"> </span><span class="m">1</span>.0.0<span class="w">    </span><span class="c1"># explicit version</span>
 </span><span id="__span-7-4"><a id="__codelineno-7-4" name="__codelineno-7-4" href="#__codelineno-7-4"></a>python<span class="w"> </span>scripts/release.py<span class="w"> </span>--apply<span class="w"> </span>--next<span class="w"> </span>minor<span class="w"> </span>--skip-verify
 </span><span id="__span-7-5"><a id="__codelineno-7-5" name="__codelineno-7-5" href="#__codelineno-7-5"></a><span class="w">                                                     </span><span class="c1"># skip ``make verify``</span>
-</span><span id="__span-7-6"><a id="__codelineno-7-6" name="__codelineno-7-6" href="#__codelineno-7-6"></a>python<span class="w"> </span>scripts/release.py<span class="w"> </span>--apply<span class="w"> </span>--next<span class="w"> </span>minor<span class="w"> </span>--allow-empty-changelog
-</span><span id="__span-7-7"><a id="__codelineno-7-7" name="__codelineno-7-7" href="#__codelineno-7-7"></a><span class="w">                                                     </span><span class="c1"># ship a no-changelog patch</span>
 </span></code></pre></div>
 <p>Exit codes:</p>
 <table>
