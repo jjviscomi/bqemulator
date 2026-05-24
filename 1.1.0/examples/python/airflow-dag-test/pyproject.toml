@@ -1,0 +1,16 @@
+# Per-example pytest config — overrides the repo-root
+# ``filterwarnings = ["error", ...]`` strictness.
+#
+# Airflow 2.8+ → flask_appbuilder → flask_sqlalchemy → flask emits a
+# ``_app_ctx_stack`` ``DeprecationWarning`` that we can't fix
+# upstream. The repo root promotes warnings to errors which would
+# make ``initdb()`` fail at the import boundary. Override that
+# stance here so the example exercises the real Airflow ↔ bqemulator
+# path without being polluted by upstream deprecation noise.
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+filterwarnings = [
+    "default",
+    "ignore::DeprecationWarning",
+    "ignore::PendingDeprecationWarning",
+]
