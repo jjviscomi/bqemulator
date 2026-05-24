@@ -5217,7 +5217,7 @@
 <li><code>ARROW</code> (Python / Go / Node default; also the proto3 default for
    an unset field) — session emits Arrow IPC.</li>
 <li><code>AVRO</code> (Java client default) — session emits naked Avro binary
-   rows (G3 / ADR 0030).</li>
+   rows (ADR 0030).</li>
 <li>Any other value → <code>INVALID_ARGUMENT</code>.</li>
 <li>Servicer builds a projection+filter query and executes it against
    DuckDB, materializing a <code>pyarrow.Table</code>.</li>
@@ -5239,7 +5239,7 @@ stream's row range, and streams chunks in the session's chosen format:</p>
 <li><strong>Arrow IPC</strong>: via <code>pyarrow.ipc.RecordBatchStreamWriter</code> into a
   <code>BytesIO</code> buffer; each chunk carries an <code>ArrowRecordBatch</code> and the
   first chunk additionally carries the <code>arrow_schema</code>.</li>
-<li><strong>Avro</strong>: via <code>fastavro.schemaless_writer</code> (G3 / ADR 0030); each
+<li><strong>Avro</strong>: via <code>fastavro.schemaless_writer</code> (ADR 0030); each
   chunk carries an <code>AvroRows.serialized_binary_rows</code> payload and the
   first chunk additionally carries the <code>avro_schema</code>. The bytes are
   <strong>naked</strong> — NO Object Container File header per chunk — per

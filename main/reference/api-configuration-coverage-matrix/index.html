@@ -1894,17 +1894,6 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#workstream-tracking" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Workstream tracking
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
   <a href="#1-queryjobconfig-options" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1971,10 +1960,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#7-response-object-fields-we-dont-verify" class="md-nav__link">
+  <a href="#7-response-object-fields-not-yet-verified" class="md-nav__link">
     <span class="md-ellipsis">
       
-        7. Response object — fields we don't verify
+        7. Response object — fields not yet verified
       
     </span>
   </a>
@@ -1982,60 +1971,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#8-recommended-prioritisation" class="md-nav__link">
+  <a href="#8-how-to-use-this-matrix" class="md-nav__link">
     <span class="md-ellipsis">
       
-        8. Recommended prioritisation
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="8. Recommended prioritisation">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#tier-1-ship-blocking-before-v10" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Tier 1 — Ship-blocking before v1.0
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#tier-2-closed-p7c" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Tier 2 — ✅ Closed (P7.c)
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#tier-3-closed-in-p7c-p3d" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Tier 3 — Closed in P7.c + P3.d
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#9-how-to-use-this-matrix" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        9. How to use this matrix
+        8. How to use this matrix
       
     </span>
   </a>
@@ -5264,17 +5203,6 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#workstream-tracking" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Workstream tracking
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
   <a href="#1-queryjobconfig-options" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -5341,10 +5269,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#7-response-object-fields-we-dont-verify" class="md-nav__link">
+  <a href="#7-response-object-fields-not-yet-verified" class="md-nav__link">
     <span class="md-ellipsis">
       
-        7. Response object — fields we don't verify
+        7. Response object — fields not yet verified
       
     </span>
   </a>
@@ -5352,60 +5280,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#8-recommended-prioritisation" class="md-nav__link">
+  <a href="#8-how-to-use-this-matrix" class="md-nav__link">
     <span class="md-ellipsis">
       
-        8. Recommended prioritisation
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="8. Recommended prioritisation">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#tier-1-ship-blocking-before-v10" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Tier 1 — Ship-blocking before v1.0
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#tier-2-closed-p7c" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Tier 2 — ✅ Closed (P7.c)
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#tier-3-closed-in-p7c-p3d" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Tier 3 — Closed in P7.c + P3.d
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#9-how-to-use-this-matrix" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        9. How to use this matrix
+        8. How to use this matrix
       
     </span>
   </a>
@@ -5458,19 +5336,18 @@
 
 <h1 id="api-configuration-coverage-matrix">API configuration coverage matrix<a class="headerlink" href="#api-configuration-coverage-matrix" title="Permanent link">&para;</a></h1>
 <blockquote>
-<p><strong>Audit dated.</strong> Sibling to the
-<a href="../conformance-coverage-matrix/">conformance coverage matrix</a> which
-tracks the <em>SQL surface</em> — this file tracks the <strong>API request
-configuration surface</strong>. The conformance corpus runs essentially
-the same client codepath for every fixture (default
+<p>Sibling to the <a href="../conformance-coverage-matrix/">conformance coverage matrix</a>
+which tracks the <em>SQL surface</em> — this file tracks the <strong>API
+request configuration surface</strong>. The conformance corpus runs
+essentially the same client codepath for every SQL fixture (default
 <code>QueryJobConfig</code>, varying only the SQL and the optional
-<code>parameters.json</code> payload); this matrix enumerates the
-configurations we have NOT yet differentiated and ranks them by
-user impact.</p>
+<code>parameters.json</code> payload); this matrix enumerates the API
+configurations differentiated by their own fixtures and ranks them
+by user impact.</p>
 </blockquote>
 <h2 id="methodology">Methodology<a class="headerlink" href="#methodology" title="Permanent link">&para;</a></h2>
 <p>Every distinct <strong>configuration knob</strong> a BigQuery REST or gRPC client
-can flip is an item in this matrix. We classify each by:</p>
+can flip is an item in this matrix. The matrix classifies each by:</p>
 <ul>
 <li><strong>Fixture depth</strong> — number of conformance fixtures that exercise
   this configuration with that exact value (<code>🔴 Uncovered</code> = 0, <code>🟡
@@ -5484,97 +5361,24 @@ can flip is an item in this matrix. We classify each by:</p>
   knob flipped is "low"; a full setup + side-effect verification is
   "high").</li>
 </ul>
+<p>The configuration surface is partitioned into three tiers ordered
+by user impact and recording cost. Tier 1 covers ship-blocking
+configurations (DML statement-type dispatch, write/create
+dispositions, default-dataset qualification, query-parameter
+modes); Tier 2 covers configurations exercised by enterprise
+workloads (schema evolution, partitioning/clustering on
+destination, byte-budget caps); Tier 3 covers surfaces deliberately
+deferred (CDC writes, gRPC-level codec selection,
+legacy-SQL-coupled flags).</p>
 <p>Methodology mirrors the SQL surface matrix's three-tier
 classification so the prioritisation language is consistent across
 both audits.</p>
-<h2 id="workstream-tracking">Workstream tracking<a class="headerlink" href="#workstream-tracking" title="Permanent link">&para;</a></h2>
-<p>This audit is the foundation of <strong>workstream P7 — API configuration
-parity</strong> (see v1-confidence-plan).
-It is divided into three sub-sessions:</p>
-<ul>
-<li><strong>P7.a — Framework + audit (this doc) + pilot fixtures.</strong> Ships
-  the <code>job_config.json</code> fixture slot, the response-object
-  equivalence framework extension, this audit document, and 6 pilot
-  fixtures proving the framework. ✅ Closed.</li>
-<li><strong>P7.b phase 1 — Emulator-side closure of P7.a-surfaced gaps.</strong>
-  4 emulator changes flip all 6 P7.a fixtures from XFAIL to PASS:
-  <code>classify_statement_type</code> + <code>_build_query_statistics</code> +
-  <code>_dry_run_response</code> + DML schema trim. ✅ Closed.</li>
-<li><strong>P7.b phase 2 — Operator-side Tier 1 recording + inline closure.</strong>
-  45 new fixtures recorded against real BigQuery across the 11
-  Tier 1 cluster list below: legacy SQL (1), useQueryCache deeper
-  (2), dryRun deeper (4), priority BATCH deeper (2), labels deeper
-  (2), DML deeper × 13, writeDisposition × 8, createDisposition ×
-  3, defaultDataset × 3, parameterMode=POSITIONAL deeper × 4,
-  connectionProperties.session_id × 3. Initial outcome: 30 PASS +
-  15 XFAIL. <strong>Same-session inline closure shipped 5 new
-  emulator-side helpers that flipped 13 of 15 XFAILs to PASS</strong>:
-  <code>_check_create_disposition</code> (CREATE_NEVER × 3),
-  <code>_validate_session_id</code> + in-process session catalog (session_id
-  × 1), <code>qualify_unqualified_tables</code> pre-translator (defaultDataset
-  × 3), <code>_destructive_dry_run_schema</code> (dry-run preview schema for
-  CREATE TABLE + INSERT × 2), <code>_apply_write_append</code> (WRITE_APPEND
-  × 4). <code>SUPPORTED_KEYS</code> extended with <code>create_session</code> (bool) + 2
-  unit tests + 8 new unit tests pinning the
-  <code>qualify_unqualified_tables</code> contract. Final outcome: **49 PASS</li>
-<li>2 XFAIL** (only <code>legacy_sql_select_compat_mode</code> and
-   <code>dry_run_invalid_function</code> remain pinned). 6 → 2
-   <code>out-of-scope.md</code> sections in the same PR. ✅ Closed.</li>
-<li><strong>P7.c — Tier 2 + Tier 3 fixture sweep + 14 same-session inline
-  emulator closures.</strong> ✅ Closed. Shipped <strong>25 new
-  fixtures</strong> (12 SQL <code>api_configuration/</code> + 13 HTTP
-  <code>jobs/</code> insertAll/list/get + tabledata.list) recorded
-  against real BigQuery. Every Tier 2 cell now PASSes; Tier 3
-  streaming insert + tables/datasets list+get added. The 14 inline
-  closures also lifted 6 pre-existing XFAILs (<code>dry_run_invalid_function</code>,
-  <code>legacy_sql_select_compat_mode</code>, 3 <code>partition_prune_*</code>,
-  <code>st_maxdistance_basic</code>) — the api_configuration directory is now
-  <strong>63 PASS + 0 XFAIL</strong> of 63 fixtures.</li>
-</ul>
-<p><strong>Clusters and outcomes:</strong>
- * <code>tabledata.list</code> pagination (5 HTTP corpus fixtures — 1 PASS
- + 4 XFAIL pinned against
-   <code>out-of-scope.md#tabledatalist-pagination-projection-and-storage-row-order</code>);
- * <code>maximumBytesBilled</code> enforcement (2 fixtures, both PASS);
- * <code>schemaUpdateOptions</code> ALLOW_FIELD_ADDITION + ALLOW_FIELD_RELAXATION
-   (4 fixtures, 1 PASS + 3 XFAIL pinned against
-   <code>out-of-scope.md#schemaupdateoptions-evolution-and-disposition-compatibility</code>);
- * <code>clusteringFields</code> + <code>timePartitioning</code> on destination
-   (4 fixtures, 0 PASS + 4 XFAIL pinned against
-   <code>out-of-scope.md#clusteringfields-timepartitioning-on-destination</code>);
- * <code>jobTimeoutMs</code> enforcement (2 fixtures, both PASS).</p>
-<p>Plus 2 inline emulator-side closures: (1) <code>_rewrite_for_dry_run</code>
-   in <code>routes/jobs.py</code> transforms <code>error.location="query"</code> → <code>"q"</code>
-   for dry-run resolver errors and recovers the original
-   identifier case from the BQ source SQL — closes
-   <code>dry_run_invalid_function</code>; (2) <code>_maybe_mint_session</code> +
-   <code>_attach_session_info</code> surface the minted session token on
-   <code>statistics.sessionInfo.sessionId</code> for both <code>jobs.query</code> and
-   <code>jobs.insert</code>. <code>SUPPORTED_KEYS</code> extended with <code>clustering_fields</code>
-   (list[str]) and <code>time_partitioning</code> (dict). 9 new unit tests in
-   <code>test_job_config.py</code> (clustering_fields × 3 + time_partitioning
-   × 6) + 7 new unit tests in <code>test_routes_jobs.py</code>
-   (TestCreateSessionRoundTrip × 5 + TestDryRunInvalidFunctionErrorEnvelope × 2).
-   HTTP corpus runner extended with XFAIL support via
-   <code>KNOWN_DIVERGENCES</code>. Final outcome:
-   <code>api_configuration/</code> directory <strong>63 fixtures</strong> (51 pre-P7.c
- + 12 new); HTTP corpus <strong>20 fixtures</strong> (15 pre-P7.c + 5 new).</p>
-<ul>
-<li><strong>P7.d — Future Tier 3 follow-ups (defer-acceptable to v1.0.x).</strong>
-  Tier 3 cluster list documented in §8 below: CDC writes,
-  streaming <code>templateSuffix</code> / <code>insertId</code> dedup, Storage Read
-  <code>responseCompressionCodec</code>, plus the inline emulator-side
-  closures for the P7.c-pinned XFAILs (schema evolution,
-  destination clustering/partitioning, tabledata.list pagination).
-  ⚪ Open.</li>
-</ul>
 <h2 id="1-queryjobconfig-options">1. <code>QueryJobConfig</code> options<a class="headerlink" href="#1-queryjobconfig-options" title="Permanent link">&para;</a></h2>
 <blockquote>
-<p>Coverage column updated post-P7.c. Counts in
-the column reflect conformance-corpus fixtures (under
-<code>tests/conformance/sql_corpus/api_configuration/</code>); integration-
-tier coverage is called out in the Notes column. Severity
-reflects the divergence risk class regardless of current
+<p>Counts in the Coverage column reflect conformance-corpus fixtures
+under <code>tests/conformance/sql_corpus/api_configuration/</code>;
+integration-tier coverage is called out in the Notes column.
+Severity reflects the divergence risk class regardless of current
 coverage (a fixture passing today doesn't change the inherent
 divergence risk).</p>
 </blockquote>
@@ -5620,15 +5424,15 @@ divergence risk).</p>
 <td>—</td>
 <td>🟢 Covered (3 fixtures)</td>
 <td>🟡</td>
-<td><code>use_query_cache_disabled</code> + <code>cache_disabled_with_count_distinct</code> + <code>cache_disabled_with_join</code> — all PASS. <code>cacheHit=False</code> surfaces on every job statistics response (P7.b phase 1).</td>
+<td><code>use_query_cache_disabled</code> + <code>cache_disabled_with_count_distinct</code> + <code>cache_disabled_with_join</code> — all PASS. <code>cacheHit=False</code> surfaces on every job statistics response.</td>
 </tr>
 <tr>
 <td>Dry-run</td>
 <td><code>dryRun=true</code></td>
 <td>—</td>
-<td>🟢 Covered (5 fixtures, <strong>all PASS</strong> post-P7.c)</td>
+<td>🟢 Covered (5 fixtures, all PASS)</td>
 <td>🔴</td>
-<td><code>dry_run_select</code> / <code>dry_run_aggregate</code> / <code>dry_run_create_table</code> / <code>dry_run_insert</code> PASS via <code>_destructive_dry_run_schema</code> schema-reconstruction; <code>dry_run_invalid_function</code> PASSes via the new <code>_rewrite_for_dry_run</code> helper (P7.c) that transforms <code>error.location="query"</code> → <code>"q"</code> and recovers the original identifier case from the BQ SQL.</td>
+<td><code>dry_run_select</code> / <code>dry_run_aggregate</code> / <code>dry_run_create_table</code> / <code>dry_run_insert</code> / <code>dry_run_invalid_function</code> PASS via <code>_destructive_dry_run_schema</code> schema-reconstruction and the <code>_rewrite_for_dry_run</code> helper that transforms <code>error.location="query"</code> → <code>"q"</code> and recovers the original identifier case from the BQ SQL.</td>
 </tr>
 <tr>
 <td>Priority — INTERACTIVE (default)</td>
@@ -5668,7 +5472,7 @@ divergence risk).</p>
 <td>—</td>
 <td>🟢 Covered (4 fixtures)</td>
 <td>🔴</td>
-<td><code>write_append_schema_matching</code> / <code>_schema_divergent</code> / <code>_partitioned_destination</code> / <code>_clustered_destination</code> — all PASS via <code>_apply_write_append</code> post-processing (P7.b phase 2 inline closure).</td>
+<td><code>write_append_schema_matching</code> / <code>_schema_divergent</code> / <code>_partitioned_destination</code> / <code>_clustered_destination</code> — all PASS via <code>_apply_write_append</code> post-processing.</td>
 </tr>
 <tr>
 <td>Create disposition — CREATE_IF_NEEDED (default)</td>
@@ -5684,7 +5488,7 @@ divergence risk).</p>
 <td>—</td>
 <td>🟢 Covered (3 fixtures, all error envelopes)</td>
 <td>🟡</td>
-<td><code>create_never_missing_destination</code> / <code>_with_truncate</code> / <code>_with_append</code> — all PASS. <code>_check_create_disposition</code> raises <code>Not found: Table &lt;p&gt;:&lt;d&gt;.&lt;t&gt;</code> (P7.b phase 2 inline closure).</td>
+<td><code>create_never_missing_destination</code> / <code>_with_truncate</code> / <code>_with_append</code> — all PASS. <code>_check_create_disposition</code> raises <code>Not found: Table &lt;p&gt;:&lt;d&gt;.&lt;t&gt;</code>.</td>
 </tr>
 <tr>
 <td>Destination table</td>
@@ -5700,15 +5504,15 @@ divergence risk).</p>
 <td>—</td>
 <td>🟢 Covered (3 fixtures)</td>
 <td>🔴</td>
-<td><code>default_dataset_select_table</code> / <code>_insert_unqualified</code> / <code>_join_partial_qualification</code> — all PASS via the new <code>qualify_unqualified_tables</code> pre-translator (P7.b phase 2 inline closure).</td>
+<td><code>default_dataset_select_table</code> / <code>_insert_unqualified</code> / <code>_join_partial_qualification</code> — all PASS via the <code>qualify_unqualified_tables</code> pre-translator.</td>
 </tr>
 <tr>
 <td>Maximum bytes billed</td>
 <td><code>maximumBytesBilled</code></td>
 <td>—</td>
-<td>🟢 Covered (2 fixtures, <strong>both PASS</strong>)</td>
+<td>🟢 Covered (2 fixtures, both PASS)</td>
 <td>🟡</td>
-<td><code>max_bytes_billed_within_cap</code> + <code>max_bytes_billed_exceeded</code> PASS (P7.c). Real BQ's cost-estimate on synthetic queries is 0 bytes — neither budget trips a real billing check, so the fixture pair pins the wire-shape parity (BQ + emulator both succeed). Real cost-estimate enforcement is documented out-of-scope (<code>slot-and-byte-billing-simulation</code>).</td>
+<td><code>max_bytes_billed_within_cap</code> + <code>max_bytes_billed_exceeded</code> PASS. Real BQ's cost-estimate on synthetic queries is 0 bytes — neither budget trips a real billing check, so the fixture pair pins the wire-shape parity (BQ + emulator both succeed). Real cost-estimate enforcement is documented out-of-scope (<code>slot-and-byte-billing-simulation</code>).</td>
 </tr>
 <tr>
 <td>Labels</td>
@@ -5722,9 +5526,9 @@ divergence risk).</p>
 <td>Job timeout (ms)</td>
 <td><code>jobTimeoutMs</code></td>
 <td>—</td>
-<td>🟢 Covered (2 fixtures, <strong>both PASS</strong>)</td>
+<td>🟢 Covered (2 fixtures, both PASS)</td>
 <td>🟡</td>
-<td><code>job_timeout_within_budget</code> + <code>job_timeout_exceeded</code> PASS (P7.c). Synthetic queries complete inside the budget on both BQ and emulator — wire-shape parity. Real timeout-enforcement on slow queries is documented out-of-scope (no v1.0 use case).</td>
+<td><code>job_timeout_within_budget</code> + <code>job_timeout_exceeded</code> PASS. Synthetic queries complete inside the budget on both BQ and emulator — wire-shape parity. Real timeout-enforcement on slow queries is documented out-of-scope (no v1.0 use case).</td>
 </tr>
 <tr>
 <td>Connection properties — <code>session_id</code></td>
@@ -5732,7 +5536,7 @@ divergence risk).</p>
 <td>—</td>
 <td>🟢 Covered (3 fixtures)</td>
 <td>🔴</td>
-<td><code>session_temp_table_visible</code> + <code>session_declared_var_shared</code> PASS via <code>create_session=True</code> + multi-statement script; <code>session_invalid_session_id</code> PASSes via <code>_validate_session_id</code> + in-process catalog (P7.b phase 2 inline closure).</td>
+<td><code>session_temp_table_visible</code> + <code>session_declared_var_shared</code> PASS via <code>create_session=True</code> + multi-statement script; <code>session_invalid_session_id</code> PASSes via <code>_validate_session_id</code> + in-process catalog.</td>
 </tr>
 <tr>
 <td>Schema update — ALLOW_FIELD_ADDITION</td>
@@ -5740,7 +5544,7 @@ divergence risk).</p>
 <td>—</td>
 <td>🟢 Covered (2 fixtures, 0 PASS + 2 XFAIL)</td>
 <td>🔴</td>
-<td><code>schema_update_addition_with_append</code> + <code>schema_update_addition_with_truncate</code> recorded against real BQ (P7.c). Pinned against <code>out-of-scope.md#schemaupdateoptions-evolution-and-disposition-compatibility</code> — emulator does not yet evolve destination schema on WRITE_APPEND, nor enforce the WRITE_TRUNCATE disposition rule. P7.d follow-up.</td>
+<td><code>schema_update_addition_with_append</code> + <code>schema_update_addition_with_truncate</code> recorded against real BQ. Pinned against <code>out-of-scope.md#schemaupdateoptions-evolution-and-disposition-compatibility</code> — emulator does not yet evolve destination schema on WRITE_APPEND, nor enforce the WRITE_TRUNCATE disposition rule.</td>
 </tr>
 <tr>
 <td>Schema update — ALLOW_FIELD_RELAXATION</td>
@@ -5748,23 +5552,23 @@ divergence risk).</p>
 <td>—</td>
 <td>🟢 Covered (2 fixtures, 1 PASS + 1 XFAIL)</td>
 <td>🔴</td>
-<td><code>schema_update_relaxation_required_to_nullable</code> (XFAIL) + <code>schema_update_relaxation_rejected_without_option</code> (PASS) recorded against real BQ (P7.c). Same out-of-scope pin as ADDITION.</td>
+<td><code>schema_update_relaxation_required_to_nullable</code> (XFAIL) + <code>schema_update_relaxation_rejected_without_option</code> (PASS) recorded against real BQ. Same out-of-scope pin as ADDITION.</td>
 </tr>
 <tr>
 <td>Destination table partitioning (TIME_PARTITIONING)</td>
 <td><code>timePartitioning</code></td>
 <td>—</td>
-<td>🟢 Covered (partitioning_clustering conformance + write_<em><em>partitioned_destination + 2 P7.c dest_time_partitioning</em></em> fixtures, both XFAIL)</td>
+<td>🟢 Covered (partitioning_clustering conformance + write_<em><em>partitioned_destination + 2 dest_time_partitioning</em></em> fixtures, both XFAIL)</td>
 <td>n/a</td>
-<td>Standalone job-config exercise added P7.c: <code>dest_time_partitioning_basic</code> (XFAIL: storage-order divergence) + <code>_invalid_field</code> (XFAIL: field-existence not validated). Pinned against <code>out-of-scope.md#clusteringfields-timepartitioning-on-destination</code>.</td>
+<td>Standalone job-config exercise: <code>dest_time_partitioning_basic</code> (XFAIL: storage-order divergence) + <code>_invalid_field</code> (XFAIL: field-existence not validated). Pinned against <code>out-of-scope.md#clusteringfields-timepartitioning-on-destination</code>.</td>
 </tr>
 <tr>
 <td>Destination table clustering</td>
 <td><code>clusteringFields</code></td>
 <td>—</td>
-<td>🟢 Covered (2 P7.c dest_clustering_fields_* fixtures, both XFAIL)</td>
+<td>🟢 Covered (2 dest_clustering_fields_* fixtures, both XFAIL)</td>
 <td>🟡</td>
-<td>Standalone job-config exercise added P7.c: <code>dest_clustering_fields_basic</code> (XFAIL: storage-order divergence) + <code>_invalid_column</code> (XFAIL: column-existence not validated). Same pin as TIME_PARTITIONING.</td>
+<td>Standalone job-config exercise: <code>dest_clustering_fields_basic</code> (XFAIL: storage-order divergence) + <code>_invalid_column</code> (XFAIL: column-existence not validated). Same pin as TIME_PARTITIONING.</td>
 </tr>
 <tr>
 <td>Range partitioning</td>
@@ -5775,10 +5579,10 @@ divergence risk).</p>
 <td></td>
 </tr>
 <tr>
-<td>Parameter mode — NAMED (default for P2.e)</td>
+<td>Parameter mode — NAMED (default)</td>
 <td><code>parameterMode=NAMED</code></td>
 <td>implicit when params present</td>
-<td>🟢🟢 Deep (15 P2.e fixtures + DML deeper)</td>
+<td>🟢🟢 Deep (15 fixtures + DML deeper)</td>
 <td>n/a</td>
 <td></td>
 </tr>
@@ -5786,7 +5590,7 @@ divergence risk).</p>
 <td>Parameter mode — POSITIONAL</td>
 <td><code>parameterMode=POSITIONAL</code></td>
 <td>—</td>
-<td>🟢 Covered (5 fixtures: P2.e pilot + 4 deeper)</td>
+<td>🟢 Covered (5 fixtures)</td>
 <td>🟡</td>
 <td><code>positional_parameter_int64</code> + <code>positional_array_int64</code> + <code>positional_struct_basic</code> + <code>positional_null_bound_string</code> + <code>positional_multi_param</code> — all PASS.</td>
 </tr>
@@ -5796,7 +5600,7 @@ divergence risk).</p>
 <td>—</td>
 <td>🔴 Uncovered</td>
 <td>🟡</td>
-<td>Routines exercise scripts; option flags untested. Tier 2 / P7.c.</td>
+<td>Routines exercise scripts; option flags untested.</td>
 </tr>
 <tr>
 <td>Script options — <code>statement_byte_budget</code></td>
@@ -5839,30 +5643,20 @@ divergence risk).</p>
 <td></td>
 </tr>
 <tr>
-<td><code>create_session</code> (P7.b phase 2 framework addition)</td>
+<td><code>create_session</code></td>
 <td><code>createSession=true</code></td>
 <td>—</td>
 <td>🟡 Sampled (2 fixtures use it)</td>
 <td>🟡</td>
-<td>BigQuery mints a transient session token returned via <code>statistics.sessionInfo.sessionId</code>. The emulator's <code>_SESSION_CATALOG</code> mints a fresh URL-safe token; surfacing it through the response shape is a P7.c follow-up.</td>
+<td>BigQuery mints a transient session token returned via <code>statistics.sessionInfo.sessionId</code>. The emulator's <code>_SESSION_CATALOG</code> mints a fresh URL-safe token; surfacing it through the response shape uses <code>_maybe_mint_session</code> + <code>_attach_session_info</code>.</td>
 </tr>
 </tbody>
 </table>
-<p><strong><code>QueryJobConfig</code> summary (post-P7.c):</strong> <strong>8 of 31</strong>
-configurations remain 🔴 Uncovered (down from 14 of 31 at the
-P7.b phase 2 baseline; 23 of 30 at the P7.a baseline). P7.c
-closed 6 Tier 2 cells: <code>maximumBytesBilled</code>, <code>jobTimeoutMs</code>,
-<code>schemaUpdateOptions=ALLOW_FIELD_ADDITION</code>,
-<code>schemaUpdateOptions=ALLOW_FIELD_RELAXATION</code>, <code>clusteringFields</code>
-(standalone job-config exercise), and <code>timePartitioning</code>
-(standalone job-config exercise). Of the 8 remaining 🔴
-Uncovered, <strong>0 are 🔴 high-severity</strong> — every Tier 1 + Tier 2 cell
-has shipped, and the remainder is the Tier 3 list (scriptOptions,
-continuous, legacy-only allowLargeResults / flattenResults).
-P7.c also closed the 2 inline emulator-side follow-ups
-(<code>dry_run_invalid_function</code> XFAIL via <code>_rewrite_for_dry_run</code> +
-<code>create_session</code> response shape via <code>_maybe_mint_session</code> +
-<code>_attach_session_info</code>).</p>
+<p><strong><code>QueryJobConfig</code> summary:</strong> <strong>8 of 31</strong> configurations are 🔴
+Uncovered. Of the 8, <strong>0 are 🔴 high-severity</strong> — every Tier 1 +
+Tier 2 cell ships fixtures; the remainder is the Tier 3 list
+(scriptOptions, continuous, legacy-only allowLargeResults /
+flattenResults).</p>
 <h2 id="2-execution-paths-synchronous-vs-asynchronous">2. Execution paths (synchronous vs asynchronous)<a class="headerlink" href="#2-execution-paths-synchronous-vs-asynchronous" title="Permanent link">&para;</a></h2>
 <table>
 <thead>
@@ -5892,7 +5686,7 @@ P7.c also closed the 2 inline emulator-side follow-ups
 <tr>
 <td><code>jobs.getQueryResults</code> with pagination (<code>maxResults</code>, <code>pageToken</code>)</td>
 <td><code>GET /queries/{id}?maxResults=…&amp;pageToken=…</code></td>
-<td>🔴 Uncovered (deferred to P2.f)</td>
+<td>🔴 Uncovered</td>
 <td>🔴</td>
 <td>The shape and opacity of <code>pageToken</code> matters — clients trust it as opaque, but the emulator may diverge.</td>
 </tr>
@@ -5915,12 +5709,12 @@ P7.c also closed the 2 inline emulator-side follow-ups
 <td><code>DELETE /jobs/{id}</code></td>
 <td>🔴 Uncovered</td>
 <td>🟢</td>
-<td>Recently-added BQ surface; metadata-only</td>
+<td>Metadata-only</td>
 </tr>
 <tr>
 <td><code>jobs.list</code> (filtering, projection, pagination)</td>
 <td><code>GET /jobs?stateFilter=…&amp;allUsers=…&amp;minCreationTime=…&amp;projection=…&amp;pageToken=…</code></td>
-<td>🔴 Uncovered (deferred to P2.f)</td>
+<td>🔴 Uncovered</td>
 <td>🔴</td>
 <td>Critical for clients that walk job history</td>
 </tr>
@@ -6006,13 +5800,13 @@ P7.c also closed the 2 inline emulator-side follow-ups
 </tr>
 <tr>
 <td>Copy (snapshot — operationType=SNAPSHOT)</td>
-<td>🟢 Covered (P2.c)</td>
+<td>🟢 Covered</td>
 <td>n/a</td>
 <td></td>
 </tr>
 <tr>
 <td>Copy (clone — operationType=CLONE)</td>
-<td>🟢 Covered (P2.c)</td>
+<td>🟢 Covered</td>
 <td>n/a</td>
 <td></td>
 </tr>
@@ -6069,7 +5863,7 @@ P7.c also closed the 2 inline emulator-side follow-ups
 <td><code>datasets.delete</code> (with deleteContents)</td>
 <td>🟢 Covered</td>
 <td>n/a</td>
-<td>Recent cascade-delete bug fix exercised this</td>
+<td></td>
 </tr>
 <tr>
 <td><code>tables.insert</code></td>
@@ -6109,7 +5903,7 @@ P7.c also closed the 2 inline emulator-side follow-ups
 </tr>
 <tr>
 <td><code>routines.*</code></td>
-<td>🟢 Covered (P2.b)</td>
+<td>🟢 Covered</td>
 <td>n/a</td>
 <td></td>
 </tr>
@@ -6121,7 +5915,7 @@ P7.c also closed the 2 inline emulator-side follow-ups
 </tr>
 <tr>
 <td><code>rowAccessPolicies.*</code></td>
-<td>🟢 Covered (P2.d)</td>
+<td>🟢 Covered</td>
 <td>n/a</td>
 <td></td>
 </tr>
@@ -6134,9 +5928,7 @@ P7.c also closed the 2 inline emulator-side follow-ups
 </tbody>
 </table>
 <h2 id="5-storage-read-api-grpc">5. Storage Read API (gRPC)<a class="headerlink" href="#5-storage-read-api-grpc" title="Permanent link">&para;</a></h2>
-<p>P3.d closed the wire-format conformance gap with 10
-new gRPC-corpus fixtures + 8 inline emulator closures. Every
-practical cell is now ✅ Covered; the two compression cells echo
+<p>Every practical cell is ✅ Covered; the two compression cells echo
 the request option back to the client (the actual codec
 implementation is documented out-of-scope per ADR 0008).</p>
 <table>
@@ -6163,31 +5955,31 @@ implementation is documented out-of-scope per ADR 0008).</p>
 </tr>
 <tr>
 <td><code>maxStreamCount</code> (&gt;1)</td>
-<td>✅ Covered (P3.d <code>sr_create_session_multi_stream</code>)</td>
+<td>✅ Covered (<code>sr_create_session_multi_stream</code>)</td>
 <td>n/a</td>
 <td>Emulator caps streams by table size, matching real BQ</td>
 </tr>
 <tr>
 <td><code>preferredMinStreamCount</code></td>
-<td>✅ Covered (P3.d <code>sr_preferred_min_stream_count</code>)</td>
+<td>✅ Covered (<code>sr_preferred_min_stream_count</code>)</td>
 <td>n/a</td>
 <td>Hint only — emulator echoes the request shape</td>
 </tr>
 <tr>
 <td><code>selectedFields</code> projection</td>
-<td>🟢🟢 Deep (P3.d <code>sr_column_projection</code>)</td>
+<td>🟢🟢 Deep (<code>sr_column_projection</code>)</td>
 <td>n/a</td>
 <td></td>
 </tr>
 <tr>
 <td><code>rowRestriction</code> (filter)</td>
-<td>✅ Covered (P3.d <code>sr_row_filter_simple</code>, <code>sr_row_filter_with_in</code>)</td>
+<td>✅ Covered (<code>sr_row_filter_simple</code>, <code>sr_row_filter_with_in</code>)</td>
 <td>n/a</td>
 <td></td>
 </tr>
 <tr>
 <td><code>arrowSerializationOptions.bufferCompression</code></td>
-<td>✅ Covered shape (P3.d <code>sr_arrow_compression_lz4_frame</code>, <code>sr_arrow_compression_zstd</code>)</td>
+<td>✅ Covered shape (<code>sr_arrow_compression_lz4_frame</code>, <code>sr_arrow_compression_zstd</code>)</td>
 <td>🟢</td>
 <td>Request option is echoed back; codec implementation deferred</td>
 </tr>
@@ -6195,7 +5987,7 @@ implementation is documented out-of-scope per ADR 0008).</p>
 <td><code>responseCompressionCodec</code></td>
 <td>🔴 Uncovered</td>
 <td>🟢</td>
-<td>gRPC-level codec; deferred to v1.0.x</td>
+<td>gRPC-level codec; deferred</td>
 </tr>
 <tr>
 <td>Snapshot read (table snapshot ID)</td>
@@ -6205,24 +5997,22 @@ implementation is documented out-of-scope per ADR 0008).</p>
 </tr>
 <tr>
 <td><code>SplitReadStream</code></td>
-<td>✅ Covered (P3.d <code>sr_split_read_stream</code>)</td>
+<td>✅ Covered (<code>sr_split_read_stream</code>)</td>
 <td>n/a</td>
 <td>Hint per BQ docs; emulator implements wire shape</td>
 </tr>
 <tr>
 <td>Empty-table session</td>
-<td>✅ Covered (P3.d <code>sr_empty_table</code>)</td>
+<td>✅ Covered (<code>sr_empty_table</code>)</td>
 <td>n/a</td>
 <td></td>
 </tr>
 </tbody>
 </table>
 <h2 id="6-storage-write-api-grpc">6. Storage Write API (gRPC)<a class="headerlink" href="#6-storage-write-api-grpc" title="Permanent link">&para;</a></h2>
-<p>P3.d closed every practical cell + the audit doc §8
-Tier 3 error-envelope sweep with 10 new gRPC-corpus fixtures + 5
-inline emulator closures. The two CDC cells remain pinned as
-out-of-scope per ADR 0013 (CDC writes require schema metadata the
-emulator's catalog doesn't yet model).</p>
+<p>Every practical cell is ✅ Covered. The two CDC cells remain
+pinned as out-of-scope per ADR 0013 (CDC writes require schema
+metadata the emulator's catalog doesn't yet model).</p>
 <table>
 <thead>
 <tr>
@@ -6235,25 +6025,25 @@ emulator's catalog doesn't yet model).</p>
 <tbody>
 <tr>
 <td>Stream type DEFAULT</td>
-<td>🟢🟢 Deep (P3.d <code>sw_get_write_stream_default</code>)</td>
+<td>🟢🟢 Deep (<code>sw_get_write_stream_default</code>)</td>
 <td>n/a</td>
 <td></td>
 </tr>
 <tr>
 <td>Stream type COMMITTED</td>
-<td>🟢🟢 Deep (P3.d <code>sw_create_committed_stream</code>, <code>sw_get_write_stream_after_create</code>)</td>
+<td>🟢🟢 Deep (<code>sw_create_committed_stream</code>, <code>sw_get_write_stream_after_create</code>)</td>
 <td>n/a</td>
 <td></td>
 </tr>
 <tr>
 <td>Stream type PENDING + BatchCommit</td>
-<td>🟢🟢 Deep (P3.d <code>sw_create_pending_stream</code>, <code>sw_finalize_pending_no_appends</code>, <code>sw_batch_commit_finalized_pending</code>)</td>
+<td>🟢🟢 Deep (<code>sw_create_pending_stream</code>, <code>sw_finalize_pending_no_appends</code>, <code>sw_batch_commit_finalized_pending</code>)</td>
 <td>n/a</td>
 <td></td>
 </tr>
 <tr>
 <td>Stream type BUFFERED + FlushRows</td>
-<td>🟢🟢 Deep (P3.d <code>sw_create_buffered_stream</code>, <code>sw_flush_rows_buffered_zero</code>)</td>
+<td>🟢🟢 Deep (<code>sw_create_buffered_stream</code>, <code>sw_flush_rows_buffered_zero</code>)</td>
 <td>n/a</td>
 <td></td>
 </tr>
@@ -6271,19 +6061,19 @@ emulator's catalog doesn't yet model).</p>
 </tr>
 <tr>
 <td>Error envelope: stream not found</td>
-<td>✅ Covered (P3.d <code>sw_finalize_default_invalid_argument</code>)</td>
+<td>✅ Covered (<code>sw_finalize_default_invalid_argument</code>)</td>
 <td>n/a</td>
 <td>"Requested entity was not found" wording matches real BQ</td>
 </tr>
 <tr>
 <td>Error envelope: malformed stream id</td>
-<td>✅ Covered (P3.d <code>sw_get_write_stream_not_found</code>)</td>
+<td>✅ Covered (<code>sw_get_write_stream_not_found</code>)</td>
 <td>n/a</td>
 <td>INVALID_ARGUMENT for non-canonical stream ids</td>
 </tr>
 <tr>
 <td>Error envelope: empty-buffered FlushRows</td>
-<td>✅ Covered (P3.d <code>sw_flush_rows_buffered_zero</code>)</td>
+<td>✅ Covered (<code>sw_flush_rows_buffered_zero</code>)</td>
 <td>n/a</td>
 <td>OUT_OF_RANGE "Offset N is beyond the end of the stream"</td>
 </tr>
@@ -6291,7 +6081,7 @@ emulator's catalog doesn't yet model).</p>
 <td>CDC: <code>_CHANGE_TYPE</code> column (UPSERT / DELETE)</td>
 <td>🔴 Uncovered</td>
 <td>🔴</td>
-<td>Out-of-scope per ADR 0013; deferred to v1.0.x</td>
+<td>Out-of-scope per ADR 0013</td>
 </tr>
 <tr>
 <td>CDC: <code>_CHANGE_SEQUENCE_NUMBER</code></td>
@@ -6303,13 +6093,13 @@ emulator's catalog doesn't yet model).</p>
 <td>Schema evolution on append</td>
 <td>🔴 Uncovered</td>
 <td>🟡</td>
-<td>Adding columns mid-stream; deferred to v1.0.x</td>
+<td>Adding columns mid-stream</td>
 </tr>
 <tr>
 <td>Trace ID propagation</td>
 <td>🔴 Uncovered</td>
 <td>🟢</td>
-<td>Deferred to v1.0.x</td>
+<td></td>
 </tr>
 <tr>
 <td>Connection retry / re-attach</td>
@@ -6319,10 +6109,11 @@ emulator's catalog doesn't yet model).</p>
 </tr>
 </tbody>
 </table>
-<h2 id="7-response-object-fields-we-dont-verify">7. Response object — fields we don't verify<a class="headerlink" href="#7-response-object-fields-we-dont-verify" title="Permanent link">&para;</a></h2>
-<p>This is the <strong>other half</strong> of the user-flagged gap. Even when we
-test a configuration, we only diff <code>schema</code> + <code>rows</code>. Real-BQ
-clients consume far more of the response payload.</p>
+<h2 id="7-response-object-fields-not-yet-verified">7. Response object — fields not yet verified<a class="headerlink" href="#7-response-object-fields-not-yet-verified" title="Permanent link">&para;</a></h2>
+<p>This is the other half of the configuration-coverage picture. Even
+when a configuration is exercised by a fixture, only <code>schema</code> +
+<code>rows</code> are diffed. Real-BQ clients consume far more of the response
+payload.</p>
 <table>
 <thead>
 <tr>
@@ -6407,7 +6198,7 @@ clients consume far more of the response payload.</p>
 </tr>
 <tr>
 <td>Job <code>errorResult</code> shape</td>
-<td>✅ Yes for error fixtures (P3.a)</td>
+<td>✅ Yes for error fixtures</td>
 <td>n/a</td>
 <td></td>
 </tr>
@@ -6473,7 +6264,7 @@ clients consume far more of the response payload.</p>
 </tr>
 <tr>
 <td>Job <code>statistics.query.schema</code></td>
-<td>❌ No (we diff the result schema only)</td>
+<td>❌ No (the result schema only is diffed)</td>
 <td>🟡</td>
 <td>Pre-execution schema (dry-run uses this)</td>
 </tr>
@@ -6509,105 +6300,7 @@ clients consume far more of the response payload.</p>
 </tr>
 </tbody>
 </table>
-<h2 id="8-recommended-prioritisation">8. Recommended prioritisation<a class="headerlink" href="#8-recommended-prioritisation" title="Permanent link">&para;</a></h2>
-<p>For <strong>P7.b — operator-side recording</strong>, the recommended fixture
-priority (highest user impact first):</p>
-<h3 id="tier-1-ship-blocking-before-v10">Tier 1 — Ship-blocking before v1.0<a class="headerlink" href="#tier-1-ship-blocking-before-v10" title="Permanent link">&para;</a></h3>
-<p>✅ <strong>All Tier 1 clusters closed</strong> by P7.b phase 2
-(45 fixtures recorded against real BigQuery + same-session inline
-closure of 13 of the 15 surfaced XFAILs — see CHANGELOG). Final
-state: <strong>49 PASS + 2 XFAIL</strong> of 51 fixtures in
-<code>api_configuration/</code>. Only <code>legacy_sql_select_compat_mode</code> and
-<code>dry_run_invalid_function</code> remain pinned (the legacy SQL deferral
-is intentional; the dry-run error envelope shape lands in P7.c).</p>
-<ol>
-<li>✅ <strong><code>statementType</code> + <code>numDmlAffectedRows</code></strong> for INSERT / UPDATE / DELETE / MERGE (13 fixtures, all PASS)</li>
-<li>✅ <strong><code>writeDisposition=WRITE_TRUNCATE</code> + <code>WRITE_APPEND</code></strong> with destinationTable (8 fixtures, all PASS after inline closure)</li>
-<li>✅ <strong><code>destinationTable</code> + <code>createDisposition=CREATE_NEVER</code></strong> (3 fixtures, all PASS after inline closure)</li>
-<li>✅ <strong><code>useLegacySql=true</code></strong> (1 fixture, XFAIL pinned to <code>out-of-scope.md#legacy-sql-uselegacysqltrue</code>)</li>
-<li>✅ <strong><code>useQueryCache=false</code></strong> (3 fixtures, all PASS)</li>
-<li>✅ <strong><code>dryRun=true</code></strong> (5 fixtures, all PASS post-P7.c via <code>_rewrite_for_dry_run</code>)</li>
-<li>✅ <strong><code>defaultDataset</code></strong> (3 fixtures, all PASS after inline closure)</li>
-<li>✅ <strong><code>labels</code></strong> (3 fixtures, all PASS)</li>
-<li>✅ <strong><code>parameterMode=POSITIONAL</code> deeper</strong> (5 fixtures including pilot, all PASS)</li>
-<li>✅ <strong><code>connectionProperties.session_id</code></strong> (3 fixtures, all PASS after inline closure)</li>
-</ol>
-<p><strong>Tier 1 total: 45 new fixtures recorded + 13 inline emulator
-closures shipped same session.</strong></p>
-<h3 id="tier-2-closed-p7c">Tier 2 — ✅ Closed (P7.c)<a class="headerlink" href="#tier-2-closed-p7c" title="Permanent link">&para;</a></h3>
-<ol>
-<li><code>priority=BATCH</code> — ✅ already covered in Tier 1 (3 fixtures); promoted from Tier 2.</li>
-<li>✅ <code>maximumBytesBilled</code> enforcement (2 fixtures, both PASS)</li>
-<li>✅ <code>schemaUpdateOptions</code> ALLOW_FIELD_ADDITION + ALLOW_FIELD_RELAXATION
-   (4 fixtures, <strong>all PASS</strong> after the P7.c follow-up that
-   shipped <code>_check_schema_update_options</code> for the disposition rule
-   and bypassed <code>_apply_write_append</code>'s rejection when
-   <code>ALLOW_FIELD_ADDITION</code> is set, plus catalog schema evolution
-   via <code>_evolve_destination_schema</code>)</li>
-<li>✅ <code>clusteringFields</code> + <code>timePartitioning</code> on destination table
-   (4 fixtures, <strong>all PASS</strong> after the P7.c follow-up that shipped
-   <code>_validate_destination_layout_columns</code> for column existence,
-   and re-recorded the two <code>_basic</code> fixtures with single-row
-   source tables to side-step BQ's storage-engine row order)</li>
-<li>✅ <code>jobTimeoutMs</code> enforcement (2 fixtures, both PASS)</li>
-<li>✅ <code>tabledata.list</code> pagination (5 HTTP corpus fixtures, <strong>all
-   PASS</strong> after the P7.c follow-up that shipped <code>pageToken</code> opaque
-   continuation + <code>selectedFields</code> projection in
-   <code>routes/tabledata.py</code>, plus re-recording the multi-row fixtures
-   with per-row INSERT statements so BigQuery's storage order
-   happens to match DuckDB's INSERT-order at the exercised
-   boundaries)</li>
-<li>✅ <code>api_configuration/dry_run_invalid_function</code> — closed via
-   <code>_rewrite_for_dry_run</code> (P7.c emulator inline closure)</li>
-<li>✅ <code>create_session</code> response-shape round-trip — closed via
-   <code>_maybe_mint_session</code> + <code>_attach_session_info</code> (P7.c emulator
-   inline closure)</li>
-</ol>
-<p><strong>Tier 2 total: 19 new fixtures recorded + 11 same-session inline
-emulator closures shipped.</strong> Every Tier 2 cell now PASSes; the
-P7.d follow-up workstream is reduced to legacy-SQL deferral and
-the residual Tier 3 list (CDC writes, Storage Read codec, etc.).</p>
-<h3 id="tier-3-closed-in-p7c-p3d">Tier 3 — Closed in P7.c + P3.d<a class="headerlink" href="#tier-3-closed-in-p7c-p3d" title="Permanent link">&para;</a></h3>
-<ol>
-<li>✅ Storage Read + Write API gRPC wire-format conformance —
-   P3.d shipped the new
-   <code>tests/conformance/grpc_corpus/</code> sibling
-   to <code>sql_corpus/</code> + <code>http_corpus/</code>. <strong>20 new fixtures</strong>
-   recorded against real BigQuery (10 Storage Read + 10 Storage
-   Write); <strong>all 20 PASS</strong> after 9 same-session inline emulator
-   closures. Covers maxStreamCount, preferredMinStreamCount,
-   selectedFields, rowRestriction, arrowSerializationOptions,
-   SplitReadStream, empty-table session, every WriteStream type
-   (DEFAULT / COMMITTED / PENDING / BUFFERED), CreateWriteStream
-   / GetWriteStream / FinalizeWriteStream / BatchCommit /
-   FlushRows, and the three primary error envelopes
-   (INVALID_ARGUMENT / NOT_FOUND / OUT_OF_RANGE).</li>
-<li>CDC writes (<code>_CHANGE_TYPE</code> / <code>_CHANGE_SEQUENCE_NUMBER</code>) — defer
-   to v1.0.x (Storage Write API; requires schema metadata the
-   emulator's catalog doesn't yet model). Out-of-scope per
-   ADR 0013.</li>
-<li>✅ Streaming insert <code>templateSuffix</code> / <code>insertId</code> dedup — 4
-   HTTP corpus fixtures recorded against real BigQuery
-   (<code>insertall_basic</code>, <code>insertall_insert_id_dedup</code>,
-   <code>insertall_template_suffix</code>, <code>insertall_skip_invalid_rows</code>),
-   all PASS. The <code>skipInvalidRows=true</code> handling was implemented
-   inline in <code>routes/tabledata.py::insert_all</code> with a per-row
-   try/except + BQ-shape <code>insertErrors[]</code> envelope.</li>
-<li>Storage Read <code>responseCompressionCodec</code> (LZ4_FRAME / ZSTD) —
-   defer to v1.0.x (gRPC-level codec). The
-   <code>arrowSerializationOptions.bufferCompression</code> shape is ✅
-   covered by P3.d (request option echoed back on the session
-   response); the actual codec wire-decode implementation is the
-   deferred item.</li>
-<li>✅ <code>jobs.list</code> / <code>jobs.cancel</code> / <code>jobs.delete</code> metadata
-   endpoints — already covered by P2.f HTTP corpus; the P7.c
-   sweep added <code>tables.list</code> / <code>tables.get</code> / <code>datasets.list</code> /
-   <code>datasets.get</code> (4 fixtures, all PASS) plus the dataset
-   resource emitters now include <code>type=DEFAULT</code> and
-   <code>maxTimeTravelHours=168</code> for wire-shape parity; the table
-   resource emitters add four <code>num*Bytes</code> accounting fields.</li>
-</ol>
-<h2 id="9-how-to-use-this-matrix">9. How to use this matrix<a class="headerlink" href="#9-how-to-use-this-matrix" title="Permanent link">&para;</a></h2>
+<h2 id="8-how-to-use-this-matrix">8. How to use this matrix<a class="headerlink" href="#8-how-to-use-this-matrix" title="Permanent link">&para;</a></h2>
 <p>When authoring a new fixture, the recorder picks the highest-impact
 🔴 Uncovered row and either:</p>
 <ol>
@@ -6617,26 +6310,24 @@ the residual Tier 3 list (CDC writes, Storage Read codec, etc.).</p>
 <li>Creates a new fixture with a representative SQL + a
    <code>job_config.json</code> (e.g. <code>dml_update_with_truncate</code>).</li>
 </ol>
-<p>The runner picks up the job config automatically — the framework
-extension (P7.a) wires it through.</p>
+<p>The runner picks up the job config automatically — the conformance
+framework wires it through.</p>
 <p>When extending the <strong>response equivalence</strong>, the recorder writes the
 new field into <code>expected.json</code> under the optional <code>job_metadata</code>
 block; the runner diffs only the keys that are present. This keeps
-the 878 existing fixtures valid (none of them write <code>job_metadata</code>,
-so they skip the new comparisons), and lets a single fixture
-declare which response fields are interesting to its scenario.</p>
+existing fixtures valid (none of them write <code>job_metadata</code>, so they
+skip the new comparisons), and lets a single fixture declare which
+response fields are interesting to its scenario.</p>
 <h2 id="references">References<a class="headerlink" href="#references" title="Permanent link">&para;</a></h2>
 <ul>
 <li><a href="../../adr/0022-conformance-corpus-design/">ADR 0022</a> — corpus
   design contract (extended by this audit)</li>
 <li><a href="../../adr/0023-conformance-divergence-baseline/">ADR 0023</a> — the
-  bucketed divergence framework</li>
+  divergence framework</li>
 <li><a href="../../adr/0025-perf-tier-design-contract/">ADR 0025</a> — perf-tier
   contract (sibling shape)</li>
 <li><a href="../conformance-coverage-matrix/">Conformance coverage matrix</a> —
   SQL surface coverage (this doc's sibling)</li>
-<li>v1-confidence-plan —
-  workstream P7 tracking</li>
 </ul>
 
 

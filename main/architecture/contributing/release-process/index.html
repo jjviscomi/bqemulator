@@ -5514,7 +5514,7 @@ a dedicated exit code):</p>
 </tr>
 <tr>
 <td><a href="https://github.com/jjviscomi/bqemulator/blob/main/docs/reference/api-configuration-coverage-matrix.md"><code>docs/reference/api-configuration-coverage-matrix.md</code></a></td>
-<td>Manually-maintained audit doc (labelled "Audit dated" at the top — not auto-generated). Skim for new configuration knobs the release added; refresh the audit date if any new entry lands.</td>
+<td>Manually-maintained audit doc (not auto-generated). Skim for new configuration knobs the release added; add a row whenever a new configuration surface lands.</td>
 </tr>
 <tr>
 <td><code>.dev/STATUS.md</code>, <code>.dev/v1-confidence-plan.md</code></td>
@@ -5631,18 +5631,17 @@ signatures.</p>
 </li>
 </ol>
 <h3 id="readme-project-status-flip-folded-into-the-release-pr">README "Project status" flip (folded into the release PR)<a class="headerlink" href="#readme-project-status-flip-folded-into-the-release-pr" title="Permanent link">&para;</a></h3>
-<p>Earlier iterations of this process kept the README's
-<em>aspirational-vs-factual</em> wording in a <strong>separate post-release
-PR</strong> that landed after step 10's smoke-tests. That meant every
-release shipped a chicken-and-egg gap: the release commit
-referenced a <code>vX.Y.Z-rc</code> README, and a follow-up PR had to land
-with the same release notes to flip ⚪ → ✅. v1.0.0 collapsed the
-two into a single PR; the convention since is to do the README
-flip <strong>before</strong> running the orchestrator (step 3), so the bump
-commit and the wording flip land in the same merge.</p>
+<p>The README's <em>aspirational-vs-factual</em> wording flips on the
+release branch as the <strong>first commit</strong>, before <code>make release</code>
+runs. The bump commit created by the orchestrator stacks on top,
+and squash-merge collapses both into a single commit on <code>main</code>.
+Folding the wording flip into the release PR avoids a
+chicken-and-egg gap where the release commit would otherwise
+reference a <code>vX.Y.Z-rc</code> README that a follow-up PR has to flip
+⚪ → ✅.</p>
 <p>The actionable list of strings to flip is the inverse of step 2's
 pre-release sweep — the entries below can only be true after the
-publish workflows finish, but we now write them in the release
+publish workflows finish, but they are written in the release
 commit anyway:</p>
 <table>
 <thead>

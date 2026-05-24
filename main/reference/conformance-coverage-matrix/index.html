@@ -5789,7 +5789,7 @@
 <tr>
 <td>Query language</td>
 <td><a href="https://cloud.google.com/bigquery/docs/time-travel"><code>FOR SYSTEM_TIME AS OF (time travel)</code></a></td>
-<td>Excluded from the conformance corpus by ADR 0022 §7 — the relative-timestamp form depends on wall-clock state. A literal-pinned-timestamp variant is deferred per the P2.c closure note. Dynamic time-travel is exercised at the integration tier (tests/integration/test_time_travel.py).</td>
+<td>Excluded from the conformance corpus by ADR 0022 §7 — the relative-timestamp form depends on wall-clock state. Dynamic time-travel is exercised at the integration tier (tests/integration/test_time_travel.py).</td>
 </tr>
 <tr>
 <td>Query language</td>
@@ -5839,7 +5839,7 @@
 </tbody>
 </table>
 <h2 id="variation-depth-broad-but-shallow-surfaces">Variation depth — broad-but-shallow surfaces<a class="headerlink" href="#variation-depth-broad-but-shallow-surfaces" title="Permanent link">&para;</a></h2>
-<p>These surfaces have <strong>at least 3 fixtures</strong>, but every fixture sits in the <strong>happy path</strong> — the variation taxonomy collapses to <code>{happy_path}</code>. They look covered by fixture count, but the typical BigQuery-vs-DuckDB divergence (NULL propagation, empty inputs, ±Inf / NaN, timezone arithmetic, Unicode case-folding, error-shape parity) lives in scenarios a happy-path-only sweep reliably misses. P8.b — P8.e read this list and author the missing edge-case fixtures. The taxonomy lives in <a href="https://github.com/jjviscomi/bqemulator/blob/main/tests/conformance/_corpus.py"><code>tests/conformance/_corpus.py</code></a> and is locked by <a href="../../adr/0022-conformance-corpus-design/">ADR 0022</a> §"Variation taxonomy".</p>
+<p>These surfaces have <strong>at least 3 fixtures</strong>, but every fixture sits in the <strong>happy path</strong> — the variation taxonomy collapses to <code>{happy_path}</code>. They look covered by fixture count, but the typical BigQuery-vs-DuckDB divergence (NULL propagation, empty inputs, ±Inf / NaN, timezone arithmetic, Unicode case-folding, error-shape parity) lives in scenarios a happy-path-only sweep reliably misses. Add edge-case fixtures targeting these scenarios to close the gap. The taxonomy lives in <a href="https://github.com/jjviscomi/bqemulator/blob/main/tests/conformance/_corpus.py"><code>tests/conformance/_corpus.py</code></a> and is locked by <a href="../../adr/0022-conformance-corpus-design/">ADR 0022</a> §"Variation taxonomy".</p>
 <table>
 <thead>
 <tr>
@@ -6482,7 +6482,7 @@
 <td style="text-align: right;"></td>
 <td style="text-align: center;"></td>
 <td></td>
-<td><em>Excluded from the conformance corpus by ADR 0022 §7 — the relative-timestamp form depends on wall-clock state. A literal-pinned-timestamp variant is deferred per the P2.c closure note. Dynamic time-travel is exercised at the integration tier (tests/integration/test_time_travel.py).</em></td>
+<td><em>Excluded from the conformance corpus by ADR 0022 §7 — the relative-timestamp form depends on wall-clock state. Dynamic time-travel is exercised at the integration tier (tests/integration/test_time_travel.py).</em></td>
 </tr>
 <tr>
 <td><a href="https://cloud.google.com/bigquery/docs/table-sampling"><code>TABLESAMPLE</code></a> <em>(excluded — non-deterministic)</em></td>
@@ -9257,7 +9257,7 @@
 <td style="text-align: right;"></td>
 <td style="text-align: center;"></td>
 <td></td>
-<td><em>Parameter-bound queries via <code>QueryJobConfig.query_parameters</code>. Detected by the <code>parameters.json</code> fixture file (P2.e).</em></td>
+<td><em>Parameter-bound queries via <code>QueryJobConfig.query_parameters</code>. Detected by the <code>parameters.json</code> fixture file.</em></td>
 </tr>
 <tr>
 <td><a href="https://cloud.google.com/bigquery/docs/parameterized-queries#bigquery_query_parameters_via_rest-python"><code>Positional queryParameters (mode="positional")</code></a></td>
@@ -9271,7 +9271,7 @@
 <td style="text-align: right;"></td>
 <td style="text-align: center;"></td>
 <td></td>
-<td><em>Parameter-bound queries via <code>QueryJobConfig.query_parameters</code> using <code>?</code> placeholders. Detected by <code>parameters.json</code> (P2.e).</em></td>
+<td><em>Parameter-bound queries via <code>QueryJobConfig.query_parameters</code> using <code>?</code> placeholders. Detected by <code>parameters.json</code>.</em></td>
 </tr>
 <tr>
 <td><a href="https://cloud.google.com/bigquery/docs/parameterized-queries#array_parameters"><code>ARRAY queryParameter</code></a></td>
@@ -9285,7 +9285,7 @@
 <td style="text-align: right;"></td>
 <td style="text-align: center;"></td>
 <td></td>
-<td><em><code>arrayType</code> parameter shape. Detected by <code>parameters.json</code> carrying an ARRAY type spec (P2.e).</em></td>
+<td><em><code>arrayType</code> parameter shape. Detected by <code>parameters.json</code> carrying an ARRAY type spec.</em></td>
 </tr>
 <tr>
 <td><a href="https://cloud.google.com/bigquery/docs/parameterized-queries#struct_parameters"><code>STRUCT queryParameter</code></a></td>
@@ -9299,7 +9299,7 @@
 <td style="text-align: right;"></td>
 <td style="text-align: center;"></td>
 <td></td>
-<td><em><code>structTypes</code> parameter shape. Detected by <code>parameters.json</code> carrying a STRUCT type spec (P2.e).</em></td>
+<td><em><code>structTypes</code> parameter shape. Detected by <code>parameters.json</code> carrying a STRUCT type spec.</em></td>
 </tr>
 <tr>
 <td><a href="https://cloud.google.com/bigquery/docs/parameterized-queries#using_null_values"><code>NULL-valued queryParameter</code></a></td>
@@ -9313,14 +9313,14 @@
 <td style="text-align: right;"></td>
 <td style="text-align: center;"></td>
 <td></td>
-<td><em>A typed parameter with no value — exercises BQ's typed-NULL binding. Emulator wraps with <code>CAST(? AS T)</code> to preserve the declared type through the schema renderer (P2.e).</em></td>
+<td><em>A typed parameter with no value — exercises BQ's typed-NULL binding. Emulator wraps with <code>CAST(? AS T)</code> to preserve the declared type through the schema renderer.</em></td>
 </tr>
 </tbody>
 </table>
 <h3 id="error-response-parity">Error response parity<a class="headerlink" href="#error-response-parity" title="Permanent link">&para;</a></h3>
 <p><a href="https://cloud.google.com/bigquery/docs/reference/rest/v2/ErrorProto">BigQuery reference</a> -- <strong>4 / 4 items covered</strong></p>
 <blockquote>
-<p>Recorded error envelopes (<code>error.reason</code> / <code>http_status</code> / <code>message_pattern</code>). Coverage is owned by P3.a and the <code>error.json</code> fixtures.</p>
+<p>Recorded error envelopes (<code>error.reason</code> / <code>http_status</code> / <code>message_pattern</code>). Coverage lives in recorded <code>error.json</code> fixtures.</p>
 </blockquote>
 <table>
 <thead>

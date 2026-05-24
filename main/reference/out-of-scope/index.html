@@ -5819,7 +5819,7 @@ stream state would require a persistent WAL layer that duplicates
 DuckDB's storage engine without matching BigQuery's production
 semantics precisely. See <a href="../../adr/0013-write-api-strategies/">ADR 0013</a>.</p>
 <h3 id="durable-upload-session-state">Durable upload session state<a class="headerlink" href="#durable-upload-session-state" title="Permanent link">&para;</a></h3>
-<p>Resumable upload sessions opened via the G2 upload host
+<p>Resumable upload sessions opened via the upload host
 (<code>/upload/bigquery/v2/projects/{p}/jobs?uploadType=resumable</code>) are
 kept <strong>in memory only</strong>. A process restart drops every in-progress
 session, including the partially uploaded bytes staged on disk under
@@ -5930,10 +5930,9 @@ emulator targets. The fixture stays XFAILed against this section.</p>
 - <code>standard_functions/bound_bignumeric_max</code> (39 integer digits —
   XFAILed against DuckDB's 38-digit DECIMAL cap).</p>
 <h3 id="spheroidal-geometry-on-geography">Spheroidal geometry on GEOGRAPHY<a class="headerlink" href="#spheroidal-geometry-on-geography" title="Permanent link">&para;</a></h3>
-<p>BigQuery's <code>GEOGRAPHY</code> uses a <strong>spherical</strong> geometry model — empirically
-confirmed by the P2.g boundary-mapping session to use S2's documented
-<code>kEarthRadiusMeters = 6371010.0</code>. The P2.g spheroidal-
-follow-up shipped <strong>5 new translator rules</strong> in
+<p>BigQuery's <code>GEOGRAPHY</code> uses a <strong>spherical</strong> geometry model — it
+uses S2's documented <code>kEarthRadiusMeters = 6371010.0</code>. The
+emulator ships <strong>5 translator rules</strong> in
 <a href="https://github.com/jjviscomi/bqemulator/blob/main/src/bqemulator/sql/rules/spatial.py"><code>bqemulator.sql.rules.spatial</code></a>
 (<code>StDistanceSpheroidalRule</code> / <code>StLengthSpheroidalRule</code> /
 <code>StAreaSpheroidalRule</code> / <code>StPerimeterSpheroidalRule</code> /
@@ -5943,14 +5942,14 @@ the metric-returning SQL surfaces through 3D-unit-vector great-circle
 math (atan2 / cross / dot) and L'Huilier-fan spherical excess on the
 S2 sphere. All 4 continental fixtures (<code>st_distance_continental</code> /
 <code>st_area_continental</code> / <code>st_length_continental</code> /
-<code>st_perimeter_continental</code>), all 12 metric P2.g fixtures (6 distance
-+ 1 high-latitude + 3 area + 2 length), and the small-scale
-<code>st_dwithin_no</code> predicate <strong>close cleanly</strong> — every value matches
-BigQuery's recording to within <code>rel_tol=1e-12</code>. The remaining
-spheroidal-bucket fixtures below describe surfaces the spherical
-helpers <strong>do NOT yet cover</strong>:</p>
+<code>st_perimeter_continental</code>), all 12 metric spheroidal fixtures
+(6 distance + 1 high-latitude + 3 area + 2 length), and the
+small-scale <code>st_dwithin_no</code> predicate match BigQuery's recording
+to within <code>rel_tol=1e-12</code>. The remaining spheroidal-bucket
+fixtures below describe surfaces the spherical helpers <strong>do NOT
+yet cover</strong>:</p>
 <ul>
-<li><strong>ST_BUFFER</strong> (4 fixtures: 3 P2.g buffer + <code>st_buffer_continental</code>)
+<li><strong>ST_BUFFER</strong> (4 fixtures: 3 buffer + <code>st_buffer_continental</code>)
   — generating BigQuery's exact 33-vertex geodesic-circle polygon
   needs a per-vertex bearing generator that emits the same azimuth /
   step / radius coordinates as BigQuery's internal algorithm.</li>
@@ -5971,124 +5970,6 @@ remaining fixture above) would require the S2 library or equivalent
 spheroidal backend — substantial complexity for fixtures that the
 existing helpers already close for the common ST_DISTANCE / ST_AREA /
 ST_LENGTH / ST_PERIMETER / ST_DWITHIN paths.</p>
-<p><em>Historical note</em>: the original ADR 0019 framed the divergence as
-"WGS-84 spheroidal" and "diverges at continental scales". The P2.g
-session's empirical recording proved both framings wrong:
-<strong>BigQuery's GEOGRAPHY is spherical</strong> (S2 with constant earth
-radius, not WGS-84 ellipsoid), and metric returns diverged <strong>at
-every scale</strong> under DuckDB's planar evaluation — so the closure
-shipped a spherical-Earth helper rather than a unit-conversion
-shim. The previous metric-divergence ratio table is preserved
-below for historical context — every row in that table is now
-closed by the spherical helpers:</p>
-<table>
-<thead>
-<tr>
-<th>Operation × scale</th>
-<th>BigQuery (spheroidal)</th>
-<th>Emulator (planar)</th>
-<th>Ratio</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>Distance, street (~100 m NYC)</td>
-<td>92.65 m</td>
-<td>0.0011 (deg-Euclidean)</td>
-<td>~84,000×</td>
-</tr>
-<tr>
-<td>Distance, neighborhood (~1 km NYC)</td>
-<td>1000.76 m</td>
-<td>0.0090</td>
-<td>~111,000×</td>
-</tr>
-<tr>
-<td>Distance, city (~10 km NYC)</td>
-<td>10007.56 m</td>
-<td>0.0900</td>
-<td>~111,000×</td>
-</tr>
-<tr>
-<td>Distance, metro (~83 km NYC↔Trenton)</td>
-<td>82960.36 m</td>
-<td>0.8862</td>
-<td>~94,000×</td>
-</tr>
-<tr>
-<td>Distance, state (~559 km SF↔LA)</td>
-<td>559121.45 m</td>
-<td>5.5942</td>
-<td>~100,000×</td>
-</tr>
-<tr>
-<td>Distance, national (~2619 km NYC↔Denver)</td>
-<td>2619059.53 m</td>
-<td>30.9996</td>
-<td>~84,000×</td>
-</tr>
-<tr>
-<td>Distance, high-latitude (10° lng at 80°N)</td>
-<td>192850.65 m</td>
-<td>10.0</td>
-<td>~19,000×</td>
-</tr>
-<tr>
-<td>Area, neighborhood (~0.94 km² NYC)</td>
-<td>936,609 m²</td>
-<td>1.0e-4 (deg²)</td>
-<td>~9.4e9×</td>
-</tr>
-<tr>
-<td>Area, city (~94 km² NYC)</td>
-<td>9.37e7 m²</td>
-<td>1.0e-2</td>
-<td>~9.4e9×</td>
-</tr>
-<tr>
-<td>Area, state (~253,000 km² Wyoming)</td>
-<td>2.53e11 m²</td>
-<td>28.0</td>
-<td>~9.0e9×</td>
-</tr>
-<tr>
-<td>Length, city LINESTRING (~10 km)</td>
-<td>10007.56 m</td>
-<td>0.0900</td>
-<td>~111,000×</td>
-</tr>
-<tr>
-<td>Length, state LINESTRING (~559 km)</td>
-<td>559121.45 m</td>
-<td>5.5942</td>
-<td>~100,000×</td>
-</tr>
-<tr>
-<td>Buffer, street (10 m radius)</td>
-<td>~9e-5 deg-radius polygon</td>
-<td>10-degree-radius polygon</td>
-<td>radius scale ~111,000×</td>
-</tr>
-<tr>
-<td>Buffer, neighborhood (100 m radius)</td>
-<td>~9e-4 deg-radius polygon</td>
-<td>100-degree-radius polygon</td>
-<td>radius scale ~111,000×</td>
-</tr>
-<tr>
-<td>Buffer, state (100 km radius)</td>
-<td>~0.9 deg-radius polygon</td>
-<td>100,000-degree-radius polygon</td>
-<td>radius scale ~111,000×</td>
-</tr>
-</tbody>
-</table>
-<p>The ratio approaches the WGS-84 metre-per-degree constant
-(~111,320 m/deg at the equator) for length quantities, its square
-(~1.24e10 m²/deg²) for area quantities, and shrinks with latitude
-(<code>× cos(lat)</code>) because the longitude meridian compresses
-toward the poles — explaining the smaller ~19,000× ratio for the
-80°N fixture vs ~111,000× near the equator.</p>
 <p><strong>Shape returns — divergence is small but non-zero at every scale.</strong>
 <code>ST_CENTROID</code>, <code>ST_INTERSECTION</code>, <code>ST_ASGEOJSON</code> on long edges,
 and <code>ST_DWITHIN</code> (the predicate flips when the planar distance
@@ -6097,9 +5978,9 @@ does not) all return planar-vs-spheroidal coordinate drift because
 geodesics curve while planar lines stay straight. The drift is small
 in absolute terms (typically &lt;0.001 degrees at small scales) but
 exceeds the <code>rel_tol=1e-12</code> <code>FLOAT64</code> tolerance the runner uses
-for non-WKT-shaped float comparisons. The previously documented
-small-scale Bucket H closures (<code>st_centroid_polygon</code>,
-<code>st_intersection_polygons</code>, <code>st_dwithin_no</code>) are examples.</p>
+for non-WKT-shaped float comparisons. The small-scale
+<code>st_centroid_polygon</code>, <code>st_intersection_polygons</code>, and
+<code>st_dwithin_no</code> fixtures are examples.</p>
 <p><em>Rationale</em>: the emulator is an integration-test target. A correct
 spheroidal implementation would require shipping a second geometry
 library (s2geometry or shapely + projection code) and bridging it
@@ -6116,9 +5997,9 @@ geodesic-interpolation coordinates) in a separate conformance-against-
 real-BQ stage. For development-time sanity checks, the emulator's
 relative ordering of distances and the topology of intersections /
 buffers is preserved — only the absolute numeric values diverge.</p>
-<p><em>Conformance fixtures pinned to this section</em> (post-P2.g spherical
-closure — every metric fixture except buffer + every continental
-metric + <code>st_dwithin_no</code> are now PASSing):
+<p><em>Conformance fixtures pinned to this section</em> (the metric fixtures
+except buffer, every continental metric, and <code>st_dwithin_no</code> all
+PASS):
 - <code>specialized_types/st_buffer_continental</code>
   (BigQuery's 33-vertex geodesic-circle polygon's exact vertex
   coordinates need a per-vertex bearing/step generator the helpers
@@ -6131,22 +6012,6 @@ metric + <code>st_dwithin_no</code> are now PASSing):
   (the planar intersection follows straight edges where the
   spheroidal one bulges along geodesics — needs a geodesic-arc
   intersection)
-- ✅ <strong>CLOSED (P3.d follow-up)</strong> —
-  <code>specialized_types/st_asgeojson_{linestring,multilinestring,
-  geometrycollection,multipolygon}</code> were XFAILed historically
-  because DuckDB-spatial's <code>ST_AsGeoJSON</code> omits the geodesic
-  midpoint vertices BigQuery inserts on long non-equatorial /
-  non-meridian edges. The closure ships a new
-  <code>bqemu_geojson_geodesic_interp</code> Python helper UDF in
-  <code>builtin_udfs.py</code> that walks DuckDB's GeoJSON output and
-  inserts great-circle midpoints when the chord-vs-geodesic
-  deviation exceeds ~100 µdegrees (the empirical threshold sitting
-  between BigQuery's observed [≤76 µdeg → skip] and [≥114 µdeg →
-  insert] outcomes). The libm-vs-S2 ULP drift on the interpolated
-  coordinate values is absorbed by a new float-tolerance pass in
-  <code>_compare_json_shaped_string</code>
-  (<code>rel_tol=1e-12, abs_tol=1e-15</code>, matching the native FLOAT64
-  comparator). All 4 fixtures now PASS.
 - <code>specialized_types/st_asbinary_point</code>
   (BigQuery encodes <code>ST_GEOGPOINT(1, 1)</code> via an ECEF→lng/lat
   round-trip that loses 1 ULP per axis; recorded
@@ -6303,8 +6168,7 @@ real-world dates are post-1900.</p>
 <p>The conformance fixture
 <a href="https://github.com/jjviscomi/bqemulator/blob/main/tests/conformance/sql_corpus/standard_functions/dt_format_date_min"><code>standard_functions/dt_format_date_min</code></a>
 is pinned XFAIL against this divergence so the surface is tracked
-without forcing a P8.b-session inline closure. Re-opening when
-either approach above passes a cost/benefit review.</p>
+without forcing an inline closure.</p>
 <p><em>Workaround</em>: clients that need the un-padded year for pre-1000
 dates should format the year explicitly (e.g.
 <code>CAST(EXTRACT(YEAR FROM d) AS STRING)</code>) or use a SAFE_CAST to
@@ -6350,9 +6214,8 @@ exact internal step that mis-fires is not yet diagnosed.</p>
 <p>The conformance fixture
 <a href="https://github.com/jjviscomi/bqemulator/blob/main/tests/conformance/sql_corpus/standard_functions/tpcds_q47"><code>standard_functions/tpcds_q47</code></a>
 is pinned XFAIL against this divergence. Q47 is the only one of
-the 29 TPC-DS fixtures (10 P8.d + 19 P8.d-expansion) that surfaces
-this issue; the 18 other expansion picks all PASS without code
-changes.</p>
+the 29 TPC-DS fixtures in the corpus that surfaces this issue; the
+other 28 picks PASS without code changes.</p>
 <p><em>Workaround</em>: clients that need the same shape should
 materialise the CTE manually (<code>CREATE TEMP TABLE v1_materialised
 AS SELECT... FROM v1</code>) before the self-join, or refactor to
@@ -6380,9 +6243,9 @@ then convert downstream with <code>pyorc</code> or <code>pyarrow</code>:</p>
 </span><span id="__span-1-8"><a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a>    <span class="n">writer</span><span class="o">.</span><span class="n">write_rows</span><span class="p">(</span><span class="n">arrow_table</span><span class="o">.</span><span class="n">to_pylist</span><span class="p">())</span>
 </span><span id="__span-1-9"><a id="__codelineno-1-9" name="__codelineno-1-9" href="#__codelineno-1-9"></a>    <span class="n">writer</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
 </span></code></pre></div>
-<p>Background: introduced as part of G1
-(<a href="../../adr/0027-load-extract-avro-orc/">ADR 0027</a>). ORC <strong>load</strong> is
-supported via the optional <code>[orc]</code> extra; only ORC write is excluded.</p>
+<p>See <a href="../../adr/0027-load-extract-avro-orc/">ADR 0027</a> for the
+load/extract format-coverage contract. ORC <strong>load</strong> is supported
+via the optional <code>[orc]</code> extra; only ORC write is excluded.</p>
 <h3 id="information_schemajobs-family">INFORMATION_SCHEMA.JOBS* family<a class="headerlink" href="#information_schemajobs-family" title="Permanent link">&para;</a></h3>
 <p><strong>Status</strong>: Excluded permanently.</p>
 <p>BigQuery exposes a <code>JOBS</code> / <code>JOBS_BY_PROJECT</code> / <code>JOBS_BY_FOLDER</code> /
@@ -6413,9 +6276,8 @@ other job fields a script-side audit needs:</p>
 </span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="k">for</span> <span class="n">job</span> <span class="ow">in</span> <span class="n">client</span><span class="o">.</span><span class="n">list_jobs</span><span class="p">(</span><span class="n">state_filter</span><span class="o">=</span><span class="s2">&quot;DONE&quot;</span><span class="p">,</span> <span class="n">max_results</span><span class="o">=</span><span class="mi">50</span><span class="p">):</span>
 </span><span id="__span-2-4"><a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a>    <span class="nb">print</span><span class="p">(</span><span class="n">job</span><span class="o">.</span><span class="n">job_id</span><span class="p">,</span> <span class="n">job</span><span class="o">.</span><span class="n">statement_type</span><span class="p">,</span> <span class="n">job</span><span class="o">.</span><span class="n">total_bytes_processed</span><span class="p">)</span>
 </span></code></pre></div>
-<p>Background: introduced as part of G4
-(<a href="../conformance-coverage-matrix/">conformance-coverage-matrix.md</a>
-extension for INFORMATION_SCHEMA). Goccy's
+<p>See <a href="../conformance-coverage-matrix/">conformance-coverage-matrix.md</a>
+for the INFORMATION_SCHEMA coverage inventory. Goccy's
 <code>bigquery-emulator</code> also defers this surface; the emulator's
 parity-with-goccy stance keeps it out of scope.</p>
 <h3 id="google-cloud-storage-emulation">Google Cloud Storage emulation<a class="headerlink" href="#google-cloud-storage-emulation" title="Permanent link">&para;</a></h3>

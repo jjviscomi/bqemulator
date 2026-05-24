@@ -5295,7 +5295,7 @@ operator-facing guide see <a href="../../guides/conformance-corpus/">conformance
    use case: verifying a recording-session PR before opening it).</li>
 </ol>
 <p>The corpus currently ships <strong>1141 active SQL fixtures + 48 HTTP +
-26 gRPC = 1215 active fixtures</strong> (plus 18 G4 INFORMATION_SCHEMA
+26 gRPC = 1215 active fixtures</strong> (plus 18 INFORMATION_SCHEMA
 stubs awaiting operator-side recording). 13 fixtures are pinned
 XFAIL in <code>tests/conformance/divergences.py</code> as permanent
 design-decision divergences. The pass-rate gate is <strong>100%
@@ -5360,7 +5360,7 @@ divergences registry. ADR 0022 §5 documents the gate in detail.</p>
 </table>
 <h2 id="fixture-data-shape">Fixture data shape<a class="headerlink" href="#fixture-data-shape" title="Permanent link">&para;</a></h2>
 <p>Two shapes exist; the runner branches on the optional <code>error</code>
-field's presence (see ADR 0022 §3 <code>Error parity</code>, P3.a).</p>
+field's presence (see ADR 0022 §3 <code>Error parity</code>).</p>
 <p><code>expected.json</code> (version 1 — success / row fixtures):</p>
 <div class="language-json highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="p">{</span>
 </span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="w">  </span><span class="nt">&quot;fixture_version&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span>
@@ -5382,7 +5382,7 @@ field's presence (see ADR 0022 §3 <code>Error parity</code>, P3.a).</p>
 </span><span id="__span-1-18"><a id="__codelineno-1-18" name="__codelineno-1-18" href="#__codelineno-1-18"></a><span class="w">  </span><span class="nt">&quot;duration_class&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;fast&quot;</span>
 </span><span id="__span-1-19"><a id="__codelineno-1-19" name="__codelineno-1-19" href="#__codelineno-1-19"></a><span class="p">}</span>
 </span></code></pre></div>
-<p><code>expected.json</code> (version 2 — error fixtures, P3.a):</p>
+<p><code>expected.json</code> (version 2 — error fixtures):</p>
 <div class="language-json highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="p">{</span>
 </span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="w">  </span><span class="nt">&quot;fixture_version&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">2</span><span class="p">,</span>
 </span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="w">  </span><span class="nt">&quot;bigquery&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
@@ -5525,8 +5525,8 @@ emulator with the committed <code>expected.json</code> baselines.</p>
 <li>The emulator regressed (most common — fix and re-merge).</li>
 <li>BigQuery itself shipped a change (rare — re-record locally and
   review).</li>
-<li>A divergence was closed (a previously-xfail'd fixture now passes —
-  remove the entry from <code>divergences.py</code>).</li>
+<li>A divergence was closed (an xfail'd fixture now passes — remove
+  the entry from <code>divergences.py</code>).</li>
 </ul>
 <p>Re-recording is a deliberate <strong>local</strong> action. The maintainer runs
 <code>scripts/record_conformance_fixtures.py</code> on their workstation
