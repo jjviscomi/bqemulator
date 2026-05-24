@@ -66,6 +66,19 @@ lint: ## Lint + typecheck + security scan
 	interrogate src
 	typos .
 
+linkcheck: ## Run lychee with the workspace-aware self-link remap (CI parity)
+	@command -v lychee >/dev/null 2>&1 || { \
+	  echo "lychee not installed. Install via:"; \
+	  echo "  brew install lychee   # macOS"; \
+	  echo "  cargo install lychee  # other"; \
+	  exit 1; \
+	}
+	lychee --no-progress \
+	  --config .lychee.toml \
+	  --remap 'https://github.com/jjviscomi/bqemulator/blob/main/(.+) file://$(CURDIR)/$$1' \
+	  --remap 'https://github.com/jjviscomi/bqemulator/tree/main/(.+) file://$(CURDIR)/$$1' \
+	  '**/*.md'
+
 # ---------------------------------------------------------------------------
 # Quality gates (complexity required; duplication + dead-code non-blocking)
 # ---------------------------------------------------------------------------

@@ -20,6 +20,51 @@ section and adds the release date.
 
 ## [Unreleased]
 
+### Changed
+
+- **Lychee linkcheck resolves repo-self-references locally** —
+  closes a structural failure mode observed during the v1.1.0
+  cascade. Generated docs (coverage-matrix, compat-matrix,
+  function-mapping, api-coverage) emit absolute
+  ``github.com/jjviscomi/bqemulator/{blob,tree}/main/<path>`` URLs
+  for every repo-internal file reference — necessary for the
+  mkdocs-rendered public site, but lychee on a PR branch would
+  fetch those URLs over HTTP, get a 404 (file not yet on
+  ``main``) or a transient github.com 502, and fail the build.
+  Every PR adding new files would hit this; PRs #57, #58, and
+  #60 each failed linkcheck 1-4 times during the cascade.
+
+  Fix: invoke lychee with two ``--remap`` arguments rewriting
+  ``github.com/jjviscomi/bqemulator/{blob,tree}/main/(.+)`` to
+  ``file://<workspace>/<path>``. lychee resolves the
+  rewritten URL against the PR-branch checkout instead of
+  fetching ``main``. The remap is CLI-side (not in
+  ``.lychee.toml``) because lychee's config-file ``remap``
+  expects valid URLs and can't expand the absolute workspace
+  path. Wired in two places:
+
+  - [``.github/workflows/linkcheck.yml``](.github/workflows/linkcheck.yml)
+    — uses ``${{ github.workspace }}`` template var.
+  - [``Makefile``](Makefile) ``linkcheck`` target — uses
+    ``$(CURDIR)`` for local-dev parity (``$$`` in the recipe
+    expands to a literal ``$``, so the shell receives
+    ``$(CURDIR)`` which make substitutes; the trailing ``$$1``
+    is similarly the make-escape that produces the literal
+    ``$1`` lychee needs as its regex backreference).
+
+  Behavioural envelope vs. pre-fix:
+  - PR-branch new files: now pass instead of 404 (correct).
+  - github.com 502 transients on self-links: now no-op (correct).
+  - Renamed/deleted files: still caught (lychee reports
+    "file not found" against the local checkout — equivalent
+    signal to the previous 404).
+  - The mkdocs public site keeps fetching the absolute github
+    URLs at render time — ``--remap`` is a lychee-only directive.
+
+  Verified locally: ``make linkcheck`` → 2345 total, 0 errors,
+  10s. The ``.lychee.toml`` retains the full design rationale
+  as a top-level comment block.
+
 ### Added
 
 - **TPC-DS expansion plan documented** — new
