@@ -35,6 +35,13 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
+# Top-level permissions follow OpenSSF Scorecard's Token-Permissions
+# least-privilege guidance: default to read-only. The single job
+# (``lychee``) below escalates to ``issues: write`` only when the
+# scheduled trigger needs to upsert a tracking issue on link rot.
+permissions:
+  contents: read
+
 jobs:
   lychee:
     name: Verify links

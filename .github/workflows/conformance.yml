@@ -39,9 +39,11 @@ name: Conformance (ad-hoc)
 on:
   workflow_dispatch:
 
+# Token-Permissions least-privilege: the workflow does not write any
+# resource. The previous ``issues: write`` was carry-over from an
+# earlier "post issue on failure" pattern that's no longer wired.
 permissions:
   contents: read
-  issues: write
 
 jobs:
   conformance:

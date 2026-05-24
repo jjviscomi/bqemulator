@@ -6,16 +6,34 @@ on:
     tags: ["v*.*.*"]
   workflow_dispatch:
 
+# Cancel an in-flight Docker build when a newer commit lands on the
+# same ref. Branch pushes to ``main`` can otherwise race and produce a
+# stale ``:latest`` image; tag builds are inherently single-shot so
+# the cancellation only fires on the ``main`` branch case in practice.
+concurrency:
+  group: docker-${{ github.ref }}
+  cancel-in-progress: true
+
+# Token-Permissions least-privilege (OpenSSF Scorecard guidance):
+# top-level is read-only; the ``publish`` job below escalates only
+# to the writes it actually needs.
 permissions:
   contents: read
-  packages: write
-  id-token: write
-  attestations: write
 
 jobs:
   publish:
     name: Build + publish multi-arch image
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      # GHCR image push.
+      packages: write
+      # cosign keyless OIDC signature + SLSA Build Provenance
+      # attestation sign — both require OIDC token issuance.
+      id-token: write
+      # actions/attest-build-provenance writes the attestation via
+      # GitHub's native attestations API.
+      attestations: write
     steps:
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
       - uses: docker/setup-qemu-action@c7c53464625b32c7a7e944ae62b3e17d2b600130 # v3.7.0
