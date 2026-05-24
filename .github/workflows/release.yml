@@ -57,7 +57,28 @@ jobs:
         with:
           name: dist
           path: dist/
+      # Generate a SLSA Build Provenance attestation covering every
+      # file in ``dist/`` (wheel + sdist). The action signs via
+      # sigstore keyless OIDC and stores the bundle on GitHub's
+      # native attestations API. The resulting ``.intoto.jsonl``
+      # bundle is then attached to the GitHub Release alongside
+      # the artifacts so OpenSSF Scorecard's ``Signed-Releases``
+      # check sees a signature file at the standard location and
+      # marks the release as signed. See
+      # [ADR 0039](../../docs/adr/0039-artifact-attestations.md).
+      #
+      # PyPI gets its own sigstore attestations via Trusted
+      # Publishing (``attestations: true`` in the publish-pypi job
+      # above) — this attestation is the GitHub-Release-side
+      # parallel, so Scorecard's release-asset scan can see it.
+      - name: Attest build provenance for dist artifacts
+        id: attest
+        uses: actions/attest-build-provenance@v3
+        with:
+          subject-path: 'dist/*'
       - uses: softprops/action-gh-release@v2
         with:
           generate_release_notes: true
-          files: dist/*
+          files: |
+            dist/*
+            ${{ steps.attest.outputs.bundle-path }}

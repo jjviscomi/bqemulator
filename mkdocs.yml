@@ -222,6 +222,7 @@ nav:
       - "0036 Cyclomatic-complexity ratchet to rank C + promote-to-required gate": adr/0036-complexity-ratchet-to-c.md
       - "0037 OpenSSF Scorecard adoption + badge": adr/0037-openssf-scorecard.md
       - "0038 SESSION_USER() pre-translator substitution": adr/0038-session-user.md
+      - "0039 SLSA Build Provenance on GitHub Release assets": adr/0039-artifact-attestations.md
   - RFCs: rfcs/README.md
   - Examples:
       - Overview: examples/README.md
