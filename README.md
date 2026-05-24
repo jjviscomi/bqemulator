@@ -201,7 +201,7 @@ See the [`docker-compose/full-stack`](docs/examples/docker-compose/full-stack/) 
 
 ## What works today
 
-`bqemulator` is at **v1.0.2** — second patch on the production-stable
+`bqemulator` is at **v1.1.0** — first minor on the production-stable
 line. SemVer applies: breaking changes ship only in MAJOR,
 deprecations live ≥2 MINOR or 6 months. The [compatibility matrix](https://jjviscomi.github.io/bqemulator/latest/reference/compatibility-matrix/) is auto-generated from the conformance corpus on every CI run; the [conformance coverage matrix](https://jjviscomi.github.io/bqemulator/latest/reference/conformance-coverage-matrix/) breaks down support by surface item.
 
@@ -271,7 +271,7 @@ Every example under [`docs/examples/`](docs/examples/) is a complete, runnable p
 
 ## Project status
 
-`bqemulator` is at **v1.0.2** — second patch on the production-stable
+`bqemulator` is at **v1.1.0** — first minor on the production-stable
 line. SemVer applies: breaking changes ship only in MAJOR
 versions, preceded by ≥1 MINOR with deprecation warnings;
 deprecated APIs remain for ≥2 MINOR versions or 6 months.
@@ -286,8 +286,8 @@ Maturity signals:
 - ✅ Fuzz-tier (`Atheris`) harnesses on the SQL translator, dynamic-protobuf decoder, and Arrow bridge.
 - ✅ Differential-tier row-order perturbation of the entire conformance corpus passes.
 - ✅ Performance baselines committed for `darwin-arm64`, with regression gates (`pytest-benchmark` `--benchmark-compare-fail=median:10%`).
-- ✅ PyPI publish via Trusted Publishing (sigstore-attested wheels) — `pip install bqemulator==1.0.2` resolves from [PyPI](https://pypi.org/project/bqemulator/).
-- ✅ GHCR publish with keyless cosign signatures — `docker pull ghcr.io/jjviscomi/bqemulator:1.0.2` resolves and the image is cosign-verifiable.
+- ✅ PyPI publish via Trusted Publishing (sigstore-attested wheels) — `pip install bqemulator==1.1.0` resolves from [PyPI](https://pypi.org/project/bqemulator/).
+- ✅ GHCR publish with keyless cosign signatures — `docker pull ghcr.io/jjviscomi/bqemulator:1.1.0` resolves and the image is cosign-verifiable.
 
 See [`CHANGELOG.md`](CHANGELOG.md) for the complete v1.0 inventory.
 
