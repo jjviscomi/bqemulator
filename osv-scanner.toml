@@ -1,0 +1,49 @@
+# OSV-scanner configuration.
+#
+# Documents vulnerabilities accepted as known and unfixable. Each entry
+# carries a rationale; entries without a written reason are not permitted.
+# Consumers running ``osv-scanner`` against this repository honour these
+# ignores; CI workflows that wrap osv-scanner read this file via
+# ``--config osv-scanner.toml``.
+
+# ---------------------------------------------------------------------------
+# Unpatched docker/docker GHSAs (transitive of testcontainers-go).
+#
+# The Go example projects (docs/examples/go/beam-pipeline,
+# docs/examples/go/dataflow-local) pull ``github.com/docker/docker`` as
+# an indirect dependency of ``github.com/testcontainers/testcontainers-go``.
+# The advisories below have no upstream-patched version available
+# (OSV reports ``fixed: --``); the latest stable docker/docker release
+# carries the same code paths flagged.
+#
+# These advisories describe vulnerabilities in the Docker daemon's HTTP
+# API surface (Engine API, attach/exec stream handling). The example
+# projects use docker/docker only via testcontainers-go's lifecycle
+# control (container start/stop), not the affected request shapes; the
+# code paths exercised are limited to ``ContainerCreate``, ``ContainerStart``,
+# ``ContainerStop``, and ``ContainerRemove``.
+#
+# Re-evaluate when docker/docker ships patched releases. Track upstream:
+# - https://github.com/docker/docker/security/advisories
+# - https://github.com/testcontainers/testcontainers-go (for a docker
+#   client replacement)
+
+[[IgnoredVulns]]
+id = "GHSA-rg2x-37c3-w2rh"
+reason = "docker/docker unfixed; affects only Docker daemon Engine API surface not exercised by testcontainers-go lifecycle calls used in Go example projects."
+
+[[IgnoredVulns]]
+id = "GHSA-vp62-88p7-qqf5"
+reason = "docker/docker unfixed; affects only Docker daemon Engine API surface not exercised by testcontainers-go lifecycle calls used in Go example projects."
+
+[[IgnoredVulns]]
+id = "GHSA-x86f-5xw2-fm2r"
+reason = "docker/docker unfixed; affects only Docker daemon Engine API surface not exercised by testcontainers-go lifecycle calls used in Go example projects."
+
+[[IgnoredVulns]]
+id = "GHSA-x744-4wpc-v9h2"
+reason = "docker/docker unfixed; affects only Docker daemon Engine API surface not exercised by testcontainers-go lifecycle calls used in Go example projects."
+
+[[IgnoredVulns]]
+id = "GHSA-pxq6-2prw-chj9"
+reason = "docker/docker unfixed; affects only Docker daemon Engine API surface not exercised by testcontainers-go lifecycle calls used in Go example projects."
