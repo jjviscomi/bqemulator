@@ -3269,6 +3269,8 @@
       
         
       
+        
+      
     
     
     
@@ -4393,6 +4395,34 @@
     
   
     0039 SLSA Build Provenance on GitHub Release assets
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../adr/0040-session-user-coverage-closure/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0040 SESSION_USER coverage closure: aliases + Storage Read pre-pass
   
 
     
@@ -5665,7 +5695,7 @@
 <p><strong>Auto-generated.</strong> Edit <a href="https://github.com/jjviscomi/bqemulator/blob/main/tests/conformance/_surface_inventory.py"><code>tests/conformance/_surface_inventory.py</code></a> to add surface items, then run <code>make coverage-matrix</code> to regenerate this document. The CI gate (<code>--check</code>) refuses to merge a PR whose committed matrix has drifted from the inventory or the corpus.</p>
 </blockquote>
 <ul>
-<li><strong>Inventory</strong>: 412 surface items across 20 categories (9 flagged non-deterministic — excluded from the corpus by ADR 0022, tracked under <a href="#excluded-non-deterministic-see-adr-0022">Excluded (non-deterministic)</a>)</li>
+<li><strong>Inventory</strong>: 413 surface items across 20 categories (10 flagged non-deterministic — excluded from the corpus by ADR 0022, tracked under <a href="#excluded-non-deterministic-see-adr-0022">Excluded (non-deterministic)</a>)</li>
 <li><strong>Corpus</strong>: 1152 fixtures under <a href="https://github.com/jjviscomi/bqemulator/blob/main/tests/conformance/sql_corpus"><code>tests/conformance/sql_corpus/</code></a></li>
 </ul>
 <h2 id="what-this-measures">What this measures<a class="headerlink" href="#what-this-measures" title="Permanent link">&para;</a></h2>
@@ -5678,7 +5708,7 @@
 </ul>
 <p>Detection is <em>coarse</em>: a fixture matches an item if its text contains the detector pattern, irrespective of whether the item is the fixture's <em>primary</em> surface. A fixture authored to exercise <code>REGEXP_EXTRACT</code> will likely also count under <code>SELECT</code> and <code>STRING</code> -- depth measures broad exposure, not test-purpose isolation.</p>
 <h2 id="summary">Summary<a class="headerlink" href="#summary" title="Permanent link">&para;</a></h2>
-<p>Tier counts below exclude the 9 surface items flagged as non-deterministic (RAND, CURRENT_DATE / CURRENT_DATETIME / CURRENT_TIME / CURRENT_TIMESTAMP, SESSION_USER, GENERATE_UUID, TABLESAMPLE, FOR SYSTEM_TIME AS OF). Those items are permanently excluded from the corpus by <a href="../../adr/0022-conformance-corpus-design/">ADR 0022</a> §1.2 / §7 and are tracked separately under <a href="#excluded-non-deterministic-see-adr-0022">Excluded (non-deterministic)</a>.</p>
+<p>Tier counts below exclude the 10 surface items flagged as non-deterministic (RAND, CURRENT_DATE / CURRENT_DATETIME / CURRENT_TIME / CURRENT_TIMESTAMP, SESSION_USER, GENERATE_UUID, TABLESAMPLE, FOR SYSTEM_TIME AS OF). Those items are permanently excluded from the corpus by <a href="../../adr/0022-conformance-corpus-design/">ADR 0022</a> §1.2 / §7 and are tracked separately under <a href="#excluded-non-deterministic-see-adr-0022">Excluded (non-deterministic)</a>.</p>
 <table>
 <thead>
 <tr>
@@ -5764,7 +5794,12 @@
 <tr>
 <td>Hash / security functions</td>
 <td><a href="https://cloud.google.com/bigquery/docs/reference/standard-sql/hash_functions"><code>SESSION_USER</code></a></td>
-<td>Excluded from the conformance corpus by ADR 0022 §1.2 — session-state dependent. Exercised at the unit, integration, and e2e × 4 client tiers (ADR 0038).</td>
+<td>Excluded from the conformance corpus by ADR 0022 §1.2 — session-state dependent. Exercised at the unit, integration, and e2e × 4 client tiers (ADR 0038); Storage Read row_restriction caller-threading closed in ADR 0040.</td>
+</tr>
+<tr>
+<td>Hash / security functions</td>
+<td><a href="https://cloud.google.com/bigquery/docs/reference/standard-sql/hash_functions"><code>CURRENT_USER</code></a></td>
+<td>Excluded from the conformance corpus by ADR 0022 §1.2 — co-equal alias for SESSION_USER per BigQuery's reference. Exercised at the unit and e2e × 4 client tiers; same resolution path as SESSION_USER (ADR 0040).</td>
 </tr>
 <tr>
 <td>Hash / security functions</td>
@@ -8848,7 +8883,21 @@
 <td style="text-align: right;"></td>
 <td style="text-align: center;"></td>
 <td></td>
-<td><em>Excluded from the conformance corpus by ADR 0022 §1.2 — session-state dependent. Exercised at the unit, integration, and e2e × 4 client tiers (ADR 0038).</em></td>
+<td><em>Excluded from the conformance corpus by ADR 0022 §1.2 — session-state dependent. Exercised at the unit, integration, and e2e × 4 client tiers (ADR 0038); Storage Read row_restriction caller-threading closed in ADR 0040.</em></td>
+</tr>
+<tr>
+<td><a href="https://cloud.google.com/bigquery/docs/reference/standard-sql/hash_functions"><code>CURRENT_USER</code></a> <em>(excluded — non-deterministic)</em></td>
+<td style="text-align: right;">n/a</td>
+<td style="text-align: center;">⚪ Excluded</td>
+<td>n/a</td>
+<td><em>see <a href="../../adr/0022-conformance-corpus-design/">ADR 0022</a> §1.2 / §7</em></td>
+</tr>
+<tr>
+<td></td>
+<td style="text-align: right;"></td>
+<td style="text-align: center;"></td>
+<td></td>
+<td><em>Excluded from the conformance corpus by ADR 0022 §1.2 — co-equal alias for SESSION_USER per BigQuery's reference. Exercised at the unit and e2e × 4 client tiers; same resolution path as SESSION_USER (ADR 0040).</em></td>
 </tr>
 <tr>
 <td><a href="https://cloud.google.com/bigquery/docs/reference/standard-sql/hash_functions"><code>GENERATE_UUID</code></a> <em>(excluded — non-deterministic)</em></td>
