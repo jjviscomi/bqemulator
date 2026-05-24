@@ -5712,7 +5712,7 @@ surfaces).</p>
 <p><strong>Auto-generated.</strong> Edit fixtures under <a href="https://github.com/jjviscomi/bqemulator/blob/main/tests/conformance"><code>tests/conformance/</code></a> or update the XFAIL registry in <a href="https://github.com/jjviscomi/bqemulator/blob/main/tests/conformance/divergences.py"><code>tests/conformance/divergences.py</code></a>, then run <code>make compat-matrix</code> to regenerate this block. The CI gate (<code>--check</code>) refuses to merge a PR whose committed snapshot has drifted from the corpus.</p>
 </blockquote>
 <ul>
-<li><strong>Corpus totals</strong>: 1226 fixtures (1152 SQL + 48 HTTP + 26 gRPC); <strong>1213 PASS / 13 XFAIL</strong></li>
+<li><strong>Corpus totals</strong>: 1244 fixtures (1170 SQL + 48 HTTP + 26 gRPC); <strong>1231 PASS / 13 XFAIL</strong></li>
 <li><strong>XFAIL contract</strong>: every pin in <code>KNOWN_DIVERGENCES</code> references an ADR or <code>out-of-scope.md</code> section — invented divergences are forbidden (see <a href="https://github.com/jjviscomi/bqemulator/blob/main/docs/adr/0023-conformance-divergence-baseline.md">ADR 0023</a>).</li>
 </ul>
 <h3 id="per-phase-fixture-coverage">Per-phase fixture coverage<a class="headerlink" href="#per-phase-fixture-coverage" title="Permanent link">&para;</a></h3>
@@ -5734,6 +5734,14 @@ surfaces).</p>
 <td><code>api_configuration</code></td>
 <td style="text-align: right;">63</td>
 <td style="text-align: right;">63</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: center;">✅</td>
+</tr>
+<tr>
+<td>SQL</td>
+<td><code>information_schema</code></td>
+<td style="text-align: right;">18</td>
+<td style="text-align: right;">18</td>
 <td style="text-align: right;">0</td>
 <td style="text-align: center;">✅</td>
 </tr>
@@ -5820,8 +5828,8 @@ surfaces).</p>
 <tr>
 <td><strong>Total</strong></td>
 <td></td>
-<td style="text-align: right;"><strong>1226</strong></td>
-<td style="text-align: right;"><strong>1213</strong></td>
+<td style="text-align: right;"><strong>1244</strong></td>
+<td style="text-align: right;"><strong>1231</strong></td>
 <td style="text-align: right;"><strong>13</strong></td>
 <td style="text-align: center;">⚠</td>
 </tr>
