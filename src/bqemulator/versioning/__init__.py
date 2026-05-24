@@ -1,4 +1,4 @@
-"""Phase 7 — versioning: snapshots, time travel, clones, materialized views.
+"""Versioning: snapshots, time travel, clones, materialized views.
 
 Module layout:
 
@@ -12,10 +12,10 @@ Module layout:
 * :mod:`bqemulator.versioning.materialized_views` — MV registry with
   event-driven staleness and lazy recompute.
 * :mod:`bqemulator.versioning.ddl` — regex-based detector that routes
-  Phase 7 DDL statements to the right manager without going through
+  versioning DDL statements to the right manager without going through
   the SQL translator.
 
-See ADRs `0009`, `0016`, and `0017` for the locked decisions.
+See ADRs `0009`, `0016`, and `0017` for the contracts.
 """
 
 from __future__ import annotations

@@ -70,7 +70,7 @@ def create_app(context: AppContext) -> FastAPI:
     app.include_router(routines_router)
     app.include_router(row_access_policies_router)
     app.include_router(jobs_router)
-    # G2 — upload host (multipart + resumable). Mounted at
+    # Upload host (multipart + resumable). Mounted at
     # /upload/bigquery/v2 to match BigQuery's documented upload URL prefix.
     app.include_router(upload_router)
     # Admin diagnostic endpoints — opt-in via Settings.admin_enabled.

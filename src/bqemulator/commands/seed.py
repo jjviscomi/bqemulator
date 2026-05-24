@@ -39,7 +39,7 @@ def run_seed(*, data_dir: Path, input_dir: Path) -> SeedSummary:
     Args:
         data_dir: Persistent ``data_dir`` for the local catalog. Created
             if absent.
-        input_dir: Directory previously produced by ``bqemulator export``.
+        input_dir: Directory produced by an earlier ``bqemulator export``.
 
     Returns:
         Counts of seeded entities.

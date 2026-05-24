@@ -1,4 +1,4 @@
-"""Avro file → Arrow table bridge for the load executor (G1 follow-up).
+"""Avro file → Arrow table bridge for the load executor.
 
 Used as a fallback when DuckDB's native ``read_avro`` can't handle a
 particular Avro feature — in particular the ``decimal`` logical type,

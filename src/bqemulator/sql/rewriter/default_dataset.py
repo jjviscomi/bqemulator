@@ -28,8 +28,6 @@ inner ``products`` would actually resolve to the default-dataset
 table — this is a CTE-shadowing edge case BigQuery handles by lexical
 scoping, which we replicate by NOT qualifying inside a CTE definition
 that shadows the name.
-
-P7.b phase 2 follow-up #1.
 """
 
 from __future__ import annotations

@@ -25,8 +25,8 @@ output is portable to any tool in the Parquet ecosystem.
 
 The export is read-only against a running emulator's persistent DuckDB
 file when ``--readonly`` is passed; otherwise it opens the file with
-write access. Phase 10 ADR 0020 documents why we did not pursue an
-"online export over REST" path.
+write access. ADR 0020 covers the exclusion of an "online export over
+REST" path.
 """
 
 from __future__ import annotations

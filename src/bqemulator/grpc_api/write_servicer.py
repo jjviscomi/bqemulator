@@ -74,14 +74,13 @@ _FLUSH_ROWS = f"{_SERVICE}/FlushRows"
 
 # Real BigQuery exposes the per-stream location in its WriteStream
 # wire shape. The emulator is location-agnostic, so we report ``us``
-# (lowercase, matching BQ's REST shape) — the gRPC-corpus
-# conformance suite (P3.d) asserts the field's presence.
+# (lowercase, matching BQ's REST shape) — the gRPC-corpus conformance
+# suite asserts the field's presence.
 _STREAM_LOCATION = "us"
 
 # Canonical stream-id regex: 16 hex chars OR the literal ``_default``
 # sentinel. Used by ``GetWriteStream`` to reject malformed ids with
-# INVALID_ARGUMENT — matching real BQ's wire shape rather than the
-# emulator's earlier NOT_FOUND.
+# INVALID_ARGUMENT — matching real BQ's wire shape.
 _STREAM_ID_RE = re.compile(r"^(?:[a-f0-9]{16}|_default)$")
 
 
@@ -227,8 +226,8 @@ class BigQueryWriteHandler(grpc.GenericRpcHandler):
 
         # Real BigQuery's CreateWriteStream response omits the
         # ``location`` field (empty default), whereas GetWriteStream
-        # includes it. The wire-format conformance suite (P3.d) asserts
-        # the asymmetry.
+        # includes it. The wire-format conformance suite asserts the
+        # asymmetry.
         response = types.WriteStream(
             name=stream.name,
             type_=requested_type,
@@ -632,8 +631,8 @@ class BigQueryWriteHandler(grpc.GenericRpcHandler):
                 self._ctx.catalog.update_table(
                     table_meta.model_copy(update={"num_rows": new_count}),
                 )
-            # Phase 7: capture a snapshot under the same write lock so
-            # concurrent streams can't interleave a half-applied rebase.
+            # Capture a snapshot under the same write lock so concurrent
+            # streams can't interleave a half-applied rebase.
             # ``record_change`` publishes ``TableDataChanged``, which
             # both invalidates the query cache and marks dependent MVs
             # stale.
@@ -850,8 +849,8 @@ def _strategy_type_to_proto(stream_type: WriteStreamType) -> int:
 
     # Real BigQuery reports the implicit DEFAULT stream as a COMMITTED
     # stream over the wire — clients dispatch on the type and treat
-    # both the same way. The wire-format conformance suite (P3.d)
-    # asserts this contract.
+    # both the same way. The wire-format conformance suite asserts
+    # this contract.
     mapping = {
         WriteStreamType.DEFAULT: int(types.WriteStream.Type.COMMITTED),
         WriteStreamType.COMMITTED: int(types.WriteStream.Type.COMMITTED),

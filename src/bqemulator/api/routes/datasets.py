@@ -147,12 +147,12 @@ def _dataset_to_rest(ds: DatasetMeta) -> dict[str, Any]:
         # datasets and ``LINKED`` / ``EXTERNAL`` for the federated
         # variants the emulator doesn't model. Emit the constant so
         # clients that switch on the field find the documented value.
-        # P7.c follow-up — required for ``datasets.list`` shape parity.
+        # Required for ``datasets.list`` shape parity.
         "type": "DEFAULT",
         # BigQuery's documented default time-travel window for ordinary
         # datasets is 7 days = 168 hours. Clients use this to decide
         # whether AS-OF queries within the window can be served from
-        # the time-travel index. P7.c follow-up.
+        # the time-travel index.
         "maxTimeTravelHours": "168",
     }
     if ds.friendly_name:

@@ -7,12 +7,11 @@ catalog DDL generator) consults this mapping.
 The mapping is not 1:1 in every case — see the ``Notes`` column in
 :data:`TYPE_MAP` for cases where precision or semantics differ.
 
-Phase 1 types
--------------
+Supported BigQuery types
+------------------------
 INT64, FLOAT64, NUMERIC, BIGNUMERIC, BOOL, STRING, BYTES, DATE, TIME,
-DATETIME, TIMESTAMP, JSON, ARRAY<T>, STRUCT<…>.
-
-Phase 9 additions: GEOGRAPHY, RANGE<T>, INTERVAL.
+DATETIME, TIMESTAMP, JSON, ARRAY<T>, STRUCT<…>, GEOGRAPHY, RANGE<T>,
+INTERVAL.
 """
 
 from __future__ import annotations
@@ -47,7 +46,7 @@ TYPE_MAP: tuple[TypeMapping, ...] = (
     TypeMapping("DATETIME", "TIMESTAMP", notes="BigQuery DATETIME is timezone-naive"),
     TypeMapping("TIMESTAMP", "TIMESTAMPTZ", notes="BigQuery TIMESTAMP is always UTC"),
     TypeMapping("JSON", "JSON"),
-    # Phase 9 specialized types.
+    # Specialized BigQuery types.
     TypeMapping("GEOGRAPHY", "GEOMETRY", notes="DuckDB spatial extension; planar (not spheroidal)"),
     TypeMapping("INTERVAL", "INTERVAL", notes="Native DuckDB INTERVAL"),
     # ARRAY, STRUCT, and RANGE<T> are parameterized — handled specially below.
@@ -91,7 +90,7 @@ _DUCKDB_ALIASES: dict[str, str] = {
     "TIMESTAMPTZ": "TIMESTAMP",
     "TIMESTAMP WITH TIME ZONE": "TIMESTAMP",
     "JSON": "JSON",
-    # Phase 9 specialized types.
+    # Specialized BigQuery types.
     "GEOMETRY": "GEOGRAPHY",
     "INTERVAL": "INTERVAL",
 }

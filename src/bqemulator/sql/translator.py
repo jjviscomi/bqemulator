@@ -3,7 +3,7 @@
 Pipeline::
 
     BigQuery SQL
-        → pre-process rewriters (Phase 3+: partition pruning, wildcard expansion, …)
+        → pre-process rewriters (partition pruning, wildcard expansion, …)
         → sqlglot.transpile(read="bigquery", write="duckdb")
         → post-process: walk AST, apply every matching TranslationRule
         → serialize back to SQL string
@@ -183,9 +183,7 @@ class SQLTranslator:
         #    Strip the schema clause and wrap each SELECT projection in
         #    ``CAST(<value> AS <declared-type>) AS <declared-name>`` so
         #    the resulting bare CTAS preserves the user's declared
-        #    column types. Discovered 2026-05-17 during P2.d Phase 8
-        #    conformance recording — every fixture using the canonical
-        #    BigQuery CTAS-with-schema form failed at DuckDB parse time.
+        #    column types.
         bq_sql_for_transpile = rewrite_create_table_schema_ctas(bq_sql)
         # 2-pre. Scope-expansion #15 pre-translator: rewrite the
         #    BigQuery ``RANGE_SESSIONIZE(TABLE …, …)`` TVF call into
@@ -197,80 +195,79 @@ class SQLTranslator:
         #    parser doesn't accept the ``TABLE <ref>`` TVF-argument
         #    keyword.
         bq_sql_for_transpile = rewrite_range_sessionize(bq_sql_for_transpile)
-        # 2. Phase 9 pre-translator: expand BigQuery compound interval
-        #    literals (``INTERVAL '1-2 3 4:5:6.789' YEAR TO SECOND``)
-        #    into single-unit additive expressions so DuckDB's parser
-        #    accepts the SQL after SQLGlot's transpile pass.
+        # 2. Specialized-types pre-translator: expand BigQuery compound
+        #    interval literals (``INTERVAL '1-2 3 4:5:6.789' YEAR TO
+        #    SECOND``) into single-unit additive expressions so DuckDB's
+        #    parser accepts the SQL after SQLGlot's transpile pass.
         bq_sql_for_transpile = rewrite_specialized_types(bq_sql_for_transpile)
-        # 2b. Bucket J pre-translator: route NORMALIZE /
+        # 2b. String-helpers pre-translator: route NORMALIZE /
         #     NORMALIZE_AND_CASEFOLD through Python helpers — SQLGlot
         #     collapses the casefold flag during the DuckDB transpile,
         #     so we must rewrite while the BigQuery AST still carries
         #     the distinction.
         bq_sql_for_transpile = rewrite_string_helpers(bq_sql_for_transpile)
-        # 2c. Bucket J pre-translator: ARRAY_AGG / STRING_AGG ORDER BY
-        #     LIMIT n + ARRAY_AGG IGNORE NULLS. DuckDB rejects LIMIT
-        #     inside aggregates and SQLGlot silently drops IGNORE NULLS
-        #     during the DuckDB transpile, so we must rewrite while the
-        #     BigQuery AST still carries the original shape.
+        # 2c. Aggregate-variants pre-translator: ARRAY_AGG / STRING_AGG
+        #     ORDER BY LIMIT n + ARRAY_AGG IGNORE NULLS. DuckDB rejects
+        #     LIMIT inside aggregates and SQLGlot silently drops IGNORE
+        #     NULLS during the DuckDB transpile, so we must rewrite
+        #     while the BigQuery AST still carries the original shape.
         bq_sql_for_transpile = rewrite_aggregate_variants(bq_sql_for_transpile)
-        # 2d. Bucket J pre-translator: pin NUMERIC / BIGNUMERIC typed
-        #     literals to explicit DECIMAL precision so DuckDB's default
-        #     DECIMAL(18, 3) doesn't reject wide BigQuery numerics. The
-        #     Bucket B (2026-05-16) closure switched BIGNUMERIC handling
-        #     to a Python UDF so the scale-marker (> 9) lands on the
-        #     wire as BIGNUMERIC even when the literal's natural scale
-        #     is ≤ 9.
+        # 2d. Numeric-literals pre-translator: pin NUMERIC / BIGNUMERIC
+        #     typed literals to explicit DECIMAL precision so DuckDB's
+        #     default DECIMAL(18, 3) doesn't reject wide BigQuery
+        #     numerics. BIGNUMERIC routes through a Python UDF so the
+        #     scale-marker (> 9) lands on the wire as BIGNUMERIC even
+        #     when the literal's natural scale is ≤ 9.
         bq_sql_for_transpile = rewrite_numeric_literals(bq_sql_for_transpile)
-        # 2e. Bucket B pre-translator: rewrite bare BigQuery decimal
-        #     literals (``3.25``, ``-1.5``) to scientific notation so
-        #     DuckDB types them as ``DOUBLE`` (matching BigQuery's
-        #     ``FLOAT64`` typing) instead of inferring a narrow
-        #     ``DECIMAL(p, s)`` that surfaces as NUMERIC on the wire.
+        # 2e. Decimal-literals pre-translator: rewrite bare BigQuery
+        #     decimal literals (``3.25``, ``-1.5``) to scientific
+        #     notation so DuckDB types them as ``DOUBLE`` (matching
+        #     BigQuery's ``FLOAT64`` typing) instead of inferring a
+        #     narrow ``DECIMAL(p, s)`` that surfaces as NUMERIC on the
+        #     wire.
         bq_sql_for_transpile = rewrite_decimal_literals(bq_sql_for_transpile)
-        # 2f. Bucket I pre-translator: rewrite ``LAST_DAY(x, WEEK)`` to
-        #     ``DATE_ADD(x, INTERVAL (7 - EXTRACT(DAYOFWEEK FROM x))
-        #     DAY)``. SQLGlot's default transpile inlines the call to a
-        #     Sunday-end (not BigQuery's Saturday-end) expression; the
-        #     pre-translate runs while the AST still carries the
-        #     LastDay shape so we can replace it cleanly.
+        # 2f. Datetime-helpers pre-translator: rewrite ``LAST_DAY(x,
+        #     WEEK)`` to ``DATE_ADD(x, INTERVAL (7 - EXTRACT(DAYOFWEEK
+        #     FROM x)) DAY)``. SQLGlot's default transpile inlines the
+        #     call to a Sunday-end (not BigQuery's Saturday-end)
+        #     expression; the pre-translate runs while the AST still
+        #     carries the LastDay shape so we can replace it cleanly.
         bq_sql_for_transpile = rewrite_datetime_helpers(bq_sql_for_transpile)
-        # 2g. Bucket I pre-translator: wrap ``TO_JSON(x)`` in
+        # 2g. JSON-helpers pre-translator: wrap ``TO_JSON(x)`` in
         #     ``CAST(... AS JSON)`` so the result column lands on the
         #     wire as ``JSON`` rather than ``STRING`` (which is what
         #     SQLGlot's default ``CAST(TO_JSON(...) AS TEXT)`` produces
         #     for both ``TO_JSON`` and ``TO_JSON_STRING``).
         bq_sql_for_transpile = rewrite_json_helpers(bq_sql_for_transpile)
-        # 2h-pre. Pre-translator (runs BEFORE ``rewrite_struct_helpers``):
-        #     propagate the first STRUCT's named-field aliases to every
-        #     subsequent positional STRUCT in an ``UNNEST([...])`` array
-        #     literal. This preserves BigQuery's "first struct seeds the
-        #     field names for the array" semantic so the downstream
-        #     ``rewrite_struct_helpers`` pass sees a homogeneously-named
-        #     array (and therefore leaves it alone). Closes the
-        #     ``script_for_iterate_into_table`` conformance fixture —
-        #     before this rewriter ran, ``rewrite_struct_helpers`` would
-        #     convert ``STRUCT('b', 2)`` → ``ROW('b', 2)`` while leaving
-        #     the first ``STRUCT('a' AS label, 1 AS value)`` named, and
-        #     the resulting mixed array failed DuckDB's field-name
-        #     binder on the outer ``SELECT label, value``.
+        # 2h-pre. UNNEST-struct pre-translator (runs BEFORE
+        #     ``rewrite_struct_helpers``): propagate the first STRUCT's
+        #     named-field aliases to every subsequent positional STRUCT
+        #     in an ``UNNEST([...])`` array literal. This preserves
+        #     BigQuery's "first struct seeds the field names for the
+        #     array" semantic so the downstream ``rewrite_struct_helpers``
+        #     pass sees a homogeneously-named array (and therefore
+        #     leaves it alone). Without this step, the downstream pass
+        #     would convert ``STRUCT('b', 2)`` → ``ROW('b', 2)`` while
+        #     leaving the first ``STRUCT('a' AS label, 1 AS value)``
+        #     named, and the resulting mixed array would fail DuckDB's
+        #     field-name binder on the outer ``SELECT label, value``.
         bq_sql_for_transpile = rewrite_unnest_struct(bq_sql_for_transpile)
-        # 2h. Bucket I pre-translator: rewrite positional
+        # 2h. Struct-helpers pre-translator: rewrite positional
         #     ``STRUCT(value, value, …)`` to DuckDB's ``ROW(…)`` so the
         #     struct aligns *positionally* with its target — matching
         #     BigQuery's name-from-context inference for INSERT VALUES
         #     and UNION ALL chains where the first SELECT carries
         #     explicit field aliases.
         bq_sql_for_transpile = rewrite_struct_helpers(bq_sql_for_transpile)
-        # 2i. Bucket I pre-translator: rewrite BigQuery's ``SAFE.X``
+        # 2i. Safe-helpers pre-translator: rewrite BigQuery's ``SAFE.X``
         #     prefix form (``SAFE.LN(-1)``, ``SAFE.SQRT(-1)``, etc.) to
         #     DuckDB's ``TRY(...)`` — the SQLGlot transpile leaves the
         #     ``SAFE.`` schema-qualified call intact and the table
         #     rewriter then mangles it into a synthetic project-qualified
         #     function name.
         bq_sql_for_transpile = rewrite_safe_helpers(bq_sql_for_transpile)
-        # 2j. Scope-expansion #17 pre-translator: wrap every bare ``/``
-        #     in a CASE that raises ``Division by zero`` via DuckDB's
+        # 2j. Division-by-zero pre-translator: wrap every bare ``/`` in
+        #     a CASE that raises ``Division by zero`` via DuckDB's
         #     ``error(VARCHAR)`` builtin when the divisor evaluates to
         #     0. Runs AFTER ``safe_helpers`` so a user-written ``a / b``
         #     inside the ``SAFE.X(...)`` prefix form is already nested
@@ -280,8 +277,8 @@ class SQLTranslator:
         #     ``IEEE_DIVIDE``) are opaque ``Anonymous`` / typed nodes
         #     at this stage so the walk does not see them — their Div
         #     children are emitted post-translate by SQLGlot's transpile
-        #     and the Bucket J ``IeeeDivideRule``, respectively, after
-        #     our pre-translator has already run.
+        #     and the ``IeeeDivideRule``, respectively, after our
+        #     pre-translator has already run.
         bq_sql_for_transpile = rewrite_division_by_zero(bq_sql_for_transpile)
         # 2k-pre. SHA512 pre-translator: rewrite every ``SHA512(x)`` to
         #     ``bqemu_sha512(x)`` while the AST still carries the
@@ -290,16 +287,17 @@ class SQLTranslator:
         #     ``sha512`` builtin); rewriting here preserves the
         #     algorithm width.
         bq_sql_for_transpile = rewrite_sha512(bq_sql_for_transpile)
-        # 2k-tz. Timestamp ISO helpers pre-translator (P8.e, 2026-05-20):
-        #     Route ``FORMAT_TIMESTAMP`` / ``PARSE_TIMESTAMP`` through the
+        # 2k-tz. Timestamp ISO helpers pre-translator: route
+        #     ``FORMAT_TIMESTAMP`` / ``PARSE_TIMESTAMP`` through the
         #     Python helpers ``bqemu_format_timestamp_iso`` /
         #     ``bqemu_parse_timestamp_iso`` whenever the format carries a
-        #     ``%Ez`` extension specifier or a ``%Z`` named-zone token, or
-        #     when ``FORMAT_TIMESTAMP`` carries an explicit zone argument
-        #     SQLGlot would otherwise drop on transpile. The helpers
-        #     bridge DuckDB's STRFTIME / STRPTIME, which reject ``%E#``
-        #     specifiers and silently accept ambiguous zone abbreviations
-        #     that real BigQuery rejects with ``Invalid time zone``.
+        #     ``%Ez`` extension specifier or a ``%Z`` named-zone token,
+        #     or when ``FORMAT_TIMESTAMP`` carries an explicit zone
+        #     argument SQLGlot would otherwise drop on transpile. The
+        #     helpers bridge DuckDB's STRFTIME / STRPTIME, which reject
+        #     ``%E#`` specifiers and silently accept ambiguous zone
+        #     abbreviations that real BigQuery rejects with ``Invalid
+        #     time zone``.
         bq_sql_for_transpile = rewrite_timestamp_iso_helpers(bq_sql_for_transpile)
         # 2k. COLLATE specifier pre-translator: rewrite the two
         #     BigQuery specifiers the corpus exercises — ``'und:ci'``
@@ -312,13 +310,13 @@ class SQLTranslator:
         #     ``<value> COLLATE und:ci`` form which DuckDB's lexer
         #     rejects (the ``:`` is a divider).
         bq_sql_for_transpile = rewrite_collate_specifier(bq_sql_for_transpile)
-        # 2l. P7.c follow-up — rewrite BigQuery's ``_PARTITIONDATE`` /
-        #     ``_PARTITIONTIME`` pseudo-columns to ``CURRENT_DATE()`` /
-        #     ``CURRENT_TIMESTAMP()``. The emulator's storage layer
-        #     doesn't tag rows with a partition timestamp; collapsing
-        #     to today's date matches the recorded-fixtures' filters
-        #     (``> '1900-01-01'``, ``BETWEEN ...``) and the fixture
-        #     for ``< '1900-01-01'`` that expects 0 rows.
+        # 2l. Partition-pseudo-columns pre-translator: rewrite BigQuery's
+        #     ``_PARTITIONDATE`` / ``_PARTITIONTIME`` pseudo-columns to
+        #     ``CURRENT_DATE()`` / ``CURRENT_TIMESTAMP()``. The
+        #     emulator's storage layer doesn't tag rows with a partition
+        #     timestamp; collapsing to today's date matches the fixture
+        #     filters (``> '1900-01-01'``, ``BETWEEN ...``) and the
+        #     fixture for ``< '1900-01-01'`` that expects 0 rows.
         bq_sql_for_transpile = rewrite_partition_pseudo_columns(bq_sql_for_transpile)
 
         # 3. SQLGlot transpile.

@@ -215,8 +215,8 @@ class _Rewriter:
         if proj is None or dataset is None or table is None:
             return False
 
-        # Skip reserved schemas (catalog, snapshots) — Phase 7 already
-        # treats these as live catalog reads, not user tables.
+        # Reserved schemas (catalog, snapshots) are live catalog reads,
+        # not user tables; row-access enforcement does not apply.
         if dataset in _RESERVED_SCHEMAS:
             return False
 

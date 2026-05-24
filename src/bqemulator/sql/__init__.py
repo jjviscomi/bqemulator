@@ -2,7 +2,7 @@
 
 The core pipeline:
 
-1. Pre-process (rewriters — Phase 3+ additions).
+1. Pre-process (rewriters).
 2. ``sqlglot.transpile(read="bigquery", write="duckdb")``.
 3. Post-process (rule engine applies registered ``TranslationRule``s).
 

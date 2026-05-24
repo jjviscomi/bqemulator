@@ -48,7 +48,7 @@ class AppContext:
     # /admin/streams endpoint. Defaults to a fresh instance so tests that
     # build an AppContext directly don't have to know about it.
     write_streams: WriteStreamManager = field(default_factory=WriteStreamManager)
-    # G2 — resumable upload session manager. Constructed lazily by the
+    # Resumable upload session manager. Constructed lazily by the
     # composition root when the upload router is wired in. ``None`` in
     # contexts that don't need uploads (gRPC-only tests, unit fakes).
     upload_sessions: UploadSessionManager | None = None

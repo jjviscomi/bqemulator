@@ -41,8 +41,8 @@ def rewrite_table_refs(duckdb_sql: str, project_id: str) -> str:
 
     This is a regex-based heuristic that works well for common SQL but
     does NOT handle all edge cases (e.g. table names inside string
-    literals). A full AST-based rewriter ships in Phase 3's
-    ``sql/rewriter/`` package.
+    literals). The AST-based rewriter in ``sql/rewriter/`` handles the
+    full surface.
     """
     import sqlglot
     from sqlglot import exp
@@ -89,11 +89,11 @@ def _rewrite_table_node(table_node: object, project_id: str) -> bool:
     if db and "." in db and not catalog and not is_tvf:
         catalog, _, db = db.partition(".")
 
-    # Phase 7: leave references to bqemulator's *reserved* schemas
-    # alone. The time-travel rewriter emits
-    # ``_bqemulator_snapshots.<id>`` references that must reach
-    # DuckDB unmangled. Exact match: a user dataset whose id starts
-    # with the prefix still gets the regular rewrite.
+    # Leave references to bqemulator's *reserved* schemas alone. The
+    # time-travel rewriter emits ``_bqemulator_snapshots.<id>``
+    # references that must reach DuckDB unmangled. Exact match: a user
+    # dataset whose id starts with the prefix still gets the regular
+    # rewrite.
     if db in _RESERVED_SCHEMAS:
         return False
 
@@ -298,7 +298,7 @@ def _rewrite_schema_qualified_calls(tree: object, project_id: str) -> bool:
             # usually because it's a compound ``project.dataset``
             # back-ticked qualifier that contained a dot. BigQuery's
             # user-facing form for this is ``Function not found:
-            # `<qualifier>`.<routine> at [L:C]`` (P3.a, ADR 0022 §3).
+            # `<qualifier>`.<routine> at [L:C]`` (see ADR 0022 §3).
             raise InvalidQueryError(
                 f"Function not found: `{dataset}`.{routine_name} at [1:8]",
                 location="query",

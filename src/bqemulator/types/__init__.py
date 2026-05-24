@@ -1,4 +1,4 @@
-"""Phase 9 specialized types: GEOGRAPHY, RANGE<T>, INTERVAL.
+"""Specialized BigQuery types: GEOGRAPHY, RANGE<T>, INTERVAL.
 
 Each module in this package isolates the codec / parsing / formatting
 concerns for a single specialized BigQuery type. Storage type-mapping

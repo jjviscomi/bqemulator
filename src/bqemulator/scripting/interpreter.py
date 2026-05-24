@@ -767,9 +767,9 @@ class ScriptInterpreter:
             # Route DuckDB-side runtime errors through the central
             # error mapper so JS UDF / div-by-zero / overflow / catalog
             # failures land on the wire in BigQuery's documented shape
-            # (P3.a). Falling back to the verbose "Script SQL execution
-            # failed: ..." wrapper would mask the BQ-shaped translation
-            # the conformance corpus pins.
+            # (see ADR 0022 §3). Falling back to the verbose "Script SQL
+            # execution failed: ..." wrapper would mask the BQ-shaped
+            # translation the conformance corpus pins.
             from bqemulator.jobs.error_mapper import translate_runtime_error
 
             mapped = translate_runtime_error(exc, duckdb_sql=duckdb_sql)
@@ -946,16 +946,16 @@ def _rewrite_vars_to_params(
         var_value = visible[name].value
         var_type = visible[name].type_name
         placeholder: exp.Expression = _next_placeholder(var_value)
-        # P8.b — preserve the declared variable type when DEFAULT NULL
-        # leaves ``value`` as Python ``None``. Without a CAST, the DuckDB
-        # driver binds NULL as the default INT64 type and the schema
-        # renderer surfaces the column as ``INTEGER`` even though the
-        # script said ``DECLARE x STRING DEFAULT NULL``. Wrapping the
-        # placeholder in a ``CAST(... AS <declared_type>)`` makes the
-        # type travel through to the wire schema — matching BigQuery's
-        # "declared type is authoritative" contract. STRUCT-valued
-        # variables short-circuit out via the ``table`` branch above so
-        # the CAST here only fires for scalar variables.
+        # Preserve the declared variable type when DEFAULT NULL leaves
+        # ``value`` as Python ``None``. Without a CAST, the DuckDB driver
+        # binds NULL as the default INT64 type and the schema renderer
+        # surfaces the column as ``INTEGER`` even though the script said
+        # ``DECLARE x STRING DEFAULT NULL``. Wrapping the placeholder in
+        # a ``CAST(... AS <declared_type>)`` makes the type travel
+        # through to the wire schema — matching BigQuery's "declared
+        # type is authoritative" contract. STRUCT-valued variables
+        # short-circuit out via the ``table`` branch above so the CAST
+        # here only fires for scalar variables.
         if var_value is None and var_type and var_type.upper() != "ANY":
             # Defensive: fall back to bare placeholder if the declared
             # type string is not parseable by ``exp.DataType.build``.

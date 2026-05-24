@@ -208,10 +208,9 @@ def import_cmd(
     """Mirror schemas from a real BigQuery project into the local catalog."""
     # Deferred import: the implementation depends on the optional
     # ``import`` extra (``google-cloud-bigquery``). If the extra is
-    # missing — or if Phase 10 modules are not yet installed — surface a
-    # clean instruction instead of an opaque ImportError. We catch
-    # ImportError both around the module import AND around the call
-    # itself, because ``run_import`` defers the
+    # missing, surface a clean instruction instead of an opaque
+    # ImportError. We catch ImportError both around the module import
+    # AND around the call itself, because ``run_import`` defers the
     # ``from google.cloud import bigquery`` line until invocation to
     # keep the CLI's cold-start fast.
     try:
@@ -286,7 +285,7 @@ def export_cmd(data_dir: Path, output_dir: Path) -> None:
     "--input-dir",
     type=click.Path(file_okay=False, exists=True, path_type=Path),
     required=True,
-    help="Directory previously produced by 'bqemulator export'.",
+    help="Directory produced by an earlier 'bqemulator export'.",
 )
 def seed_cmd(data_dir: Path, input_dir: Path) -> None:
     """Load an export directory back into a local persistent catalog."""
@@ -349,7 +348,7 @@ def backup_cmd(data_dir: Path, output_dir: Path) -> None:
     "input_dir",
     type=click.Path(file_okay=False, exists=True, path_type=Path),
     required=True,
-    help="Backup directory previously produced by 'bqemulator backup'.",
+    help="Backup directory produced by an earlier 'bqemulator backup'.",
 )
 @click.option(
     "--force/--no-force",

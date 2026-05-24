@@ -1,4 +1,4 @@
-"""Phase 8 — row access policy enforcement and caller-identity resolution.
+"""Row access policy enforcement and caller-identity resolution.
 
 The package contains three concerns:
 

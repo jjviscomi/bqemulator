@@ -16,8 +16,6 @@ implicit-correlated-subquery rules, the ``date_add(NOW(), -7, 'DAY')``
 form, etc.) still fall through to the standard pipeline and surface
 the appropriate translation error. The handful of clients that only
 needed legacy SQL for type-casts now see a clean PASS.
-
-P7.c follow-up — closes ``api_configuration/legacy_sql_select_compat_mode``.
 """
 
 from __future__ import annotations
@@ -58,7 +56,7 @@ def rewrite_legacy_to_standard(bq_sql: str) -> str:
 
     Queries using legacy-SQL features outside this subset survive
     unchanged; the standard pipeline raises the appropriate
-    translation error. P7.c follow-up.
+    translation error.
     """
     out = bq_sql
     for legacy_name, standard_type in _LEGACY_CAST_FUNCTIONS.items():

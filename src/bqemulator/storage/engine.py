@@ -9,10 +9,10 @@ The engine also handles startup tasks:
 
 * Ensure the reserved ``_bqemulator_catalog`` schema exists.
 * Set the connection's time zone to ``UTC`` (BigQuery TIMESTAMP semantics).
-* Install and load the ``spatial`` extension. From Phase 9 onward this is
-  a required dependency — startup fails fast with a clear error if the
-  extension cannot be installed/loaded (e.g. offline build with no
-  cached extension), because GEOGRAPHY queries depend on it.
+* Install and load the ``spatial`` extension. Required — startup fails
+  fast with a clear error if the extension cannot be installed/loaded
+  (e.g. offline build with no cached extension), because GEOGRAPHY
+  queries depend on it.
 """
 
 from __future__ import annotations
@@ -38,7 +38,7 @@ _log = get_logger(__name__)
 # create datasets that collide with this (validated elsewhere).
 CATALOG_SCHEMA = "_bqemulator_catalog"
 
-# Reserved schema where Phase 7 time-travel snapshot tables live. Like
+# Reserved schema where time-travel snapshot tables live. Like
 # ``CATALOG_SCHEMA`` it's created unconditionally at engine startup so
 # the snapshot layer works under both memory- and DuckDB-backed
 # catalogs (the memory path never runs migrations).
@@ -196,14 +196,14 @@ class DuckDBEngine:
         _log.debug("duckdb.builtin_udfs_registered")
 
     def _load_spatial(self) -> None:
-        """Load DuckDB's spatial extension. Required (fail-fast) since Phase 9.
+        """Load DuckDB's spatial extension; fail fast if unavailable.
 
-        Phase 9 ships GEOGRAPHY support backed by DuckDB's spatial
-        extension. The extension powers every ``ST_*`` function the
-        emulator translates BigQuery GEOGRAPHY queries into. Without it
-        the emulator cannot honour its GEOGRAPHY contract, so we surface
-        the failure at startup rather than letting query-time
-        ``ST_*`` calls fail with confusing catalog errors.
+        GEOGRAPHY support is backed by DuckDB's spatial extension. The
+        extension powers every ``ST_*`` function the emulator translates
+        BigQuery GEOGRAPHY queries into. Without it the emulator cannot
+        honour its GEOGRAPHY contract, so we surface the failure at
+        startup rather than letting query-time ``ST_*`` calls fail with
+        confusing catalog errors.
         """
         if self._connection is None:  # internal invariant
             raise InternalError("DuckDBEngine not started")

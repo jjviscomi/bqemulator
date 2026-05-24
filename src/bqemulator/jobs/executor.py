@@ -267,7 +267,7 @@ async def execute_query_job(
     """
     now = ctx.clock.now()
 
-    # P3.a / ADR 0022 §3: scripting-lexer errors (``Unterminated string
+    # ADR 0022 §3: scripting-lexer errors (``Unterminated string
     # literal`` etc.) are raised directly as InvalidQueryError; route
     # them through the mapper so the BigQuery-shape wording (``Syntax
     # error: Unclosed string literal at [L:C]``) is surfaced before the
@@ -285,11 +285,11 @@ async def execute_query_job(
     )
     script_statement_count = len(script.statements)
 
-    # P7.b — classify the statement type up front so the response
-    # populates ``statistics.query.statementType`` consistently across
-    # the versioning-DDL fast path, the scripting path, and the
-    # legacy single-SQL path. Best-effort: unparseable input returns
-    # ``""`` and the field is omitted.
+    # Classify the statement type up front so the response populates
+    # ``statistics.query.statementType`` consistently across the
+    # versioning-DDL fast path, the scripting path, and the legacy
+    # single-SQL path. Best-effort: unparseable input returns ``""``
+    # and the field is omitted.
     statement_type = "SCRIPT" if is_scripted else classify_statement_type(bq_sql)
 
     # Intercept versioning DDL (CREATE SNAPSHOT / CLONE / MATERIALIZED
@@ -381,8 +381,8 @@ async def execute_query_job(
     # propagate TableDataChanged so dependent MVs flip stale.
     await _capture_dml_snapshots(project_id, bq_sql, ctx)
 
-    # P7.b — DML statements return a 1-column ``Count`` table from
-    # DuckDB; real BigQuery returns a 0-column schema + 0 rows + a
+    # DML statements return a 1-column ``Count`` table from DuckDB;
+    # real BigQuery returns a 0-column schema + 0 rows + a
     # ``numDmlAffectedRows`` statistic. Strip the Count column for the
     # wire-format response and capture the affected-rows count for
     # the statistics payload.
@@ -565,7 +565,7 @@ async def _run_single_sql(
         duckdb_sql, param_values = bind_parameters(duckdb_sql, query_params)
         return ctx.engine.fetch_arrow(duckdb_sql, param_values or None)
     except DomainError as exc:
-        # P3.a / ADR 0022 §3: pre-execution domain errors (RAP denials,
+        # ADR 0022 §3: pre-execution domain errors (RAP denials,
         # malformed-id ValidationErrors from the SQL pipeline) are
         # re-shaped to BigQuery wire-format ``reason`` / ``location`` /
         # ``message_pattern`` conventions before reaching the route
@@ -1427,8 +1427,7 @@ def classify_statement_type(bq_sql: str) -> str:
     """Return BigQuery's ``statementType`` for ``bq_sql``.
 
     Used by the executor to populate ``statistics.query.statementType``
-    on every job's response (P7.b — closes the
-    ``api_configuration/*`` conformance divergences surfaced by P7.a).
+    on every job's response.
 
     Returns one of: ``SELECT``, ``INSERT``, ``UPDATE``, ``DELETE``,
     ``MERGE``, ``CREATE_TABLE``, ``CREATE_TABLE_AS_SELECT``,

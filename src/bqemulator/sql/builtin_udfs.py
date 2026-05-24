@@ -723,7 +723,7 @@ def bqemu_sha512(value: str | None) -> bytes | None:
 
 
 # ---------------------------------------------------------------------------
-# Timestamp ISO format / parse helpers (workstream P8.e, 2026-05-20)
+# Timestamp ISO format / parse helpers.
 # ---------------------------------------------------------------------------
 #: BigQuery's ``%Ez`` extension specifier produces an ISO-format offset with
 #: a colon separator (``+05:30`` / ``-04:30``). DuckDB's STRFTIME / STRPTIME
@@ -760,9 +760,6 @@ def bqemu_format_timestamp_iso(
     specifiers — :class:`bqemulator.sql.rules.datetime_semantics.FormatTimestampZoneRule`
     routes every call that carries either a zone arg or a ``%E``-bearing
     format through this helper.
-
-    Workstream P8.e (2026-05-20) added the helper to close the
-    ``tz_format_timestamp_named_zone`` fixture.
 
     Parameters
     ----------
@@ -831,10 +828,6 @@ def bqemu_parse_timestamp_iso(
     Returns a *naive* UTC datetime so the caller's
     ``timezone('UTC', …)`` wrap (per :class:`ParseTimestampStrictRule`)
     surfaces the column as ``TIMESTAMP`` on the wire.
-
-    Workstream P8.e (2026-05-20) added the helper to close
-    ``tz_parse_timestamp_with_offset`` (``%Ez`` accepted) and
-    ``tz_parse_timestamp_with_named_zone`` (``IST`` rejected).
     """
     if fmt is None or value is None:
         return None

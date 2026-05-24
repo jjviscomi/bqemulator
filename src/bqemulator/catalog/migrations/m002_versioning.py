@@ -1,4 +1,4 @@
-"""Phase 7 — versioning catalog schema.
+"""Versioning catalog schema — snapshots and materialized views.
 
 Adds three persistent tables:
 
@@ -34,11 +34,11 @@ if TYPE_CHECKING:  # pragma: no cover
 __all__ = ["DESCRIPTION", "SNAPSHOTS_SCHEMA", "VERSION", "up"]
 
 VERSION = 2
-DESCRIPTION = "Phase 7 — snapshot + materialized-view catalog tables"
+DESCRIPTION = "snapshot + materialized-view catalog tables"
 
 
 def up(engine: DuckDBEngine) -> None:
-    """Create the Phase 7 catalog tables and snapshots schema."""
+    """Create the versioning catalog tables and snapshots schema."""
     engine.execute(f'CREATE SCHEMA IF NOT EXISTS "{SNAPSHOTS_SCHEMA}"')
 
     engine.execute(

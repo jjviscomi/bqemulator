@@ -38,7 +38,7 @@ error branch. ``CASE`` is short-circuited per SQL semantics.
   the AST stays simple — a sizeable optimisation for the common
   divide-by-constant case in user queries.
 
-The Bucket J ``IEEE_DIVIDE`` rule and SQLGlot's native ``SAFE_DIVIDE``
+The ``IEEE_DIVIDE`` rule and SQLGlot's native ``SAFE_DIVIDE``
 transpile both produce ``Div`` AST nodes after this pre-translator has
 already run (``IeeeDivideRule`` runs in the post-translate rule pass;
 ``SAFE_DIVIDE`` is lowered to ``CASE WHEN denominator <> 0 THEN
