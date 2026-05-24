@@ -152,7 +152,7 @@ def test_bare_select_current_user(bqemu_rest_url: str) -> None:
         rows = list(job.result())
         assert rows[0]["who"] == "dani@example.com"
     finally:
-        pass
+        bq.close()
 
 
 def test_bare_select_session_user_system_var(bqemu_rest_url: str) -> None:
@@ -170,7 +170,7 @@ def test_bare_select_session_user_system_var(bqemu_rest_url: str) -> None:
         rows = list(job.result())
         assert rows[0]["who"] == "eli@example.com"
     finally:
-        pass
+        bq.close()
 
 
 def test_bare_select_session_user(bqemu_rest_url: str) -> None:

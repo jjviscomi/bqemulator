@@ -236,14 +236,29 @@ class TestRewriteSessionUser:
         out = rewrite_session_user(sql, caller)
         assert "'anonymous'" in out
 
-    def test_user_column_not_falsely_matched(self) -> None:
+    def test_user_column_fast_path_short_circuit(self) -> None:
         # ``SELECT user FROM users`` references a column named
-        # ``user`` — it is NOT the ``@@session.user`` system variable
-        # and the rewriter must leave it alone. Pins the precision
-        # of ``_is_session_user_system_var`` against false positives.
+        # ``user`` — no caller-identity spelling is present so the
+        # rewriter's string-side fast-path short-circuits before
+        # parsing the AST. Pins that path (object-identity check).
         sql = "SELECT user FROM users"
         out = rewrite_session_user(sql, self._caller())
-        assert out is sql  # fast-path short-circuit
+        assert out is sql
+
+    def test_user_column_alongside_session_user_not_rewritten(self) -> None:
+        # When the query DOES contain a real caller-identity spelling
+        # (forcing the AST walk to run), a column named ``user`` accessed
+        # via dot syntax (``t.user``) must NOT be rewritten — only the
+        # ``Dot(Parameter(Parameter(Var('session'))), Identifier('user'))``
+        # shape qualifies for the ``@@session.user`` rule. This is the
+        # actual exercise of :func:`_is_session_user_system_var`'s
+        # precision against false positives.
+        sql = "SELECT SESSION_USER() AS who, t.user AS u FROM t"
+        out = rewrite_session_user(sql, self._caller("alice@example.com"))
+        # SESSION_USER folded; t.user column reference preserved.
+        assert "SESSION_USER" not in out.upper()
+        assert "'alice@example.com'" in out
+        assert "t.user" in out.lower() or "user" in out.lower().split("as u")[0]
 
     # ------------------------------------------------------------------
     # All three spellings in one query — all rewritten
