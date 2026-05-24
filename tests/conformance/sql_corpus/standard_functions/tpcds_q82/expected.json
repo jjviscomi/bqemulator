@@ -1,0 +1,56 @@
+{
+  "fixture_version": 2,
+  "bigquery": {
+    "project": "perigon-health-nonprod-svc",
+    "job_id": "c01a3071-2a0e-41a6-b8b7-6f79af4e6bbc",
+    "location": "US",
+    "total_bytes_processed": 668,
+    "total_bytes_billed": 41943040,
+    "duration_ms": 942
+  },
+  "schema": [
+    {
+      "name": "i_item_id",
+      "type": "STRING",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "i_item_desc",
+      "type": "STRING",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "i_current_price",
+      "type": "NUMERIC",
+      "mode": "NULLABLE"
+    }
+  ],
+  "rows": [
+    {
+      "i_item_id": "ITEM001",
+      "i_item_desc": "Item one description",
+      "i_current_price": "65"
+    },
+    {
+      "i_item_id": "ITEM002",
+      "i_item_desc": "Item two description",
+      "i_current_price": "80"
+    },
+    {
+      "i_item_id": "ITEM003",
+      "i_item_desc": "Item three description",
+      "i_current_price": "91"
+    },
+    {
+      "i_item_id": "ITEM004",
+      "i_item_desc": "Item four description",
+      "i_current_price": "72"
+    }
+  ],
+  "row_count": 4,
+  "duration_class": "fast",
+  "job_metadata": {
+    "cache_hit": false,
+    "statement_type": "SELECT"
+  }
+}

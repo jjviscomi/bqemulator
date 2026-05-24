@@ -1,0 +1,95 @@
+{
+  "fixture_version": 2,
+  "bigquery": {
+    "project": "perigon-health-nonprod-svc",
+    "job_id": "6e9509b5-f50d-4182-8472-91584fe3135e",
+    "location": "US",
+    "total_bytes_processed": 727,
+    "total_bytes_billed": 41943040,
+    "duration_ms": 1023
+  },
+  "schema": [
+    {
+      "name": "c_customer_id",
+      "type": "STRING",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "c_salutation",
+      "type": "STRING",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "c_first_name",
+      "type": "STRING",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "c_last_name",
+      "type": "STRING",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "ca_street_number",
+      "type": "STRING",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "ca_street_name",
+      "type": "STRING",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "ca_city",
+      "type": "STRING",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "ca_zip",
+      "type": "STRING",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "ca_country",
+      "type": "STRING",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "ca_gmt_offset",
+      "type": "NUMERIC",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "ca_location_type",
+      "type": "STRING",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "ctr_total_return",
+      "type": "NUMERIC",
+      "mode": "NULLABLE"
+    }
+  ],
+  "rows": [
+    {
+      "c_customer_id": "AAAA1",
+      "c_salutation": "Mr.",
+      "c_first_name": "Adam",
+      "c_last_name": "Adams",
+      "ca_street_number": "100",
+      "ca_street_name": "Peachtree St",
+      "ca_city": "Atlanta",
+      "ca_zip": "30303",
+      "ca_country": "US",
+      "ca_gmt_offset": "-5",
+      "ca_location_type": "single",
+      "ctr_total_return": "1000"
+    }
+  ],
+  "row_count": 1,
+  "duration_class": "medium",
+  "job_metadata": {
+    "cache_hit": false,
+    "statement_type": "SELECT"
+  }
+}

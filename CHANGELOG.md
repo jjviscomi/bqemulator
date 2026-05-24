@@ -67,6 +67,51 @@ section and adds the release date.
 
 ### Added
 
+- **TPC-DS chunk 1 — 11 "easier" fixtures recorded** (59 → 70
+  TPC-DS coverage). Closes the first slice of the expansion plan
+  documented in
+  [`docs/architecture/contributing/tpcds-expansion-plan.md`](docs/architecture/contributing/tpcds-expansion-plan.md).
+  Queries added: **q12, q20, q37, q45, q57, q65, q79, q81, q82,
+  q93, q98**. Per-fixture characteristics:
+
+  - **q12 / q20 / q98** — window ``SUM`` over ``PARTITION BY
+    i_class``: web / catalog / store channel revenue-ratio.
+  - **q37 / q82** — item × inventory × date_dim × catalog/store_sales
+    join with manufacturer / inventory range filters.
+  - **q45** — web_sales × customer × customer_address with
+    ``SUBSTR(ca_zip, 1, 5) IN list OR i_item_id IN subquery``
+    disjunction.
+  - **q57** — AVG/RANK window over (i_category, i_brand, cc_name)
+    by call-center month (simplified single-CTE variant of the
+    full 3-CTE Q57; exercises the same AVG-OVER-window primitives
+    the spec targets).
+  - **q65** — DENSE_RANK + low-performer ``revenue ≤ 0.1 × AVG``
+    store-item filter.
+  - **q79** — household_demographics + customer-display join with
+    ``hd_dep_count = 6 OR hd_vehicle_count > 2`` disjunction.
+  - **q81** — customer_total_return CTE + ``> 1.2 × AVG``
+    correlated subquery (same shape as Q1 but with web-side
+    address-fragment projection).
+  - **q93** — store_sales ⋈ store_returns ⋈ reason with
+    ``CASE WHEN sr_return_quantity IS NOT NULL`` net-amount
+    rewrite.
+
+  Each fixture seeds 1-5 rows per dimension table and returns
+  1-5 result rows (deterministic against BigQuery's recording).
+  Recorder runs cost a combined ~$0 against
+  ``perigon-health-nonprod-svc`` (US multi-region; total
+  ~7 KiB scanned across all 11). All 11 PASS the in-process
+  replay on first run (``pytest tests/conformance -m conformance
+  -k 'tpcds_q12 or … or tpcds_q98'`` → 11 passed in 4.3s) —
+  confirming the existing 92-rule translator already supports
+  every construct these queries use. No new SQL rules added.
+
+  [Coverage-matrix](docs/reference/conformance-coverage-matrix.md)
+  regenerated: corpus fixture count 1141 → 1152; TPC-DS family
+  count 59 → 70 (4 chunks remaining, ~$0.04 total against
+  ``perigon-health-nonprod-svc`` to complete the full
+  99-query corpus).
+
 - **TPC-DS expansion plan documented** — new
   [`docs/architecture/contributing/tpcds-expansion-plan.md`](docs/architecture/contributing/tpcds-expansion-plan.md)
   tracks the planned 59 → 99 TPC-DS coverage expansion. Lists the 40
