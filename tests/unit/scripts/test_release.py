@@ -11,7 +11,7 @@ Pins the contracts the v1.0.0 release relies on:
    git state; the existing ``__init__.py`` and ``CHANGELOG.md`` are
    byte-for-byte unchanged after the orchestrator returns.
 4. **Apply mutation** — ``--apply`` mode writes the version bump,
-   finalises the changelog, creates the release commit, and tags it.
+   stamps the changelog, creates the release commit, and tags it.
 5. **Exit-code contract** — each abort path maps to a distinct exit
    code so ``release.yml``-driven debugging can pin the failure point.
 6. **Tool-not-found UX** — missing ``git`` / ``make`` raises a clean
@@ -60,17 +60,17 @@ __version__ = "0.1.0"
 _CHANGELOG_TEMPLATE = """\
 # Changelog
 
-## [Unreleased]
+## [0.2.0]
 
 ### Added
 
-- shiny new thing.
+- Shiny new thing.
 
-## [0.1.0] — 2026-01-01
+## [0.1.0] - 2026-01-01
 
 ### Added
 
-- initial release.
+- Initial release.
 """
 
 _README_TEMPLATE = """# bqemulator
@@ -130,8 +130,7 @@ def _opts(
     dry_run: bool = True,
     explicit_version: str | None = None,
     bump_kind: str | None = "minor",
-    skip_verify: bool = True,  # default — tests don't run the multi-minute gate chain
-    allow_empty_changelog: bool = False,
+    skip_verify: bool = True,
     release_date: str | None = "2026-05-21",
 ) -> rel.ReleaseOptions:
     """Build :class:`ReleaseOptions` with sensible test defaults."""
@@ -139,7 +138,6 @@ def _opts(
         repo_root=repo,
         dry_run=dry_run,
         skip_verify=skip_verify,
-        allow_empty_changelog=allow_empty_changelog,
         explicit_version=explicit_version,
         bump_kind=bump_kind,
         release_date=release_date,
@@ -300,6 +298,20 @@ class TestDryRun:
         assert "would run: git tag" in captured.out
         assert "v0.2.0" in captured.out
 
+    def test_dry_run_returns_changelog_failed_on_value_error(
+        self,
+        tmp_path: Path,
+        monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        """A malformed date surfaces from cl.stamp as ValueError; the dry-run
+        preview path must catch it symmetrically with the apply path and exit
+        EXIT_CHANGELOG_FAILED rather than crashing with an unhandled exception.
+        """
+        _git_test_env(monkeypatch)
+        repo = _init_repo(tmp_path)
+        rc = rel.orchestrate(_opts(repo, release_date="not-a-date"))
+        assert rc == rel.EXIT_CHANGELOG_FAILED
+
 
 # ---------------------------------------------------------------------------
 # Apply mutation + commit + tag
@@ -319,17 +331,14 @@ class TestApply:
         init = repo / "src" / "bqemulator" / "__init__.py"
         assert '"0.2.0"' in init.read_text(encoding="utf-8")
 
-    def test_apply_finalises_changelog(
-        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-    ) -> None:
+    def test_apply_stamps_changelog(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
         _git_test_env(monkeypatch)
         repo = _init_repo(tmp_path)
         rc = rel.orchestrate(_opts(repo, dry_run=False))
         assert rc == rel.EXIT_OK
         changelog = (repo / "CHANGELOG.md").read_text(encoding="utf-8")
-        assert "## [0.2.0] — 2026-05-21" in changelog
-        # The new feature entry promoted to the versioned section.
-        assert "- shiny new thing." in changelog
+        assert "## [0.2.0] - 2026-05-21" in changelog
+        assert "- Shiny new thing." in changelog
 
     def test_apply_creates_commit_and_tag(
         self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
@@ -369,40 +378,60 @@ class TestApply:
         )
         assert status.stdout == ""
 
-    def test_apply_refuses_empty_changelog_by_default(
+    def test_apply_refuses_empty_section(
         self,
         tmp_path: Path,
         monkeypatch: pytest.MonkeyPatch,
     ) -> None:
         _git_test_env(monkeypatch)
         repo = _init_repo(tmp_path)
-        # Wipe the Unreleased body.
-        (repo / "CHANGELOG.md").write_text("# Changelog\n\n## [Unreleased]\n\n", encoding="utf-8")
+        (repo / "CHANGELOG.md").write_text("# Changelog\n\n## [0.2.0]\n\n", encoding="utf-8")
         subprocess.run([_GIT, "add", "-A"], cwd=repo, check=True)  # noqa: S603
         subprocess.run(  # noqa: S603
-            [_GIT, "commit", "-q", "-m", "empty unreleased"],
+            [_GIT, "commit", "-q", "-m", "empty section"],
             cwd=repo,
             check=True,
         )
         rc = rel.orchestrate(_opts(repo, dry_run=False))
         assert rc == rel.EXIT_CHANGELOG_FAILED
 
-    def test_apply_allows_empty_changelog_with_flag(
+    def test_apply_refuses_missing_section(
         self,
         tmp_path: Path,
         monkeypatch: pytest.MonkeyPatch,
     ) -> None:
         _git_test_env(monkeypatch)
         repo = _init_repo(tmp_path)
-        (repo / "CHANGELOG.md").write_text("# Changelog\n\n## [Unreleased]\n\n", encoding="utf-8")
+        (repo / "CHANGELOG.md").write_text("# Changelog\n\n", encoding="utf-8")
         subprocess.run([_GIT, "add", "-A"], cwd=repo, check=True)  # noqa: S603
         subprocess.run(  # noqa: S603
-            [_GIT, "commit", "-q", "-m", "empty unreleased"],
+            [_GIT, "commit", "-q", "-m", "no section"],
             cwd=repo,
             check=True,
         )
-        rc = rel.orchestrate(_opts(repo, dry_run=False, allow_empty_changelog=True))
-        assert rc == rel.EXIT_OK
+        rc = rel.orchestrate(_opts(repo, dry_run=False))
+        assert rc == rel.EXIT_CHANGELOG_FAILED
+
+    def test_apply_refuses_version_mismatch(
+        self,
+        tmp_path: Path,
+        monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        _git_test_env(monkeypatch)
+        repo = _init_repo(tmp_path)
+        # Author a section for the wrong version (1.0.0 instead of 0.2.0).
+        (repo / "CHANGELOG.md").write_text(
+            "# Changelog\n\n## [1.0.0]\n\n### Added\n\n- Wrong version.\n",
+            encoding="utf-8",
+        )
+        subprocess.run([_GIT, "add", "-A"], cwd=repo, check=True)  # noqa: S603
+        subprocess.run(  # noqa: S603
+            [_GIT, "commit", "-q", "-m", "wrong section version"],
+            cwd=repo,
+            check=True,
+        )
+        rc = rel.orchestrate(_opts(repo, dry_run=False))
+        assert rc == rel.EXIT_CHANGELOG_FAILED
 
 
 # ---------------------------------------------------------------------------
