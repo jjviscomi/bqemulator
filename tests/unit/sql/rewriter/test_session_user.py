@@ -237,6 +237,7 @@ class TestRewriteSessionUser:
         assert "'anonymous'" in out
 
     def test_user_column_fast_path_short_circuit(self) -> None:
+        """Fast-path returns input object unchanged when no caller-identity spelling appears."""
         # ``SELECT user FROM users`` references a column named
         # ``user`` — no caller-identity spelling is present so the
         # rewriter's string-side fast-path short-circuits before
@@ -246,6 +247,7 @@ class TestRewriteSessionUser:
         assert out is sql
 
     def test_user_column_alongside_session_user_not_rewritten(self) -> None:
+        """AST walk substitutes SESSION_USER() but leaves a column named ``user`` alone."""
         # When the query DOES contain a real caller-identity spelling
         # (forcing the AST walk to run), a column named ``user`` accessed
         # via dot syntax (``t.user``) must NOT be rewritten — only the
