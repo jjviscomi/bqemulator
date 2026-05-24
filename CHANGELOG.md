@@ -151,6 +151,33 @@ section and adds the release date.
 
 ### Changed
 
+- **Python example requirements tightened to CVE-clean floors.** The
+  OpenSSF Scorecard `Vulnerabilities` check (added in PR #48) reported
+  ~100 historical PYSEC / GHSA IDs against the `docs/examples/python/`
+  projects' wide `>=X.Y` lower bounds — OSV-scanner treats any version
+  inside a declared range as a candidate match, so `apache-airflow>=2.8`
+  intersected every airflow CVE from 2.8.0 onward even though pip
+  resolves the latest 2.x at install time. Tightening lower bounds to
+  the highest version with no open OSV records inside the existing
+  upper bound (verified via `osv-scanner` 2.2.4 → "0 issues"):
+  - `docs/examples/python/airflow-dag-test/requirements.txt`:
+    `apache-airflow>=2.8` → `>=2.11.1`,
+    `apache-airflow-providers-google>=10.0` → `>=11.0`,
+    `pytest>=8.0,<9.0` → `>=9.0.3,<10.0`.
+  - `docs/examples/python/pyspark-bigquery/requirements.txt`:
+    `pyspark>=3.5` → `>=3.5.2`,
+    `pyarrow>=14.0` → `>=17.0`.
+  - `docs/examples/python/pytest-integration/requirements.txt`:
+    `flask>=3.0` → `>=3.1.3`,
+    `pytest>=8.0,<9.0` → `>=9.0.3,<10.0`.
+  Each requirements.txt now carries an inline comment naming the
+  specific GHSA / PYSEC IDs the new floor closes (so future audits
+  don't need to re-derive the rationale). The emulator's own
+  `pyproject.toml` runtime deps already pin tight CVE floors via the
+  existing transitive-pin block (`cryptography>=46.0.7`,
+  `pyjwt>=2.12.0`, `urllib3>=2.7.0`, etc.) — no main-project bump
+  needed; ``pip-audit`` against the runtime closure was already clean.
+
 - **`github/codeql-action` pinned by full commit SHA** in
   `.github/workflows/codeql.yml`. Previously used floating
   `@v4` major tags for `init` and `analyze`, which AGENTS.md's
