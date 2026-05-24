@@ -6,6 +6,14 @@ on:
     tags: ["v*.*.*"]
   workflow_dispatch:
 
+# Cancel an in-flight Docker build when a newer commit lands on the
+# same ref. Branch pushes to ``main`` can otherwise race and produce a
+# stale ``:latest`` image; tag builds are inherently single-shot so
+# the cancellation only fires on the ``main`` branch case in practice.
+concurrency:
+  group: docker-${{ github.ref }}
+  cancel-in-progress: true
+
 # Token-Permissions least-privilege (OpenSSF Scorecard guidance):
 # top-level is read-only; the ``publish`` job below escalates only
 # to the writes it actually needs.

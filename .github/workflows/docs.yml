@@ -12,6 +12,16 @@ on:
       - "src/bqemulator/**/*.py"  # mkdocstrings pulls from source
       - ".github/workflows/docs.yml"
 
+# Cancel an in-flight docs build when a newer commit lands on the same
+# ref. Branch pushes to ``main`` can otherwise race and produce a
+# stale ``gh-pages`` deploy via ``mike``; tag builds (which deploy the
+# tagged version + flip the ``stable`` alias) are inherently
+# single-shot so the cancellation only fires on the ``main`` branch
+# case in practice.
+concurrency:
+  group: docs-${{ github.ref }}
+  cancel-in-progress: true
+
 # Token-Permissions least-privilege (OpenSSF Scorecard guidance):
 # top-level is read-only; the ``deploy`` job below escalates to
 # ``contents: write`` only when it actually needs to push to the
