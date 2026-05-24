@@ -1141,33 +1141,29 @@ KNOWN_DIVERGENCES: dict[str, str] = {
     # ``INFORMATION_SCHEMA.*`` view as an inline VALUES subquery
     # sourced from ``CatalogRepository``. The 18 G4 fixtures were
     # recorded against real BigQuery as part of the v1.1.0 cut and
-    # landed alongside three catalog-coverage closures:
+    # all 18 PASS — the recording exposed five catalog-coverage
+    # bugs that landed in the same PR:
     #
     # 1. Stray trailing backtick in the rewriter regex (broke every
     #    ``` `dataset.INFORMATION_SCHEMA.X` ``` reference).
     # 2. Bare-``NULL`` columns in the empty-rows path emitted
     #    ``INTEGER`` schemas instead of BigQuery-documented types;
     #    closed via ``CAST(NULL AS <type>)`` per-column casts.
-    # 3. ``CREATE TABLE`` DDL extras now flow into ``TableMeta``:
-    #    NOT NULL → ``mode='REQUIRED'`` via ``PRAGMA table_info``,
+    # 3. NOT NULL → ``mode='REQUIRED'`` plumbing via DuckDB's
+    #    ``PRAGMA table_info`` (Arrow exporter drops the constraint).
+    # 4. ``CREATE TABLE`` DDL extras now flow into ``TableMeta``:
     #    ``PARTITION BY <col>`` → ``time_partitioning.field``,
     #    ``OPTIONS(description=…, require_partition_filter=…,
     #    partition_expiration_days=…)`` → ``TableMeta.description`` +
     #    ``time_partitioning.require_partition_filter`` +
     #    ``expiration_ms``.
+    # 5. STRUCT / ARRAY column types render correctly via a new
+    #    recursive ``_arrow_field_to_table_field`` helper in
+    #    ``ddl_sync`` (Arrow lists → BigQuery REPEATED mode; Arrow
+    #    structs → ``RECORD`` type with nested fields tuple).
     #
-    # One G4 fixture remains XFAIL — ``is_columns_with_struct_field``
-    # — because the catalog's schema introspector flattens
-    # STRUCT/ARRAY nested fields to their top-level field; BigQuery's
-    # ``INFORMATION_SCHEMA.COLUMNS`` returns a row per nested field
-    # with ``data_type='STRUCT<...>'``. Closure requires a recursive
-    # schema flattener in the COLUMNS emitter (separate workstream).
-    "information_schema/is_columns_with_struct_field": (
-        "Catalog flattens STRUCT/ARRAY nested fields to their top-level "
-        "field; BigQuery emits a row per nested field with "
-        "data_type='STRUCT<...>'. Closure requires recursive schema "
-        "flattener in the COLUMNS emitter. See ADR 0022 §1."
-    ),
+    # No remaining G4 XFAILs — all 6 INFORMATION_SCHEMA views are
+    # 3 / 3 covered.
 }
 
 

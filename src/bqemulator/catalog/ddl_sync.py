@@ -31,11 +31,13 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
+import pyarrow as pa
 import sqlglot
 from sqlglot import exp
 
 from bqemulator.catalog.etag import generate_etag
 from bqemulator.catalog.models import (
+    FieldMode,
     TableFieldSchema,
     TableMeta,
     TableSchema,
@@ -225,7 +227,6 @@ def _introspect_schema(
 ) -> TableSchema:
     """Build a :class:`TableSchema` from the freshly-created DuckDB table."""
     from bqemulator.storage.arrow_bridge import (
-        arrow_type_to_bq_type_name,
         introspect_arrow_schema,
     )
 
@@ -240,14 +241,66 @@ def _introspect_schema(
     # ``information_schema/is_columns_basic``.
     notnull_by_col = _column_notnull_map(target_ref, ctx)
     fields = tuple(
-        TableFieldSchema(
-            name=schema.field(i).name,
-            type=arrow_type_to_bq_type_name(schema.field(i).type),
-            mode="REQUIRED" if notnull_by_col.get(schema.field(i).name) else "NULLABLE",
+        _arrow_field_to_table_field(
+            schema.field(i),
+            mode_override=("REQUIRED" if notnull_by_col.get(schema.field(i).name) else "NULLABLE"),
         )
         for i in range(len(schema))
     )
     return TableSchema(fields=fields)
+
+
+def _arrow_field_to_table_field(
+    arrow_field: pa.Field,
+    mode_override: FieldMode | None = None,
+) -> TableFieldSchema:
+    """Recursively render an Arrow field into a BigQuery ``TableFieldSchema``.
+
+    Three shapes:
+
+    * **List / large-list** → BigQuery REPEATED mode; the inner Arrow
+      type drives the resulting ``type``. Nested structs inside a list
+      recurse through this same helper.
+    * **Struct** → BigQuery ``RECORD`` type with the nested
+      ``TableFieldSchema`` tuple recursively populated.
+    * **Scalar** → BigQuery scalar type via
+      :func:`arrow_type_to_bq_type_name`.
+
+    The ``mode_override`` argument carries the catalog's NULL/NOT NULL
+    flag from ``PRAGMA table_info`` for top-level columns; nested
+    fields inside a STRUCT/REPEATED column always default to NULLABLE
+    because BigQuery doesn't surface a per-nested-field NOT NULL flag
+    in ``INFORMATION_SCHEMA.COLUMNS``.
+
+    Pinned by ``information_schema/is_columns_with_struct_field``.
+    """
+    from bqemulator.storage.arrow_bridge import arrow_type_to_bq_type_name
+
+    arrow_type = arrow_field.type
+    if pa.types.is_list(arrow_type) or pa.types.is_large_list(arrow_type):
+        element_field = arrow_type.value_field
+        inner = _arrow_field_to_table_field(element_field)
+        return TableFieldSchema(
+            name=arrow_field.name,
+            type=inner.type,
+            mode="REPEATED",
+            fields=inner.fields,
+        )
+    if pa.types.is_struct(arrow_type):
+        nested = tuple(
+            _arrow_field_to_table_field(arrow_type.field(i)) for i in range(arrow_type.num_fields)
+        )
+        return TableFieldSchema(
+            name=arrow_field.name,
+            type="RECORD",
+            mode=mode_override or "NULLABLE",
+            fields=nested,
+        )
+    return TableFieldSchema(
+        name=arrow_field.name,
+        type=arrow_type_to_bq_type_name(arrow_type),
+        mode=mode_override or "NULLABLE",
+    )
 
 
 def _column_notnull_map(target_ref: str, ctx: AppContext) -> dict[str, bool]:

@@ -79,34 +79,32 @@ section and adds the release date.
   from these ``TableMeta`` fields — populating them at DDL-sync
   time closes the TABLE_OPTIONS fixtures end-to-end.
 
-  Fixture state (17 PASS + 1 XFAIL):
+  **Fifth fix in the same PR** — STRUCT / ARRAY column types now
+  render correctly in ``INFORMATION_SCHEMA.COLUMNS``. The pre-fix
+  ``_introspect_schema`` mapped every Arrow type through the flat
+  ``arrow_type_to_bq_type_name`` helper, so a ``STRUCT<city
+  STRING, zip INT64>`` column landed as ``data_type='STRING'`` and
+  an ``ARRAY<STRING>`` as ``data_type='STRING'`` too. A new
+  recursive ``_arrow_field_to_table_field`` helper handles
+  Arrow lists (→ BigQuery REPEATED mode), structs (→ ``RECORD``
+  type with nested ``TableFieldSchema`` tuple), and scalars
+  uniformly. The existing ``_render_data_type`` /
+  ``_render_inner_type`` functions in the COLUMNS emitter then
+  format ``STRUCT<...>`` / ``ARRAY<...>`` correctly from the
+  populated schema.
 
-  - **SCHEMATA** (3 / 3 PASS), **TABLES** (3 / 3 PASS),
-    **VIEWS** (3 / 3 PASS)
-  - **COLUMNS** (2 PASS + 1 XFAIL) — `is_columns_basic` ✅,
-    `is_columns_partitioning_column` ✅,
-    `is_columns_with_struct_field` ❌ (only remaining gap —
-    catalog flattens STRUCT/ARRAY nested fields; BigQuery emits
-    a row per nested field. Closure requires recursive schema
-    flattener in the COLUMNS emitter; separate workstream.)
-  - **TABLE_OPTIONS** (3 / 3 PASS) — all closed by the DDL
-    extras extraction.
-  - **PARTITIONS** (3 / 3 PASS) — `is_partitions_ingestion_time`,
-    `is_partitions_basic`, `is_partitions_empty_table` all
-    materialised from existing partition_state.
+  Fixture state: **18 / 18 PASS** (every G4 INFORMATION_SCHEMA
+  fixture green).
 
-  Each XFAIL carries a ``KNOWN_DIVERGENCES`` entry pointing at
-  the specific catalog-state gap that needs to close; each is
-  its own future workstream sized similarly to the original G4
-  work and tracked under [ADR 0022](docs/adr/0022-conformance-corpus-design.md)
-  §1.
+  - **SCHEMATA** (3 / 3), **TABLES** (3 / 3),
+    **COLUMNS** (3 / 3), **TABLE_OPTIONS** (3 / 3),
+    **VIEWS** (3 / 3), **PARTITIONS** (3 / 3)
 
   Coverage-matrix regenerated: corpus fixture count grows by 18
   (1141 → 1159); the INFORMATION_SCHEMA category lifts from
-  **0 / 6 covered** to **6 / 6 covered** (with varying depth — 4
-  views fully green, 2 partially XFAILed). Recording cost: ~$0
-  against ``perigon-health-nonprod-svc`` (18 queries × 10 MiB
-  minimum scan).
+  **0 / 6 covered** to **6 / 6 covered** (all green, no XFAILs).
+  Recording cost: ~$0 against ``perigon-health-nonprod-svc`` (18
+  queries × 10 MiB minimum scan).
 
 ### Changed
 
