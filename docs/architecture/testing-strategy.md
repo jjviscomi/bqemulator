@@ -72,11 +72,18 @@ exercised in the meantime by Tier 3 integration tests). 13 documented
 XFAILs are pinned as permanent design-decision divergences in
 [`tests/conformance/divergences.py`](https://github.com/jjviscomi/bqemulator/blob/main/tests/conformance/divergences.py).
 
-The corpus includes full TPC-H (22/22 queries via P8.c) and a 59-query
-TPC-DS subset (via P8.d expansion). Replay is **per-PR** in CI (no
-external credentials needed — the baselines are committed). Re-recording
-is the deliberate operator action `make record-conformance`, gated on
-`GOOGLE_APPLICATION_CREDENTIALS` + `BQEMU_CONFORMANCE_PROJECT`.
+The corpus includes full TPC-H (22/22 queries via P8.c) and a
+59-of-99 TPC-DS subset (via P8.d expansion). The remaining 40 TPC-DS
+queries are planned per
+[tpcds-expansion-plan.md](contributing/tpcds-expansion-plan.md) —
+that document tracks the missing query list (numerical order, with
+complexity hints), the per-query authoring recipe, BigQuery
+adaptation patterns, cost guardrails, and the open questions to
+resolve before bulk recording. Replay is **per-PR** in CI (no
+external credentials needed — the baselines are committed).
+Re-recording is the deliberate operator action `make
+record-conformance`, gated on `GOOGLE_APPLICATION_CREDENTIALS` +
+`BQEMU_CONFORMANCE_PROJECT`.
 
 ## Tier 6 — Performance (`tests/perf/`)
 

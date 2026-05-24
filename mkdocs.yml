@@ -181,6 +181,7 @@ nav:
           - Adding SQL functions: architecture/contributing/adding-sql-functions.md
           - Adding UDF runtimes: architecture/contributing/adding-udf-runtimes.md
           - Adding conformance cases: architecture/contributing/adding-conformance-cases.md
+          - TPC-DS expansion plan: architecture/contributing/tpcds-expansion-plan.md
           - Debugging: architecture/contributing/debugging.md
   - ADRs:
       - "0001 Use DuckDB": adr/0001-use-duckdb.md
