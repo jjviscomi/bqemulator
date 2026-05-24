@@ -338,9 +338,7 @@ class TestExtractDdlMetadata:
     def test_description_option_extracted(self) -> None:
         from bqemulator.catalog.ddl_sync import _extract_ddl_metadata
 
-        extras = _extract_ddl_metadata(
-            'CREATE TABLE t (id INT64) OPTIONS(description="hello")'
-        )
+        extras = _extract_ddl_metadata('CREATE TABLE t (id INT64) OPTIONS(description="hello")')
         assert extras.description == "hello"
 
     def test_require_partition_filter_option(self) -> None:
@@ -453,9 +451,7 @@ class TestHasNotNullConstraint:
         from bqemulator.api.routes.jobs import _has_not_null_constraint
 
         tree = sqlglot.parse_one("CREATE TABLE t (id INT64 NOT NULL)", read="bigquery")
-        column = next(
-            c for c in tree.this.expressions if isinstance(c, exp.ColumnDef)
-        )
+        column = next(c for c in tree.this.expressions if isinstance(c, exp.ColumnDef))
         assert _has_not_null_constraint(column) is True
 
     def test_column_without_not_null(self) -> None:
@@ -465,7 +461,5 @@ class TestHasNotNullConstraint:
         from bqemulator.api.routes.jobs import _has_not_null_constraint
 
         tree = sqlglot.parse_one("CREATE TABLE t (id INT64)", read="bigquery")
-        column = next(
-            c for c in tree.this.expressions if isinstance(c, exp.ColumnDef)
-        )
+        column = next(c for c in tree.this.expressions if isinstance(c, exp.ColumnDef))
         assert _has_not_null_constraint(column) is False
