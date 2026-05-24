@@ -72,11 +72,24 @@ jobs:
         with:
           # Args explicitly enumerated so they're auditable inline
           # rather than buried in defaults.
+          #
+          # ``--remap``: rewrite repo-self-references
+          # (``github.com/jjviscomi/bqemulator/{blob,tree}/main/<path>``)
+          # to ``file://<workspace>/<path>`` so lychee resolves them
+          # against the PR-branch checkout instead of fetching the
+          # ``main`` branch URL over HTTP. Closes the per-PR
+          # false-failure mode where a new file referenced via an
+          # absolute github URL would 404 on the PR branch (because
+          # the file isn't on ``main`` yet) and the orthogonal
+          # github.com 502 transients on the same URLs. Full
+          # rationale in ``.lychee.toml``.
           args: >-
             --no-progress
             --cache
             --max-cache-age 1d
             --config .lychee.toml
+            --remap "https://github.com/jjviscomi/bqemulator/blob/main/(.+) file://${{ github.workspace }}/$1"
+            --remap "https://github.com/jjviscomi/bqemulator/tree/main/(.+) file://${{ github.workspace }}/$1"
             "**/*.md"
           # Fail the job on broken links (PR runs annotate inline).
           fail: true

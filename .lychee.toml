@@ -44,6 +44,61 @@ max_concurrency = 16
 include_mail = false
 
 # ---------------------------------------------------------------------------
+# URL remapping — resolve repo-self-references as local files
+# ---------------------------------------------------------------------------
+#
+# Generated docs (the coverage-matrix, the compatibility-matrix, function-
+# mapping, api-coverage, etc.) emit absolute github.com URLs for every
+# repo-internal file reference (e.g.,
+# ``[tpcds_q12](https://github.com/jjviscomi/bqemulator/blob/main/tests/
+# conformance/sql_corpus/standard_functions/tpcds_q12)``). Absolute URLs
+# are necessary for the rendered mkdocs site, where pages live at
+# different URL prefixes than the source tree and relative paths would
+# resolve to 404s. But they create a per-PR linkcheck failure mode:
+#
+# 1. A PR adds new files (e.g., a new conformance fixture directory).
+# 2. The generated doc rewrites to include
+#    ``github.com/.../blob/main/.../new_file``.
+# 3. lychee on the PR branch fetches the URL.
+# 4. GitHub returns 404 because the new file is on the PR branch, not
+#    on ``main``.
+# 5. lychee fails the build — even though the link is correct in the
+#    eventual-merge state.
+#
+# An orthogonal failure mode: github.com 502 transients on
+# ``blob/main`` URLs that re-fetch fine seconds later (observed during
+# the v1.1.0 cascade — PRs #57 / #58 / #60 all hit this).
+#
+# Fix: invoke lychee with a ``--remap`` argument that rewrites
+# ``github.com/jjviscomi/bqemulator/{blob,tree}/main/<path>`` URLs to
+# ``file://<absolute-repo-root>/<path>`` at check time. lychee then
+# resolves against the PR branch's filesystem, not a stale main
+# fetch. The remap lives in:
+#
+# * ``.github/workflows/linkcheck.yml`` — uses ``${{ github.workspace }}``
+# * ``Makefile`` ``linkcheck`` target — uses ``$$PWD``
+#
+# It can't live in this config file because lychee's ``remap`` expects
+# valid URLs, not relative paths or ``$PWD``-style env expansion, and
+# the absolute repo-root path differs between CI runners and local
+# checkouts. CLI-side remap with a templated workspace path is
+# portable; config-side ``remap`` is not.
+#
+# Behavioural envelope vs. pre-fix:
+#
+# * PR-branch new files: now pass instead of 404 (correct).
+# * github.com 502 transients on self-links: now no-op (correct).
+# * Renamed/deleted files: still caught (lychee reports "file not
+#   found" against the local checkout — same signal as the 404 was).
+# * Typos in the URL itself (``blob/maine/``, wrong-branch refs):
+#   would fail under the old behaviour (404) AND under the new
+#   behaviour (file not found locally) — both because the literal
+#   ``main`` pattern doesn't match. No coverage lost.
+#
+# The mkdocs-served public site keeps fetching the absolute github
+# URLs at render time — ``--remap`` is a lychee-only directive.
+
+# ---------------------------------------------------------------------------
 # Status codes
 # ---------------------------------------------------------------------------
 
