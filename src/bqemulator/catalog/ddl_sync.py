@@ -28,6 +28,7 @@ here.
 
 from __future__ import annotations
 
+from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
 import sqlglot
@@ -38,6 +39,7 @@ from bqemulator.catalog.models import (
     TableFieldSchema,
     TableMeta,
     TableSchema,
+    TimePartitioning,
 )
 from bqemulator.storage.sql_identifiers import quoted_table_ref
 
@@ -72,6 +74,7 @@ def sync_created_table(bq_sql: str, project_id: str, ctx: AppContext) -> None:
         return
     schema = _introspect_schema(p_id, d_id, t_id, ctx)
     num_rows = _introspect_num_rows(p_id, d_id, t_id, ctx)
+    extras = _extract_ddl_metadata(bq_sql)
     now = ctx.clock.now()
     meta = TableMeta(
         project_id=p_id,
@@ -79,6 +82,8 @@ def sync_created_table(bq_sql: str, project_id: str, ctx: AppContext) -> None:
         table_id=t_id,
         table_type="TABLE",
         schema=schema,
+        description=extras.description,
+        time_partitioning=extras.time_partitioning,
         creation_time=now,
         last_modified_time=now,
         num_rows=num_rows,
@@ -226,15 +231,34 @@ def _introspect_schema(
 
     target_ref = quoted_table_ref(project_id, dataset_id, table_id)
     schema = introspect_arrow_schema(ctx.engine, target_ref)
+    # DuckDB's Arrow exporter always sets ``nullable=True`` regardless
+    # of the SQL NOT NULL constraint, so we cross-reference
+    # ``PRAGMA table_info`` (which preserves the constraint in its
+    # ``notnull`` column) to recover the REQUIRED / NULLABLE mode.
+    # Without this, ``INFORMATION_SCHEMA.COLUMNS`` returns
+    # ``is_nullable='YES'`` for every column. Pinned by
+    # ``information_schema/is_columns_basic``.
+    notnull_by_col = _column_notnull_map(target_ref, ctx)
     fields = tuple(
         TableFieldSchema(
             name=schema.field(i).name,
             type=arrow_type_to_bq_type_name(schema.field(i).type),
-            mode="NULLABLE",
+            mode="REQUIRED" if notnull_by_col.get(schema.field(i).name) else "NULLABLE",
         )
         for i in range(len(schema))
     )
     return TableSchema(fields=fields)
+
+
+def _column_notnull_map(target_ref: str, ctx: AppContext) -> dict[str, bool]:
+    """Return ``{column_name: notnull}`` from DuckDB's ``PRAGMA table_info``.
+
+    DuckDB's ``PRAGMA table_info`` rows are
+    ``(cid, name, type, notnull, dflt_value, pk)``. We project columns 1
+    (name) and 3 (notnull) — both stable across DuckDB versions.
+    """
+    rows = ctx.engine.execute(f"PRAGMA table_info({target_ref})").fetchall()
+    return {row[1]: bool(row[3]) for row in rows}
 
 
 def _introspect_num_rows(
@@ -246,6 +270,130 @@ def _introspect_num_rows(
     target_ref = quoted_table_ref(project_id, dataset_id, table_id)
     row = ctx.engine.execute(f"SELECT COUNT(*) FROM {target_ref}").fetchone()
     return int(row[0]) if row else 0
+
+
+@dataclass(frozen=True)
+class _DdlExtras:
+    """Optional ``TableMeta`` fields extracted from a CREATE TABLE DDL.
+
+    ``description`` and ``time_partitioning`` are populated from the
+    SQLGlot ``Create`` AST when the DDL carries the corresponding
+    BigQuery clauses (``OPTIONS(description=…)``,
+    ``PARTITION BY <col>``, ``OPTIONS(require_partition_filter=TRUE)``).
+    Missing clauses leave the fields ``None`` (the catalog default).
+    """
+
+    description: str | None = None
+    time_partitioning: TimePartitioning | None = None
+
+
+def _extract_ddl_metadata(bq_sql: str) -> _DdlExtras:
+    """Pull description + partitioning out of a CREATE TABLE statement.
+
+    Closes three INFORMATION_SCHEMA conformance gaps in one pass:
+    ``is_columns_partitioning_column`` (needs ``time_partitioning.field``),
+    ``is_table_options_basic`` / ``is_table_options_description`` /
+    ``is_table_options_partition_filter`` (need ``description`` +
+    ``time_partitioning.require_partition_filter``).
+    """
+    try:
+        parsed = sqlglot.parse_one(bq_sql, read="bigquery")
+    except sqlglot.errors.ParseError:
+        return _DdlExtras()
+    if not isinstance(parsed, exp.Create):
+        return _DdlExtras()
+    properties = parsed.args.get("properties")
+    if properties is None:
+        return _DdlExtras()
+
+    partition_field = _ddl_partition_field(properties)
+    options = _ddl_table_options(properties)
+    return _DdlExtras(
+        description=options.description,
+        time_partitioning=_build_time_partitioning(partition_field, options),
+    )
+
+
+@dataclass(frozen=True)
+class _DdlOptions:
+    """Subset of ``OPTIONS(...)`` clauses the catalog tracks today."""
+
+    description: str | None = None
+    require_partition_filter: bool = False
+    expiration_ms: int | None = None
+
+
+def _ddl_partition_field(properties: exp.Properties) -> str | None:
+    """Return the ``PARTITION BY <col>`` field name, if any.
+
+    ``_PARTITIONDATE`` / ``_PARTITIONTIME`` are ingestion-time
+    pseudo-columns; BigQuery's contract is
+    ``time_partitioning.field=None`` for them. Function-form
+    (``PARTITION BY DATE(ts)``) and range-form land in
+    ``range_partitioning`` and are out of scope here.
+    """
+    for prop in properties.expressions:
+        if not isinstance(prop, exp.PartitionedByProperty):
+            continue
+        inner = prop.this
+        if not isinstance(inner, exp.Identifier):
+            continue
+        name = inner.name
+        if name.upper() in {"_PARTITIONDATE", "_PARTITIONTIME"}:
+            continue
+        return name
+    return None
+
+
+def _ddl_table_options(properties: exp.Properties) -> _DdlOptions:
+    """Return the subset of ``OPTIONS(...)`` clauses the catalog tracks."""
+    description: str | None = None
+    require_partition_filter = False
+    expiration_ms: int | None = None
+    for prop in properties.expressions:
+        if not isinstance(prop, exp.Property):
+            continue
+        key = prop.this.name.lower() if prop.this else ""
+        value = prop.args.get("value")
+        if key == "description" and isinstance(value, exp.Literal):
+            description = value.this
+        elif key == "require_partition_filter" and isinstance(value, exp.Boolean):
+            require_partition_filter = bool(value.this)
+        elif key == "partition_expiration_days" and isinstance(value, exp.Literal):
+            expiration_ms = _days_literal_to_ms(value.this)
+    return _DdlOptions(
+        description=description,
+        require_partition_filter=require_partition_filter,
+        expiration_ms=expiration_ms,
+    )
+
+
+def _days_literal_to_ms(raw: object) -> int | None:
+    """Convert an ``OPTIONS(partition_expiration_days=N)`` literal to ms."""
+    if not isinstance(raw, (str, int, float)):
+        return None
+    try:
+        return int(float(raw) * 24 * 60 * 60 * 1000)
+    except (TypeError, ValueError):
+        return None
+
+
+def _build_time_partitioning(
+    partition_field: str | None,
+    options: _DdlOptions,
+) -> TimePartitioning | None:
+    if (
+        partition_field is None
+        and not options.require_partition_filter
+        and options.expiration_ms is None
+    ):
+        return None
+    return TimePartitioning(
+        type="DAY",
+        field=partition_field,
+        expiration_ms=options.expiration_ms,
+        require_partition_filter=options.require_partition_filter,
+    )
 
 
 __all__ = ["sync_created_table", "sync_created_view"]

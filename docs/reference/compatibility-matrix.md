@@ -139,7 +139,7 @@ surfaces).
 
 > **Auto-generated.** Edit fixtures under [`tests/conformance/`](https://github.com/jjviscomi/bqemulator/blob/main/tests/conformance) or update the XFAIL registry in [`tests/conformance/divergences.py`](https://github.com/jjviscomi/bqemulator/blob/main/tests/conformance/divergences.py), then run `make compat-matrix` to regenerate this block. The CI gate (`--check`) refuses to merge a PR whose committed snapshot has drifted from the corpus.
 
-- **Corpus totals**: 1226 fixtures (1152 SQL + 48 HTTP + 26 gRPC); **1213 PASS / 13 XFAIL**
+- **Corpus totals**: 1233 fixtures (1159 SQL + 48 HTTP + 26 gRPC); **1219 PASS / 14 XFAIL**
 - **XFAIL contract**: every pin in `KNOWN_DIVERGENCES` references an ADR or `out-of-scope.md` section — invented divergences are forbidden (see [ADR 0023](https://github.com/jjviscomi/bqemulator/blob/main/docs/adr/0023-conformance-divergence-baseline.md)).
 
 ### Per-phase fixture coverage
@@ -149,24 +149,26 @@ Each row aggregates fixtures by corpus (SQL / HTTP / gRPC) and the on-disk phase
 | Corpus | Phase | Fixtures | PASS | XFAIL | Status |
 |---|---|---:|---:|---:|:---:|
 | SQL | `api_configuration` | 63 | 63 | 0 | ✅ |
+| SQL | `information_schema` | 18 | 17 | 1 | ⚠ |
 | SQL | `partitioning_clustering` | 23 | 23 | 0 | ✅ |
 | SQL | `rest_crud` | 149 | 149 | 0 | ✅ |
 | SQL | `routines_scripting` | 58 | 58 | 0 | ✅ |
 | SQL | `row_access` | 23 | 22 | 1 | ⚠ |
 | SQL | `specialized_types` | 150 | 143 | 7 | ⚠ |
-| SQL | `standard_functions` | 662 | 657 | 5 | ⚠ |
+| SQL | `standard_functions` | 651 | 646 | 5 | ⚠ |
 | SQL | `versioning` | 24 | 24 | 0 | ✅ |
 | HTTP | `jobs` | 48 | 48 | 0 | ✅ |
 | gRPC | `storage_read` | 16 | 16 | 0 | ✅ |
 | gRPC | `storage_write` | 10 | 10 | 0 | ✅ |
-| **Total** | | **1226** | **1213** | **13** | ⚠ |
+| **Total** | | **1233** | **1219** | **14** | ⚠ |
 
 ### XFAIL pin registry
 
-All 13 entries in [`tests/conformance/divergences.py`](https://github.com/jjviscomi/bqemulator/blob/main/tests/conformance/divergences.py) — each rationale references an ADR or [`out-of-scope.md`](https://github.com/jjviscomi/bqemulator/blob/main/docs/reference/out-of-scope.md) section so closure paths stay traceable.
+All 14 entries in [`tests/conformance/divergences.py`](https://github.com/jjviscomi/bqemulator/blob/main/tests/conformance/divergences.py) — each rationale references an ADR or [`out-of-scope.md`](https://github.com/jjviscomi/bqemulator/blob/main/docs/reference/out-of-scope.md) section so closure paths stay traceable.
 
 | Fixture id | Rationale (short) |
 |---|---|
+| [`information_schema/is_columns_with_struct_field`](https://github.com/jjviscomi/bqemulator/blob/main/tests/conformance/sql_corpus/information_schema/is_columns_with_struct_field) | Catalog flattens STRUCT/ARRAY nested fields to their top-level field; BigQuery emits a row per nested field w… |
 | [`row_access/caller_information_schema_visibility`](https://github.com/jjviscomi/bqemulator/blob/main/tests/conformance/sql_corpus/row_access/caller_information_schema_visibility) | P2.d: INFORMATION_SCHEMA.ROW_ACCESS_POLICIES requires bigquery.rowAccessPolicies.list IAM permission. |
 | [`specialized_types/spheroidal_buffer_neighborhood_match`](https://github.com/jjviscomi/bqemulator/blob/main/tests/conformance/sql_corpus/specialized_types/spheroidal_buffer_neighborhood_match) | Spheroidal-vs-planar divergence — see ADR 0019 and docs/reference/out-of-scope.md#spheroidal-geometry-on-geog… |
 | [`specialized_types/spheroidal_buffer_state_xfail`](https://github.com/jjviscomi/bqemulator/blob/main/tests/conformance/sql_corpus/specialized_types/spheroidal_buffer_state_xfail) | Spheroidal-vs-planar divergence — see ADR 0019 and docs/reference/out-of-scope.md#spheroidal-geometry-on-geog… |

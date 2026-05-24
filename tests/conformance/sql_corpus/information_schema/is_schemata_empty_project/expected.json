@@ -1,0 +1,29 @@
+{
+  "fixture_version": 2,
+  "bigquery": {
+    "project": "perigon-health-nonprod-svc",
+    "job_id": "051e8ecc-3348-4b30-8357-962fdbe8e48c",
+    "location": "US",
+    "total_bytes_processed": 10485760,
+    "total_bytes_billed": 10485760,
+    "duration_ms": 893
+  },
+  "schema": [
+    {
+      "name": "dataset_count",
+      "type": "INTEGER",
+      "mode": "NULLABLE"
+    }
+  ],
+  "rows": [
+    {
+      "dataset_count": 0
+    }
+  ],
+  "row_count": 1,
+  "duration_class": "fast",
+  "job_metadata": {
+    "cache_hit": false,
+    "statement_type": "SELECT"
+  }
+}

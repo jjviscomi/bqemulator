@@ -20,6 +20,94 @@ section and adds the release date.
 
 ## [Unreleased]
 
+### Added
+
+- **INFORMATION_SCHEMA conformance corpus — 18 fixtures recorded
+  + two G4 rewriter bug fixes**. The G4 rewriter implementation
+  (2026-05-21 work) covering ``SCHEMATA`` / ``TABLES`` /
+  ``COLUMNS`` / ``TABLE_OPTIONS`` / ``VIEWS`` / ``PARTITIONS``
+  shipped with the fixture *queries* but no recorded baselines;
+  this PR records all 18 against real BigQuery, exposing two
+  pre-existing rewriter bugs that are now closed:
+
+  - **Stray trailing backtick** — every ``_build_patterns``
+    regex matched a backtick-quoted reference like
+    ``` `dataset.INFORMATION_SCHEMA.TABLES` ``` but didn't
+    consume the closing ``` ` ```, leaving a stray backtick in
+    the rewritten SQL that broke the downstream SQLGlot
+    tokeniser. Added ``` `? ``` after each ``{view}`` pattern.
+  - **Bare-`NULL` columns in the empty-rows path** — when the
+    matched view's catalog state was empty, the rewriter
+    emitted ``(VALUES (NULL, NULL, …, NULL) … WHERE FALSE)``.
+    DuckDB inferred every NULL column as ``INTEGER``, so the
+    wire schema showed ``schema_name: INTEGER`` etc. instead
+    of the BigQuery-documented types. Refactored each of the
+    six empty-row helpers to emit
+    ``CAST(NULL AS STRING) AS catalog_name, CAST(NULL AS TIMESTAMP) AS creation_time, …``
+    with a per-view ``_<VIEW>_COLUMN_TYPES`` tuple driving the
+    types (STRING / TIMESTAMP / INTEGER per BigQuery's docs).
+
+  **Third bug fix landed in the same PR** — DDL ``NOT NULL``
+  constraints now round-trip into ``TableFieldSchema.mode``. The
+  pre-fix ``ddl_sync._introspect_schema`` hard-coded every column
+  to ``mode="NULLABLE"`` regardless of the DDL because DuckDB's
+  Arrow exporter always emits ``nullable=True``. The fix
+  cross-references DuckDB's ``PRAGMA table_info`` (which
+  preserves the ``notnull`` flag) and routes that into the
+  ``REQUIRED``/``NULLABLE`` mode the BigQuery
+  INFORMATION_SCHEMA.COLUMNS ``is_nullable`` column reads from.
+  The ``api/routes/jobs.py:_schema_from_create_table`` preview
+  helper also now reads the SQLGlot ``NotNullColumnConstraint``
+  AST so the REST job-preview path is consistent.
+
+  **Fourth fix in the same PR** — ``CREATE TABLE`` DDL extras
+  now flow into ``TableMeta``. A new ``_extract_ddl_metadata``
+  helper in ``ddl_sync`` parses the SQLGlot ``Create`` AST and
+  populates:
+
+  - ``time_partitioning.field`` from ``PARTITION BY <col>``
+    (``_PARTITIONDATE`` / ``_PARTITIONTIME`` pseudo-columns are
+    excluded per BigQuery's ingestion-time contract where
+    ``field`` is None).
+  - ``description`` from ``OPTIONS(description="…")``.
+  - ``time_partitioning.require_partition_filter`` from
+    ``OPTIONS(require_partition_filter=TRUE)``.
+  - ``time_partitioning.expiration_ms`` from
+    ``OPTIONS(partition_expiration_days=N)``.
+
+  The TABLE_OPTIONS rewriter was already structured to project
+  from these ``TableMeta`` fields — populating them at DDL-sync
+  time closes the TABLE_OPTIONS fixtures end-to-end.
+
+  Fixture state (17 PASS + 1 XFAIL):
+
+  - **SCHEMATA** (3 / 3 PASS), **TABLES** (3 / 3 PASS),
+    **VIEWS** (3 / 3 PASS)
+  - **COLUMNS** (2 PASS + 1 XFAIL) — `is_columns_basic` ✅,
+    `is_columns_partitioning_column` ✅,
+    `is_columns_with_struct_field` ❌ (only remaining gap —
+    catalog flattens STRUCT/ARRAY nested fields; BigQuery emits
+    a row per nested field. Closure requires recursive schema
+    flattener in the COLUMNS emitter; separate workstream.)
+  - **TABLE_OPTIONS** (3 / 3 PASS) — all closed by the DDL
+    extras extraction.
+  - **PARTITIONS** (3 / 3 PASS) — `is_partitions_ingestion_time`,
+    `is_partitions_basic`, `is_partitions_empty_table` all
+    materialised from existing partition_state.
+
+  Each XFAIL carries a ``KNOWN_DIVERGENCES`` entry pointing at
+  the specific catalog-state gap that needs to close; each is
+  its own future workstream sized similarly to the original G4
+  work and tracked under [ADR 0022](docs/adr/0022-conformance-corpus-design.md)
+  §1.
+
+  Coverage-matrix regenerated: corpus fixture count grows by 18
+  (1141 → 1159); the INFORMATION_SCHEMA category lifts from
+  **0 / 6 covered** to **6 / 6 covered** (with varying depth — 4
+  views fully green, 2 partially XFAILed). Recording cost: ~$0
+  against ``perigon-health-nonprod-svc`` (18 queries × 10 MiB
+  minimum scan).
+
 ### Changed
 
 - **Lychee linkcheck resolves repo-self-references locally** —

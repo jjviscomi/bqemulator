@@ -555,7 +555,16 @@ def _destructive_dry_run_schema(
 
 
 def _schema_from_create_table(parsed: Any) -> list[dict[str, Any]]:
-    """Extract a BigQuery-shape schema from a sqlglot ``exp.Create`` AST."""
+    """Extract a BigQuery-shape schema from a sqlglot ``exp.Create`` AST.
+
+    Per-column ``mode`` reflects the DDL's nullability constraint:
+    ``REQUIRED`` when the column carries a ``NOT NULL`` constraint
+    (SQLGlot ``NotNullColumnConstraint``), ``NULLABLE`` otherwise.
+    Closes the gap where ``INFORMATION_SCHEMA.COLUMNS`` returned
+    ``is_nullable='YES'`` for every column regardless of the DDL —
+    BigQuery returns ``'NO'`` for REQUIRED columns. Pinned by the
+    ``information_schema/is_columns_basic`` conformance fixture.
+    """
     from sqlglot import expressions as exp
 
     if not isinstance(parsed, exp.Create):
@@ -572,8 +581,21 @@ def _schema_from_create_table(parsed: Any) -> list[dict[str, Any]]:
         bq_type = _column_def_to_bq_type(column)
         if not bq_type:
             continue
-        fields.append({"name": name, "type": bq_type, "mode": "NULLABLE"})
+        mode = "REQUIRED" if _has_not_null_constraint(column) else "NULLABLE"
+        fields.append({"name": name, "type": bq_type, "mode": mode})
     return fields
+
+
+def _has_not_null_constraint(column: Any) -> bool:
+    """True iff *column*'s SQLGlot ColumnDef carries a NOT NULL constraint."""
+    from sqlglot import expressions as exp
+
+    for constraint in column.args.get("constraints") or ():
+        if isinstance(constraint, exp.ColumnConstraint) and isinstance(
+            constraint.kind, exp.NotNullColumnConstraint
+        ):
+            return True
+    return False
 
 
 def _column_def_to_bq_type(column: Any) -> str:
