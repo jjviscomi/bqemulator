@@ -30,7 +30,8 @@ section and adds the release date.
   authoring recipe, BigQuery adaptation patterns from the TPC-DS
   reference SQL, seed-data sizing rules, cost guardrails (~$0.01
   total for all 40 against an operator-supplied GCP project), and
-  the open questions to resolve before bulk recording. No fixtures
+  the three resolved scope questions (include all 40, cost de
+  minimis, no periodic re-record cadence). No fixtures
   recorded in this PR; the plan is the durable artefact so the work
   survives session boundaries. `docs/architecture/testing-strategy.md`
   updated to reference the plan. No new SQL rules are anticipated —
