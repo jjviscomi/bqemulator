@@ -298,6 +298,20 @@ class TestDryRun:
         assert "would run: git tag" in captured.out
         assert "v0.2.0" in captured.out
 
+    def test_dry_run_returns_changelog_failed_on_value_error(
+        self,
+        tmp_path: Path,
+        monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        """A malformed date surfaces from cl.stamp as ValueError; the dry-run
+        preview path must catch it symmetrically with the apply path and exit
+        EXIT_CHANGELOG_FAILED rather than crashing with an unhandled exception.
+        """
+        _git_test_env(monkeypatch)
+        repo = _init_repo(tmp_path)
+        rc = rel.orchestrate(_opts(repo, release_date="not-a-date"))
+        assert rc == rel.EXIT_CHANGELOG_FAILED
+
 
 # ---------------------------------------------------------------------------
 # Apply mutation + commit + tag

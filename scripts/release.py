@@ -274,7 +274,7 @@ def _preview_changelog(plan: ReleasePlan, opts: ReleaseOptions) -> None:
     text = changelog_path.read_text(encoding="utf-8")
     try:
         cl.stamp(text, version=str(plan.target), date=plan.release_date)
-    except cl.ChangelogError as exc:
+    except (cl.ChangelogError, ValueError) as exc:
         msg = f"changelog preview failed: {exc}"
         raise RuntimeError(msg) from exc
     _emit(
