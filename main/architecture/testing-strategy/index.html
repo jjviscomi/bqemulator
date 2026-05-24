@@ -2753,6 +2753,8 @@
       
         
       
+        
+      
     
     
     
@@ -2928,6 +2930,34 @@
     
   
     Adding conformance cases
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../contributing/tpcds-expansion-plan/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    TPC-DS expansion plan
   
 
     
@@ -5392,11 +5422,18 @@ INFORMATION_SCHEMA fixture stubs awaiting operator-side recording,
 exercised in the meantime by Tier 3 integration tests). 13 documented
 XFAILs are pinned as permanent design-decision divergences in
 <a href="https://github.com/jjviscomi/bqemulator/blob/main/tests/conformance/divergences.py"><code>tests/conformance/divergences.py</code></a>.</p>
-<p>The corpus includes full TPC-H (22/22 queries via P8.c) and a 59-query
-TPC-DS subset (via P8.d expansion). Replay is <strong>per-PR</strong> in CI (no
-external credentials needed — the baselines are committed). Re-recording
-is the deliberate operator action <code>make record-conformance</code>, gated on
-<code>GOOGLE_APPLICATION_CREDENTIALS</code> + <code>BQEMU_CONFORMANCE_PROJECT</code>.</p>
+<p>The corpus includes full TPC-H (22/22 queries via P8.c) and a
+59-of-99 TPC-DS subset (via P8.d expansion). The remaining 40 TPC-DS
+queries are planned per
+<a href="../contributing/tpcds-expansion-plan/">tpcds-expansion-plan.md</a> —
+that document tracks the missing query list (numerical order, with
+complexity hints), the per-query authoring recipe, BigQuery
+adaptation patterns, cost guardrails, and the open questions to
+resolve before bulk recording. Replay is <strong>per-PR</strong> in CI (no
+external credentials needed — the baselines are committed).
+Re-recording is the deliberate operator action <code>make
+record-conformance</code>, gated on <code>GOOGLE_APPLICATION_CREDENTIALS</code> +
+<code>BQEMU_CONFORMANCE_PROJECT</code>.</p>
 <h2 id="tier-6-performance-testsperf">Tier 6 — Performance (<code>tests/perf/</code>)<a class="headerlink" href="#tier-6-performance-testsperf" title="Permanent link">&para;</a></h2>
 <p><code>pytest-benchmark</code>. Five scenario files / 19 benchmarks: cold-start
 (containerized), query latency (TPC-H SF0.01 Q1/Q3/Q5/Q6/Q10), Storage
