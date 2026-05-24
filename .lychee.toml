@@ -19,8 +19,12 @@
 # Default check timeout per URL.
 timeout = 20
 
-# Don't follow more than 5 redirects (catches infinite-loop CDNs).
-max_redirects = 5
+# Don't follow more than 10 redirects (catches infinite-loop CDNs).
+# Bumped from 5 to absorb Google Cloud docs' CDN/locale redirect
+# chain (``cloud.google.com → docs.cloud.google.com → locale-
+# prefixed → canonical``) which can land at 6+ hops from runner
+# egress regions.
+max_redirects = 10
 
 # Retry failed URLs on transient errors. Calibrated against the
 # v1.0.2 release CI cycle (PR #43, 2026-05-23) where lychee hit

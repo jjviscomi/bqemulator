@@ -290,3 +290,176 @@ class TestSyncCreatedView:
             ctx,
         )
         assert ctx.catalog.get_table("p", "absent", "v") is None
+
+
+class TestExtractDdlMetadata:
+    """``_extract_ddl_metadata`` parses CREATE TABLE for description + partitioning."""
+
+    def test_no_properties_returns_empty(self) -> None:
+        from bqemulator.catalog.ddl_sync import _extract_ddl_metadata
+
+        extras = _extract_ddl_metadata("CREATE TABLE t (id INT64)")
+        assert extras.description is None
+        assert extras.time_partitioning is None
+
+    def test_unparseable_sql_returns_empty(self) -> None:
+        from bqemulator.catalog.ddl_sync import _extract_ddl_metadata
+
+        extras = _extract_ddl_metadata("CREATE TABLE ((unbalanced")
+        assert extras.description is None
+        assert extras.time_partitioning is None
+
+    def test_non_create_statement_returns_empty(self) -> None:
+        from bqemulator.catalog.ddl_sync import _extract_ddl_metadata
+
+        extras = _extract_ddl_metadata("SELECT 1")
+        assert extras.description is None
+        assert extras.time_partitioning is None
+
+    def test_partition_by_column_extracted(self) -> None:
+        from bqemulator.catalog.ddl_sync import _extract_ddl_metadata
+
+        extras = _extract_ddl_metadata("CREATE TABLE t (dt DATE, v INT64) PARTITION BY dt")
+        assert extras.time_partitioning is not None
+        assert extras.time_partitioning.field == "dt"
+        assert extras.time_partitioning.type == "DAY"
+        assert extras.time_partitioning.require_partition_filter is False
+
+    def test_ingestion_time_pseudo_columns_yield_no_field(self) -> None:
+        """`_PARTITIONDATE` / `_PARTITIONTIME` are ingestion-time markers; field stays None."""
+        from bqemulator.catalog.ddl_sync import _extract_ddl_metadata
+
+        for col in ("_PARTITIONDATE", "_PARTITIONTIME"):
+            extras = _extract_ddl_metadata(f"CREATE TABLE t (v INT64) PARTITION BY {col}")
+            # No real-column partition → no TimePartitioning constructed when
+            # no other partitioning option is set.
+            assert extras.time_partitioning is None, col
+
+    def test_description_option_extracted(self) -> None:
+        from bqemulator.catalog.ddl_sync import _extract_ddl_metadata
+
+        extras = _extract_ddl_metadata('CREATE TABLE t (id INT64) OPTIONS(description="hello")')
+        assert extras.description == "hello"
+
+    def test_require_partition_filter_option(self) -> None:
+        from bqemulator.catalog.ddl_sync import _extract_ddl_metadata
+
+        extras = _extract_ddl_metadata(
+            "CREATE TABLE t (dt DATE, v INT64) "
+            "PARTITION BY dt "
+            "OPTIONS(require_partition_filter=TRUE)"
+        )
+        assert extras.time_partitioning is not None
+        assert extras.time_partitioning.require_partition_filter is True
+
+    def test_partition_expiration_days_option(self) -> None:
+        from bqemulator.catalog.ddl_sync import _extract_ddl_metadata
+
+        extras = _extract_ddl_metadata(
+            "CREATE TABLE t (dt DATE, v INT64) "
+            "PARTITION BY dt "
+            "OPTIONS(partition_expiration_days=30)"
+        )
+        assert extras.time_partitioning is not None
+        # 30 days in ms.
+        assert extras.time_partitioning.expiration_ms == 30 * 24 * 60 * 60 * 1000
+
+    def test_partition_expiration_days_invalid_literal(self) -> None:
+        from bqemulator.catalog.ddl_sync import _days_literal_to_ms
+
+        assert _days_literal_to_ms(None) is None
+        assert _days_literal_to_ms("not-a-number") is None
+        assert _days_literal_to_ms(7) == 7 * 24 * 60 * 60 * 1000
+        assert _days_literal_to_ms("7") == 7 * 24 * 60 * 60 * 1000
+
+    def test_build_time_partitioning_returns_none_when_all_unset(self) -> None:
+        from bqemulator.catalog.ddl_sync import _build_time_partitioning, _DdlOptions
+
+        assert _build_time_partitioning(None, _DdlOptions()) is None
+
+    def test_build_time_partitioning_with_require_filter_only(self) -> None:
+        """``require_partition_filter=TRUE`` on its own still synthesises TimePartitioning."""
+        from bqemulator.catalog.ddl_sync import _build_time_partitioning, _DdlOptions
+
+        tp = _build_time_partitioning(None, _DdlOptions(require_partition_filter=True))
+        assert tp is not None
+        assert tp.field is None
+        assert tp.require_partition_filter is True
+
+
+class TestArrowFieldToTableField:
+    """``_arrow_field_to_table_field`` recursively maps Arrow types to TableFieldSchema."""
+
+    def test_scalar_int(self) -> None:
+        import pyarrow as pa
+
+        from bqemulator.catalog.ddl_sync import _arrow_field_to_table_field
+
+        field = pa.field("id", pa.int64())
+        out = _arrow_field_to_table_field(field)
+        assert out.name == "id"
+        assert out.type == "INTEGER"
+        assert out.mode == "NULLABLE"
+        assert out.fields == ()
+
+    def test_mode_override_required(self) -> None:
+        import pyarrow as pa
+
+        from bqemulator.catalog.ddl_sync import _arrow_field_to_table_field
+
+        out = _arrow_field_to_table_field(pa.field("id", pa.int64()), mode_override="REQUIRED")
+        assert out.mode == "REQUIRED"
+
+    def test_list_becomes_repeated(self) -> None:
+        import pyarrow as pa
+
+        from bqemulator.catalog.ddl_sync import _arrow_field_to_table_field
+
+        field = pa.field("tags", pa.list_(pa.string()))
+        out = _arrow_field_to_table_field(field)
+        assert out.name == "tags"
+        assert out.mode == "REPEATED"
+        assert out.type == "STRING"
+
+    def test_struct_becomes_record_with_nested_fields(self) -> None:
+        import pyarrow as pa
+
+        from bqemulator.catalog.ddl_sync import _arrow_field_to_table_field
+
+        field = pa.field(
+            "address",
+            pa.struct([("city", pa.string()), ("zip", pa.int64())]),
+        )
+        out = _arrow_field_to_table_field(field)
+        assert out.name == "address"
+        assert out.type == "RECORD"
+        assert out.mode == "NULLABLE"
+        assert len(out.fields) == 2
+        assert out.fields[0].name == "city"
+        assert out.fields[0].type == "STRING"
+        assert out.fields[1].name == "zip"
+        assert out.fields[1].type == "INTEGER"
+
+
+class TestHasNotNullConstraint:
+    """``_has_not_null_constraint`` reads the SQLGlot ColumnDef AST."""
+
+    def test_column_with_not_null(self) -> None:
+        import sqlglot
+        from sqlglot import expressions as exp
+
+        from bqemulator.api.routes.jobs import _has_not_null_constraint
+
+        tree = sqlglot.parse_one("CREATE TABLE t (id INT64 NOT NULL)", read="bigquery")
+        column = next(c for c in tree.this.expressions if isinstance(c, exp.ColumnDef))
+        assert _has_not_null_constraint(column) is True
+
+    def test_column_without_not_null(self) -> None:
+        import sqlglot
+        from sqlglot import expressions as exp
+
+        from bqemulator.api.routes.jobs import _has_not_null_constraint
+
+        tree = sqlglot.parse_one("CREATE TABLE t (id INT64)", read="bigquery")
+        column = next(c for c in tree.this.expressions if isinstance(c, exp.ColumnDef))
+        assert _has_not_null_constraint(column) is False

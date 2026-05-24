@@ -33,7 +33,7 @@ deliberately out of scope — see
 from __future__ import annotations
 
 import re
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Final
 
 if TYPE_CHECKING:
     from bqemulator.catalog.models import (
@@ -49,20 +49,29 @@ if TYPE_CHECKING:
 
 
 def _build_patterns(view_name: str) -> tuple[re.Pattern[str], re.Pattern[str], re.Pattern[str]]:
+    """Compile the three matching patterns for one INFORMATION_SCHEMA view.
+
+    Each pattern accepts a single trailing ``` ` ``` after the view name
+    so a fully-quoted reference like
+    ``` `dataset.INFORMATION_SCHEMA.TABLES` ``` is consumed cleanly
+    (without the trailing backtick, the substitution leaves a stray
+    closing backtick that breaks the downstream SQLGlot tokeniser —
+    pinned by the G4 fixture replay step).
+    """
     escaped = re.escape(view_name.upper())
     project_ds = re.compile(
         r"`?(?P<project>[A-Za-z0-9_\-]+)`?\s*\.\s*"
         r"`?(?P<dataset>[A-Za-z0-9_\-]+)`?\s*\.\s*"
-        rf"INFORMATION_SCHEMA\s*\.\s*{escaped}",
+        rf"INFORMATION_SCHEMA\s*\.\s*{escaped}`?",
         flags=re.IGNORECASE,
     )
     ds = re.compile(
         r"`?(?P<dataset>[A-Za-z0-9_\-]+)`?\s*\.\s*"
-        rf"INFORMATION_SCHEMA\s*\.\s*{escaped}",
+        rf"INFORMATION_SCHEMA\s*\.\s*{escaped}`?",
         flags=re.IGNORECASE,
     )
     bare = re.compile(
-        rf"INFORMATION_SCHEMA\s*\.\s*{escaped}",
+        rf"INFORMATION_SCHEMA\s*\.\s*{escaped}`?",
         flags=re.IGNORECASE,
     )
     return project_ds, ds, bare
@@ -414,6 +423,20 @@ _SCHEMATA_COLUMNS: tuple[str, ...] = (
 )
 
 
+# Per-column BigQuery types for the empty-view CAST(NULL AS <type>) form.
+# Order matches ``_SCHEMATA_COLUMNS`` 1:1.
+_SCHEMATA_COLUMN_TYPES: Final[tuple[tuple[str, str], ...]] = (
+    ("catalog_name", "STRING"),
+    ("schema_name", "STRING"),
+    ("schema_owner", "STRING"),
+    ("creation_time", "TIMESTAMP"),
+    ("last_modified_time", "TIMESTAMP"),
+    ("location", "STRING"),
+    ("ddl", "STRING"),
+    ("default_collation_name", "STRING"),
+)
+
+
 def expand_information_schema_schemata(
     bq_sql: str,
     project_id: str,
@@ -469,9 +492,10 @@ def _schemata_as_values(
 
 
 def _empty_schemata_values_subquery() -> str:
-    col_list = ", ".join(_SCHEMATA_COLUMNS)
-    nulls = ", ".join(["NULL"] * len(_SCHEMATA_COLUMNS))
-    return f"(SELECT * FROM (VALUES ({nulls})) AS v({col_list}) WHERE FALSE)"
+    casts = ", ".join(
+        f"CAST(NULL AS {bq_type}) AS {col}" for col, bq_type in _SCHEMATA_COLUMN_TYPES
+    )
+    return f"(SELECT {casts} WHERE FALSE)"
 
 
 # ---------------------------------------------------------------------------
@@ -495,6 +519,23 @@ _TABLES_COLUMNS: tuple[str, ...] = (
     "base_table_schema",
     "base_table_name",
     "snapshot_time_ms",
+)
+
+
+# Per-column BigQuery types for the empty-view CAST(NULL AS <type>) form.
+# Order matches ``_TABLES_COLUMNS`` 1:1.
+_TABLES_COLUMN_TYPES: Final[tuple[tuple[str, str], ...]] = (
+    ("table_catalog", "STRING"),
+    ("table_schema", "STRING"),
+    ("table_name", "STRING"),
+    ("table_type", "STRING"),
+    ("is_insertable_into", "STRING"),
+    ("is_typed", "STRING"),
+    ("creation_time", "TIMESTAMP"),
+    ("base_table_catalog", "STRING"),
+    ("base_table_schema", "STRING"),
+    ("base_table_name", "STRING"),
+    ("snapshot_time_ms", "INTEGER"),
 )
 
 
@@ -571,9 +612,8 @@ def _tables_as_values(
 
 
 def _empty_tables_values_subquery() -> str:
-    col_list = ", ".join(_TABLES_COLUMNS)
-    nulls = ", ".join(["NULL"] * len(_TABLES_COLUMNS))
-    return f"(SELECT * FROM (VALUES ({nulls})) AS v({col_list}) WHERE FALSE)"
+    casts = ", ".join(f"CAST(NULL AS {bq_type}) AS {col}" for col, bq_type in _TABLES_COLUMN_TYPES)
+    return f"(SELECT {casts} WHERE FALSE)"
 
 
 def _split_base_table(base: str | None) -> tuple[str, str, str]:
@@ -611,6 +651,28 @@ _COLUMNS_COLUMNS: tuple[str, ...] = (
     "is_partitioning_column",
     "clustering_ordinal_position",
     "collation_name",
+)
+
+
+# Per-column BigQuery types for the empty-view CAST(NULL AS <type>) form.
+# Order matches ``_COLUMNS_COLUMNS`` 1:1.
+_COLUMNS_COLUMN_TYPES: Final[tuple[tuple[str, str], ...]] = (
+    ("table_catalog", "STRING"),
+    ("table_schema", "STRING"),
+    ("table_name", "STRING"),
+    ("column_name", "STRING"),
+    ("ordinal_position", "INTEGER"),
+    ("is_nullable", "STRING"),
+    ("data_type", "STRING"),
+    ("is_generated", "STRING"),
+    ("generation_expression", "STRING"),
+    ("is_stored", "STRING"),
+    ("is_hidden", "STRING"),
+    ("is_updatable", "STRING"),
+    ("is_system_defined", "STRING"),
+    ("is_partitioning_column", "STRING"),
+    ("clustering_ordinal_position", "INTEGER"),
+    ("collation_name", "STRING"),
 )
 
 
@@ -693,9 +755,8 @@ def _columns_as_values(
 
 
 def _empty_columns_values_subquery() -> str:
-    col_list = ", ".join(_COLUMNS_COLUMNS)
-    nulls = ", ".join(["NULL"] * len(_COLUMNS_COLUMNS))
-    return f"(SELECT * FROM (VALUES ({nulls})) AS v({col_list}) WHERE FALSE)"
+    casts = ", ".join(f"CAST(NULL AS {bq_type}) AS {col}" for col, bq_type in _COLUMNS_COLUMN_TYPES)
+    return f"(SELECT {casts} WHERE FALSE)"
 
 
 def _partition_field(t: TableMeta) -> str | None:
@@ -769,6 +830,18 @@ _TABLE_OPTIONS_COLUMNS: tuple[str, ...] = (
 )
 
 
+# Per-column BigQuery types for the empty-view CAST(NULL AS <type>) form.
+# Order matches ``_TABLE_OPTIONS_COLUMNS`` 1:1.
+_TABLE_OPTIONS_COLUMN_TYPES: Final[tuple[tuple[str, str], ...]] = (
+    ("table_catalog", "STRING"),
+    ("table_schema", "STRING"),
+    ("table_name", "STRING"),
+    ("option_name", "STRING"),
+    ("option_type", "STRING"),
+    ("option_value", "STRING"),
+)
+
+
 def expand_information_schema_table_options(
     bq_sql: str,
     project_id: str,
@@ -833,9 +906,10 @@ def _table_options_as_values(
 
 
 def _empty_table_options_values_subquery() -> str:
-    col_list = ", ".join(_TABLE_OPTIONS_COLUMNS)
-    nulls = ", ".join(["NULL"] * len(_TABLE_OPTIONS_COLUMNS))
-    return f"(SELECT * FROM (VALUES ({nulls})) AS v({col_list}) WHERE FALSE)"
+    casts = ", ".join(
+        f"CAST(NULL AS {bq_type}) AS {col}" for col, bq_type in _TABLE_OPTIONS_COLUMN_TYPES
+    )
+    return f"(SELECT {casts} WHERE FALSE)"
 
 
 def _table_options(table: TableMeta) -> list[tuple[str, str, str]]:
@@ -907,6 +981,18 @@ _VIEWS_COLUMNS: tuple[str, ...] = (
 )
 
 
+# Per-column BigQuery types for the empty-view CAST(NULL AS <type>) form.
+# Order matches ``_VIEWS_COLUMNS`` 1:1.
+_VIEWS_COLUMN_TYPES: Final[tuple[tuple[str, str], ...]] = (
+    ("table_catalog", "STRING"),
+    ("table_schema", "STRING"),
+    ("table_name", "STRING"),
+    ("view_definition", "STRING"),
+    ("check_option", "STRING"),
+    ("use_standard_sql", "STRING"),
+)
+
+
 def expand_information_schema_views(
     bq_sql: str,
     project_id: str,
@@ -961,9 +1047,8 @@ def _views_as_values(
 
 
 def _empty_views_values_subquery() -> str:
-    col_list = ", ".join(_VIEWS_COLUMNS)
-    nulls = ", ".join(["NULL"] * len(_VIEWS_COLUMNS))
-    return f"(SELECT * FROM (VALUES ({nulls})) AS v({col_list}) WHERE FALSE)"
+    casts = ", ".join(f"CAST(NULL AS {bq_type}) AS {col}" for col, bq_type in _VIEWS_COLUMN_TYPES)
+    return f"(SELECT {casts} WHERE FALSE)"
 
 
 # ---------------------------------------------------------------------------
@@ -980,6 +1065,20 @@ _PARTITIONS_COLUMNS: tuple[str, ...] = (
     "total_logical_bytes",
     "last_modified_time",
     "storage_tier",
+)
+
+
+# Per-column BigQuery types for the empty-view CAST(NULL AS <type>) form.
+# Order matches ``_PARTITIONS_COLUMNS`` 1:1.
+_PARTITIONS_COLUMN_TYPES: Final[tuple[tuple[str, str], ...]] = (
+    ("table_catalog", "STRING"),
+    ("table_schema", "STRING"),
+    ("table_name", "STRING"),
+    ("partition_id", "STRING"),
+    ("total_rows", "INTEGER"),
+    ("total_logical_bytes", "INTEGER"),
+    ("last_modified_time", "TIMESTAMP"),
+    ("storage_tier", "STRING"),
 )
 
 
@@ -1044,9 +1143,10 @@ def _partitions_as_values(
 
 
 def _empty_partitions_values_subquery() -> str:
-    col_list = ", ".join(_PARTITIONS_COLUMNS)
-    nulls = ", ".join(["NULL"] * len(_PARTITIONS_COLUMNS))
-    return f"(SELECT * FROM (VALUES ({nulls})) AS v({col_list}) WHERE FALSE)"
+    casts = ", ".join(
+        f"CAST(NULL AS {bq_type}) AS {col}" for col, bq_type in _PARTITIONS_COLUMN_TYPES
+    )
+    return f"(SELECT {casts} WHERE FALSE)"
 
 
 # ---------------------------------------------------------------------------

@@ -212,7 +212,7 @@ divergence via ``sync_created_view``. Two ``out-of-scope.md`` sections
 (``#ingestion-time-partition-pseudo-columns`` and
 ``#st_maxdistance-not-yet-implemented``) were removed in the same PR.
 
-The registry's **current state is 15 entries** — all permanent
+The registry's **current state is 13 entries** — all permanent
 design-decision divergences with no closure plan for v1.0:
 
 * **11 spheroidal** (ADR 0019; sphere-vs-planar GEOGRAPHY): the 3
@@ -1135,6 +1135,35 @@ KNOWN_DIVERGENCES: dict[str, str] = {
     #   ``read_avro`` path.
     #
     # Both closures shipped with the underlying G1 ADR ([ADR 0027]).
+    #
+    # ── G4 INFORMATION_SCHEMA catalog-coverage closures (2026-05-24) ──
+    # The G4 rewriter (2026-05-21) materialises every supported
+    # ``INFORMATION_SCHEMA.*`` view as an inline VALUES subquery
+    # sourced from ``CatalogRepository``. The 18 G4 fixtures were
+    # recorded against real BigQuery as part of the v1.1.0 cut and
+    # all 18 PASS — the recording exposed five catalog-coverage
+    # bugs that landed in the same PR:
+    #
+    # 1. Stray trailing backtick in the rewriter regex (broke every
+    #    ``` `dataset.INFORMATION_SCHEMA.X` ``` reference).
+    # 2. Bare-``NULL`` columns in the empty-rows path emitted
+    #    ``INTEGER`` schemas instead of BigQuery-documented types;
+    #    closed via ``CAST(NULL AS <type>)`` per-column casts.
+    # 3. NOT NULL → ``mode='REQUIRED'`` plumbing via DuckDB's
+    #    ``PRAGMA table_info`` (Arrow exporter drops the constraint).
+    # 4. ``CREATE TABLE`` DDL extras now flow into ``TableMeta``:
+    #    ``PARTITION BY <col>`` → ``time_partitioning.field``,
+    #    ``OPTIONS(description=…, require_partition_filter=…,
+    #    partition_expiration_days=…)`` → ``TableMeta.description`` +
+    #    ``time_partitioning.require_partition_filter`` +
+    #    ``expiration_ms``.
+    # 5. STRUCT / ARRAY column types render correctly via a new
+    #    recursive ``_arrow_field_to_table_field`` helper in
+    #    ``ddl_sync`` (Arrow lists → BigQuery REPEATED mode; Arrow
+    #    structs → ``RECORD`` type with nested fields tuple).
+    #
+    # No remaining G4 XFAILs — all 6 INFORMATION_SCHEMA views are
+    # 3 / 3 covered.
 }
 
 

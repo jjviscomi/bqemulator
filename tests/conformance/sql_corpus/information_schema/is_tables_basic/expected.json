@@ -1,0 +1,53 @@
+{
+  "fixture_version": 2,
+  "bigquery": {
+    "project": "perigon-health-nonprod-svc",
+    "job_id": "29520ace-86af-43ed-bb4c-274fd81208d2",
+    "location": "US",
+    "total_bytes_processed": 10485760,
+    "total_bytes_billed": 10485760,
+    "duration_ms": 1224
+  },
+  "schema": [
+    {
+      "name": "table_name",
+      "type": "STRING",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "table_type",
+      "type": "STRING",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "is_insertable_into",
+      "type": "STRING",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "is_typed",
+      "type": "STRING",
+      "mode": "NULLABLE"
+    }
+  ],
+  "rows": [
+    {
+      "table_name": "customers",
+      "table_type": "BASE TABLE",
+      "is_insertable_into": "YES",
+      "is_typed": "NO"
+    },
+    {
+      "table_name": "orders",
+      "table_type": "BASE TABLE",
+      "is_insertable_into": "YES",
+      "is_typed": "NO"
+    }
+  ],
+  "row_count": 2,
+  "duration_class": "medium",
+  "job_metadata": {
+    "cache_hit": false,
+    "statement_type": "SELECT"
+  }
+}
