@@ -20,7 +20,10 @@ import pyarrow as pa
 
 from bqemulator.domain.errors import ValidationError
 from bqemulator.observability.logging_ import get_logger
-from bqemulator.row_access.identity import resolve_caller_from_metadata
+from bqemulator.row_access.identity import (
+    CallerIdentity,
+    resolve_caller_from_metadata,
+)
 from bqemulator.sql.rewriter.row_access_filter import rewrite_for_row_access
 from bqemulator.storage.sql_identifiers import quoted_table_ref
 from bqemulator.streaming.read_session import (
@@ -109,8 +112,21 @@ def _build_read_sql(
     target_ref: str,
     selected_fields: list[str] | None,
     read_session: Any,
+    caller: CallerIdentity | None = None,
 ) -> str:
-    """Assemble the SELECT ... FROM ... [WHERE ...] SQL string."""
+    """Assemble the SELECT ... FROM ... [WHERE ...] SQL string.
+
+    ``caller`` is threaded into the row_restriction's translation
+    pass so caller-identity functions (``SESSION_USER()``,
+    ``CURRENT_USER()``, ``@@session.user``) fold to the
+    authenticated principal's email instead of the ``ANONYMOUS_CALLER``
+    sentinel. Before the closure documented in ADR 0040, the row
+    restriction's filter pre-pass received no caller context and
+    every caller-identity call folded to ``"anonymous"`` regardless
+    of the actual ``X-Bqemu-Caller`` header. The default ``None``
+    preserves the previous behaviour for the (deprecated) call
+    sites that haven't been migrated.
+    """
     cols = ", ".join(f'"{c}"' for c in selected_fields) if selected_fields else "*"
     sql = f"SELECT {cols} FROM {target_ref}"
     row_filter = read_session.read_options.row_restriction if read_session.read_options else ""
@@ -119,7 +135,9 @@ def _build_read_sql(
         from bqemulator.sql.translator import SQLTranslator
 
         translator = SQLTranslator()
-        filter_result = translator.translate(f"SELECT 1 WHERE {row_filter}")
+        filter_result = translator.translate(
+            f"SELECT 1 WHERE {row_filter}", caller=caller
+        )
         if hasattr(filter_result, "value"):
             translated = filter_result.value
             if "WHERE" in translated.upper():
@@ -217,20 +235,31 @@ class BigQueryReadHandler(grpc.GenericRpcHandler):
             context.set_details(str(exc))
             return b""
 
-        sql = _build_read_sql(target_ref, selected_fields, read_session)
-
-        # Phase 8: enforce row access policies on the Storage Read API
-        # too. Resolve the caller from gRPC metadata and rewrite a
-        # BigQuery-shaped reference; the rewriter wraps the protected
-        # table in a derived subquery with the policy's filter (or
-        # WHERE FALSE on no-match). We then run that rewritten SQL
-        # against DuckDB. Tables with no policies short-circuit at the
-        # rewriter so the cheap-path keeps the original DuckDB SQL.
+        # Resolve the caller from gRPC metadata up-front so both the
+        # row_restriction filter pre-pass (inside ``_build_read_sql``)
+        # and the row-access policy rewrite below see the same
+        # ``CallerIdentity``. Pre-ADR-0040 the caller was resolved
+        # *after* ``_build_read_sql`` ran, so any caller-identity
+        # function (``SESSION_USER()``, ``CURRENT_USER()``,
+        # ``@@session.user``) inside a ``row_restriction`` folded to
+        # the ``ANONYMOUS_CALLER`` sentinel regardless of the actual
+        # ``X-Bqemu-Caller`` header. Hoisting the resolution closes
+        # that gap.
         caller = resolve_caller_from_metadata(
             list(context.invocation_metadata())
             if hasattr(context, "invocation_metadata")
             else None,
         )
+
+        sql = _build_read_sql(target_ref, selected_fields, read_session, caller=caller)
+
+        # Phase 8: enforce row access policies on the Storage Read API
+        # too. The caller was already resolved above. The rewriter
+        # wraps the protected table in a derived subquery with the
+        # policy's filter (or WHERE FALSE on no-match). We then run
+        # that rewritten SQL against DuckDB. Tables with no policies
+        # short-circuit at the rewriter so the cheap-path keeps the
+        # original DuckDB SQL.
         if self._ctx.catalog.list_all_row_access_policies():
             bq_sql = self._build_bq_read_sql(
                 project_id,
