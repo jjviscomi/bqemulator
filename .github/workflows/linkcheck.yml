@@ -88,8 +88,8 @@ jobs:
             --cache
             --max-cache-age 1d
             --config .lychee.toml
-            --remap "https://github.com/jjviscomi/bqemulator/blob/main/(.+) file://${{ github.workspace }}/$1"
-            --remap "https://github.com/jjviscomi/bqemulator/tree/main/(.+) file://${{ github.workspace }}/$1"
+            --remap "https://github.com/jjviscomi/bqemulator/blob/main/(.+) file://${{ github.workspace }}/\$1"
+            --remap "https://github.com/jjviscomi/bqemulator/tree/main/(.+) file://${{ github.workspace }}/\$1"
             "**/*.md"
           # Fail the job on broken links (PR runs annotate inline).
           fail: true

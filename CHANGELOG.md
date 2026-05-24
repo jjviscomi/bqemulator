@@ -46,7 +46,11 @@ section and adds the release date.
   - [``.github/workflows/linkcheck.yml``](.github/workflows/linkcheck.yml)
     — uses ``${{ github.workspace }}`` template var.
   - [``Makefile``](Makefile) ``linkcheck`` target — uses
-    ``$$(CURDIR)`` for local-dev parity.
+    ``$(CURDIR)`` for local-dev parity (``$$`` in the recipe
+    expands to a literal ``$``, so the shell receives
+    ``$(CURDIR)`` which make substitutes; the trailing ``$$1``
+    is similarly the make-escape that produces the literal
+    ``$1`` lychee needs as its regex backreference).
 
   Behavioural envelope vs. pre-fix:
   - PR-branch new files: now pass instead of 404 (correct).
