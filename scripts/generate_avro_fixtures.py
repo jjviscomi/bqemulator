@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Generate the reference Avro OCFs under tests/fixtures/avro/ (G3 / ADR 0030).
+"""Generate the reference Avro OCFs under tests/fixtures/avro/ (ADR 0030).
 
 For each entry in :data:`tests.fixtures.avro._schemas.REFERENCE_SCHEMAS`
 this script:

@@ -1,17 +1,15 @@
 #!/usr/bin/env python3
 """Generate the BigQuery → DuckDB rule mapping inside ``sql-function-mapping.md``.
 
-P4.b (2026-05-21) — closes the doc-drift class for the hand-curated
-92-rule listing that lives inside
-``docs/reference/sql-function-mapping.md``. Walks every rule
-registered with :func:`bqemulator.sql.rules.get_all_rules` plus every
-public ``rewrite_*`` / ``expand_*`` function exported from
+Walks every rule registered with
+:func:`bqemulator.sql.rules.get_all_rules` plus every public
+``rewrite_*`` / ``expand_*`` function exported from
 :mod:`bqemulator.sql.rewriter`, extracts a one-line summary from each
 class / function docstring, and renders a Markdown block wedged
 between two sentinel comments at the bottom of the committed
 document. The narrative ABOVE the sentinel block (intro prose with
-"92 rules" + the INFORMATION_SCHEMA rewriter mapping at the tail of
-the file) carries operator-judgement context that can't be derived
+the rule count + the INFORMATION_SCHEMA rewriter mapping at the tail
+of the file) carries operator-judgement context that can't be derived
 mechanically; it is left untouched.
 
 Usage::

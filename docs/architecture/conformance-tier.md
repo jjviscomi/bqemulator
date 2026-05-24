@@ -25,7 +25,7 @@ For every query in `tests/conformance/sql_corpus/`:
    use case: verifying a recording-session PR before opening it).
 
 The corpus currently ships **1141 active SQL fixtures + 48 HTTP +
-26 gRPC = 1215 active fixtures** (plus 18 G4 INFORMATION_SCHEMA
+26 gRPC = 1215 active fixtures** (plus 18 INFORMATION_SCHEMA
 stubs awaiting operator-side recording). 13 fixtures are pinned
 XFAIL in `tests/conformance/divergences.py` as permanent
 design-decision divergences. The pass-rate gate is **100%
@@ -67,7 +67,7 @@ scripts/
 ## Fixture data shape
 
 Two shapes exist; the runner branches on the optional ``error``
-field's presence (see ADR 0022 §3 ``Error parity``, P3.a).
+field's presence (see ADR 0022 §3 ``Error parity``).
 
 `expected.json` (version 1 — success / row fixtures):
 
@@ -93,7 +93,7 @@ field's presence (see ADR 0022 §3 ``Error parity``, P3.a).
 }
 ```
 
-`expected.json` (version 2 — error fixtures, P3.a):
+`expected.json` (version 2 — error fixtures):
 
 ```json
 {
@@ -214,8 +214,8 @@ A failing run is an alert that either:
 * The emulator regressed (most common — fix and re-merge).
 * BigQuery itself shipped a change (rare — re-record locally and
   review).
-* A divergence was closed (a previously-xfail'd fixture now passes —
-  remove the entry from `divergences.py`).
+* A divergence was closed (an xfail'd fixture now passes — remove
+  the entry from `divergences.py`).
 
 Re-recording is a deliberate **local** action. The maintainer runs
 `scripts/record_conformance_fixtures.py` on their workstation

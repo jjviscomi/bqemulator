@@ -1,22 +1,19 @@
 #!/usr/bin/env python3
 """Generate the conformance-corpus snapshot inside ``compatibility-matrix.md``.
 
-P4.b (2026-05-21) — closes the doc-drift class for the per-surface
-fixture-count snapshot that lives inside
-``docs/reference/compatibility-matrix.md``. Walks every fixture
-returned by :func:`tests.conformance._corpus.discover_fixtures` plus
-the SQL fixtures under
-:data:`tests.conformance._corpus.CORPUS_DIR`, the HTTP corpus under
-``tests/conformance/http_corpus/``, the gRPC corpus under
-``tests/conformance/grpc_corpus/``, and the XFAIL registry in
-:data:`tests.conformance.divergences.KNOWN_DIVERGENCES`. Aggregates
-PASS / XFAIL counts per phase + per-divergence-category and renders
-a Markdown block wedged between two sentinel comments at the bottom
-of the committed document. The hand-maintained tables ABOVE the
-sentinel block (REST API resources, gRPC services, SQL features,
-Types, Load + extract formats, Supported clients) carry operator-
-judgement Phase tags that can't be derived mechanically; they are
-left untouched.
+Walks every fixture returned by
+:func:`tests.conformance._corpus.discover_fixtures` plus the SQL
+fixtures under :data:`tests.conformance._corpus.CORPUS_DIR`, the
+HTTP corpus under ``tests/conformance/http_corpus/``, the gRPC
+corpus under ``tests/conformance/grpc_corpus/``, and the XFAIL
+registry in :data:`tests.conformance.divergences.KNOWN_DIVERGENCES`.
+Aggregates PASS / XFAIL counts per phase + per-divergence-category
+and renders a Markdown block wedged between two sentinel comments
+at the bottom of the committed document. The hand-maintained tables
+ABOVE the sentinel block (REST API resources, gRPC services, SQL
+features, Types, Load + extract formats, Supported clients) carry
+operator-judgement tags that can't be derived mechanically; they
+are left untouched.
 
 Usage::
 

@@ -497,9 +497,9 @@ QUERY = SurfaceCategory(
             notes=(
                 "Excluded from the conformance corpus by ADR 0022 §7 — "
                 "the relative-timestamp form depends on wall-clock state. "
-                "A literal-pinned-timestamp variant is deferred per the "
-                "P2.c closure note. Dynamic time-travel is exercised at "
-                "the integration tier (tests/integration/test_time_travel.py)."
+                "A literal-pinned-timestamp variant is deferred. Dynamic "
+                "time-travel is exercised at the integration tier "
+                "(tests/integration/test_time_travel.py)."
             ),
         ),
         SurfaceItem(
@@ -1424,7 +1424,7 @@ WIRE_FORMAT = SurfaceCategory(
             detect=_re(r'"mode"\s*:\s*"named"'),
             notes=(
                 "Parameter-bound queries via ``QueryJobConfig.query_parameters``."
-                " Detected by the ``parameters.json`` fixture file (P2.e)."
+                " Detected by the ``parameters.json`` fixture file."
             ),
         ),
         SurfaceItem(
@@ -1434,7 +1434,7 @@ WIRE_FORMAT = SurfaceCategory(
             detect=_re(r'"mode"\s*:\s*"positional"'),
             notes=(
                 "Parameter-bound queries via ``QueryJobConfig.query_parameters``"
-                " using ``?`` placeholders. Detected by ``parameters.json`` (P2.e)."
+                " using ``?`` placeholders. Detected by ``parameters.json``."
             ),
         ),
         SurfaceItem(
@@ -1444,7 +1444,7 @@ WIRE_FORMAT = SurfaceCategory(
             detect=_re(r'"type"\s*:\s*"ARRAY"'),
             notes=(
                 "``arrayType`` parameter shape. Detected by ``parameters.json``"
-                " carrying an ARRAY type spec (P2.e)."
+                " carrying an ARRAY type spec."
             ),
         ),
         SurfaceItem(
@@ -1454,7 +1454,7 @@ WIRE_FORMAT = SurfaceCategory(
             detect=_re(r'"type"\s*:\s*"STRUCT"'),
             notes=(
                 "``structTypes`` parameter shape. Detected by ``parameters.json``"
-                " carrying a STRUCT type spec (P2.e)."
+                " carrying a STRUCT type spec."
             ),
         ),
         SurfaceItem(
@@ -1465,14 +1465,14 @@ WIRE_FORMAT = SurfaceCategory(
             notes=(
                 "A typed parameter with no value — exercises BQ's typed-NULL"
                 " binding. Emulator wraps with ``CAST(? AS T)`` to preserve"
-                " the declared type through the schema renderer (P2.e)."
+                " the declared type through the schema renderer."
             ),
         ),
     ),
 )
 
 # ---------------------------------------------------------------------------
-# Error categories (P3.a)
+# Error categories
 # ---------------------------------------------------------------------------
 ERRORS = SurfaceCategory(
     id="errors",
@@ -1480,8 +1480,8 @@ ERRORS = SurfaceCategory(
     bq_docs="https://cloud.google.com/bigquery/docs/reference/rest/v2/ErrorProto",
     description=(
         "Recorded error envelopes (``error.reason`` / ``http_status`` / "
-        "``message_pattern``). Coverage is owned by P3.a and the "
-        "``error.json`` fixtures."
+        "``message_pattern``). Coverage lives in the recorded "
+        "``expected.json`` error-envelope fixtures."
     ),
     items=(
         SurfaceItem(

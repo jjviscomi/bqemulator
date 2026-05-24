@@ -168,7 +168,7 @@ All 13 entries in [`tests/conformance/divergences.py`](https://github.com/jjvisc
 
 | Fixture id | Rationale (short) |
 |---|---|
-| [`row_access/caller_information_schema_visibility`](https://github.com/jjviscomi/bqemulator/blob/main/tests/conformance/sql_corpus/row_access/caller_information_schema_visibility) | P2.d: INFORMATION_SCHEMA.ROW_ACCESS_POLICIES requires bigquery.rowAccessPolicies.list IAM permission. |
+| [`row_access/caller_information_schema_visibility`](https://github.com/jjviscomi/bqemulator/blob/main/tests/conformance/sql_corpus/row_access/caller_information_schema_visibility) | INFORMATION_SCHEMA.ROW_ACCESS_POLICIES requires bigquery.rowAccessPolicies.list IAM permission. |
 | [`specialized_types/spheroidal_buffer_neighborhood_match`](https://github.com/jjviscomi/bqemulator/blob/main/tests/conformance/sql_corpus/specialized_types/spheroidal_buffer_neighborhood_match) | Spheroidal-vs-planar divergence — see ADR 0019 and docs/reference/out-of-scope.md#spheroidal-geometry-on-geog… |
 | [`specialized_types/spheroidal_buffer_state_xfail`](https://github.com/jjviscomi/bqemulator/blob/main/tests/conformance/sql_corpus/specialized_types/spheroidal_buffer_state_xfail) | Spheroidal-vs-planar divergence — see ADR 0019 and docs/reference/out-of-scope.md#spheroidal-geometry-on-geog… |
 | [`specialized_types/spheroidal_buffer_street_match`](https://github.com/jjviscomi/bqemulator/blob/main/tests/conformance/sql_corpus/specialized_types/spheroidal_buffer_street_match) | Spheroidal-vs-planar divergence — see ADR 0019 and docs/reference/out-of-scope.md#spheroidal-geometry-on-geog… |

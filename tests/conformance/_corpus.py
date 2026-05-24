@@ -2,32 +2,31 @@
 
 The conformance corpus lives at ``tests/conformance/sql_corpus/`` and
 contains one directory per fixture. The shape is locked by ADR 0022
-and extended by ADR 0018 (P2.d, Phase 8 row-access conformance) and
-P2.e (query parameters):
+and ADR 0018:
 
     tests/conformance/sql_corpus/<phase>/<fixture_name>/
         query.sql         # canonical input SQL
         setup.sql         # optional fixture seed (idempotent DDL/DML)
-        setup_rest.json   # optional ordered REST operations (P2.d)
-        headers.json      # optional per-fixture HTTP headers (P2.d)
-        parameters.json   # optional query parameters (P2.e)
+        setup_rest.json   # optional ordered REST operations
+        headers.json      # optional per-fixture HTTP headers
+        parameters.json   # optional query parameters
         expected.json     # recorded baseline from real BigQuery
 
 The runner and recorder both call :func:`discover_fixtures` to walk the
 corpus and :func:`substitute_placeholders` to expand the supported
 placeholders. ``${DATASET}`` is the legacy placeholder kept for back-
 compat (resolves to ``project.dataset_id``); ``${PROJECT}`` and
-``${DATASET_ID}`` are P2.d additions used by ``setup_rest.json`` URL
-paths and bodies. ``${PRINCIPAL}`` / ``${GROUP}`` are P2.d additions
-used by ``setup_rest.json`` grantee lists and ``headers.json`` caller
+``${DATASET_ID}`` are split forms used by ``setup_rest.json`` URL
+paths and bodies. ``${PRINCIPAL}`` / ``${GROUP}`` are used by
+``setup_rest.json`` grantee lists and ``headers.json`` caller
 identities — they decouple the recorder's real ADC identity from the
 deterministic emulator-side identity the runner uses. Any other
 ``${…}`` token raises so a typo (e.g. ``${dataset}`` lowercase) fails
 loudly instead of silently leaking through.
 
-``parameters.json`` (P2.e) carries a ``QueryParameters`` payload —
-both the recorder and the runner submit the fixture's ``query.sql``
-through ``QueryJobConfig.query_parameters`` so the wire-format
+``parameters.json`` carries a ``QueryParameters`` payload — both the
+recorder and the runner submit the fixture's ``query.sql`` through
+``QueryJobConfig.query_parameters`` so the wire-format
 ``queryParameters`` field on the REST body is exercised end-to-end.
 See :mod:`tests.conformance._parameters` for the conversion from the
 on-disk JSON shape to the BQ client's ``QueryParameter`` objects.
@@ -55,16 +54,16 @@ PHASE_SUBDIRS = (
     "row_access",
     "specialized_types",
     "standard_functions",
-    # P7.a (2026-05-19): API request configuration variations — same
-    # SQL, different ``QueryJobConfig``. Fixtures here are paired with
-    # ``job_config.json`` and exercise the configuration matrix
-    # catalogued in
+    # API request configuration variations — same SQL repeated with
+    # different ``QueryJobConfig`` knobs flipped. Fixtures here are
+    # paired with ``job_config.json`` and exercise the configuration
+    # matrix catalogued in
     # ``docs/reference/api-configuration-coverage-matrix.md``.
     "api_configuration",
-    # G4 (2026-05-21): INFORMATION_SCHEMA virtual views —
-    # SCHEMATA / TABLES / COLUMNS / TABLE_OPTIONS / VIEWS / PARTITIONS.
-    # Fixtures land here in pairs of three per view; recording flow
-    # documented at ``information_schema/_g4_recording_steps.md``.
+    # INFORMATION_SCHEMA virtual views — SCHEMATA / TABLES / COLUMNS /
+    # TABLE_OPTIONS / VIEWS / PARTITIONS. Fixtures land here in pairs
+    # of three per view; recording flow documented at
+    # ``information_schema/_g4_recording_steps.md``.
     "information_schema",
 )
 
@@ -83,12 +82,12 @@ DEFAULT_RUNNER_OTHER_PRINCIPAL = "serviceAccount:other@example.com"
 #: Names of the placeholders the substituter accepts. ``DATASET`` is
 #: the legacy ``project.dataset_id`` form; ``PROJECT`` + ``DATASET_ID``
 #: are split forms for REST URL components. ``PRINCIPAL`` / ``GROUP`` /
-#: ``OTHER_PRINCIPAL`` are P2.d caller-identity placeholders.
+#: ``OTHER_PRINCIPAL`` are caller-identity placeholders.
 #: ``OTHER_PRINCIPAL`` carries an IAM-member that real BigQuery accepts
 #: as a grantee but that is NOT the recording caller — used by the
 #: "deny everyone except <caller>" fixtures so BigQuery's grantee
 #: validation (which rejects ``user:nobody@example.com``) is satisfied.
-#: ``GCS_BUCKET`` is the G1 placeholder for load/extract fixtures that
+#: ``GCS_BUCKET`` is the placeholder for load/extract fixtures that
 #: reference a pre-staged ``gs://`` URI; the recorder reads it from the
 #: ``BQEMU_CONFORMANCE_GCS_BUCKET`` env var.
 _SUPPORTED_PLACEHOLDERS: frozenset[str] = frozenset(
@@ -103,7 +102,7 @@ _SUPPORTED_PLACEHOLDERS: frozenset[str] = frozenset(
     },
 )
 
-#: G1 placeholder default — the runner uses this when an HTTP fixture
+#: Placeholder default — the runner uses this when an HTTP fixture
 #: references ``${GCS_BUCKET}`` but the recorder hasn't supplied one.
 #: For the in-process emulator runner it's harmless because the load
 #: executor will fail to read the non-existent file, but the runner
@@ -155,15 +154,13 @@ class VariationTag(StrEnum):
     §"Variation taxonomy" for the locked seven-tag set and the per-tag
     detection contract. The set is intentionally frozen — when in doubt,
     fall back to ``HAPPY_PATH`` and let depth-of-coverage do the work.
-    Workstream P8.a (2026-05-20) introduced the taxonomy with six tags so
-    the [conformance coverage matrix](../../docs/reference/conformance-coverage-matrix.md)
-    could surface "broad but shallow" surfaces — those with many fixtures
-    that all sit in the happy path and reliably miss the typical BQ-vs-
-    DuckDB divergence (NULL propagation, empty inputs, ±Inf / NaN,
-    Unicode case-folding, error-shape parity). Workstream P8.e (2026-05-20)
-    extended the taxonomy with a seventh ``TIMEZONE`` tag once timezone
-    arithmetic became its own variation-depth surface (zero pre-P8.e
-    fixtures touched ``AT TIME ZONE``).
+    The taxonomy lets the
+    [conformance coverage matrix](../../docs/reference/conformance-coverage-matrix.md)
+    surface "broad but shallow" surfaces — those with many fixtures
+    that all sit in the happy path and reliably miss the typical
+    BQ-vs-DuckDB divergence (NULL propagation, empty inputs,
+    ±Inf / NaN, Unicode case-folding, error-shape parity, timezone
+    arithmetic).
     """
 
     HAPPY_PATH = "happy_path"
@@ -237,10 +234,11 @@ _TIMEZONE_DETECT_RE = re.compile(
 def _has_error_envelope(expected_path: Path) -> bool:
     """Return ``True`` if ``expected.json``'s top-level object has an ``error`` key.
 
-    The P3.a error-shape contract records every recorded BigQuery
-    error as ``{"error": {"reason": "...", "http_status": ..., ...}}``
-    at the top level of ``expected.json``. The classifier scans only
-    the top-level keys — full error-shape validation lives in
+    The error-shape contract (ADR 0022 §3 ``Error parity``) records
+    every recorded BigQuery error as
+    ``{"error": {"reason": "...", "http_status": ..., ...}}`` at the
+    top level of ``expected.json``. The classifier scans only the
+    top-level keys — full error-shape validation lives in
     :mod:`tests.conformance._comparison`. Returns ``False`` for any
     parse error or missing file so a malformed fixture can't crash
     the matrix generator's variation pass.

@@ -4,12 +4,7 @@
 Mirrors the drift-gated generator pattern used by
 :mod:`scripts.generate_function_mapping`,
 :mod:`scripts.generate_coverage_matrix`, and
-:mod:`scripts.generate_compatibility_matrix`. The previous
-``api-coverage.md`` claimed to be "Auto-generated" but had no
-generator — drifted from the live source by 17 endpoints
-(``rowAccessPolicies`` route file added post-doc, plus
-``serviceAccount`` / additional jobs verbs) and three years of
-phase labels by the time PR #14 audited it.
+:mod:`scripts.generate_compatibility_matrix`.
 
 Walks every ``@router.<verb>(...)`` decorator under
 ``src/bqemulator/api/routes/`` plus the root-level health router in
