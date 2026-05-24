@@ -213,10 +213,7 @@ class TestRewriteSessionUser:
     def test_current_user_inside_regexp_extract(self) -> None:
         # Same RAP-filter pattern that exercises SESSION_USER, on the
         # CURRENT_USER alias. Both spellings produce the same plan.
-        sql = (
-            "SELECT * FROM t WHERE "
-            "REGEXP_EXTRACT(CURRENT_USER(), r'@(.+)$') = 'example.com'"
-        )
+        sql = "SELECT * FROM t WHERE REGEXP_EXTRACT(CURRENT_USER(), r'@(.+)$') = 'example.com'"
         out = rewrite_session_user(sql, self._caller("bob@example.com"))
         assert "CURRENT_USER" not in out.upper()
         assert "'bob@example.com'" in out
@@ -253,10 +250,7 @@ class TestRewriteSessionUser:
     # ------------------------------------------------------------------
 
     def test_all_three_spellings_in_one_query(self) -> None:
-        sql = (
-            "SELECT SESSION_USER() AS a, CURRENT_USER() AS b, "
-            "@@session.user AS c"
-        )
+        sql = "SELECT SESSION_USER() AS a, CURRENT_USER() AS b, @@session.user AS c"
         out = rewrite_session_user(sql, self._caller("multi@example.com"))
         # Every spelling resolved to the same literal — three
         # occurrences in the output.

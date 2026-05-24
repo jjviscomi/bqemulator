@@ -1227,7 +1227,14 @@ _NONDETERMINISTIC_HASH: dict[str, str] = {
     "SESSION_USER": (
         "Excluded from the conformance corpus by ADR 0022 §1.2 — "
         "session-state dependent. Exercised at the unit, integration, "
-        "and e2e × 4 client tiers (ADR 0038)."
+        "and e2e × 4 client tiers (ADR 0038); Storage Read "
+        "row_restriction caller-threading closed in ADR 0040."
+    ),
+    "CURRENT_USER": (
+        "Excluded from the conformance corpus by ADR 0022 §1.2 — "
+        "co-equal alias for SESSION_USER per BigQuery's reference. "
+        "Exercised at the unit and e2e × 4 client tiers; same "
+        "resolution path as SESSION_USER (ADR 0040)."
     ),
     "GENERATE_UUID": (
         "Excluded from the conformance corpus by ADR 0022 §1.2 — "
@@ -1256,6 +1263,7 @@ FUNCTIONS_HASH = SurfaceCategory(
             "SHA256",
             "SHA512",
             "SESSION_USER",
+            "CURRENT_USER",
             "GENERATE_UUID",
         )
     ),

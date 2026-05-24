@@ -135,9 +135,7 @@ def _build_read_sql(
         from bqemulator.sql.translator import SQLTranslator
 
         translator = SQLTranslator()
-        filter_result = translator.translate(
-            f"SELECT 1 WHERE {row_filter}", caller=caller
-        )
+        filter_result = translator.translate(f"SELECT 1 WHERE {row_filter}", caller=caller)
         if hasattr(filter_result, "value"):
             translated = filter_result.value
             if "WHERE" in translated.upper():

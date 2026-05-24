@@ -139,6 +139,40 @@ def test_session_user_filter_other_com_caller(
         bq.close()
 
 
+def test_bare_select_current_user(bqemu_rest_url: str) -> None:
+    """``SELECT CURRENT_USER()`` returns the caller's bare email (ADR 0040).
+
+    ``CURRENT_USER()`` is documented as a co-equal alias for
+    ``SESSION_USER()`` in BigQuery's reference; same caller-identity
+    semantics, same pre-translator substitution.
+    """
+    bq = _client_for_caller(bqemu_rest_url, "user:dani@example.com")
+    try:
+        job = bq.query("SELECT CURRENT_USER() AS who")
+        rows = list(job.result())
+        assert rows[0]["who"] == "dani@example.com"
+    finally:
+        pass
+
+
+def test_bare_select_session_user_system_var(bqemu_rest_url: str) -> None:
+    """``SELECT @@session.user`` returns the caller's bare email (ADR 0040).
+
+    The system-variable spelling resolves via the same path
+    as the function form — pinned here so a future SQLGlot AST
+    change for ``@@session.user`` would surface as a test
+    failure rather than silently producing the
+    ``ANONYMOUS_CALLER`` literal.
+    """
+    bq = _client_for_caller(bqemu_rest_url, "user:eli@example.com")
+    try:
+        job = bq.query("SELECT @@session.user AS who")
+        rows = list(job.result())
+        assert rows[0]["who"] == "eli@example.com"
+    finally:
+        pass
+
+
 def test_bare_select_session_user(bqemu_rest_url: str) -> None:
     """``SELECT SESSION_USER()`` returns the caller's bare email.
 

@@ -145,4 +145,23 @@ describe("bqemulator RAP via SESSION_USER (Node.js)", () => {
     const [rows] = await claire.query("SELECT SESSION_USER() AS who");
     assert.equal(rows[0].who, "claire@example.com");
   });
+
+  // CURRENT_USER() is documented as a co-equal alias for SESSION_USER()
+  // in BigQuery's reference (ADR 0040); same caller-identity semantics,
+  // same pre-translator substitution.
+  it("SELECT CURRENT_USER() returns the caller's bare email", async () => {
+    const dani = makeClient("user:dani@example.com");
+    const [rows] = await dani.query("SELECT CURRENT_USER() AS who");
+    assert.equal(rows[0].who, "dani@example.com");
+  });
+
+  // The system-variable spelling @@session.user resolves via the same
+  // path as the function form (ADR 0040) — pinned here so a future
+  // SQLGlot AST change for @@session.user would surface as a test
+  // failure rather than silently producing the ANONYMOUS_CALLER literal.
+  it("SELECT @@session.user returns the caller's bare email", async () => {
+    const eli = makeClient("user:eli@example.com");
+    const [rows] = await eli.query("SELECT @@session.user AS who");
+    assert.equal(rows[0].who, "eli@example.com");
+  });
 });

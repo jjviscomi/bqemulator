@@ -193,3 +193,49 @@ func TestBareSelectSessionUser(t *testing.T) {
 		t.Fatalf("got %q, want claire@example.com", row[0])
 	}
 }
+
+// TestBareSelectCurrentUser exercises CURRENT_USER(), documented as a
+// co-equal alias for SESSION_USER() in BigQuery's reference (ADR 0040);
+// same caller-identity semantics, same pre-translator substitution.
+func TestBareSelectCurrentUser(t *testing.T) {
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+	client := sessionUserClient(ctx, t, "user:dani@example.com")
+	defer client.Close()
+	q := client.Query("SELECT CURRENT_USER() AS who")
+	it, err := q.Read(ctx)
+	if err != nil {
+		t.Fatalf("query: %v", err)
+	}
+	var row []bigquery.Value
+	if err := it.Next(&row); err != nil {
+		t.Fatalf("read: %v", err)
+	}
+	if row[0].(string) != "dani@example.com" {
+		t.Fatalf("got %q, want dani@example.com", row[0])
+	}
+}
+
+// TestBareSelectSessionUserSystemVar pins the @@session.user spelling
+// (ADR 0040). The system-variable form resolves via the same path as
+// the function form — a future SQLGlot AST change for @@session.user
+// would surface here as a test failure rather than silently producing
+// the ANONYMOUS_CALLER literal.
+func TestBareSelectSessionUserSystemVar(t *testing.T) {
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+	client := sessionUserClient(ctx, t, "user:eli@example.com")
+	defer client.Close()
+	q := client.Query("SELECT @@session.user AS who")
+	it, err := q.Read(ctx)
+	if err != nil {
+		t.Fatalf("query: %v", err)
+	}
+	var row []bigquery.Value
+	if err := it.Next(&row); err != nil {
+		t.Fatalf("read: %v", err)
+	}
+	if row[0].(string) != "eli@example.com" {
+		t.Fatalf("got %q, want eli@example.com", row[0])
+	}
+}

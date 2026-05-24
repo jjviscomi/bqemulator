@@ -155,9 +155,7 @@ def rewrite_session_user(bq_sql: str, caller: CallerIdentity) -> str:
     return parsed.sql(dialect="bigquery")
 
 
-def _substitute_caller_identity_calls(
-    tree: exp.Expression, resolved: str
-) -> bool:
+def _substitute_caller_identity_calls(tree: exp.Expression, resolved: str) -> bool:
     """Replace every caller-identity call site with ``Literal(resolved)``.
 
     Three node shapes match:
