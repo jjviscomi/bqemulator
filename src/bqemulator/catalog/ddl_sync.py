@@ -250,7 +250,7 @@ def _introspect_schema(
     return TableSchema(fields=fields)
 
 
-def _arrow_field_to_table_field(
+def _arrow_field_to_table_field(  # type: ignore[no-any-unimported]
     arrow_field: pa.Field,
     mode_override: FieldMode | None = None,
 ) -> TableFieldSchema:

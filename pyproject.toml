@@ -397,7 +397,6 @@ module = [
     "bqemulator.storage.arrow_bridge",
     "bqemulator.sql.cache",
     "bqemulator.sql.table_rewriter",
-    "bqemulator.catalog.ddl_sync",
     "bqemulator.jobs.executor",
     "bqemulator.jobs.orc_reader",
     "bqemulator.jobs.avro_reader",
