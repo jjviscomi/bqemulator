@@ -250,6 +250,45 @@ section and adds the release date.
   ``pypa/gh-action-pypi-publish@release/v1``,
   ``actions/attest-build-provenance@v1`` (in ``docker.yml``).
 
+- **Workflow ``permissions:`` scoped to least-privilege**
+  (OpenSSF Scorecard ``Token-Permissions`` sweep). Pre-sweep audit
+  found five workflows with over-broad top-level permissions:
+
+  - ``linkcheck.yml`` — no top-level ``permissions:`` block at all
+    (defaulted to repo-wide). Added ``contents: read``.
+  - ``conformance.yml`` — top-level ``issues: write`` was carry-over
+    from an earlier "post issue on failure" pattern that's no
+    longer wired. Removed.
+  - ``docs.yml`` — top-level ``contents: write`` covered both the
+    PR-time ``build`` job (read-only) and the post-merge ``deploy``
+    job. Moved ``contents: write`` to the ``deploy`` job only;
+    top-level is now ``contents: read``.
+  - ``docker.yml`` — top-level ``packages: write``,
+    ``id-token: write``, ``attestations: write`` covered just the
+    one ``publish`` job. Top-level now ``contents: read``; the
+    writes moved to ``publish``'s ``permissions:`` block.
+  - ``release.yml`` — top-level ``contents: write``,
+    ``id-token: write``, ``attestations: write`` covered three
+    jobs (``build``, ``publish-pypi``, ``github-release``) with
+    different needs. Top-level now ``contents: read``; each job
+    gets exactly the writes it uses:
+    - ``build`` → ``contents: read`` (just checkout + upload-artifact).
+    - ``publish-pypi`` → ``contents: read`` + ``id-token: write``
+      (PyPI Trusted Publishing OIDC).
+    - ``github-release`` → ``contents: write`` (release upload) +
+      ``id-token: write`` + ``attestations: write`` (the SLSA
+      Build Provenance step from ADR 0039).
+
+  The other nine workflows (``ci.yml`` / ``chaos.yml`` /
+  ``code-quality.yml`` / ``codeql.yml`` / ``differential.yml`` /
+  ``e2e.yml`` / ``examples.yml`` / ``fuzz.yml`` / ``mutation.yml``
+  / ``perf.yml`` / ``scorecard.yml``) were already minimal — no
+  changes needed.
+
+  Expected Scorecard ``Token-Permissions`` lift: low score → ~9-10/10
+  on next weekly run (every workflow now has a top-level read-only
+  ``permissions:`` declaration with writes scoped per-job).
+
 - **Python example requirements tightened to CVE-clean floors.** The
   OpenSSF Scorecard `Vulnerabilities` check (added in PR #48) reported
   ~100 historical PYSEC / GHSA IDs against the `docs/examples/python/`
