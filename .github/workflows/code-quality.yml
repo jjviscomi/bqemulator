@@ -37,7 +37,10 @@ on:
       # workflow- or dependabot-only PR — cheap relative to the
       # never-merge blocker the prior filter caused.
       - ".github/workflows/**"
-      - "docs/examples/**"
+      - "docs/**"
+      - "CHANGELOG.md"
+      - "README.md"
+      - "mkdocs.yml"
   push:
     branches: [main]
     paths:
@@ -57,7 +60,10 @@ on:
       # workflow- or dependabot-only PR — cheap relative to the
       # never-merge blocker the prior filter caused.
       - ".github/workflows/**"
-      - "docs/examples/**"
+      - "docs/**"
+      - "CHANGELOG.md"
+      - "README.md"
+      - "mkdocs.yml"
   schedule:
     - cron: "13 7 * * *"  # 07:13 UTC — off the hour to avoid contention
   workflow_dispatch:
