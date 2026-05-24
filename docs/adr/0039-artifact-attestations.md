@@ -38,11 +38,20 @@ carry a discoverable signature.
 
 ## Decision
 
-Add ``actions/attest-build-provenance@v3`` to the ``github-release``
+Add ``actions/attest-build-provenance`` to the ``github-release``
 job in ``.github/workflows/release.yml``, run it on every file under
 ``dist/`` (the wheel + sdist), and upload the resulting
 ``.intoto.jsonl`` SLSA Build Provenance bundle to the GitHub Release
-alongside the artifacts.
+alongside the artifacts. Pin by full commit SHA + trailing
+``# vX.Y.Z`` comment per the OpenSSF-Scorecard-strict reading of
+AGENTS.md (see "SHA pinning even for actions/*" below); same pin
+applied to the existing ``docker.yml`` call site for consistency.
+
+The pinned version is
+``actions/attest-build-provenance@a2bbfa25375fe432b6a289bc6b6cd05ecd0c4c32 # v4.1.0``
+— the latest stable as of 2026-05-23, producing SLSA Build
+Provenance v1.0 schema. Dependabot already monitors
+``.github/workflows/*.yml`` so the SHA moves forward automatically.
 
 The workflow now:
 
@@ -76,9 +85,13 @@ signed.
 
 Option A wins on three axes:
 
-1. **First-party GitHub action** (``actions/*``) — major-tag pinning
-   allowed per AGENTS.md OpenSSF-alignment rule. Dependabot
-   maintains it.
+1. **First-party GitHub action** (``actions/*``) — actively
+   maintained by GitHub itself + Dependabot tracks it. Pinned by
+   full commit SHA in this PR despite AGENTS.md's relaxed
+   major-tag rule for ``actions/*``, because OpenSSF Scorecard's
+   ``Pinned-Dependencies`` check rewards commit-SHA pinning
+   regardless of action provenance (see SHA-pinning section
+   below).
 2. **SLSA v1.0 provenance** — strictly more information than a bare
    signature (includes builder identity, source repo, ref, workflow
    run URL). Future SLSA-aware tools (deps.dev, in-toto verifiers)
@@ -87,16 +100,25 @@ Option A wins on three axes:
    verify`` ships with the GitHub CLI; no separate sigstore install
    required by consumers.
 
-## Why this PR doesn't touch ``docker.yml``
+## Why this PR also touches ``docker.yml``
 
-``docker.yml`` already runs ``actions/attest-build-provenance@v1``
-against the container image digest (line 63), and Scorecard
-already credits the container image as signed. The asymmetry was
-purely on the PyPI wheel / GitHub Release side. Bumping
-``docker.yml``'s pin from v1 → v3 is a parallel improvement
-(SLSA v0.2 → v1.0 schema) but unrelated to closing the
-``Signed-Releases`` gap; it's a follow-up if the maintainer wants
-the newer schema, not a prerequisite.
+``docker.yml`` already runs ``actions/attest-build-provenance``
+against the container image digest, but at floating ``@v1`` (SLSA
+Build Provenance v0.2 schema). Two reasons to roll the bump into
+this same PR:
+
+1. **Consistency**: both call sites should target the same
+   version. Splitting them creates a window where the wheel +
+   sdist attestation uses SLSA v1.0 while the container
+   attestation still uses v0.2 — confusing for verifiers.
+2. **Single SHA pin to maintain**: Dependabot bumps a pin in N
+   files at once, so having both at the same SHA from day one
+   keeps the cycle clean.
+
+The bump moves ``docker.yml`` from floating ``@v1`` → SHA-pinned
+``@a2bbfa25375fe432b6a289bc6b6cd05ecd0c4c32 # v4.1.0``. SLSA v1.0
+is a strictly richer schema than v0.2; downstream verifiers
+recognise both, so this is forward-compatible.
 
 ## Expected Scorecard impact
 
@@ -142,13 +164,30 @@ resulting ``.intoto.jsonl`` contains one statement per file (each
 with its sha256 digest). Consumers verifying any specific file get
 the same bundle; the action de-duplicates the upload step.
 
-### Why ``@v3`` (not ``@v1`` to match docker.yml)
+### SHA pinning even for ``actions/*``
 
-``actions/attest-build-provenance@v3`` produces SLSA Build
-Provenance v1.0 — the current standard schema. v1 produces SLSA
-v0.2 which is technically deprecated though Scorecard still
-recognises it. New code should target v1.0; the ``docker.yml``
-``@v1`` is pre-existing tech debt for a separate bump PR.
+AGENTS.md's OpenSSF-alignment rule allows first-party ``actions/*``
+to use floating major tags (``@v4``) on the rationale that
+Dependabot tracks them aggressively. That rule is a pragmatic
+compromise, not the ceiling. **OpenSSF Scorecard's
+``Pinned-Dependencies`` check gives full credit for commit-SHA
+pinning regardless of action provenance**; major-tag pins earn
+partial credit. For Scorecard score optimisation (which is the
+proximate driver of this PR), SHA-pinning is strictly better.
+
+Decision: SHA-pin ``actions/attest-build-provenance`` in both
+``release.yml`` and ``docker.yml``. The pre-existing
+``actions/checkout@v4`` / ``actions/setup-python@v5`` /
+``actions/upload-artifact@v8`` etc. major-tag pins are
+out-of-scope for this PR (separate sweep if we want to maximise
+the ``Pinned-Dependencies`` score).
+
+### Why v4.1.0 (the latest)
+
+v4.1.0 (released 2026-02-26) is the current stable. Earlier v3.x
+also produces SLSA v1.0 but lacks fixes for two edge cases the v4
+line addressed (multi-subject batch upload + transparency-log
+inclusion proof). No reason to pin to anything older than v4.1.0.
 
 ### Why the bump in ``softprops/action-gh-release``'s ``files:`` is
 multi-line
@@ -190,8 +229,9 @@ together.
   signatures via ``pip install`` verification flows. The
   GitHub-Release attestation is the GitHub-visible parallel — not a
   replacement.
-* ``docker.yml`` continues at ``@v1``; the parallel-v3 bump is
-  documented as out of scope.
+* ``docker.yml`` updated to the same SHA-pinned v4.1.0 as the new
+  ``release.yml`` step — both call sites are now consistent (same
+  schema, same pinned commit, same Dependabot upgrade cadence).
 
 ## Alternatives considered
 
