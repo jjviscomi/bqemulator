@@ -509,8 +509,7 @@ Closing this divergence cleanly requires either:
 The conformance fixture
 [`standard_functions/dt_format_date_min`](https://github.com/jjviscomi/bqemulator/blob/main/tests/conformance/sql_corpus/standard_functions/dt_format_date_min)
 is pinned XFAIL against this divergence so the surface is tracked
-without forcing an inline closure. Re-opening when either approach
-above passes a cost/benefit review.
+without forcing an inline closure.
 
 *Workaround*: clients that need the un-padded year for pre-1000
 dates should format the year explicitly (e.g.

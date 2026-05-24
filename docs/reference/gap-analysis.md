@@ -138,7 +138,7 @@ documented workaround.
 | **Storage Write API `trace_id` and `missing_value_interpretations`** | Diagnostic-only fields; no row-persistence effect. | N/A. Could be revisited if community asks. |
 | **Online backup of a running emulator** | Requires WAL-aware filesystem or a write surface on the admin router. Both are larger than the v1.0 charter. See [ADR 0020](../adr/0020-admin-import-export.md). | Run on a CoW filesystem (btrfs/ZFS/Docker volume snapshot) and snapshot the volume; or stop → backup → restore. |
 | **`PersistenceMode.IMPORT` enum value** | Live schema sync would double the credential surface and add an ongoing dependency on the real BigQuery REST API — incompatible with offline test environments. | One-shot `bqemulator import --from-project=…` then `persistence_mode=PERSISTENT`. |
-| **BIGNUMERIC literals with > 28 integer digits** | DuckDB's widest `DECIMAL` is `DECIMAL(38, s)` — 38 total digits, where BigQuery's BIGNUMERIC holds 38 integer + 38 fractional. Matching the full range would require bundling a wide-decimal library or replacing DuckDB. | Stay within DuckDB's `DECIMAL(38, s)` range. The `standard_functions/bound_bignumeric_max` conformance fixture is the only entry that exercises this corner. |
+| **BIGNUMERIC literals with ≥ 39 integer digits** | DuckDB's widest `DECIMAL` is `DECIMAL(38, s)` — 38 total digits, where BigQuery's BIGNUMERIC holds 38 integer + 38 fractional. Matching the full range would require bundling a wide-decimal library or replacing DuckDB. | Stay within DuckDB's `DECIMAL(38, s)` range. The `standard_functions/bound_bignumeric_max` conformance fixture is the only entry that exercises this corner. |
 | **Spheroidal geometry on GEOGRAPHY** | DuckDB-spatial is planar. Spheroidal correctness would require s2geometry or shapely + projection code. | Validate spatial *shape* in CI; validate spatial *correctness* against real BQ in a separate stage. |
 
 ## 3. Conformance-coverage gaps (works, but not in the corpus)
@@ -166,11 +166,9 @@ for it". Adding these would extend the corpus beyond pure SQL.
 | **BEGIN/COMMIT/ROLLBACK transactions** | Integration | Few fixtures authored; multi-statement edge cases. |
 | **Session variables (`SET...`)** | Integration | Session state — non-replayable. |
 | **`CREATE PROCEDURE`** | Integration | Larger scripting surface; underrepresented in corpus. |
-| **Query parameters** (positional `?` / named `@p`) | Conformance (15 `parameters.json` fixtures) | Detected by the `parameters.json` fixture file. |
 | **`dryRun` cost estimation** | Integration | Best-effort estimate diverges from real BQ by design. |
 | **Job lifecycle** (cancel, list, get) | Integration, E2E | Non-SQL HTTP endpoints. |
 | **Query result pagination** | Integration, E2E | Non-SQL HTTP endpoint. |
-| **Error-message-shape parity** | ✅ Conformance | The corpus compares BigQuery's exact `reason` / `location` / `http_status` / `message` for fixtures with an `error` envelope. ADR 0022 §3 ``Error parity`` documents the contract; 20 error-shape fixtures recorded against real BigQuery. |
 
 ## 4. Bottom line
 
@@ -180,10 +178,10 @@ for it". Adding these would extend the corpus beyond pure SQL.
 | How many divergences are documented? | **15 fixtures total** — 11 ADR 0019 spheroidal + 2 ADR 0024 HLL++ + 2 `out-of-scope.md` fixture-bearing entries. Each is rooted in an ADR-anchored rationale. |
 | How many features are *permanently* excluded from v1.0? | **19 locked exclusions** in `out-of-scope.md` (17 no-fixture + 2 fixture-bearing). |
 | How many divergences have a clear closure path? | **0** — every remaining divergence is a permanent v1.0 entry. |
-| Are there *undocumented* gaps? | The conformance corpus surfaces what it can see — it tests 1141 SQL + 48 HTTP + 26 gRPC fixtures plus 13 documented divergences. Untested-in-conformance surfaces (Section 3) work in the emulator and pass other test tiers; they have not been recorded against real BigQuery, so subtle wire-format or value drift in those surfaces would not be caught by conformance today. |
+| Are there *undocumented* gaps? | The conformance corpus surfaces what it can see — it tests 1141 SQL + 48 HTTP + 26 gRPC fixtures plus 15 documented divergences. Untested-in-conformance surfaces (Section 3) work in the emulator and pass other test tiers; they have not been recorded against real BigQuery, so subtle wire-format or value drift in those surfaces would not be caught by conformance today. |
 
 The corpus and this gap analysis are *living documents*. The
 residual **15 entries** are a stable mix of permanent design
 divergences — 11 ADR 0019 spheroidal, 2 ADR 0024 HLL++, 1 IAM-
-fundamental, 1 BIGNUMERIC > 28 digits. No closure-eligible
+fundamental, 1 BIGNUMERIC ≥ 39 digits. No closure-eligible
 divergence remains for v1.0.

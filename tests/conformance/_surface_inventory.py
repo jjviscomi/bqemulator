@@ -497,8 +497,7 @@ QUERY = SurfaceCategory(
             notes=(
                 "Excluded from the conformance corpus by ADR 0022 §7 — "
                 "the relative-timestamp form depends on wall-clock state. "
-                "A literal-pinned-timestamp variant is deferred. Dynamic "
-                "time-travel is exercised at the integration tier "
+                "Dynamic time-travel is exercised at the integration tier "
                 "(tests/integration/test_time_travel.py)."
             ),
         ),
@@ -1480,8 +1479,8 @@ ERRORS = SurfaceCategory(
     bq_docs="https://cloud.google.com/bigquery/docs/reference/rest/v2/ErrorProto",
     description=(
         "Recorded error envelopes (``error.reason`` / ``http_status`` / "
-        "``message_pattern``). Coverage lives in the recorded "
-        "``expected.json`` error-envelope fixtures."
+        "``message_pattern``). Coverage lives in recorded "
+        "``error.json`` fixtures."
     ),
     items=(
         SurfaceItem(
