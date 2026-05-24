@@ -177,6 +177,7 @@ nav:
       - Conformance tier: architecture/conformance-tier.md
       - Contributing:
           - Dev environment: architecture/contributing/dev-environment.md
+          - Documentation style guide: architecture/contributing/documentation-style-guide.md
           - Release process: architecture/contributing/release-process.md
           - Adding SQL functions: architecture/contributing/adding-sql-functions.md
           - Adding UDF runtimes: architecture/contributing/adding-udf-runtimes.md

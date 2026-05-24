@@ -134,6 +134,16 @@ grpc_api/ ──┘        + scripting/ + udf/ + versioning/ + types/
   etc. Squash-merge. Signed commits. DCO sign-off.
 - **ADRs** for any architectural decision — numbered, immutable, in
   [docs/adr/](docs/adr/).
+- **Documentation style.** Docstrings, code comments, and reference
+  docs describe the **current state** of the software; the
+  [`CHANGELOG.md`](CHANGELOG.md) and [ADRs](docs/adr/) describe
+  history. No dates, PR numbers, phase labels, "previously X", or
+  TODO/future-work notes in code or reference docs. The CHANGELOG
+  follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
+  + [Common Changelog](https://common-changelog.org/): one-line
+  imperative entries, no per-entry sub-headings, authored at release
+  time only. Full rules + examples in
+  [`docs/architecture/contributing/documentation-style-guide.md`](docs/architecture/contributing/documentation-style-guide.md).
 - **RFCs** for any change to public API, SQL semantics, persistence
   format, or governance — in [docs/rfcs/](docs/rfcs/).
 - **PR template** required. Checklist: tests, docs, changelog,

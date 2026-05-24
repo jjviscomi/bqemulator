@@ -63,15 +63,23 @@ a dedicated exit code):
 3. `make verify` exits 0 — the full release gate chain (lint + unit +
    property + integration + docker + e2e + docs).
 4. The computed target version is strictly greater than the current.
-5. `CHANGELOG.md`'s `Unreleased` section has at least one entry
-   (override with `--allow-empty-changelog` for zero-impact patches).
+5. A new `## [X.Y.Z] - YYYY-MM-DD` section has been prepended to
+   `CHANGELOG.md` with at least one entry. The section is authored
+   during this release process (step 1 below) — not in the
+   individual PRs that landed during the cycle.
 
 ## Step-by-step (with the orchestrator)
 
-1. **Prepare the changelog.** Every PR that lands during the release
-   cycle must add an entry under `## [Unreleased]`
-   (`Added` / `Changed` / `Deprecated` / `Removed` / `Fixed` /
-   `Security`).
+1. **Author the changelog section.** Read `git log <prev-tag>..HEAD`
+   to enumerate user-visible changes since the previous release.
+   Synthesise one bullet per change under `### Changed` /
+   `### Added` / `### Removed` / `### Fixed` (Common Changelog
+   ordering — breaking changes most important). Entries follow the
+   [documentation style guide](documentation-style-guide.md#changelog):
+   imperative mood, single line, no per-entry sub-headings, no PR
+   references, no fixture counts. Prepend the new section under
+   the `# Changelog` heading; there is no `## [Unreleased]` section
+   between releases.
 
 2. **Pre-release doc sweep.** The release orchestrator only mutates
    three surfaces: `src/bqemulator/__version__` and the README
