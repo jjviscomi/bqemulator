@@ -151,7 +151,7 @@ filters something).
 
 | Guardrail | Value | Where |
 |---|---|---|
-| Per-fixture byte-scan cap | 1 GiB (configurable via ``--byte-cap``) | ``scripts/record_conformance_fixtures.py`` line 110 |
+| Per-fixture byte-scan cap | 1 GiB (configurable via the ``--byte-cap`` flag) | ``scripts/record_conformance_fixtures.py`` — the ``DEFAULT_BYTE_CAP`` constant + the ``--byte-cap`` CLI flag |
 | Project billing | ``$BQEMU_CONFORMANCE_PROJECT`` (operator-supplied) | ``Makefile`` ``record-conformance`` target |
 | Expected total scan for all 40 fixtures | < 40 MiB | seeded-data sizing rule |
 | Expected total cost (US multi-region, on-demand) | < $0.01 | $5 / TiB scanned |
