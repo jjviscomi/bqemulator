@@ -52,6 +52,11 @@ ND = "ND"
 # timezone-parsing fixtures and the error-mapper's rationale comment
 # documenting how DuckDB and BigQuery diverge on this abbreviation.
 IST = "IST"
+# SLSA Build Provenance attestation files use the canonical
+# ``.intoto.jsonl`` extension (named after the in-toto framework).
+# Appears in ADR 0039 + the release.yml workflow as a filename, not
+# a typo for "in-too" or similar.
+intoto = "intoto"
 
 [default.extend-identifiers]
 STRUCTs = "STRUCTs"

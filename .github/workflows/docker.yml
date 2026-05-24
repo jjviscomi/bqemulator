@@ -60,7 +60,7 @@ jobs:
             cosign sign --yes "${tag}@${DIGEST}"
           done
       - name: Generate SLSA attestation
-        uses: actions/attest-build-provenance@v1
+        uses: actions/attest-build-provenance@a2bbfa25375fe432b6a289bc6b6cd05ecd0c4c32 # v4.1.0
         with:
           subject-name: ghcr.io/jjviscomi/bqemulator
           subject-digest: ${{ steps.build.outputs.digest }}

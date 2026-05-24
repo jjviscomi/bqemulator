@@ -39,6 +39,33 @@ section and adds the release date.
   92-rule translator (verified against the existing 59-fixture
   subset).
 
+- **SLSA Build Provenance attestations on GitHub Release assets**
+  (ADR 0039). Closes the ``Signed-Releases`` gap OpenSSF Scorecard
+  flagged after the v1.0.2 release: the workflow now runs
+  ``actions/attest-build-provenance@a2bbfa25 # v4.1.0`` against
+  ``dist/*`` in the ``github-release`` job of
+  ``.github/workflows/release.yml``, produces a ``.intoto.jsonl``
+  SLSA v1.0 Build Provenance bundle, and uploads the bundle to the
+  GitHub Release alongside the wheel + sdist. Consumers verify
+  with ``gh attestation verify <file> --owner jjviscomi``.
+  ``.github/workflows/docker.yml``'s existing
+  ``attest-build-provenance`` call also bumped — from floating
+  ``@v1`` (SLSA v0.2 schema) to the same SHA-pinned ``@v4.1.0``
+  (SLSA v1.0 schema) for cross-workflow consistency. Both call
+  sites are now full-commit-SHA-pinned per OpenSSF Scorecard's
+  strict ``Pinned-Dependencies`` reading (Scorecard gives full
+  credit for commit-SHA even on first-party ``actions/*``;
+  AGENTS.md's relaxed-major-tag rule for ``actions/*`` was a
+  pragmatic compromise, not the ceiling). PyPI's own sigstore
+  attestations via Trusted Publishing are preserved unchanged —
+  the GitHub-Release attestation is the GitHub-visible parallel,
+  not a replacement. Expected Scorecard
+  ``Signed-Releases`` score trajectory: 0/10 today → 2/10 after
+  v1.1.0 → 10/10 after v1.1.4 (the check inspects the last 5
+  releases; tags are immutable so prior releases can't be
+  retroactively attested). Composite Scorecard score lift ~+1.5
+  immediately, ~+2.5 by v1.1.4.
+
 - **`SESSION_USER()` SQL function + canonical RAP-via-SESSION_USER
   e2e coverage** (ADR 0038). The function was documented in the
   surface inventory but had zero implementation and zero tests —
