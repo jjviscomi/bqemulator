@@ -117,10 +117,10 @@ grpc_api/ ──┘        + scripting/ + udf/ + versioning/ + types/
   cost to extending the same rule everywhere (Dependabot handles
   both alike). The exemption was removed as part of the
   Pinned-Dependencies sweep documented in
-  [CHANGELOG.md](../CHANGELOG.md)'s `[Unreleased]` section.
+  [CHANGELOG.md](CHANGELOG.md)'s `[Unreleased]` section.
 
 - **Dockerfile base-image pinning.** `FROM` lines in the
-  [`Dockerfile`](../Dockerfile) are pinned by digest
+  [`Dockerfile`](Dockerfile) are pinned by digest
   (`python:3.14-slim-bookworm@sha256:…`) in addition to the human-
   readable tag. Same rationale as the Actions pin: tags are mutable;
   digests are immutable. Dependabot's `docker` ecosystem updater
