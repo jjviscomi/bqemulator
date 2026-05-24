@@ -52,6 +52,39 @@ def _setup_data(bqemu_server: EmulatorServer) -> None:
         )
 
 
+def _setup_tenant_data(bqemu_server: EmulatorServer) -> None:
+    """Per-tenant rows for the ``SESSION_USER`` row-restriction test.
+
+    Each row's ``owner`` column carries the email of the tenant; the
+    SESSION_USER row_restriction filter (``owner = SESSION_USER()``)
+    matches the calling user's row and excludes the others.
+    """
+    from google.cloud import bigquery
+
+    client = _make_bq_client(bqemu_server)
+    try:
+        client.get_dataset("sr_edge")
+    except Exception:  # noqa: BLE001
+        client.create_dataset("sr_edge")
+    try:
+        client.get_table("test-project.sr_edge.tenants")
+    except Exception:  # noqa: BLE001
+        schema = [
+            bigquery.SchemaField("owner", "STRING", mode="REQUIRED"),
+            bigquery.SchemaField("payload", "STRING"),
+        ]
+        table = client.create_table(
+            bigquery.Table("test-project.sr_edge.tenants", schema=schema),
+        )
+        client.insert_rows_json(
+            table,
+            [
+                {"owner": "alice@example.com", "payload": "alice-data"},
+                {"owner": "bob@example.com", "payload": "bob-data"},
+            ],
+        )
+
+
 class TestCreateReadSessionErrors:
     def test_invalid_table_path_returns_error(
         self,
@@ -230,6 +263,77 @@ class TestReadWithRowFilter:
         assert total_rows == 2
 
         channel.close()
+
+    def test_row_restriction_with_session_user_threads_caller(
+        self,
+        bqemu_server: EmulatorServer,
+    ) -> None:
+        """Storage Read row_restriction sees the authenticated caller (ADR 0040).
+
+        Pre-ADR-0040 the row_restriction filter pre-pass folded
+        every ``SESSION_USER()`` call to the ``"anonymous"``
+        sentinel because no caller context flowed into
+        ``_build_read_sql``. Hoisting the caller-resolution
+        above ``_build_read_sql`` (and threading ``caller`` into
+        the translator) closes that gap.
+
+        This test seeds a per-tenant table, sets the
+        ``X-Bqemu-Caller`` gRPC metadata header to a specific
+        user, uses ``SESSION_USER()`` in the ``row_restriction``,
+        and verifies only that user's rows come back. If the
+        caller threading regresses, every row gets filtered
+        (anonymous != alice@example.com).
+        """
+        _setup_tenant_data(bqemu_server)
+        from google.cloud.bigquery_storage_v1 import types
+
+        channel = grpc.insecure_channel(bqemu_server.grpc_endpoint)
+        try:
+            # Alice's caller identity flows through ``X-Bqemu-Caller``;
+            # the row_restriction's ``SESSION_USER()`` should rewrite
+            # to ``'alice@example.com'`` and match only her row.
+            metadata = (("x-bqemu-caller", "user:alice@example.com"),)
+            request = types.CreateReadSessionRequest(
+                parent="projects/test-project",
+                read_session=types.ReadSession(
+                    table="projects/test-project/datasets/sr_edge/tables/tenants",
+                    data_format=types.DataFormat.ARROW,
+                    read_options=types.ReadSession.TableReadOptions(
+                        row_restriction="owner = SESSION_USER()",
+                    ),
+                ),
+                max_stream_count=1,
+            )
+
+            resp = channel.unary_unary(
+                "/google.cloud.bigquery.storage.v1.BigQueryRead/CreateReadSession",
+            )(types.CreateReadSessionRequest.serialize(request), metadata=metadata)
+            session = types.ReadSession.deserialize(resp)
+
+            read_req = types.ReadRowsRequest(read_stream=session.streams[0].name)
+            responses = list(
+                channel.unary_stream(
+                    "/google.cloud.bigquery.storage.v1.BigQueryRead/ReadRows",
+                )(types.ReadRowsRequest.serialize(read_req), metadata=metadata)
+            )
+
+            schema = pa.ipc.open_stream(session.arrow_schema.serialized_schema).schema
+            owners: list[str] = []
+            for r in responses:
+                rr = types.ReadRowsResponse.deserialize(r)
+                if rr.arrow_record_batch.serialized_record_batch:
+                    batch = pa.ipc.read_record_batch(
+                        rr.arrow_record_batch.serialized_record_batch,
+                        schema,
+                    )
+                    owners.extend(batch["owner"].to_pylist())
+
+            # Exactly Alice's row — Bob's row is filtered out by the
+            # SESSION_USER predicate. Pre-ADR-0040 the filter would
+            # produce ``owner = 'anonymous'`` and match nothing.
+            assert owners == ["alice@example.com"]
+        finally:
+            channel.close()
 
 
 class TestMultiStreamRead:

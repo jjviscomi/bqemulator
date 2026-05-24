@@ -188,6 +188,94 @@ class TestRewriteSessionUser:
         assert "SESSION_USER" not in out.upper()
         assert "'v@example.com'" in out
 
+    # ------------------------------------------------------------------
+    # CURRENT_USER() — function alias (ADR 0040)
+    # ------------------------------------------------------------------
+
+    def test_bare_select_current_user(self) -> None:
+        sql = "SELECT CURRENT_USER() AS who"
+        out = rewrite_session_user(sql, self._caller("alice@example.com"))
+        assert "CURRENT_USER" not in out.upper()
+        assert "'alice@example.com'" in out
+
+    def test_lower_case_current_user(self) -> None:
+        sql = "SELECT current_user() AS who"
+        out = rewrite_session_user(sql, self._caller("alice@example.com"))
+        assert "current_user" not in out.lower()
+        assert "'alice@example.com'" in out
+
+    def test_current_user_unauthenticated_caller(self) -> None:
+        sql = "SELECT CURRENT_USER() AS who"
+        caller = CallerIdentity(principal=DEFAULT_CALLER, is_authenticated=False)
+        out = rewrite_session_user(sql, caller)
+        assert "'anonymous'" in out
+
+    def test_current_user_inside_regexp_extract(self) -> None:
+        # Same RAP-filter pattern that exercises SESSION_USER, on the
+        # CURRENT_USER alias. Both spellings produce the same plan.
+        sql = "SELECT * FROM t WHERE REGEXP_EXTRACT(CURRENT_USER(), r'@(.+)$') = 'example.com'"
+        out = rewrite_session_user(sql, self._caller("bob@example.com"))
+        assert "CURRENT_USER" not in out.upper()
+        assert "'bob@example.com'" in out
+
+    # ------------------------------------------------------------------
+    # @@session.user — system-variable spelling (ADR 0040)
+    # ------------------------------------------------------------------
+
+    def test_bare_select_session_user_system_var(self) -> None:
+        sql = "SELECT @@session.user AS who"
+        out = rewrite_session_user(sql, self._caller("alice@example.com"))
+        # The rewritten output drops the ``@@session.user`` token
+        # entirely — it's been replaced with the literal.
+        assert "@@session" not in out.lower()
+        assert "'alice@example.com'" in out
+
+    def test_session_user_system_var_unauthenticated(self) -> None:
+        sql = "SELECT @@session.user AS who"
+        caller = CallerIdentity(principal=DEFAULT_CALLER, is_authenticated=False)
+        out = rewrite_session_user(sql, caller)
+        assert "'anonymous'" in out
+
+    def test_user_column_fast_path_short_circuit(self) -> None:
+        """Fast-path returns input object unchanged when no caller-identity spelling appears."""
+        # ``SELECT user FROM users`` references a column named
+        # ``user`` — no caller-identity spelling is present so the
+        # rewriter's string-side fast-path short-circuits before
+        # parsing the AST. Pins that path (object-identity check).
+        sql = "SELECT user FROM users"
+        out = rewrite_session_user(sql, self._caller())
+        assert out is sql
+
+    def test_user_column_alongside_session_user_not_rewritten(self) -> None:
+        """AST walk substitutes SESSION_USER() but leaves a column named ``user`` alone."""
+        # When the query DOES contain a real caller-identity spelling
+        # (forcing the AST walk to run), a column named ``user`` accessed
+        # via dot syntax (``t.user``) must NOT be rewritten — only the
+        # ``Dot(Parameter(Parameter(Var('session'))), Identifier('user'))``
+        # shape qualifies for the ``@@session.user`` rule. This is the
+        # actual exercise of :func:`_is_session_user_system_var`'s
+        # precision against false positives.
+        sql = "SELECT SESSION_USER() AS who, t.user AS u FROM t"
+        out = rewrite_session_user(sql, self._caller("alice@example.com"))
+        # SESSION_USER folded; t.user column reference preserved.
+        assert "SESSION_USER" not in out.upper()
+        assert "'alice@example.com'" in out
+        assert "t.user" in out.lower() or "user" in out.lower().split("as u")[0]
+
+    # ------------------------------------------------------------------
+    # All three spellings in one query — all rewritten
+    # ------------------------------------------------------------------
+
+    def test_all_three_spellings_in_one_query(self) -> None:
+        sql = "SELECT SESSION_USER() AS a, CURRENT_USER() AS b, @@session.user AS c"
+        out = rewrite_session_user(sql, self._caller("multi@example.com"))
+        # Every spelling resolved to the same literal — three
+        # occurrences in the output.
+        assert "SESSION_USER" not in out.upper()
+        assert "CURRENT_USER" not in out.upper()
+        assert "@@session" not in out.lower()
+        assert out.lower().count("multi@example.com") == 3
+
 
 # ---------------------------------------------------------------------------
 # Translator integration — through the full pipeline

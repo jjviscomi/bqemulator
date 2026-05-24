@@ -195,4 +195,36 @@ class RowAccessSessionUserTest {
         }
         assertEquals("claire@example.com", got);
     }
+
+    @Test
+    void bareSelectCurrentUserReturnsBareEmail() throws Exception {
+        // CURRENT_USER() is documented as a co-equal alias for
+        // SESSION_USER() in BigQuery's reference (ADR 0040); same
+        // caller-identity semantics, same pre-translator substitution.
+        BigQuery bq = clientFor("user:dani@example.com");
+        TableResult res = runAs(bq, "SELECT CURRENT_USER() AS who");
+        String got = null;
+        for (FieldValueList row : res.iterateAll()) {
+            got = row.get("who").getStringValue();
+            break;
+        }
+        assertEquals("dani@example.com", got);
+    }
+
+    @Test
+    void bareSelectSessionUserSystemVarReturnsBareEmail() throws Exception {
+        // The system-variable spelling @@session.user resolves via the
+        // same path as the function form (ADR 0040) — pinned here so a
+        // future SQLGlot AST change for @@session.user would surface as
+        // a test failure rather than silently producing the
+        // ANONYMOUS_CALLER literal.
+        BigQuery bq = clientFor("user:eli@example.com");
+        TableResult res = runAs(bq, "SELECT @@session.user AS who");
+        String got = null;
+        for (FieldValueList row : res.iterateAll()) {
+            got = row.get("who").getStringValue();
+            break;
+        }
+        assertEquals("eli@example.com", got);
+    }
 }

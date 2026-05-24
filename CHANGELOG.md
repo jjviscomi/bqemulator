@@ -112,6 +112,72 @@ section and adds the release date.
   ``perigon-health-nonprod-svc`` to complete the full
   99-query corpus).
 
+- **`CURRENT_USER()` + `@@session.user` + Storage Read
+  `row_restriction` caller threading** (ADR 0040). Closes three
+  items deferred by ADR 0038's out-of-scope section in a single
+  follow-up:
+
+  1. **`CURRENT_USER()` function alias** — BigQuery documents
+     `CURRENT_USER()` as a co-equal spelling of `SESSION_USER()`.
+     The pre-translator now matches both `exp.SessionUser` and
+     `exp.CurrentUser` nodes; both resolve via the same
+     `resolve_session_user(caller)` helper (no new resolution
+     logic).
+  2. **`@@session.user` system-variable spelling** — SQLGlot
+     parses this as `Dot(Parameter(Parameter(Var('session'))),
+     Identifier('user'))`. A new helper
+     `_is_session_user_system_var` pattern-matches the exact AST
+     shape (not the rendered SQL) to avoid false-positive
+     matches on user-defined columns named `user` reached via
+     an unrelated parameter expression.
+  3. **Storage Read `row_restriction` caller threading** —
+     pre-closure, `grpc_api/read_servicer._build_read_sql`
+     translated the user-supplied `row_restriction` without a
+     caller, so any caller-identity function inside the filter
+     folded to the `ANONYMOUS_CALLER` sentinel regardless of the
+     `X-Bqemu-Caller` header. Hoisted the caller resolution
+     above `_build_read_sql` and threaded `caller` through to
+     the inner `translator.translate(..., caller=caller)` call.
+     The second row-restriction path (BigQuery-shaped variant
+     for the row-access policy rewriter) already received the
+     caller via existing plumbing at line 252 — no change there.
+
+  Coverage:
+
+  - **8 new unit tests** in
+    `tests/unit/sql/rewriter/test_session_user.py` pin the three
+    new code paths (bare + lower-case + unauthenticated +
+    RAP-filter shape for each spelling + the `SELECT user FROM
+    users` false-positive guard + all-three-spellings-in-one-
+    query).
+  - **1 new integration test** in
+    `tests/integration/test_storage_read_edge_cases.py` exercises
+    a Storage Read `row_restriction` of the form
+    `owner = SESSION_USER()` with an `X-Bqemu-Caller` gRPC
+    metadata header. Pre-closure: every row filtered out;
+    post-closure: exactly the calling user's row returned.
+  - **8 new e2e tests** (2 per client × Python / Node.js / Go /
+    Java SDKs) cover `SELECT CURRENT_USER()` and
+    `SELECT @@session.user` through the official client
+    libraries against a live container. `bq` CLI is skipped per
+    ADR 0038's existing rationale (the CLI doesn't set
+    `X-Bqemu-Caller`).
+
+  Surface inventory updated: `CURRENT_USER` joins `SESSION_USER`
+  and `GENERATE_UUID` in the non-deterministic family
+  (excluded from the corpus per ADR 0022 §1.2; covered at the
+  unit + e2e tiers). The `SESSION_USER` note's Storage Read
+  caveat is updated to reflect the closure.
+
+  Out of scope (preserved from ADR 0038): `SESSION_USER()` /
+  `CURRENT_USER()` inside a SQL UDF body — UDFs are
+  pre-translated at definition time when no caller exists.
+  Closing this requires a UDF-rewrite-at-call-time pass
+  scope-comparable to ADR 0038's original work; deferred.
+
+  See [ADR 0040](docs/adr/0040-session-user-coverage-closure.md)
+  for the full decision record.
+
 - **TPC-DS expansion plan documented** — new
   [`docs/architecture/contributing/tpcds-expansion-plan.md`](docs/architecture/contributing/tpcds-expansion-plan.md)
   tracks the planned 59 → 99 TPC-DS coverage expansion. Lists the 40

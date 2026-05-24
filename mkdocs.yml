@@ -223,6 +223,7 @@ nav:
       - "0037 OpenSSF Scorecard adoption + badge": adr/0037-openssf-scorecard.md
       - "0038 SESSION_USER() pre-translator substitution": adr/0038-session-user.md
       - "0039 SLSA Build Provenance on GitHub Release assets": adr/0039-artifact-attestations.md
+      - "0040 SESSION_USER coverage closure: aliases + Storage Read pre-pass": adr/0040-session-user-coverage-closure.md
   - RFCs: rfcs/README.md
   - Examples:
       - Overview: examples/README.md
