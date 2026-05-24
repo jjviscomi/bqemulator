@@ -32,7 +32,7 @@ section and adds the release date.
   total for all 40 against an operator-supplied GCP project), and
   the open questions to resolve before bulk recording. No fixtures
   recorded in this PR; the plan is the durable artefact so the work
-  survives session boundaries. ``docs/architecture/testing-strategy.md``
+  survives session boundaries. `docs/architecture/testing-strategy.md`
   updated to reference the plan. No new SQL rules are anticipated —
   every missing query uses features already supported by the
   92-rule translator (verified against the existing 59-fixture
