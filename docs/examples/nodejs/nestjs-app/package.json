@@ -6,7 +6,7 @@
   "scripts": {
     "build": "tsc",
     "start": "node dist/main.js",
-    "test:e2e": "jest --config jest-e2e.json"
+    "test:e2e": "node --experimental-vm-modules node_modules/.bin/jest --config jest-e2e.json"
   },
   "dependencies": {
     "@google-cloud/bigquery": "^8.3.1",
