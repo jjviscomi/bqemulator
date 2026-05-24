@@ -288,52 +288,52 @@ class TestReadWithRowFilter:
         from google.cloud.bigquery_storage_v1 import types
 
         channel = grpc.insecure_channel(bqemu_server.grpc_endpoint)
-
-        # Alice's caller identity flows through ``X-Bqemu-Caller``;
-        # the row_restriction's ``SESSION_USER()`` should rewrite
-        # to ``'alice@example.com'`` and match only her row.
-        metadata = (("x-bqemu-caller", "user:alice@example.com"),)
-        request = types.CreateReadSessionRequest(
-            parent="projects/test-project",
-            read_session=types.ReadSession(
-                table="projects/test-project/datasets/sr_edge/tables/tenants",
-                data_format=types.DataFormat.ARROW,
-                read_options=types.ReadSession.TableReadOptions(
-                    row_restriction="owner = SESSION_USER()",
+        try:
+            # Alice's caller identity flows through ``X-Bqemu-Caller``;
+            # the row_restriction's ``SESSION_USER()`` should rewrite
+            # to ``'alice@example.com'`` and match only her row.
+            metadata = (("x-bqemu-caller", "user:alice@example.com"),)
+            request = types.CreateReadSessionRequest(
+                parent="projects/test-project",
+                read_session=types.ReadSession(
+                    table="projects/test-project/datasets/sr_edge/tables/tenants",
+                    data_format=types.DataFormat.ARROW,
+                    read_options=types.ReadSession.TableReadOptions(
+                        row_restriction="owner = SESSION_USER()",
+                    ),
                 ),
-            ),
-            max_stream_count=1,
-        )
+                max_stream_count=1,
+            )
 
-        resp = channel.unary_unary(
-            "/google.cloud.bigquery.storage.v1.BigQueryRead/CreateReadSession",
-        )(types.CreateReadSessionRequest.serialize(request), metadata=metadata)
-        session = types.ReadSession.deserialize(resp)
+            resp = channel.unary_unary(
+                "/google.cloud.bigquery.storage.v1.BigQueryRead/CreateReadSession",
+            )(types.CreateReadSessionRequest.serialize(request), metadata=metadata)
+            session = types.ReadSession.deserialize(resp)
 
-        read_req = types.ReadRowsRequest(read_stream=session.streams[0].name)
-        responses = list(
-            channel.unary_stream(
-                "/google.cloud.bigquery.storage.v1.BigQueryRead/ReadRows",
-            )(types.ReadRowsRequest.serialize(read_req), metadata=metadata)
-        )
+            read_req = types.ReadRowsRequest(read_stream=session.streams[0].name)
+            responses = list(
+                channel.unary_stream(
+                    "/google.cloud.bigquery.storage.v1.BigQueryRead/ReadRows",
+                )(types.ReadRowsRequest.serialize(read_req), metadata=metadata)
+            )
 
-        schema = pa.ipc.open_stream(session.arrow_schema.serialized_schema).schema
-        owners: list[str] = []
-        for r in responses:
-            rr = types.ReadRowsResponse.deserialize(r)
-            if rr.arrow_record_batch.serialized_record_batch:
-                batch = pa.ipc.read_record_batch(
-                    rr.arrow_record_batch.serialized_record_batch,
-                    schema,
-                )
-                owners.extend(batch["owner"].to_pylist())
+            schema = pa.ipc.open_stream(session.arrow_schema.serialized_schema).schema
+            owners: list[str] = []
+            for r in responses:
+                rr = types.ReadRowsResponse.deserialize(r)
+                if rr.arrow_record_batch.serialized_record_batch:
+                    batch = pa.ipc.read_record_batch(
+                        rr.arrow_record_batch.serialized_record_batch,
+                        schema,
+                    )
+                    owners.extend(batch["owner"].to_pylist())
 
-        # Exactly Alice's row — Bob's row is filtered out by the
-        # SESSION_USER predicate. Pre-ADR-0040 the filter would
-        # produce ``owner = 'anonymous'`` and match nothing.
-        assert owners == ["alice@example.com"]
-
-        channel.close()
+            # Exactly Alice's row — Bob's row is filtered out by the
+            # SESSION_USER predicate. Pre-ADR-0040 the filter would
+            # produce ``owner = 'anonymous'`` and match nothing.
+            assert owners == ["alice@example.com"]
+        finally:
+            channel.close()
 
 
 class TestMultiStreamRead:

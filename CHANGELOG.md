@@ -156,7 +156,7 @@ section and adds the release date.
     `owner = SESSION_USER()` with an `X-Bqemu-Caller` gRPC
     metadata header. Pre-closure: every row filtered out;
     post-closure: exactly the calling user's row returned.
-  - **6 new e2e tests** (2 per client × Python / Node.js / Go /
+  - **8 new e2e tests** (2 per client × Python / Node.js / Go /
     Java SDKs) cover `SELECT CURRENT_USER()` and
     `SELECT @@session.user` through the official client
     libraries against a live container. `bq` CLI is skipped per
