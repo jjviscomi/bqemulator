@@ -279,7 +279,7 @@ section and adds the release date.
       ``id-token: write`` + ``attestations: write`` (the SLSA
       Build Provenance step from ADR 0039).
 
-  The other nine workflows (``ci.yml`` / ``chaos.yml`` /
+  The other eleven workflows (``ci.yml`` / ``chaos.yml`` /
   ``code-quality.yml`` / ``codeql.yml`` / ``differential.yml`` /
   ``e2e.yml`` / ``examples.yml`` / ``fuzz.yml`` / ``mutation.yml``
   / ``perf.yml`` / ``scorecard.yml``) were already minimal — no
