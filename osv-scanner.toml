@@ -88,21 +88,6 @@ id = "GHSA-pxq6-2prw-chj9"
 reason = "docker/docker unfixed; affects only Docker daemon Engine API surface not exercised by testcontainers-go lifecycle calls used in Go example projects."
 
 # ---------------------------------------------------------------------------
-# Capped-by-upstream starlette advisory
-# ---------------------------------------------------------------------------
-#
-# Apache Airflow 3.x caps starlette at ``<1`` (currently resolves to
-# 0.52.1 in the airflow-dag-test example). PYSEC-2026-161's fix lives
-# in starlette 1.0.1, but airflow's constraint blocks the upgrade until
-# Airflow widens its starlette range. The example does not expose the
-# affected starlette endpoints; the demo DAG only exercises the
-# BigQuery operator path.
-
-# Note: PYSEC-2026-161 (starlette<1 cap on airflow 3.x) was relevant
-# under the airflow 3.x experiment. The example now stays on 2.x
-# (see entries below) so starlette doesn't enter the closure.
-
-# ---------------------------------------------------------------------------
 # apache-airflow 2.x CVEs with fix only in 3.x line
 # ---------------------------------------------------------------------------
 #
