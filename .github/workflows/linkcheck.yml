@@ -15,14 +15,12 @@ name: Link check
 # Config lives in ``.lychee.toml`` at the repo root.
 
 on:
-  # On every PR that touches markdown, the lychee config itself, or
-  # this workflow — limits CI cost to PRs that could plausibly change
-  # link state.
+  # Run on every PR. lychee is a fast (~30s) check and is a required
+  # status under the branch-protection ruleset, so a path filter would
+  # leave PRs that only touch non-doc surfaces in 'expected' state
+  # under strict status-checks policy. The lychee cache + the
+  # max-cache-age makes repeated runs cheap.
   pull_request:
-    paths:
-      - "**/*.md"
-      - ".lychee.toml"
-      - ".github/workflows/*.yml"
   # Nightly run on main so URL rot in unmodified docs is caught
   # within 24h even without a PR.
   schedule:
