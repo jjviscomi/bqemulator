@@ -1,6 +1,8 @@
 module github.com/jjviscomi/bqemulator/tests/e2e/go_client
 
-go 1.24.0
+go 1.25
+
+toolchain go1.25.10
 
 require (
 	cloud.google.com/go v0.112.2

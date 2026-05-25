@@ -5,6 +5,45 @@
 # Consumers running ``osv-scanner`` against this repository honour these
 # ignores; CI workflows that wrap osv-scanner read this file via
 # ``--config osv-scanner.toml``.
+#
+# ---------------------------------------------------------------------------
+# OpenSSF Scorecard caveat
+# ---------------------------------------------------------------------------
+#
+# The OpenSSF Scorecard ``Vulnerabilities`` check imports osv-scanner as
+# a library and runs it WITHOUT honouring this configuration file's
+# ``IgnoredVulns``. As a result, Scorecard scans of this repository
+# will report the docker/docker advisories listed below even though we
+# have documented them as accepted-with-rationale here.
+#
+# Scorecard also flags historical ``v0.0.0-YYYYMMDD…/go.mod`` entries
+# in our Go example modules' ``go.sum`` files (e.g.,
+# ``golang.org/x/crypto v0.0.0-20190308…``). These are
+# **transitive ancestor versions** that Go's MVS records for build
+# reproducibility — they are NOT the resolved active version (which is
+# the current, patched ``v0.51.0+``). Go's ``go mod tidy`` cannot
+# remove them without breaking module verification.
+#
+# Net effect: as long as the example Go projects (especially
+# ``docs/examples/go/beam-pipeline``, which transitively pulls
+# ``github.com/docker/docker`` via ``apache/beam/.../runners/prism``)
+# remain in-tree, Scorecard's ``Vulnerabilities`` check will continue
+# to score 0/10 regardless of how aggressively we bump direct deps.
+#
+# Mitigation paths considered:
+# - **govulncheck** (Go's official scanner with reachability analysis)
+#   would correctly report zero — but Scorecard uses osv-scanner.
+# - **Removing the beam-pipeline example** would close the docker/docker
+#   transitive but loses the example.
+# - **Replace directives** in beam-pipeline's go.mod stubbing
+#   docker/docker would break the build (Beam's Prism runner uses the
+#   real APIs).
+#
+# We accept the 0/10 Scorecard score on Vulnerabilities and rely on
+# the runtime test suites (pip-audit on the main package; osv-scanner
+# with this config locally; Dependabot for upstream patches) for the
+# actual security signal. Run ``osv-scanner scan source --config
+# osv-scanner.toml -r .`` for the real-world view.
 
 # ---------------------------------------------------------------------------
 # Unpatched docker/docker GHSAs (transitive of testcontainers-go).
