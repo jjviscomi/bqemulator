@@ -95,9 +95,21 @@ jobs:
         uses: actions/attest-build-provenance@a2bbfa25375fe432b6a289bc6b6cd05ecd0c4c32 # v4.1.0
         with:
           subject-path: 'dist/*'
+      - name: Stage attestation under a Scorecard-discoverable filename
+        # OpenSSF Scorecard's ``Signed-Releases`` check matches release
+        # assets by extension: ``*.intoto.jsonl`` / ``*.sigstore`` /
+        # ``*.sig``. The action's default ``attestation.json`` output
+        # is a valid sigstore bundle (``mediaType:
+        # application/vnd.dev.sigstore.bundle.v0.3+json``) but the
+        # filename pattern doesn't match. Copy it into ``dist/`` under
+        # the canonical name so the upload step picks it up alongside
+        # the wheel + sdist and Scorecard credits the release.
+        run: |
+          VERSION="${GITHUB_REF_NAME#v}"
+          cp "${{ steps.attest.outputs.bundle-path }}" \
+             "dist/bqemulator-${VERSION}.intoto.jsonl"
       - uses: softprops/action-gh-release@3bb12739c298aeb8a4eeaf626c5b8d85266b0e65 # v2.6.2
         with:
           generate_release_notes: true
           files: |
             dist/*
-            ${{ steps.attest.outputs.bundle-path }}

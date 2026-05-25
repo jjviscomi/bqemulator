@@ -22,7 +22,7 @@ on:
     paths:
       - "**/*.md"
       - ".lychee.toml"
-      - ".github/workflows/linkcheck.yml"
+      - ".github/workflows/*.yml"
   # Nightly run on main so URL rot in unmodified docs is caught
   # within 24h even without a PR.
   schedule:
