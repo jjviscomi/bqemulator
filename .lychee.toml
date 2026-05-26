@@ -166,15 +166,19 @@ exclude = [
     # CI avoids the false positive. The release workflow re-runs
     # lychee against the published site.
     "^https://jjviscomi\\.github\\.io/bqemulator/",
-    # OpenSSF Scorecard viewer / API origin — recurringly flakey from
-    # GitHub Actions runner egress (``Connection failed`` /
-    # ``Connection reset by peer``). The same hosts respond cleanly
-    # from local dev runs; we already verify the scorecard endpoint
-    # via the dedicated ``scorecard.yml`` workflow that talks to
-    # ``api.securityscorecards.dev`` directly. Skipping the public
-    # viewer + API hostnames from lychee removes the false-positive
-    # link-rot signal.
+    # Community-docs hosts that recurringly return ``Connection
+    # failed`` / ``Connection reset by peer`` from GitHub Actions
+    # runner egress even after the 4 × 10s retry budget. The same
+    # URLs resolve cleanly from local dev runs and from end users'
+    # browsers — the pattern looks like rate-limiting or IP-range
+    # filtering against the runner pool. Each host below has caused
+    # at least one PR to fail its required ``Verify links`` gate.
+    # ``scorecard.dev`` / ``api.securityscorecards.dev`` are
+    # independently verified by the dedicated ``scorecard.yml``
+    # workflow.
     "^https://(api\\.securityscorecards|scorecard)\\.dev/",
+    "^https://www\\.conventionalcommits\\.org/",
+    "^https://www\\.contributor-covenant\\.org/",
     # Email / messaging schemes
     "^mailto:",
 ]
