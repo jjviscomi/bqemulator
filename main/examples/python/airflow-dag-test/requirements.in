@@ -1,0 +1,14 @@
+# Floors picked so the fully-pinned closure (generated via
+# ``pip-compile --generate-hashes``) limits OSV-scanner's match set
+# to the exact resolved versions:
+# - apache-airflow stays on the 2.x line. Airflow 3.x introduces
+#   breaking changes to the test runtime (the SDK task-runner reads
+#   connections from the metadata DB instead of ``AIRFLOW_CONN_*``
+#   env vars; the conftest's ``dag.test()`` driver path needs a
+#   significant rework to match). The unpatched-in-2.x airflow CVEs
+#   are documented in ``osv-scanner.toml``.
+# - apache-airflow-providers-google 11.x pairs with airflow 2.x.
+# - pytest 9.0.3 closes GHSA-6w46-j5rx-g56g.
+apache-airflow>=2.11.1,<3.0
+apache-airflow-providers-google>=11.0,<12.0
+pytest>=9.0.3,<10.0
