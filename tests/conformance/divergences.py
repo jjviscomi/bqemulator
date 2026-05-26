@@ -1,271 +1,58 @@
 """Registry of expected divergences between bqemulator and real BigQuery.
 
-Every entry in :data:`KNOWN_DIVERGENCES` is a fixture id (the
-``<phase>/<fixture_name>`` form returned by
-:attr:`Fixture.id`) mapped to a rationale string that the runner
-attaches to an ``xfail(strict=True)`` marker. The rationale must
-reference either an ADR or
-``docs/reference/out-of-scope.md`` — invented divergences are
-forbidden.
+Each entry in :data:`KNOWN_DIVERGENCES` maps a fixture id
+(``<phase>/<fixture_name>``, as returned by :attr:`Fixture.id`) to
+a rationale string. The conformance runner attaches the rationale
+to a ``pytest.mark.xfail(strict=True)`` marker on the matching
+fixture.
 
-The slice-2 catalogue lives in ADR 0023; the baseline was produced
-by recording 641 canonical queries against real BigQuery (288 in
-the initial slice-2 scope, expanded mid-slice to 641) and replaying
-each against the in-process emulator. The slice-2 close registered
-199 entries across 10 buckets; subsequent closure sessions remove
-entries as they ratchet — the 2026-05-15 Bucket A closure shrank
-the registry to 175 entries, the 2026-05-15 Bucket C closure brought
-it to 167 entries, the 2026-05-15 Bucket D closure brought it
-to 163 entries, the 2026-05-15 Bucket E closure brought it
-to 162 entries, the 2026-05-16 Bucket F closure brought it
-to 159 entries, the 2026-05-16 Bucket J closure brought it
-to 116 entries, the 2026-05-16 Bucket B closure brought it to
-82 entries, the 2026-05-16 Bucket G closure brought it to
-61 entries, the 2026-05-17 Bucket I closure brought it to
-18 entries, the 2026-05-17 Bucket H closure brought it to
-11 entries, the 2026-05-17 scope-expansion #18 (GeoJSON
-output formatting reconsidered) brought it to 10 entries
-(7 Bucket H fixtures closed via the ADR 0022 §3 WKT-shaped
-STRING amendment; 3 reclassified to ADR 0019 spheroidal because
-they expose small-scale planar-vs-spheroidal coordinate drift
-that no comparison rule can paper over without making the contract
-unsafe; the GeoJSON-formatting reclassification was lifted when
-scope-expansion #18 landed a ``StAsGeoJsonStringTypeRule`` SQL
-rule plus an ADR 0022 §3 JSON-shaped STRING amendment, closing
-``st_asgeojson_point`` directly), and the 2026-05-17 scope-
-expansion #17 (strict division-by-zero raising reconsidered)
-brought it to 9 entries (``script_exception_handler``
-closed via a new ``division_by_zero`` pre-translator that wraps
-every bare ``/`` in a CASE that raises ``Division by zero`` via
-DuckDB's ``error()`` builtin when the divisor is 0; the script
-interpreter's ``EXCEPTION WHEN ERROR`` handler then catches the
-raise), and the 2026-05-17 scope-expansion #15
-(``RANGE_SESSIONIZE`` reconsidered) keeps the count at
-**9 entries** while adding three new fixtures to the passing-
-set (the function previously raised ``UnsupportedFeatureError``
-so no divergence was pinned; the closure ships the
-``rewrite_range_sessionize`` pre-translator that rewrites
-every ``RANGE_SESSIONIZE(TABLE …)`` call into a windowed
-gaps-and-islands subquery and three new conformance fixtures
-recorded against real BigQuery — corpus size grows from 641 to
-**644**, passing count from 632 to **635**). All ten ADR 0023
-buckets and all three reconsidered scope expansions are now
-closed.
+Contract
+--------
 
-Subsequent 2026-05-17 P2.d (Phase 8 row-access framework + 20
-fixtures recorded the same day) added 7 entries — 5 ``authz_view_*``
-plus ``caller_information_schema_visibility`` and
-``rap_filter_via_view`` — taking the count to **16 entries**. The
-2026-05-18 P2.d follow-up #1 closed the 5 ``authz_view_*`` entries
-after empirical recording proved real BigQuery enforces RAP through
-authorized views universally; the registry shrank to **11 entries**.
-The 2026-05-18 top-30 gap-closure session #1 added 18 entries
-(3 partition pseudo-cols + 3 ``geography_column_*`` + 1
-``script_for_iterate_into_table`` + 2 ``str_collate_*`` + 9
-less-common string-function entries — ``str_to_base32_*``,
-``str_from_base32_*``, ``str_code_points_to_bytes_*``,
-``str_soundex_*``, and the ``str_regexp_substr_no_match`` fixture
-— pinned against the ``out-of-scope.md`` less-common-string-functions
-cluster) taking the count to **29 entries**. The 2026-05-18 top-30
-session #3 XFAIL-reduction follow-up closed those 9 less-common
-string-function entries via 4 Python helper UDFs
-(``bqemu_to_base32`` / ``bqemu_from_base32`` /
-``bqemu_code_points_to_bytes`` / ``bqemu_soundex``) and 5
-post-translator rules (``ToBase32Rule``, ``FromBase32Rule``,
-``CodePointsToBytesRule``, ``SoundexRule``,
-``RegexpExtractNullifEmptyRule``); the registry shrank to **20
-entries**. The 2026-05-18 P2.a scope-expansion-depth session added
-7 entries (4 ``st_asgeojson_*`` spheroidal interpolation + 1
-``st_asgeojson_empty_point`` GeoJSON RFC 7946 normalisation + 2
-``range_sessionize_*`` closure-gap edge cases) taking the count
-to **27 entries**. The 2026-05-18 P2.d-recording follow-up (the
-2 group-grantee fixtures recorded mid-P2.a under an operator with
-real Workspace-group membership) added 2 entries
-(``rap_filter_with_group_grantee`` and
-``caller_match_via_group_only`` — both surface the same
-group-grantee enforcement gap in
-``src/bqemulator/row_access/identity.py``) taking the count to
-**29 entries**. The 2026-05-18 top-30 gap-closure session #3b
-(HLL_COUNT family, landed concurrently with P2.a's recording
-sweep at 21:24 UTC) added 2 entries
-(``agg_hll_count_init_basic`` and
-``agg_hll_count_merge_partial_basic`` — both pinned against
-``out-of-scope.md#hll-sketch-binary-format-hll_countinit--merge_partial``
-because the BigQuery HLL++ sketch BYTES format is undocumented;
-``agg_hll_count_extract_basic`` and ``agg_hll_count_merge_basic``
-pass cleanly because they consume the sketch and return a scalar)
-taking the count to **31 entries**. The same-day **2026-05-18 P2.a
-closure-bug follow-up** then closed 5 of the P2.a / P2.d-recording-
-surfaced entries via 4 emulator-side fixes:
+* ``strict=True`` is the load-bearing invariant: an unexpected
+  pass fails the suite just as an unexpected fail does. The dict
+  is the live ledger — an entry exists iff that fixture is
+  currently divergent.
+* Every rationale references an ADR (e.g., ADR 0019 for
+  spheroidal-vs-planar GEOGRAPHY, ADR 0023 for the slice-2
+  closure-bucket baseline) or a section of
+  ``docs/reference/out-of-scope.md``. Invented divergences are
+  forbidden.
 
-* drop ``OVERLAPS_OR_MEETS`` from ``_MODE_TO_OP`` in
-  ``rewrite_range_sessionize`` so the unknown-mode branch raises
-  ``InvalidQueryError`` matching BigQuery's wire-format error —
-  closes ``range_sessionize_overlaps_or_meets_alias``;
-* strip the ``group:`` IAM-member prefix in
-  ``src/bqemulator/row_access/identity.py::_parse_groups`` so the
-  matcher's bare-email contract holds when fixtures pass
-  ``X-Bqemu-Groups: group:<addr>`` (the wire-format form) —
-  closes both ``rap_filter_with_group_grantee`` and
-  ``caller_match_via_group_only`` (one fix, two closures);
-* add a new ``bqemu_geojson_normalize_empty`` Python helper UDF
-  (registered via ``register_builtin_udfs``) that detects empty-
-  coordinates / empty-geometries shapes and rewrites them to the
-  canonical RFC 7946 ``GeometryCollection`` form; the
-  ``StAsGeoJsonStringTypeRule`` rewrite now wraps the call as
-  ``CAST(bqemu_geojson_normalize_empty(ST_AsGeoJSON(g)) AS
-  VARCHAR)`` — closes ``st_asgeojson_empty_point``;
-* extend ``rewrite_range_sessionize`` with a per-partition
-  ``_bqemu_partition_has_null = BOOL_OR(<range>.start IS NULL)
-  OVER (PARTITION BY parts)`` flag and a coordinated
-  session-id / session_range CASE so NULL rows get
-  ``session_range = NULL`` and every non-NULL row in a NULL-
-  containing partition collapses to the canonical bridged
-  session range — closes ``range_sessionize_null_range``.
+Adding an entry
+---------------
 
-The registry shrinks to **26 entries**. The four
-remaining P2.a XFAILs are spheroidal-interpolation
-``st_asgeojson_*`` shapes (``geometrycollection``, ``linestring``,
-``multilinestring``, ``multipolygon``) rooted in ADR 0019 —
-closure would require an s2geometry-style WGS84 backend deferred
-to v2.
+1. The divergence is rooted in a locked design decision (an ADR)
+   or in a catalogued scope-of-work bucket (ADR 0023 for the
+   slice-2 baseline).
+2. The fixture stays in the corpus with its recorded
+   ``expected.json`` so any future change that removes the
+   divergence surfaces as an unexpected-pass failure under
+   ``strict=True``.
 
-The 2026-05-19 XFAIL-closure follow-up shipped 2 more closures via
-narrow translator/catalog gaps, taking the registry to
-**19 entries** at that point: ``row_access/rap_filter_via_view``
-(closed by a new ``sync_created_view`` helper in
-``catalog/ddl_sync.py`` that registers SQL-created views with
-``table_type='VIEW'`` + ``view_query=<body>``, so the row-access
-rewriter's existing ``_expand_view`` branch fires through every view
-body) and ``routines_scripting/script_for_iterate_into_table`` (closed
-by a new ``rewrite_unnest_struct`` pre-translator that propagates
-the first struct's named-field aliases to every subsequent
-positional struct in an ``UNNEST([...])`` array literal — preserving
-BigQuery's "first struct seeds the field names" semantic and
-avoiding the ``rewrite_struct_helpers`` rewrite that breaks mixed-
-shape arrays). The wrongly-premised
-``out-of-scope.md#for-loop-with-insert-into-a-pre-existing-table``
-section was removed in the same PR.
+Removing an entry
+-----------------
 
-The 2026-05-19 top-30 session #3d added **2 XFAIL entries** for the
-GEOGRAPHY tail closure (``st_asbinary_point`` against
-``_SPHEROIDAL``; ``st_maxdistance_basic`` against the new
-``out-of-scope.md#st_maxdistance-not-yet-implemented`` section),
-taking the registry to **21 entries**.
+When a slice closes the gap, delete the entry. The xfail marker
+disappears with it; the fixture starts passing on the next
+conformance run. CI catches both sides: a residual entry against
+a now-passing fixture (unexpected-pass), and a missing entry
+against a still-failing one (unexpected-fail).
 
-The 2026-05-19 **P7.b phase 2 — Tier 1 API-configuration recording**
-session initially added **15 XFAIL entries** (1 legacy SQL + 3 dry-run
-preview + 4 WRITE_APPEND + 3 CREATE_NEVER + 3 defaultDataset + 1
-session_id) taking the registry to **36 entries** post-recording. The
-same-session inline closure then shipped 5 new emulator-side helpers
-in ``bqemulator.api.routes.jobs``: ``_check_create_disposition``
-(CREATE_NEVER x 3), ``_validate_session_id`` + ``_SESSION_CATALOG``
-(session_id x 1), ``qualify_unqualified_tables`` SQLGlot
-pre-translator in ``bqemulator.sql.rewriter.default_dataset``
-(defaultDataset x 3), ``_destructive_dry_run_schema`` (dry-run x 2),
-``_apply_write_append`` (WRITE_APPEND x 4) — flipping **13 of 15**
-to PASS in the same PR. The registry's post-P7.b-phase-2 state is
-23 entries (21 pre-existing + 2 newly-pinned api_configuration:
-``legacy_sql_select_compat_mode`` documented out-of-scope and
-``dry_run_invalid_function`` as a P7.c follow-up).
-
-The 2026-05-19 **P2.g — Spheroidal-vs-planar boundary mapping** session
-added **15 XFAIL entries** spanning the
-{street, neighborhood, city, metro, state, national, high-latitude}
-scale axis x {distance, area, length, buffer} operation axis. The
-session's measured-boundary finding identified BigQuery's spherical
-backend uses the S2 library's ``kEarthRadiusMeters = 6371010.0`` (a
-discovery that contradicted ADR 0019's "WGS-84 spheroidal" framing).
-
-The **same-day P2.g follow-up** shipped 4 spherical-Earth Python helper
-UDFs (``bqemu_st_{distance,length,area,perimeter}_spheroidal``) and 5
-new post-translator rules in :mod:`bqemulator.sql.rules.spatial`:
-``StDistanceSpheroidalRule`` / ``StLengthSpheroidalRule`` /
-``StAreaSpheroidalRule`` / ``StPerimeterSpheroidalRule`` /
-``StDWithinSpheroidalRule``. Distance / length / perimeter use the
-3D-unit-vector + ``atan2(|cross|, dot)`` great-circle formula on the
-S2 sphere; area uses L'Huilier's spherical-excess theorem on a
-triangle fan from the outer-ring's first vertex; ``ST_DWITHIN`` is
-rewritten to ``bqemu_st_distance_spheroidal(...) <= threshold``.
-
-The follow-up closed **17 fixtures** — the **12 metric P2.g fixtures**
-(6 distance + 1 high-latitude + 3 area + 2 length, only the 3 buffer
-fixtures remain pinned) plus **5 previously-pinned fixtures** (4
-continental: ``st_distance_continental`` / ``st_area_continental`` /
-``st_length_continental`` / ``st_perimeter_continental`` and 1 small-
-scale predicate: ``st_dwithin_no``).
-
-The 2026-05-19 **P7.c — Tier 2 + Tier 3 API-configuration sweep**
-closed 6 more entries via inline emulator-side helpers and follow-up
-translator rules: ``legacy_sql_select_compat_mode`` (via
-``rewrite_legacy_to_standard`` in
-``bqemulator.sql.rewriter.legacy_sql``); ``dry_run_invalid_function``
-(via ``_rewrite_for_dry_run`` re-mapping ``error.location='query'``
-to ``'q'`` and recovering DuckDB identifier case);
-``partition_prune_partitiondate``, ``partition_prune_partitiontime``,
-and ``partition_prune_integer_range`` (via
-``rewrite_partition_pseudo_columns`` aliasing ``_PARTITIONDATE`` /
-``_PARTITIONTIME`` to the partition column); ``st_maxdistance_basic``
-(via a new ``StMaxDistanceRule`` translator rule). The 2026-05-19
-**P2.d rap_filter_via_view follow-up** closed the last open Phase 8
-divergence via ``sync_created_view``. Two ``out-of-scope.md`` sections
-(``#ingestion-time-partition-pseudo-columns`` and
-``#st_maxdistance-not-yet-implemented``) were removed in the same PR.
-
-The registry's **current state is 13 entries** — all permanent
-design-decision divergences with no closure plan for v1.0:
-
-* **11 spheroidal** (ADR 0019; sphere-vs-planar GEOGRAPHY): the 3
-  remaining ``spheroidal_buffer_*`` P2.g fixtures plus 8 pre-existing
-  surfaces (``st_centroid_polygon``, ``st_intersection_polygons``,
-  ``st_buffer_continental``, ``st_asbinary_point``, and the 4
-  ``st_asgeojson_*`` interpolation shapes).
-* **2 HLL++ sketch BYTES format** (ADR 0024;
-  ``agg_hll_count_init_basic`` + ``agg_hll_count_merge_partial_basic``).
-* **1 BIGNUMERIC > 28 digits** (DuckDB DECIMAL(38) ceiling;
-  ``bound_bignumeric_max``).
-* **1 IAM-fundamental** (``out-of-scope.md#iam-enforcement``;
-  ``caller_information_schema_visibility``).
-
-Every entry below points at a bucket section in ADR 0023 or an
-``out-of-scope.md`` anchor that explains the root cause and names
-the closure plan.
-
-Adding a divergence has two preconditions:
-
-1. The divergence is rooted in a locked design decision (ADR 0019
-   for spheroidal-vs-planar GEOGRAPHY, ADR 0012 for BQML, etc.) or
-   in a catalogued bucket (ADR 0023 for slice-2 baseline).
-2. The fixture stays in the corpus with its recorded ``expected.json``
-   so a future emulator improvement (or a real-BigQuery change) that
-   removes the divergence shows up as an unexpected-pass failure
-   (because ``strict=True``).
-
-Removing a divergence happens when a slice closes the gap: the entry
-disappears from this dict, the xfail marker disappears with it, and
-the fixture starts passing on the next conformance run.
+Historical narrative — which buckets closed when, how each
+closure shipped, the ratchet count at every milestone — lives in
+ADR 0023, the git history of this file, and the release notes in
+``CHANGELOG.md``. This module is a current-state registry, not a
+closure journal.
 """
 
 from __future__ import annotations
 
-# fixture_id -> rationale. Order is by fixture id. Keys are unique by
-# construction (``test_corpus.py`` parametrises one test per id).
-#
-# Rationale strings reference ADR sections so the source of the
-# divergence is one ``grep`` away. The bucket letters map to ADR 0023:
-#   A = REPEATED-row wire-format shape  (Closed 2026-05-15)
-#   B = numeric type promotion (FLOAT64 ↔ NUMERIC)  (Closed 2026-05-16)
-#   C = wildcard table expansion not triggered  (Closed 2026-05-15)
-#   D = unqualified routine reference rejected  (Closed 2026-05-15)
-#   E = multi-statement scripting result column naming  (Closed 2026-05-15)
-#   F = multi-statement DDL extra-row surface  (Closed 2026-05-16)
-#   G = RANGE / INTERVAL wire format  (Closed 2026-05-16)
-#   H = GEOGRAPHY WKT whitespace (ST_ASTEXT)  (Closed 2026-05-17)
-#   I = standard-function semantic differences  (Closed 2026-05-17)
-#   J = emulator-side missing function translation  (Closed 2026-05-16)
+# Rationale constants. Strings reused across multiple entries are
+# named here so a single edit updates every pin; the matrix
+# generator renders the first sentence of each into
+# ``compatibility-matrix.md``.
 
-_BUCKET_I = "Bucket I — standard-function semantic difference (ADR 0023 §1.I)"
-_BUCKET_J = "Bucket J — missing function translation (ADR 0023 §1.J)"
 _SPHEROIDAL = (
     "Spheroidal-vs-planar divergence — see ADR 0019 and "
     "docs/reference/out-of-scope.md#spheroidal-geometry-on-geography"
@@ -295,34 +82,6 @@ _CTE_SELF_JOIN_WINDOW_UNNEST = (
     "ROW_NUMBER joins — see "
     "docs/reference/out-of-scope.md#cte-self-join-with-window-aggregate-tpc-ds-q47"
 )
-# _DECIMAL_DIV_DOUBLE_PROMOTION was removed 2026-05-20 in the same
-# P8.c PR that introduced it. The 3 TPC-H fixtures originally pinned
-# under this rationale (tpch_q8, tpch_q14, tpch_q17) closed via the
-# new ``DivDecimalRule`` in ``bqemulator.sql.rules.aggregate_types``,
-# which wraps every ``Div`` with at least one DECIMAL-annotated
-# operand in ``CAST(... AS DECIMAL(38, 9))``. The annotation-driven
-# detection follows the same precedent as ``AvgDecimalRule``;
-# operand-type-aware matching ensures the rule fires for the BQ
-# NUMERIC-preserving cases (NUMERIC/NUMERIC, NUMERIC/FLOAT64,
-# INT64/NUMERIC) while leaving pure FLOAT64/FLOAT64 and INT64/INT64
-# unchanged (BQ returns FLOAT in those cases, matching DuckDB).
-# _DIVISION_BY_ZERO was removed 2026-05-17 when scope-expansion #17
-# (strict division-by-zero raising, reconsidered) landed: the new
-# ``division_by_zero`` pre-translator wraps every bare ``/`` operator
-# in ``CASE WHEN divisor = 0 THEN error('Division by zero') ELSE a/b
-# END`` so DuckDB raises ``Invalid Input Error`` on a zero divisor.
-# The script interpreter's ``BEGIN ... EXCEPTION WHEN ERROR THEN ...
-# END`` block catches the raise and the
-# ``routines_scripting/script_exception_handler`` fixture moves from
-# XFAIL to PASS in the same PR.
-# _GEOJSON_FORMATTING was removed 2026-05-17 when scope-expansion #18
-# (GeoJSON output formatting, reconsidered) landed: the new
-# ``StAsGeoJsonStringTypeRule`` wraps ``ST_AsGeoJSON(g)`` in
-# ``CAST(... AS VARCHAR)`` (fixes wire-format schema STRING vs JSON),
-# and the ADR 0022 §3 JSON-shaped STRING sub-rule absorbs the
-# remaining content-level formatting drift (key order, int vs float
-# coords, inter-token whitespace). The ``st_asgeojson_point`` fixture
-# moved from XFAIL to PASS in the same PR.
 
 
 KNOWN_DIVERGENCES: dict[str, str] = {
