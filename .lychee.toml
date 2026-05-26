@@ -173,9 +173,12 @@ exclude = [
     # browsers — the pattern looks like rate-limiting or IP-range
     # filtering against the runner pool. Each host below has caused
     # at least one PR to fail its required ``Verify links`` gate.
-    # ``scorecard.dev`` / ``api.securityscorecards.dev`` are
-    # independently verified by the dedicated ``scorecard.yml``
-    # workflow.
+    # The ``api.securityscorecards.dev`` endpoint is exercised
+    # implicitly when ``.github/workflows/scorecard.yml`` publishes
+    # to it via ``ossf/scorecard-action`` (a publish failure would
+    # show up as a workflow failure on every push to main); the
+    # ``scorecard.dev`` viewer is a static UI page over the same
+    # data — excluding it only skips lychee's GET of the HTML.
     "^https://(api\\.securityscorecards|scorecard)\\.dev/",
     "^https://www\\.conventionalcommits\\.org/",
     "^https://www\\.contributor-covenant\\.org/",
