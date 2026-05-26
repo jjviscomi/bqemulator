@@ -25,6 +25,19 @@ updates:
           - "bandit"
           - "pip-audit"
           - "interrogate"
+    ignore:
+      # Apache Airflow 3.x introduces breaking changes to the test
+      # runtime (the SDK task-runner reads connections from the
+      # metadata DB instead of ``AIRFLOW_CONN_*`` env vars; the
+      # airflow-dag-test conftest's ``dag.test()`` driver path needs
+      # a significant rework to match). Pin to the 2.x line until
+      # that rework lands. Also suppress release-candidate auto-bumps
+      # (``-rc.N`` / ``-beta.N`` / ``-alpha.N``) which Dependabot
+      # otherwise treats as legitimate updates.
+      - dependency-name: "apache-airflow"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "apache-airflow-providers-google"
+        update-types: ["version-update:semver-major"]
     commit-message:
       prefix: "chore(deps)"
 
