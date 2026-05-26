@@ -86,3 +86,72 @@ reason = "docker/docker unfixed; affects only Docker daemon Engine API surface n
 [[IgnoredVulns]]
 id = "GHSA-pxq6-2prw-chj9"
 reason = "docker/docker unfixed; affects only Docker daemon Engine API surface not exercised by testcontainers-go lifecycle calls used in Go example projects."
+
+# ---------------------------------------------------------------------------
+# apache-airflow 2.x CVEs with fix only in 3.x line
+# ---------------------------------------------------------------------------
+#
+# The ``airflow-dag-test`` example stays on apache-airflow 2.x because
+# airflow 3.x introduced breaking changes to the test runtime (the SDK
+# task-runner reads connections from the metadata DB instead of
+# ``AIRFLOW_CONN_*`` env vars; the conftest's ``dag.test()`` driver
+# path needs a significant rework to match).
+#
+# These advisories have no patch in the airflow 2.x line — every fix
+# version is in 3.x. The example is a demo DAG with no production
+# exposure; the affected code paths are auth surfaces / scheduler
+# internals not exercised by the demo's BigQuery operator chain.
+#
+# Re-evaluate when the conftest is reworked for airflow 3.x.
+
+[[IgnoredVulns]]
+id = "PYSEC-2023-314"
+reason = "apache-airflow 2.x — no upstream fix in 2.x line; demo DAG only exercises BigQuery operator path."
+
+[[IgnoredVulns]]
+id = "PYSEC-2026-10"
+reason = "apache-airflow 2.x — no upstream fix in 2.x line; demo DAG only exercises BigQuery operator path."
+
+[[IgnoredVulns]]
+id = "PYSEC-2026-13"
+reason = "apache-airflow 2.x — no upstream fix in 2.x line; demo DAG only exercises BigQuery operator path."
+
+[[IgnoredVulns]]
+id = "PYSEC-2026-18"
+reason = "apache-airflow 2.x — no upstream fix in 2.x line; demo DAG only exercises BigQuery operator path."
+
+[[IgnoredVulns]]
+id = "GHSA-4g48-54q2-fg7q"
+reason = "apache-airflow 2.x — no upstream fix in 2.x line; demo DAG only exercises BigQuery operator path."
+
+[[IgnoredVulns]]
+id = "GHSA-5g2w-9f8g-g5q7"
+reason = "apache-airflow 2.x — no upstream fix in 2.x line; demo DAG only exercises BigQuery operator path."
+
+[[IgnoredVulns]]
+id = "GHSA-j86x-fwp2-qh7v"
+reason = "apache-airflow 2.x — no upstream fix in 2.x line; demo DAG only exercises BigQuery operator path."
+
+[[IgnoredVulns]]
+id = "GHSA-p3v3-229h-mc63"
+reason = "apache-airflow 2.x — no upstream fix in 2.x line; demo DAG only exercises BigQuery operator path."
+
+[[IgnoredVulns]]
+id = "GHSA-q2hg-643c-gw8h"
+reason = "apache-airflow 2.x — no upstream fix in 2.x line; demo DAG only exercises BigQuery operator path."
+
+[[IgnoredVulns]]
+id = "GHSA-w7rc-q6cm-f5gm"
+reason = "apache-airflow 2.x — no upstream fix in 2.x line; demo DAG only exercises BigQuery operator path."
+
+[[IgnoredVulns]]
+id = "GHSA-68rp-wp8r-4726"
+reason = "flask 2.3.3 transitive of apache-airflow 2.x; fix in flask 3.1.3 requires airflow 3.x."
+
+[[IgnoredVulns]]
+id = "GHSA-765j-9r45-w2q2"
+reason = "flask-appbuilder 4.5.4 transitive of apache-airflow 2.x; demo DAG does not exercise the affected web UI surface."
+
+[[IgnoredVulns]]
+id = "GHSA-99pm-ch96-ccp2"
+reason = "flask-appbuilder 4.5.4 transitive of apache-airflow 2.x; demo DAG does not exercise the affected web UI surface."
