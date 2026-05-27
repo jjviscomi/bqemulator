@@ -4,7 +4,7 @@ A local emulator for Google BigQuery. Run it on your laptop or in CI and
 point the official Google Cloud client libraries at it.
 
 !!! note "Status"
-    **v1.0.1** — production-stable. SemVer applies: breaking changes
+    **v1.1.1** — production-stable. SemVer applies: breaking changes
     ship only in MAJOR, preceded by ≥1 MINOR with deprecation
     warnings; deprecated APIs remain for ≥2 MINOR or 6 months. See
     the [compatibility matrix](reference/compatibility-matrix.md) for
@@ -16,7 +16,8 @@ point the official Google Cloud client libraries at it.
 BigQuery tests against real cloud are slow, expensive, and require
 network. Mocking the client library misses SQL-dialect mistakes. The
 existing [goccy/bigquery-emulator](https://github.com/goccy/bigquery-emulator)
-is Go + SQLite + ZetaSQL, slow to compile, and has significant SQL gaps.
+provided a lot of inspiration for this project and how we could approach
+the problem differently.
 
 bqemulator is:
 
