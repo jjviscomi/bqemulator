@@ -223,7 +223,7 @@ deprecations live ≥2 MINOR or 6 months. The [compatibility matrix](https://jjv
 | BigQuery ML (`CREATE MODEL`, `ML.PREDICT`, …) | ❌ Out of scope — see [`docs/reference/out-of-scope.md`](docs/reference/out-of-scope.md) |
 | BI Engine / slot reservations / Data Transfer Service / scheduled queries | ❌ Out of scope |
 
-**Conformance corpus depth** (snapshot at v1.1.1, 2026-05-27):
+**Conformance corpus depth** (the [conformance coverage matrix](https://jjviscomi.github.io/bqemulator/latest/reference/conformance-coverage-matrix/) carries the live, auto-generated breakdown):
 
 | Status | Surface items | % of deterministic surface |
 |---|---|---|
