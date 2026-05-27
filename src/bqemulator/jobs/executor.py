@@ -1477,9 +1477,10 @@ def classify_statement_type(bq_sql: str) -> str:
     ``CREATE_SCHEMA``, ``CREATE_SNAPSHOT_TABLE``, ``DROP_TABLE``,
     ``DROP_VIEW``, ``DROP_FUNCTION``, ``DROP_PROCEDURE``,
     ``DROP_SCHEMA``, ``DROP_SNAPSHOT_TABLE``, ``ALTER_TABLE``,
-    ``TRUNCATE_TABLE``, ``SCRIPT``, or ``""`` (empty when sqlglot
-    cannot parse the SQL — caller writes no ``statementType`` field
-    in that case).
+    ``TRUNCATE_TABLE``, ``CREATE_ROW_ACCESS_POLICY``,
+    ``DROP_ROW_ACCESS_POLICY``, ``SCRIPT``, or ``""`` (empty when
+    sqlglot cannot parse the SQL — caller writes no ``statementType``
+    field in that case).
 
     Falls back to ``""`` rather than guessing for unparseable input so
     a malformed query doesn't get a misleading classification.
