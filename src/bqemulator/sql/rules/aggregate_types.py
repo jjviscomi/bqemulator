@@ -40,7 +40,7 @@ format is its own workstream (see ADR 0024). The cardinality
 user-facing semantic is preserved; the sketch-as-persistable-BYTES
 semantic is not (the two sketch-shaped surfaces — ``HLL_COUNT.INIT``
 and ``HLL_COUNT.MERGE_PARTIAL`` — are pinned as XFAIL via
-``docs/reference/out-of-scope.md#hll-sketch-binary-format-hll_countinit--merge_partial``).
+``docs/reference/out-of-scope.md#hll-sketch-binary-format-hll_countinit-merge_partial``).
 """
 
 from __future__ import annotations
@@ -298,7 +298,7 @@ class HllCountExtractInitRule(TranslationRule):
     a column reference rather than an inline ``HLL_COUNT.INIT`` call;
     that case requires the sketch to be persisted to a table — pinned
     as XFAIL per
-    ``docs/reference/out-of-scope.md#hll-sketch-binary-format-hll_countinit--merge_partial``.
+    ``docs/reference/out-of-scope.md#hll-sketch-binary-format-hll_countinit-merge_partial``.
     """
 
     name = "HLL_COUNT_EXTRACT_INIT"
@@ -341,7 +341,7 @@ class HllCountMergeRule(TranslationRule):
     isn't ``HLL_COUNT.INIT(...)`` on every leg — e.g. when the
     sketch column comes from a persisted table. That pattern is
     pinned as XFAIL per
-    ``docs/reference/out-of-scope.md#hll-sketch-binary-format-hll_countinit--merge_partial``.
+    ``docs/reference/out-of-scope.md#hll-sketch-binary-format-hll_countinit-merge_partial``.
 
     See ADR 0024 for the design rationale.
     """
