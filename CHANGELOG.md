@@ -23,6 +23,17 @@ new release.
 See [`docs/architecture/contributing/documentation-style-guide.md`](docs/architecture/contributing/documentation-style-guide.md)
 for the full entry-form rules and worked examples.
 
+## [1.1.1] - 2026-05-27
+
+### Fixed
+
+- Persist and enforce `CREATE ROW ACCESS POLICY` DDL submitted via `jobs.query` / `jobs.insert`, including the `IF NOT EXISTS`, grantee-less (filter-only), and backtick-quoted forms that previously failed to register.
+- Register datasets and tables created through SQL DDL (`CREATE SCHEMA`, `CREATE TABLE`) in the catalog so `INFORMATION_SCHEMA`, `tables.list`, and row-access-policy target validation resolve them.
+
+### Security
+
+- Exclude `fastapi` 0.136.3 (MAL-2026-4750), a tampered release that injects an undocumented `fastar` dependency.
+
 ## [1.1.0] - 2026-05-24
 
 ### Changed

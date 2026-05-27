@@ -15,4 +15,4 @@ __all__ = ["__version__"]
 
 # Single source of truth for the version; hatchling reads this via
 # `[tool.hatch.version] path = "src/bqemulator/__init__.py"`.
-__version__ = "1.1.0"
+__version__ = "1.1.1"
