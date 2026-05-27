@@ -69,7 +69,7 @@ _FORMAT_DATE_YEAR_PAD = (
     "'0001-01-01' (POSIX strftime always pads %Y to 4 digits). Closure "
     "needs a bqemu_format_date Python helper UDF or a narrow %Y "
     "pre-translator — see "
-    "docs/reference/out-of-scope.md#format_date-y-year-padding-for-years--1000"
+    "docs/reference/out-of-scope.md#format_date-y-year-padding-for-years-1000"
 )
 _CTE_SELF_JOIN_WINDOW_UNNEST = (
     "TPC-DS Q47-style multi-CTE pattern: a CTE that carries a window "
@@ -84,7 +84,7 @@ _CTE_SELF_JOIN_WINDOW_UNNEST = (
 )
 _HLL_SKETCH_BINARY = (
     "HLL sketch BYTES format differs — see "
-    "docs/reference/out-of-scope.md#hll-sketch-binary-format-hll_countinit--merge_partial"
+    "docs/reference/out-of-scope.md#hll-sketch-binary-format-hll_countinit-merge_partial"
 )
 _INFO_SCHEMA_IAM = (
     "INFORMATION_SCHEMA.ROW_ACCESS_POLICIES requires "
@@ -108,12 +108,12 @@ KNOWN_DIVERGENCES: dict[str, str] = {
     "specialized_types/spheroidal_buffer_neighborhood_match": _SPHEROIDAL,
     "specialized_types/spheroidal_buffer_state_xfail": _SPHEROIDAL,
     "specialized_types/spheroidal_buffer_street_match": _SPHEROIDAL,
-    # docs/reference/out-of-scope.md#hll-sketch-binary-format-hll_countinit--merge_partial
+    # docs/reference/out-of-scope.md#hll-sketch-binary-format-hll_countinit-merge_partial
     "standard_functions/agg_hll_count_init_basic": _HLL_SKETCH_BINARY,
     "standard_functions/agg_hll_count_merge_partial_basic": _HLL_SKETCH_BINARY,
     # docs/reference/out-of-scope.md#bignumeric-literals-with-39-integer-digits
     "standard_functions/bound_bignumeric_max": _BIGNUMERIC_CAP,
-    # docs/reference/out-of-scope.md#format_date-y-year-padding-for-years--1000
+    # docs/reference/out-of-scope.md#format_date-y-year-padding-for-years-1000
     "standard_functions/dt_format_date_min": _FORMAT_DATE_YEAR_PAD,
     # docs/reference/out-of-scope.md#cte-self-join-with-window-aggregate-tpc-ds-q47
     "standard_functions/tpcds_q47": _CTE_SELF_JOIN_WINDOW_UNNEST,
