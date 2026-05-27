@@ -2051,17 +2051,6 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#at-a-glance" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        At a glance
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
   <a href="#1-runtime-behavioural-divergences" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -2074,10 +2063,10 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#adr-0019-spheroidal-vs-planar-geography-11-fixtures-permanent-v10-divergence" class="md-nav__link">
+  <a href="#spheroidal-vs-planar-geography-adr-0019" class="md-nav__link">
     <span class="md-ellipsis">
       
-        ADR 0019 — Spheroidal-vs-planar GEOGRAPHY (11 fixtures, permanent v1.0 divergence)
+        Spheroidal-vs-planar GEOGRAPHY (ADR 0019)
       
     </span>
   </a>
@@ -2085,10 +2074,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#adr-0024-hll-sketch-binary-format-2-fixtures-permanent-v10-divergence" class="md-nav__link">
+  <a href="#hll-sketch-binary-format-adr-0024" class="md-nav__link">
     <span class="md-ellipsis">
       
-        ADR 0024 — HLL++ sketch binary format (2 fixtures, permanent v1.0 divergence)
+        HLL++ sketch binary format (ADR 0024)
       
     </span>
   </a>
@@ -2096,10 +2085,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#out-of-scopemd-fixture-bearing-entries-2-fixtures" class="md-nav__link">
+  <a href="#locked-exclusion-divergences-out-of-scopemd" class="md-nav__link">
     <span class="md-ellipsis">
       
-        out-of-scope.md fixture-bearing entries (2 fixtures)
+        Locked-exclusion divergences (out-of-scope.md)
       
     </span>
   </a>
@@ -2112,10 +2101,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#2-locked-v10-exclusions-out-of-scopemd" class="md-nav__link">
+  <a href="#2-locked-v10-exclusions" class="md-nav__link">
     <span class="md-ellipsis">
       
-        2. Locked v1.0 exclusions (out-of-scope.md)
+        2. Locked v1.0 exclusions
       
     </span>
   </a>
@@ -5176,17 +5165,6 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#at-a-glance" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        At a glance
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
   <a href="#1-runtime-behavioural-divergences" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -5199,10 +5177,10 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#adr-0019-spheroidal-vs-planar-geography-11-fixtures-permanent-v10-divergence" class="md-nav__link">
+  <a href="#spheroidal-vs-planar-geography-adr-0019" class="md-nav__link">
     <span class="md-ellipsis">
       
-        ADR 0019 — Spheroidal-vs-planar GEOGRAPHY (11 fixtures, permanent v1.0 divergence)
+        Spheroidal-vs-planar GEOGRAPHY (ADR 0019)
       
     </span>
   </a>
@@ -5210,10 +5188,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#adr-0024-hll-sketch-binary-format-2-fixtures-permanent-v10-divergence" class="md-nav__link">
+  <a href="#hll-sketch-binary-format-adr-0024" class="md-nav__link">
     <span class="md-ellipsis">
       
-        ADR 0024 — HLL++ sketch binary format (2 fixtures, permanent v1.0 divergence)
+        HLL++ sketch binary format (ADR 0024)
       
     </span>
   </a>
@@ -5221,10 +5199,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#out-of-scopemd-fixture-bearing-entries-2-fixtures" class="md-nav__link">
+  <a href="#locked-exclusion-divergences-out-of-scopemd" class="md-nav__link">
     <span class="md-ellipsis">
       
-        out-of-scope.md fixture-bearing entries (2 fixtures)
+        Locked-exclusion divergences (out-of-scope.md)
       
     </span>
   </a>
@@ -5237,10 +5215,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#2-locked-v10-exclusions-out-of-scopemd" class="md-nav__link">
+  <a href="#2-locked-v10-exclusions" class="md-nav__link">
     <span class="md-ellipsis">
       
-        2. Locked v1.0 exclusions (out-of-scope.md)
+        2. Locked v1.0 exclusions
       
     </span>
   </a>
@@ -5303,253 +5281,106 @@
 
 
 <h1 id="emulator-vs-bigquery-gap-analysis">Emulator-vs-BigQuery gap analysis<a class="headerlink" href="#emulator-vs-bigquery-gap-analysis" title="Permanent link">&para;</a></h1>
-<p>Comprehensive catalogue of every known difference between bqemulator
-and real Google BigQuery. Sources, in priority order:</p>
+<p>A navigational overview of every known difference between bqemulator
+and real Google BigQuery, organised by category. The <strong>live counts
+and per-fixture lists live in their authoritative sources</strong> — linked
+throughout — so this page never drifts out of sync with them:</p>
 <ol>
-<li><strong><a href="https://github.com/jjviscomi/bqemulator/blob/main/tests/conformance/divergences.py"><code>tests/conformance/divergences.py</code></a></strong> —
-   <strong>15 fixtures</strong> pinned to <code>xfail(strict=True)</code>. Every entry is
-   rooted in either <a href="../../adr/0019-specialized-types/">ADR 0019</a>
-   (spheroidal-vs-planar) or <a href="../out-of-scope/">out-of-scope.md</a>.
-   All entries are permanent design decisions with no v1.0 closure
-   plan.</li>
-<li><strong><a href="../out-of-scope/"><code>out-of-scope.md</code></a></strong> — <strong>19 features</strong>
-   explicitly excluded from v1.0.0 with rationale.</li>
+<li><strong>Runtime divergences</strong> — fixtures pinned to <code>xfail(strict=True)</code>
+   in <a href="https://github.com/jjviscomi/bqemulator/blob/main/tests/conformance/divergences.py"><code>tests/conformance/divergences.py</code></a>.
+   The current pinned set and its rationale strings render in the
+   <a href="../compatibility-matrix/">compatibility matrix</a> XFAIL pin registry;
+   root-cause analysis lives in
+   <a href="../../adr/0023-conformance-divergence-baseline/">ADR 0023</a>. Every
+   entry is rooted in an ADR or <a href="../out-of-scope/">out-of-scope.md</a>.</li>
+<li><strong>Locked v1.0 exclusions</strong> — features explicitly excluded from
+   v1.0.0, each with rationale and (where applicable) a workaround, in
+   <a href="../out-of-scope/">out-of-scope.md</a>.</li>
 <li><strong>Untested-in-conformance surfaces</strong> — capabilities the emulator
-   ships but the conformance corpus doesn't yet exercise (because
-   they aren't SQL, are non-deterministic, or are exercised in
-   adjacent tiers).</li>
+   ships but the conformance corpus doesn't exercise (because they
+   aren't SQL, are non-deterministic, or are covered in adjacent test
+   tiers). Catalogued in §3 below — this page is the source for that
+   list.</li>
 </ol>
-<p>A "gap" in this document means <em>anything</em> a user might rely on in
-real BigQuery that the emulator does not currently provide
-identically. The catalogue is intentionally exhaustive — most
-entries are permanent v1.0 exclusions.</p>
-<h2 id="at-a-glance">At a glance<a class="headerlink" href="#at-a-glance" title="Permanent link">&para;</a></h2>
-<table>
-<thead>
-<tr>
-<th>Source</th>
-<th>Count</th>
-<th>What it is</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><strong>ADR 0019 spheroidal GEOGRAPHY</strong></td>
-<td><strong>11 fixtures</strong></td>
-<td>Permanent v1.0 divergence (S2-sphere semantics for the helper rules vs planar / no-spherical fallback for the rest). 3 buffer fixtures + 8 pre-existing surfaces (4 <code>st_asgeojson_*</code> interpolation, <code>st_centroid_polygon</code>, <code>st_intersection_polygons</code>, <code>st_buffer_continental</code>, <code>st_asbinary_point</code>).</td>
-</tr>
-<tr>
-<td><strong>ADR 0024 HLL++ sketch binary format</strong></td>
-<td><strong>2 fixtures</strong></td>
-<td><code>agg_hll_count_init_basic</code> + <code>agg_hll_count_merge_partial_basic</code> — BigQuery's HLL++ sketch BYTES format is undocumented. The 2 sibling EXTRACT/MERGE surfaces pass cleanly via <code>COUNT(DISTINCT)</code>.</td>
-</tr>
-<tr>
-<td><strong><code>out-of-scope.md</code> locked exclusions (fixture-bearing)</strong></td>
-<td><strong>2 fixtures</strong></td>
-<td><code>bound_bignumeric_max</code> (DuckDB DECIMAL(38) cap on 39-integer-digit literals; <code>out-of-scope.md#bignumeric-literals-with-39-integer-digits</code>) + <code>row_access/caller_information_schema_visibility</code> (IAM-fundamental; <code>out-of-scope.md#iam-enforcement</code>).</td>
-</tr>
-<tr>
-<td><strong><code>out-of-scope.md</code> locked exclusions (no-fixture)</strong></td>
-<td><strong>17 features</strong></td>
-<td>Surfaces explicitly excluded from v1.0 with rationale but with no corpus fixture (BQML, BI Engine, billing, scheduling, multi-region, etc.).</td>
-</tr>
-<tr>
-<td><strong>Conformance coverage gaps</strong></td>
-<td><strong>~12 surfaces</strong></td>
-<td>Shipped emulator features not yet exercised by the conformance corpus (covered in other test tiers).</td>
-</tr>
-</tbody>
-</table>
-<p>Total <strong>15</strong> documented runtime divergences — 11 ADR 0019
-spheroidal + 2 ADR 0024 HLL++ + 2 out-of-scope.md fixture-bearing
-entries — plus <strong>19</strong> total locked exclusions in <code>out-of-scope.md</code>
-(17 no-fixture + 2 fixture-bearing) + ~12 untested-in-conformance
-surfaces.</p>
+<p>A "gap" means <em>anything</em> a user might rely on in real BigQuery that
+the emulator does not currently provide identically. Most entries are
+permanent v1.0 exclusions; none has a v1.0 closure plan.</p>
 <h2 id="1-runtime-behavioural-divergences">1. Runtime behavioural divergences<a class="headerlink" href="#1-runtime-behavioural-divergences" title="Permanent link">&para;</a></h2>
-<p>Each divergence has full root-cause analysis in
-<a href="../../adr/0023-conformance-divergence-baseline/">ADR 0023</a>;
-per-fixture rationale strings live in <code>divergences.py</code>.</p>
-<h3 id="adr-0019-spheroidal-vs-planar-geography-11-fixtures-permanent-v10-divergence">ADR 0019 — Spheroidal-vs-planar GEOGRAPHY (11 fixtures, permanent v1.0 divergence)<a class="headerlink" href="#adr-0019-spheroidal-vs-planar-geography-11-fixtures-permanent-v10-divergence" title="Permanent link">&para;</a></h3>
-<p>Continental scale (5 fixtures):</p>
+<p>Every divergence is a fixture pinned to <code>xfail(strict=True)</code> in
+<a href="https://github.com/jjviscomi/bqemulator/blob/main/tests/conformance/divergences.py"><code>divergences.py</code></a>
+with a rationale rooted in an ADR or
+<a href="../out-of-scope/">out-of-scope.md</a>. For the <strong>live list</strong> — which
+fixtures are pinned right now, with each rationale — see the XFAIL
+pin registry in the
+<a href="../compatibility-matrix/">compatibility matrix</a>; full root-cause
+analysis is in
+<a href="../../adr/0023-conformance-divergence-baseline/">ADR 0023</a>. The pins
+fall into the following categories.</p>
+<h3 id="spheroidal-vs-planar-geography-adr-0019">Spheroidal-vs-planar GEOGRAPHY (ADR 0019)<a class="headerlink" href="#spheroidal-vs-planar-geography-adr-0019" title="Permanent link">&para;</a></h3>
+<p>BigQuery's <code>GEOGRAPHY</code> is <strong>spheroidal</strong> — it uses S2's documented
+<code>kEarthRadiusMeters = 6371010.0</code>; DuckDB-spatial is <strong>planar</strong>
+(Cartesian). The emulator ships spherical-Earth helper rules
+(<code>StDistanceSpheroidalRule</code> / <code>StLengthSpheroidalRule</code> /
+<code>StAreaSpheroidalRule</code> / <code>StPerimeterSpheroidalRule</code> /
+<code>StDWithinSpheroidalRule</code>) that close the metric-returning surfaces,
+so the residual pins are the surfaces those helpers do <strong>not</strong> yet
+cover: <code>ST_BUFFER</code> geodesic-circle vertex-exactness, <code>ST_ASBINARY</code>'s
+ECEF→lng/lat round-trip, and the small-polygon <code>ST_CENTROID</code> /
+<code>ST_INTERSECTION</code> geodesic drift. Closing them would require shipping
+s2geometry or shapely + projection code. See
+<a href="../out-of-scope/#spheroidal-geometry-on-geography">out-of-scope.md#spheroidal-geometry-on-geography</a>.</p>
+<h3 id="hll-sketch-binary-format-adr-0024">HLL++ sketch binary format (ADR 0024)<a class="headerlink" href="#hll-sketch-binary-format-adr-0024" title="Permanent link">&para;</a></h3>
+<p><code>HLL_COUNT.INIT</code> and <code>HLL_COUNT.MERGE_PARTIAL</code> return a BYTES sketch
+in a HyperLogLog++ binary format documented only in the HLL++ paper,
+not in a wire-format specification. The cardinality user-facing
+semantic <em>is</em> preserved — the <code>EXTRACT</code>-of-<code>INIT</code> and <code>MERGE</code>-over-
+subquery patterns route through <code>COUNT(DISTINCT)</code>. The
+sketch-as-persistable-BYTES semantic is not. See
+<a href="../../adr/0024-hll-count-support-strategy/">ADR 0024</a> and
+<a href="../out-of-scope/#hll-sketch-binary-format-hll_countinit-merge_partial">out-of-scope.md#hll-sketch-binary-format-hll_countinit-merge_partial</a>.</p>
+<h3 id="locked-exclusion-divergences-out-of-scopemd">Locked-exclusion divergences (out-of-scope.md)<a class="headerlink" href="#locked-exclusion-divergences-out-of-scopemd" title="Permanent link">&para;</a></h3>
+<p>A few fixtures are pinned against permanent design decisions
+documented in <a href="../out-of-scope/">out-of-scope.md</a>, including:</p>
 <ul>
-<li><code>st_distance_continental</code>, <code>st_area_continental</code>,
-  <code>st_length_continental</code>, <code>st_perimeter_continental</code>,
-  <code>st_buffer_continental</code>.</li>
+<li><strong>BIGNUMERIC literals with ≥ 39 integer digits</strong> — DuckDB's widest
+  <code>DECIMAL</code> is <code>DECIMAL(38, s)</code>. See
+  <a href="../out-of-scope/#bignumeric-literals-with-39-integer-digits">out-of-scope.md#bignumeric-literals-with-39-integer-digits</a>.</li>
+<li><strong><code>INFORMATION_SCHEMA.ROW_ACCESS_POLICIES</code> visibility</strong> — real
+  BigQuery gates the view on <code>bigquery.rowAccessPolicies.list</code>; the
+  emulator does not enforce IAM. See
+  <a href="../out-of-scope/#iam-enforcement">out-of-scope.md#iam-enforcement</a>.</li>
+<li><strong><code>FORMAT_DATE %Y</code> year-padding for years &lt; 1000</strong> — DuckDB's POSIX
+  <code>strftime</code> zero-pads <code>%Y</code> where BigQuery does not. See
+  <a href="../out-of-scope/#format_date-y-year-padding-for-years-1000">out-of-scope.md#format_date-y-year-padding-for-years-1000</a>.</li>
+<li><strong>CTE self-join with window aggregate (TPC-DS Q47)</strong> — a SQLGlot
+  CTE-inlining shape DuckDB's binder rejects. See
+  <a href="../out-of-scope/#cte-self-join-with-window-aggregate-tpc-ds-q47">out-of-scope.md#cte-self-join-with-window-aggregate-tpc-ds-q47</a>.</li>
 </ul>
-<p>Small-scale geometric drift (3 fixtures):</p>
-<ul>
-<li><code>st_centroid_polygon</code> — planar centroid sits at exactly
-  <code>(2, 2)</code> for the unit-square test; the spheroidal centroid is
-  <code>(2.00000000000004, 2.00040218892024)</code>.</li>
-<li><code>st_intersection_polygons</code> — planar straight-edge intersection
-  vs spheroidal geodesic-edge intersection (bulges by ~1.2e-3
-  degrees).</li>
-<li><code>st_dwithin_no</code> — planar Euclidean distance over the
-  <code>(0, 0) ↔ (0, 90)</code> pair is 90 coordinate units where the
-  spheroidal distance is ~10⁷ metres; the 100-metre threshold
-  falls on the opposite side of each.</li>
-</ul>
-<p>GeoJSON / binary edge cases (3 fixtures):</p>
-<ul>
-<li><code>st_asgeojson_*</code> interpolation — BigQuery interpolates midpoints
-  along geodesic arcs on long edges where DuckDB-spatial does not.</li>
-<li>
-<p><code>st_asbinary_point</code> — BigQuery encodes <code>ST_GEOGPOINT(1, 1)</code> via
-  an ECEF→lng/lat round-trip that loses 1 ULP per axis.</p>
-</li>
-<li>
-<p><strong>Root cause</strong>: BigQuery's GEOGRAPHY is spheroidal (S2 sphere
-  with constant earth radius <code>kEarthRadiusMeters = 6371010.0</code>);
-  DuckDB-spatial is planar (Cartesian). At continental scales
-  the numeric results diverge by 0.1–10% depending on geometry;
-  at smaller scales the divergence shows up in <em>derived</em> shape
-  outputs (centroid offset, intersection bulge, distance
-  threshold flip).</p>
-</li>
-<li>
-<p><strong>Closure</strong>: would require shipping s2geometry or shapely +
-  projection code. Permanently out of scope for v1.0
-  (see <a href="../out-of-scope/#spheroidal-geometry-on-geography"><code>out-of-scope.md#spheroidal-geometry-on-geography</code></a>).</p>
-</li>
-</ul>
-<h3 id="adr-0024-hll-sketch-binary-format-2-fixtures-permanent-v10-divergence">ADR 0024 — HLL++ sketch binary format (2 fixtures, permanent v1.0 divergence)<a class="headerlink" href="#adr-0024-hll-sketch-binary-format-2-fixtures-permanent-v10-divergence" title="Permanent link">&para;</a></h3>
-<ul>
-<li><code>standard_functions/agg_hll_count_init_basic</code></li>
-<li>
-<p><code>standard_functions/agg_hll_count_merge_partial_basic</code></p>
-</li>
-<li>
-<p><strong>Root cause</strong>: BigQuery's <code>HLL_COUNT.INIT</code> /
-  <code>HLL_COUNT.MERGE_PARTIAL</code> return a BYTES sketch in a specific
-  HyperLogLog++ binary format documented only in the HLL++ paper —
-  not in a wire-format specification.</p>
-</li>
-<li>
-<p><strong>Closure</strong>: bit-exact reproduction would require test-driven
-  reverse-engineering of BigQuery's bucket-count selection,
-  Murmur3 hash variant, sparse/dense representation switch,
-  header framing, and bias-correction tables. The user-facing
-  cardinality semantic <em>is</em> preserved — the two sibling
-  EXTRACT/MERGE patterns pass via <code>COUNT(DISTINCT)</code>. See
-  <a href="../../adr/0024-hll-count-support-strategy/">ADR 0024</a> and
-  <a href="../out-of-scope/#hll-sketch-binary-format-hll_countinit-merge_partial"><code>out-of-scope.md</code></a>.</p>
-</li>
-</ul>
-<h3 id="out-of-scopemd-fixture-bearing-entries-2-fixtures"><code>out-of-scope.md</code> fixture-bearing entries (2 fixtures)<a class="headerlink" href="#out-of-scopemd-fixture-bearing-entries-2-fixtures" title="Permanent link">&para;</a></h3>
-<ul>
-<li><code>standard_functions/bound_bignumeric_max</code> — BigQuery's BIGNUMERIC
-  max value (<code>5.7896…e38</code>) has 39 integer digits; DuckDB's widest
-  DECIMAL is <code>DECIMAL(38, s)</code> — 38 total digits. Matching the
-  full BIGNUMERIC range would require bundling a wide-decimal
-  library or replacing DuckDB. See
-  <a href="../out-of-scope/#bignumeric-literals-with-39-integer-digits"><code>out-of-scope.md#bignumeric-literals-with-39-integer-digits</code></a>.</li>
-<li><code>row_access/caller_information_schema_visibility</code> — BigQuery's
-  <code>INFORMATION_SCHEMA.ROW_ACCESS_POLICIES</code> requires
-  <code>bigquery.rowAccessPolicies.list</code> IAM permission; the emulator
-  does not enforce IAM. See
-  <a href="../out-of-scope/#iam-enforcement"><code>out-of-scope.md#iam-enforcement</code></a>.</li>
-</ul>
-<h2 id="2-locked-v10-exclusions-out-of-scopemd">2. Locked v1.0 exclusions (<code>out-of-scope.md</code>)<a class="headerlink" href="#2-locked-v10-exclusions-out-of-scopemd" title="Permanent link">&para;</a></h2>
-<p>These are explicitly <em>not</em> implemented and not planned for v1.0.
-Each has a documented rationale and (where applicable) a
-documented workaround.</p>
-<table>
-<thead>
-<tr>
-<th>Feature</th>
-<th>Reason</th>
-<th>Workaround</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><strong>BigQuery ML</strong> (<code>CREATE MODEL</code>, <code>ML.PREDICT</code>, <code>ML.EVALUATE</code>, <code>ML.FORECAST</code>, <code>ML.GENERATE_*</code>, all model types)</td>
-<td>Comparable in size to the rest of the emulator. See <a href="../../adr/0012-bqml-out-of-scope/">ADR 0012</a>. Only Models <em>resource CRUD</em> (metadata) is supported.</td>
-<td>Run ML training/inference outside the emulator.</td>
-</tr>
-<tr>
-<td><strong>BI Engine</strong></td>
-<td>Performance optimisation with no observable semantic effect; irrelevant for a local single-process emulator.</td>
-<td>N/A — queries return the same results, just without the in-memory acceleration tier.</td>
-</tr>
-<tr>
-<td><strong>Reservations / assignments / capacity commitments</strong></td>
-<td>Billing-plane concepts; emulator has no billing.</td>
-<td>N/A.</td>
-</tr>
-<tr>
-<td><strong>Slot and byte-billing simulation</strong></td>
-<td>No local analog.</td>
-<td><code>dryRun</code> requests still return a best-effort <code>totalBytesProcessed</code> estimate from catalog statistics.</td>
-</tr>
-<tr>
-<td><strong>Data Transfer Service</strong></td>
-<td>Dozens of separate connector integrations.</td>
-<td>Use external schedulers.</td>
-</tr>
-<tr>
-<td><strong>Scheduled queries</strong></td>
-<td>Scheduling plane, not SQL semantics.</td>
-<td>Use local cron / CI scheduler against the emulator.</td>
-</tr>
-<tr>
-<td><strong>Cloud Logging / Cloud Monitoring integration</strong></td>
-<td>Emulator exposes its own Prometheus + OpenTelemetry.</td>
-<td>Wire those to your own observability stack.</td>
-</tr>
-<tr>
-<td><strong>Cross-region replication</strong></td>
-<td>No geographic model.</td>
-<td>N/A.</td>
-</tr>
-<tr>
-<td><strong>IAM enforcement</strong></td>
-<td>Emulator is an integration-test target, not an authorisation gateway. Policies are <em>stored and returned</em> via REST so client code that round-trips them works; they are <em>not enforced</em>. Row-access policies, by contrast, ARE enforced.</td>
-<td>Test enforcement against real BigQuery in a separate stage.</td>
-</tr>
-<tr>
-<td><strong>Durable Storage Write API stream state</strong></td>
-<td>Streams are in-memory only. Restarting the emulator drops in-flight PENDING/BUFFERED rows. See <a href="../../adr/0013-write-api-strategies/">ADR 0013</a>.</td>
-<td>Retry-with-offset on COMMITTED streams within a single process lifetime.</td>
-</tr>
-<tr>
-<td><strong>Storage Write API <code>updated_schema</code> propagation</strong></td>
-<td>Emulator doesn't yet support ALTER TABLE on active tables across concurrent writers.</td>
-<td>Use writer-supplied <code>writer_schema</code> as authoritative.</td>
-</tr>
-<tr>
-<td><strong>Storage Write API <code>trace_id</code> and <code>missing_value_interpretations</code></strong></td>
-<td>Diagnostic-only fields; no row-persistence effect.</td>
-<td>N/A. Could be revisited if community asks.</td>
-</tr>
-<tr>
-<td><strong>Online backup of a running emulator</strong></td>
-<td>Requires WAL-aware filesystem or a write surface on the admin router. Both are larger than the v1.0 charter. See <a href="../../adr/0020-admin-import-export/">ADR 0020</a>.</td>
-<td>Run on a CoW filesystem (btrfs/ZFS/Docker volume snapshot) and snapshot the volume; or stop → backup → restore.</td>
-</tr>
-<tr>
-<td><strong><code>PersistenceMode.IMPORT</code> enum value</strong></td>
-<td>Live schema sync would double the credential surface and add an ongoing dependency on the real BigQuery REST API — incompatible with offline test environments.</td>
-<td>One-shot <code>bqemulator import --from-project=…</code> then <code>persistence_mode=PERSISTENT</code>.</td>
-</tr>
-<tr>
-<td><strong>BIGNUMERIC literals with ≥ 39 integer digits</strong></td>
-<td>DuckDB's widest <code>DECIMAL</code> is <code>DECIMAL(38, s)</code> — 38 total digits, where BigQuery's BIGNUMERIC holds 38 integer + 38 fractional. Matching the full range would require bundling a wide-decimal library or replacing DuckDB.</td>
-<td>Stay within DuckDB's <code>DECIMAL(38, s)</code> range. The <code>standard_functions/bound_bignumeric_max</code> conformance fixture is the only entry that exercises this corner.</td>
-</tr>
-<tr>
-<td><strong>Spheroidal geometry on GEOGRAPHY</strong></td>
-<td>DuckDB-spatial is planar. Spheroidal correctness would require s2geometry or shapely + projection code.</td>
-<td>Validate spatial <em>shape</em> in CI; validate spatial <em>correctness</em> against real BQ in a separate stage.</td>
-</tr>
-</tbody>
-</table>
+<p>Each pin's rationale string in <code>divergences.py</code> links to its
+out-of-scope.md section.</p>
+<h2 id="2-locked-v10-exclusions">2. Locked v1.0 exclusions<a class="headerlink" href="#2-locked-v10-exclusions" title="Permanent link">&para;</a></h2>
+<p>Features explicitly <em>not</em> implemented and not planned for v1.0 — each
+with a documented rationale and (where applicable) a workaround — are
+catalogued in <strong><a href="../out-of-scope/">out-of-scope.md</a></strong>, which is the
+single source of truth for this category. This page does not duplicate
+those entries.</p>
+<p>The excluded surfaces span BigQuery ML, BI Engine,
+reservations / billing simulation, the Data Transfer Service,
+scheduled queries, Cloud Logging / Monitoring integration,
+cross-region replication, IAM enforcement, durable Storage Write API
+and upload-session state, online backup of a running emulator, legacy
+SQL (beyond the narrow type-cast rewriter), ORC <em>extract</em>, the
+<code>INFORMATION_SCHEMA.JOBS*</code> family, Google Cloud Storage API emulation,
+and native Windows containers. See
+<a href="../out-of-scope/">out-of-scope.md</a> for the rationale and workaround on
+each.</p>
 <h2 id="3-conformance-coverage-gaps-works-but-not-in-the-corpus">3. Conformance-coverage gaps (works, but not in the corpus)<a class="headerlink" href="#3-conformance-coverage-gaps-works-but-not-in-the-corpus" title="Permanent link">&para;</a></h2>
 <p>The following emulator surfaces work — exercised by unit /
 property / integration / E2E tiers — but the conformance corpus
 does not yet test them. This is not "the emulator doesn't support
 it"; this is "we don't have a recorded-against-real-BQ baseline
-for it". Adding these would extend the corpus beyond pure SQL.</p>
+for it". Adding these would extend the corpus beyond pure SQL. This
+table is maintained here (it has no authoritative generator).</p>
 <table>
 <thead>
 <tr>
@@ -5635,9 +5466,9 @@ for it". Adding these would extend the corpus beyond pure SQL.</p>
 <td>Larger scripting surface; underrepresented in corpus.</td>
 </tr>
 <tr>
-<td><strong><code>dryRun</code> cost estimation</strong></td>
+<td><strong><code>dryRun</code> validation</strong></td>
 <td>Integration</td>
-<td>Best-effort estimate diverges from real BQ by design.</td>
+<td><code>statistics.query.totalBytesProcessed</code> always returns <code>"0"</code> (a "validation passed" marker, not a cost estimate — the emulator has no byte-billing model; see <a href="../out-of-scope/#slot-and-byte-billing-simulation">out-of-scope.md#slot-and-byte-billing-simulation</a>).</td>
 </tr>
 <tr>
 <td><strong>Job lifecycle</strong> (cancel, list, get)</td>
@@ -5666,27 +5497,26 @@ for it". Adding these would extend the corpus beyond pure SQL.</p>
 </tr>
 <tr>
 <td>How many divergences are documented?</td>
-<td><strong>15 fixtures total</strong> — 11 ADR 0019 spheroidal + 2 ADR 0024 HLL++ + 2 <code>out-of-scope.md</code> fixture-bearing entries. Each is rooted in an ADR-anchored rationale.</td>
+<td>See the live count in the <a href="../compatibility-matrix/">compatibility matrix</a> XFAIL pin registry. They fall into three categories: ADR 0019 spheroidal GEOGRAPHY, ADR 0024 HLL++ sketch format, and locked-exclusion fixtures (<code>out-of-scope.md</code>). Each is rooted in an ADR-anchored rationale.</td>
 </tr>
 <tr>
 <td>How many features are <em>permanently</em> excluded from v1.0?</td>
-<td><strong>19 locked exclusions</strong> in <code>out-of-scope.md</code> (17 no-fixture + 2 fixture-bearing).</td>
+<td>See <a href="../out-of-scope/">out-of-scope.md</a> — the authoritative catalogue of locked exclusions.</td>
 </tr>
 <tr>
 <td>How many divergences have a clear closure path?</td>
-<td><strong>0</strong> — every remaining divergence is a permanent v1.0 entry.</td>
+<td><strong>0</strong> — every remaining divergence is a permanent v1.0 design decision.</td>
 </tr>
 <tr>
 <td>Are there <em>undocumented</em> gaps?</td>
-<td>The conformance corpus surfaces what it can see — it tests 1141 SQL + 48 HTTP + 26 gRPC fixtures plus 15 documented divergences. Untested-in-conformance surfaces (Section 3) work in the emulator and pass other test tiers; they have not been recorded against real BigQuery, so subtle wire-format or value drift in those surfaces would not be caught by conformance today.</td>
+<td>The conformance corpus surfaces what it can see — the live fixture and XFAIL totals are in the <a href="../compatibility-matrix/">compatibility matrix</a>. Untested-in-conformance surfaces (§3) work in the emulator and pass other test tiers; they have not been recorded against real BigQuery, so subtle wire-format or value drift in those surfaces would not be caught by conformance today.</td>
 </tr>
 </tbody>
 </table>
-<p>The corpus and this gap analysis are <em>living documents</em>. The
-residual <strong>15 entries</strong> are a stable mix of permanent design
-divergences — 11 ADR 0019 spheroidal, 2 ADR 0024 HLL++, 1 IAM-
-fundamental, 1 BIGNUMERIC ≥ 39 digits. No closure-eligible
-divergence remains for v1.0.</p>
+<p>The corpus and this gap analysis are <em>living documents</em>. The residual
+divergences are a stable set of permanent design decisions — spheroidal
+GEOGRAPHY, HLL++ sketch format, and a handful of locked-exclusion
+fixtures — with no closure-eligible divergence remaining for v1.0.</p>
 
 
 
