@@ -1190,25 +1190,45 @@ async def _maybe_run_versioning_ddl(
 # * The policy id and table ref may be backtick-quoted (whole or
 #   per-component) and the table ref may carry hyphenated project ids;
 #   ``_resolve_table_parts`` strips backticks per component.
+# * Callers pass the SQL through ``_strip_trailing_semicolon`` first, so
+#   the patterns anchor directly on ``)`` / end-of-string. The grantee
+#   and filter captures are *greedy* and have no adjacent ``\s*`` runs:
+#   two unbounded whitespace-matching quantifiers over the same input
+#   (the old ``.+?\s*\)\s*;?\s*\Z`` tail) is the polynomial-backtracking
+#   shape CodeQL flags as ReDoS. ``.+\)`` anchored on ``\Z`` is linear —
+#   only the final ``)`` can satisfy ``\)\Z`` — and inner whitespace is
+#   trimmed by the handler, not the regex.
 _RAP_CREATE_RE = re.compile(
     r"""
-    \s*CREATE\s+(?:OR\s+REPLACE\s+)?ROW\s+ACCESS\s+POLICY\s+
+    CREATE\s+(?:OR\s+REPLACE\s+)?ROW\s+ACCESS\s+POLICY\s+
     (?:IF\s+NOT\s+EXISTS\s+)?
     `?(?P<policy>[A-Za-z_][A-Za-z0-9_]*)`?\s+
     ON\s+(?P<table>[`\w.-]+)\s+
-    (?:GRANT\s+TO\s*\(\s*(?P<grantees>[^)]+?)\s*\)\s+)?
-    FILTER\s+USING\s*\(\s*(?P<filter>.+?)\s*\)\s*;?\s*\Z
+    (?:GRANT\s+TO\s*\((?P<grantees>[^)]+)\)\s+)?
+    FILTER\s+USING\s*\((?P<filter>.+)\)
+    \Z
     """,
     re.IGNORECASE | re.VERBOSE | re.DOTALL,
 )
 _RAP_DROP_RE = re.compile(
     r"""
-    \s*DROP\s+ROW\s+ACCESS\s+POLICY\s+(?:IF\s+EXISTS\s+)?
+    DROP\s+ROW\s+ACCESS\s+POLICY\s+(?:IF\s+EXISTS\s+)?
     `?(?P<policy>[A-Za-z_][A-Za-z0-9_]*)`?\s+
-    ON\s+(?P<table>[`\w.-]+)\s*;?\s*\Z
+    ON\s+(?P<table>[`\w.-]+)
+    \Z
     """,
     re.IGNORECASE | re.VERBOSE,
 )
+
+
+def _strip_trailing_semicolon(sql: str) -> str:
+    """Trim surrounding whitespace and a single trailing ``;`` from ``sql``.
+
+    The RAP DDL detectors anchor on ``)`` / end-of-string with no
+    optional trailing-token quantifiers, so the statement terminator is
+    normalised here rather than in the patterns (see the note above).
+    """
+    return sql.strip().removesuffix(";").strip()
 
 
 _TABLE_REF_THREE_PART = 3
@@ -1247,8 +1267,9 @@ def _maybe_run_row_access_ddl(
 
     and the matching ``DROP ROW ACCESS POLICY <id> ON <table>``.
     """
-    create_match = _RAP_CREATE_RE.match(bq_sql)
-    drop_match = _RAP_DROP_RE.match(bq_sql)
+    sql = _strip_trailing_semicolon(bq_sql)
+    create_match = _RAP_CREATE_RE.match(sql)
+    drop_match = _RAP_DROP_RE.match(sql)
     if create_match is None and drop_match is None:
         return None
     if create_match is not None:
@@ -1258,9 +1279,7 @@ def _maybe_run_row_access_ddl(
         )
         grantees_raw = create_match.group("grantees")
         if grantees_raw:
-            grantees = tuple(
-                g.strip().strip("'\"") for g in grantees_raw.split(",") if g.strip()
-            )
+            grantees = tuple(g.strip().strip("'\"") for g in grantees_raw.split(",") if g.strip())
         else:
             # BigQuery applies a policy created without a GRANT TO clause
             # to every principal that can query the table. Default to
@@ -1492,9 +1511,10 @@ def classify_statement_type(bq_sql: str) -> str:
     # grammar — it falls back to a generic ``Command`` node — so classify
     # it via the same regexes the executor uses to dispatch the DDL,
     # before the parse-based path runs.
-    if _RAP_CREATE_RE.match(bq_sql):
+    rap_sql = _strip_trailing_semicolon(bq_sql)
+    if _RAP_CREATE_RE.match(rap_sql):
         return "CREATE_ROW_ACCESS_POLICY"
-    if _RAP_DROP_RE.match(bq_sql):
+    if _RAP_DROP_RE.match(rap_sql):
         return "DROP_ROW_ACCESS_POLICY"
 
     try:

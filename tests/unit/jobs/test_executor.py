@@ -258,6 +258,17 @@ class TestClassifyRowAccessPolicy:
             == "DROP_ROW_ACCESS_POLICY"
         )
 
+    def test_create_rap_trailing_semicolon_and_whitespace(self) -> None:
+        """The statement terminator + surrounding whitespace are normalised."""
+        from bqemulator.jobs.executor import classify_statement_type
+
+        assert (
+            classify_statement_type(
+                "  CREATE ROW ACCESS POLICY eu ON proj.ds.tbl FILTER USING (region = 'EU') ;  ",
+            )
+            == "CREATE_ROW_ACCESS_POLICY"
+        )
+
 
 class TestResolveTableParts:
     """Backticked-or-bare table reference parsing."""
