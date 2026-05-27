@@ -46,7 +46,7 @@ Three use cases, one binary:
 - 🧠 **Features `goccy/bigquery-emulator` doesn't have** — JavaScript UDFs (embedded V8 via `mini-racer`), procedural scripting (`DECLARE` / `BEGIN…END` / `IF` / `LOOP` / `EXCEPTION` / `BEGIN TRANSACTION`), time travel (`FOR SYSTEM_TIME AS OF`), table snapshots, table clones, materialized views with refresh dispatch, GEOGRAPHY (planar via DuckDB-spatial + S2 helpers), RANGE, INTERVAL, authorized views, row-access policies, `INFORMATION_SCHEMA`.
 - 🔌 **Five-client e2e matrix** — every release is exercised against the official Python, Node.js, Go, and Java BigQuery client libraries plus Google's `bq` CLI in a live Docker container.
 - 🧪 **7-tier test pyramid** — unit + property + integration + conformance + e2e + perf + chaos, plus mutation / fuzz / differential siblings. Combined coverage is gated at ≥90% line + branch.
-- 📐 **Conformance corpus** — 1,141 fixtures recorded against real BigQuery. Drift between the emulator and the real service surfaces as a failing test; documented divergences are pinned with ADR references.
+- 📐 **Conformance corpus** — 1,244 fixtures recorded against real BigQuery. Drift between the emulator and the real service surfaces as a failing test; documented divergences are pinned with ADR references.
 - 🐍 **Native pytest plugin** — `pip install bqemulator` registers a pytest plugin; the `bqemu_server` fixture starts an ephemeral in-process emulator on random free ports and sets `BIGQUERY_EMULATOR_HOST`. No `conftest.py` wiring required.
 - 🐳 **Multi-arch container** — `ghcr.io/jjviscomi/bqemulator` builds for `linux/amd64` + `linux/arm64`, with cosign keyless signatures via GitHub OIDC.
 - 🔭 **Production-grade observability** — `structlog` JSON logs, OpenTelemetry tracing (configurable OTLP exporter), Prometheus metrics endpoint.
@@ -223,17 +223,17 @@ deprecations live ≥2 MINOR or 6 months. The [compatibility matrix](https://jjv
 | BigQuery ML (`CREATE MODEL`, `ML.PREDICT`, …) | ❌ Out of scope — see [`docs/reference/out-of-scope.md`](docs/reference/out-of-scope.md) |
 | BI Engine / slot reservations / Data Transfer Service / scheduled queries | ❌ Out of scope |
 
-**Conformance corpus depth** (snapshot at v1.0 prep, 2026-05-21):
+**Conformance corpus depth** (the [conformance coverage matrix](https://jjviscomi.github.io/bqemulator/latest/reference/conformance-coverage-matrix/) carries the live, auto-generated breakdown):
 
 | Status | Surface items | % of deterministic surface |
 |---|---|---|
-| 🟢🟢 Deep (≥6 fixtures) | 96 | 23.8% |
-| 🟢 Covered (3–5 fixtures) | 64 | 15.9% |
-| 🟡 Sampled (1–2 fixtures) | 236 | 58.6% |
-| 🔴 Uncovered (0 fixtures) | 7 | 1.7% |
-| **Total** | **403** | 100% |
+| 🟢🟢 Deep (≥6 fixtures) | 98 | 24.3% |
+| 🟢 Covered (3–5 fixtures) | 69 | 17.1% |
+| 🟡 Sampled (1–2 fixtures) | 235 | 58.3% |
+| 🔴 Uncovered (0 fixtures) | 1 | 0.2% |
+| **Total** | **403** | 100.0% |
 
-Plus **9 non-deterministic items** (`RAND`, `CURRENT_*`, `GENERATE_UUID`, `TABLESAMPLE`, `FOR SYSTEM_TIME AS OF <expression>`) that are excluded from the conformance corpus by [ADR 0022](docs/adr/0022-conformance-corpus-design.md) and exercised in unit / property / integration tiers instead — bringing the full inventory to **412 surface items across 20 categories**, backed by **1,141 recorded fixtures** under `tests/conformance/sql_corpus/`.
+Plus **10 non-deterministic items** (`RAND`, `CURRENT_*`, `SESSION_USER`, `GENERATE_UUID`, `TABLESAMPLE`, `FOR SYSTEM_TIME AS OF <expression>`) that are excluded from the conformance corpus by [ADR 0022](docs/adr/0022-conformance-corpus-design.md) and exercised in unit / property / integration tiers instead — bringing the full inventory to **413 surface items across 20 categories**, backed by a **1,244-fixture conformance corpus** (1,170 SQL + 48 HTTP + 26 gRPC) under `tests/conformance/`.
 
 We follow a **no-deferral principle**: features either ship complete or are excluded with documented rationale. There is no "TODO for v1.1." Scope boundaries are catalogued in [`docs/reference/out-of-scope.md`](docs/reference/out-of-scope.md).
 
