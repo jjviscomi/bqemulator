@@ -174,11 +174,100 @@ class TestRowAccessPolicyDdlDetection:
         assert match is not None
         assert match.group("policy") == "p1"
 
+    def test_create_rap_if_not_exists_matches(self) -> None:
+        from bqemulator.jobs.executor import _RAP_CREATE_RE
+
+        match = _RAP_CREATE_RE.match(
+            "CREATE ROW ACCESS POLICY IF NOT EXISTS eu ON proj.ds.tbl "
+            "GRANT TO ('user:eu@example.com') FILTER USING (region = 'EU')",
+        )
+        assert match is not None
+        assert match.group("policy") == "eu"
+
+    def test_create_rap_filter_only_matches_with_null_grantees(self) -> None:
+        """No ``GRANT TO`` clause → the ``grantees`` group is ``None``."""
+        from bqemulator.jobs.executor import _RAP_CREATE_RE
+
+        match = _RAP_CREATE_RE.match(
+            "CREATE ROW ACCESS POLICY eu ON proj.ds.tbl FILTER USING (region = 'EU')",
+        )
+        assert match is not None
+        assert match.group("policy") == "eu"
+        assert match.group("grantees") is None
+        assert match.group("filter") == "region = 'EU'"
+
+    def test_create_rap_per_component_backticks_match(self) -> None:
+        from bqemulator.jobs.executor import _RAP_CREATE_RE
+
+        match = _RAP_CREATE_RE.match(
+            "CREATE ROW ACCESS POLICY `eu` ON `proj`.`ds`.`tbl` "
+            "GRANT TO ('user:eu@example.com') FILTER USING (region = 'EU')",
+        )
+        assert match is not None
+        assert match.group("policy") == "eu"
+        assert match.group("table") == "`proj`.`ds`.`tbl`"
+
+    def test_create_rap_hyphenated_project_matches(self) -> None:
+        from bqemulator.jobs.executor import _RAP_CREATE_RE
+
+        match = _RAP_CREATE_RE.match(
+            "CREATE ROW ACCESS POLICY eu ON `my-proj.ds.tbl` "
+            "GRANT TO ('user:eu@example.com') FILTER USING (region = 'EU')",
+        )
+        assert match is not None
+        assert match.group("table") == "`my-proj.ds.tbl`"
+
     def test_unrelated_ddl_does_not_match(self) -> None:
         from bqemulator.jobs.executor import _RAP_CREATE_RE, _RAP_DROP_RE
 
         assert _RAP_CREATE_RE.match("CREATE TABLE t (id INT64)") is None
         assert _RAP_DROP_RE.match("DROP TABLE t") is None
+
+
+class TestClassifyRowAccessPolicy:
+    """``classify_statement_type`` recognises RAP DDL via the regexes."""
+
+    def test_create_rap_classifies(self) -> None:
+        from bqemulator.jobs.executor import classify_statement_type
+
+        assert (
+            classify_statement_type(
+                "CREATE ROW ACCESS POLICY eu ON proj.ds.tbl "
+                "GRANT TO ('user:eu@example.com') FILTER USING (region = 'EU')",
+            )
+            == "CREATE_ROW_ACCESS_POLICY"
+        )
+
+    def test_create_rap_if_not_exists_classifies(self) -> None:
+        from bqemulator.jobs.executor import classify_statement_type
+
+        assert (
+            classify_statement_type(
+                "CREATE ROW ACCESS POLICY IF NOT EXISTS eu ON proj.ds.tbl "
+                "FILTER USING (region = 'EU')",
+            )
+            == "CREATE_ROW_ACCESS_POLICY"
+        )
+
+    def test_drop_rap_classifies_as_drop(self) -> None:
+        """Regression: DROP must not be mislabelled ``CREATE_ROW_ACCESS_POLICY``."""
+        from bqemulator.jobs.executor import classify_statement_type
+
+        assert (
+            classify_statement_type("DROP ROW ACCESS POLICY p1 ON proj.ds.tbl")
+            == "DROP_ROW_ACCESS_POLICY"
+        )
+
+    def test_create_rap_trailing_semicolon_and_whitespace(self) -> None:
+        """The statement terminator + surrounding whitespace are normalised."""
+        from bqemulator.jobs.executor import classify_statement_type
+
+        assert (
+            classify_statement_type(
+                "  CREATE ROW ACCESS POLICY eu ON proj.ds.tbl FILTER USING (region = 'EU') ;  ",
+            )
+            == "CREATE_ROW_ACCESS_POLICY"
+        )
 
 
 class TestResolveTableParts:

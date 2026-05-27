@@ -38,9 +38,32 @@ protected table return zero rows.
 
 ## Creating a policy
 
-There is no DDL for row access policies in BigQuery's GoogleSQL
-surface yet — they are managed through the REST API. The emulator
-mirrors the same shape (`/rowAccessPolicies` resource).
+A policy can be created two ways. Both persist to the same catalog
+and are enforced identically.
+
+### SQL DDL (`bq query`)
+
+BigQuery's GoogleSQL `CREATE ROW ACCESS POLICY` statement, submitted
+through `jobs.query` or `jobs.insert`:
+
+```sql
+CREATE ROW ACCESS POLICY eu_only
+  ON sales.orders
+  GRANT TO ('user:eu-analyst@example.com')
+  FILTER USING (region = 'EU');
+```
+
+`CREATE OR REPLACE` and `IF NOT EXISTS` are accepted. Omitting the
+`GRANT TO` clause applies the policy to every authenticated caller
+(BigQuery's grantee-less semantic). Drop a policy with
+`DROP ROW ACCESS POLICY [IF EXISTS] eu_only ON sales.orders`. The
+target table must exist — a table created entirely through SQL
+(`CREATE SCHEMA sales; CREATE TABLE sales.orders …`) is registered in
+the catalog automatically, so it is a valid policy target.
+
+### REST resource
+
+The `/rowAccessPolicies` resource mirrors the SDK shape:
 
 ```bash
 curl -X POST \
