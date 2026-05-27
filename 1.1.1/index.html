@@ -5178,7 +5178,7 @@
 point the official Google Cloud client libraries at it.</p>
 <div class="admonition note">
 <p class="admonition-title">Status</p>
-<p><strong>v1.0.1</strong> — production-stable. SemVer applies: breaking changes
+<p><strong>v1.1.1</strong> — production-stable. SemVer applies: breaking changes
 ship only in MAJOR, preceded by ≥1 MINOR with deprecation
 warnings; deprecated APIs remain for ≥2 MINOR or 6 months. See
 the <a href="reference/compatibility-matrix/">compatibility matrix</a> for
@@ -5189,7 +5189,8 @@ for what's coming.</p>
 <p>BigQuery tests against real cloud are slow, expensive, and require
 network. Mocking the client library misses SQL-dialect mistakes. The
 existing <a href="https://github.com/goccy/bigquery-emulator">goccy/bigquery-emulator</a>
-is Go + SQLite + ZetaSQL, slow to compile, and has significant SQL gaps.</p>
+provided a lot of inspiration for this project and how we could approach
+the problem differently.</p>
 <p>bqemulator is:</p>
 <ul>
 <li><strong>Python</strong> — <code>pip install bqemulator</code> installs prebuilt wheels; no native
