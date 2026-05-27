@@ -462,3 +462,111 @@ async def test_bare_select_session_user_returns_caller_email(
         caller="user:claire@example.com",
     )
     assert res["rows"][0]["f"][0]["v"] == "claire@example.com"
+
+
+# ---------------------------------------------------------------------------
+# RAP created via SQL DDL (``CREATE ROW ACCESS POLICY``) rather than the
+# REST ``rowAccessPolicies`` resource. This is the ``bq query`` path and was
+# silently failing for several syntax forms + for SQL-created tables.
+# ---------------------------------------------------------------------------
+
+
+async def _query(c: httpx.AsyncClient, sql: str, *, caller: str | None = None) -> dict:
+    """POST jobs.query, returning the parsed body (no raise_for_status).
+
+    DDL like ``CREATE ROW ACCESS POLICY`` returns ``jobComplete`` with a
+    possible ``errors`` array rather than a non-2xx status, so callers
+    assert on the body.
+    """
+    headers = {"X-Bqemu-Caller": caller} if caller else {}
+    r = await c.post(
+        "/bigquery/v2/projects/p/queries",
+        json={"query": sql, "useLegacySql": False},
+        headers=headers,
+    )
+    return r.json()
+
+
+@pytest.mark.asyncio
+async def test_create_rap_via_sql_enforced(client: httpx.AsyncClient) -> None:
+    """``CREATE ROW ACCESS POLICY`` via jobs.query persists + enforces."""
+    body = await _query(
+        client,
+        "CREATE ROW ACCESS POLICY eu_sql ON ds.orders "
+        "GRANT TO ('user:eu@example.com') FILTER USING (region = 'EU')",
+    )
+    assert body.get("errors") is None
+    assert body["statementType"] == "CREATE_ROW_ACCESS_POLICY"
+    res = await _run(client, "SELECT id FROM ds.orders ORDER BY id", caller="user:eu@example.com")
+    assert [int(r["f"][0]["v"]) for r in res["rows"]] == [1, 2]
+
+
+@pytest.mark.asyncio
+async def test_create_rap_via_sql_if_not_exists(client: httpx.AsyncClient) -> None:
+    """The ``IF NOT EXISTS`` form parses, persists, and reports its type."""
+    body = await _query(
+        client,
+        "CREATE ROW ACCESS POLICY IF NOT EXISTS eu2 ON ds.orders "
+        "GRANT TO ('user:eu@example.com') FILTER USING (region = 'EU')",
+    )
+    assert body.get("errors") is None
+    assert body["statementType"] == "CREATE_ROW_ACCESS_POLICY"
+
+
+@pytest.mark.asyncio
+async def test_create_rap_via_sql_filter_only(client: httpx.AsyncClient) -> None:
+    """A policy without ``GRANT TO`` applies to authenticated callers."""
+    body = await _query(
+        client,
+        "CREATE ROW ACCESS POLICY any_eu ON ds.orders FILTER USING (region = 'EU')",
+    )
+    assert body.get("errors") is None
+    assert body["statementType"] == "CREATE_ROW_ACCESS_POLICY"
+    res = await _run(
+        client,
+        "SELECT id FROM ds.orders ORDER BY id",
+        caller="user:anyone@example.com",
+    )
+    assert [int(r["f"][0]["v"]) for r in res["rows"]] == [1, 2]
+
+
+@pytest.mark.asyncio
+async def test_drop_rap_via_sql_reports_drop_type(client: httpx.AsyncClient) -> None:
+    """Regression: DROP must report ``DROP_ROW_ACCESS_POLICY``, not CREATE."""
+    await _query(
+        client,
+        "CREATE ROW ACCESS POLICY tmp ON ds.orders "
+        "GRANT TO ('user:eu@example.com') FILTER USING (region = 'EU')",
+    )
+    body = await _query(client, "DROP ROW ACCESS POLICY tmp ON ds.orders")
+    assert body.get("errors") is None
+    assert body["statementType"] == "DROP_ROW_ACCESS_POLICY"
+
+
+@pytest.mark.asyncio
+async def test_create_rap_on_sql_created_schema_table(client: httpx.AsyncClient) -> None:
+    """A table created via SQL ``CREATE SCHEMA`` + ``CREATE TABLE`` is a valid RAP target.
+
+    Reproduces the catalog ``TableMeta`` gap: before the fix, the table
+    lived in DuckDB but had no catalog metadata (``CREATE SCHEMA`` never
+    registered a dataset), so RAP creation failed with ``Not found:
+    table`` despite the table existing.
+    """
+    assert (await _query(client, "CREATE SCHEMA sqlds")).get("errors") is None
+    assert (
+        await _query(
+            client,
+            "CREATE TABLE sqlds.events AS SELECT 1 AS id, 'EU' AS region",
+        )
+    ).get("errors") is None
+    body = await _query(
+        client,
+        "CREATE ROW ACCESS POLICY eu ON sqlds.events "
+        "GRANT TO ('user:eu@example.com') FILTER USING (region = 'EU')",
+    )
+    assert body.get("errors") is None
+    assert body["statementType"] == "CREATE_ROW_ACCESS_POLICY"
+    # The SQL-created schema + table are now catalog-visible.
+    r = await client.get("/bigquery/v2/projects/p/datasets/sqlds/tables")
+    assert r.status_code == 200
+    assert [t["tableReference"]["tableId"] for t in r.json().get("tables", [])] == ["events"]

@@ -11,7 +11,11 @@ from typing import TYPE_CHECKING, Any
 
 import pyarrow as pa
 
-from bqemulator.catalog.ddl_sync import sync_created_table, sync_created_view
+from bqemulator.catalog.ddl_sync import (
+    sync_created_schema,
+    sync_created_table,
+    sync_created_view,
+)
 from bqemulator.catalog.etag import generate_etag
 from bqemulator.catalog.models import JobMeta
 from bqemulator.domain.errors import (
@@ -313,7 +317,12 @@ async def execute_query_job(
                 configuration={"query": {"query": bq_sql}},
                 statistics=_build_query_statistics(
                     total_rows=0,
-                    statement_type=statement_type or "CREATE_ROW_ACCESS_POLICY",
+                    # ``classify_statement_type`` recognises both the
+                    # CREATE and DROP RAP forms via the same regexes the
+                    # handler dispatched on, so this is the correct type
+                    # for either branch (a bare hardcoded
+                    # ``CREATE_ROW_ACCESS_POLICY`` would mislabel DROPs).
+                    statement_type=statement_type,
                     num_dml_affected_rows=None,
                 ),
                 creation_time=now,
@@ -367,7 +376,11 @@ async def execute_query_job(
         # outputs in the catalog so downstream lookups (versioning
         # managers, INFORMATION_SCHEMA) find them. MATERIALIZED VIEW,
         # CLONE, and SNAPSHOT forms route through dedicated managers
-        # and are not synced here.
+        # and are not synced here. ``CREATE SCHEMA`` is synced first so a
+        # table created in a SQL-only dataset finds its dataset already
+        # registered (``sync_created_table`` also auto-registers a
+        # missing dataset as a fallback).
+        sync_created_schema(bq_sql, project_id, ctx)
         sync_created_table(bq_sql, project_id, ctx)
         # ADR 0018 (revised 2026-05-19) — register plain ``CREATE
         # [OR REPLACE] VIEW`` outputs in the catalog so the row-access
@@ -1162,12 +1175,28 @@ async def _maybe_run_versioning_ddl(
     return pa.table({})
 
 
+# BigQuery ``CREATE ROW ACCESS POLICY`` grammar:
+#
+#     CREATE [OR REPLACE] ROW ACCESS POLICY [IF NOT EXISTS] <policy>
+#       ON <table>
+#       [GRANT TO (<grantee_list>)]
+#       FILTER USING (<bool_expr>);
+#
+# Pattern notes:
+# * ``IF NOT EXISTS`` is optional (mirrors the DROP form's ``IF EXISTS``).
+# * ``GRANT TO`` is optional — BigQuery applies a grantee-less policy to
+#   every principal that can query the table; the handler defaults the
+#   grantee list accordingly.
+# * The policy id and table ref may be backtick-quoted (whole or
+#   per-component) and the table ref may carry hyphenated project ids;
+#   ``_resolve_table_parts`` strips backticks per component.
 _RAP_CREATE_RE = re.compile(
     r"""
     \s*CREATE\s+(?:OR\s+REPLACE\s+)?ROW\s+ACCESS\s+POLICY\s+
-    (?P<policy>[A-Za-z_][A-Za-z0-9_]*)\s+
-    ON\s+(?P<table>`?[^`\s(]+`?)\s+
-    GRANT\s+TO\s*\(\s*(?P<grantees>[^)]+)\s*\)\s+
+    (?:IF\s+NOT\s+EXISTS\s+)?
+    `?(?P<policy>[A-Za-z_][A-Za-z0-9_]*)`?\s+
+    ON\s+(?P<table>[`\w.-]+)\s+
+    (?:GRANT\s+TO\s*\(\s*(?P<grantees>[^)]+?)\s*\)\s+)?
     FILTER\s+USING\s*\(\s*(?P<filter>.+?)\s*\)\s*;?\s*\Z
     """,
     re.IGNORECASE | re.VERBOSE | re.DOTALL,
@@ -1175,8 +1204,8 @@ _RAP_CREATE_RE = re.compile(
 _RAP_DROP_RE = re.compile(
     r"""
     \s*DROP\s+ROW\s+ACCESS\s+POLICY\s+(?:IF\s+EXISTS\s+)?
-    (?P<policy>[A-Za-z_][A-Za-z0-9_]*)\s+
-    ON\s+(?P<table>`?[^`\s(]+`?)\s*;?\s*\Z
+    `?(?P<policy>[A-Za-z_][A-Za-z0-9_]*)`?\s+
+    ON\s+(?P<table>[`\w.-]+)\s*;?\s*\Z
     """,
     re.IGNORECASE | re.VERBOSE,
 )
@@ -1228,7 +1257,18 @@ def _maybe_run_row_access_ddl(
             project_id,
         )
         grantees_raw = create_match.group("grantees")
-        grantees = tuple(g.strip().strip("'\"") for g in grantees_raw.split(",") if g.strip())
+        if grantees_raw:
+            grantees = tuple(
+                g.strip().strip("'\"") for g in grantees_raw.split(",") if g.strip()
+            )
+        else:
+            # BigQuery applies a policy created without a GRANT TO clause
+            # to every principal that can query the table. Default to
+            # ``allAuthenticatedUsers`` — the closest emulator analogue of
+            # "anyone with query access" (the matcher admits any
+            # authenticated caller; the bare empty tuple would match no
+            # one, which is the opposite of BigQuery's semantic).
+            grantees = ("allAuthenticatedUsers",)
         ctx.row_access.create(
             project_id=proj,
             dataset_id=ds,
@@ -1358,6 +1398,8 @@ _DDL_OPERATION_BY_STATEMENT = {
     "DROP_SNAPSHOT_TABLE": "DROP",
     "ALTER_TABLE": "ALTER",
     "TRUNCATE_TABLE": "TRUNCATE",
+    "CREATE_ROW_ACCESS_POLICY": "CREATE",
+    "DROP_ROW_ACCESS_POLICY": "DROP",
 }
 _DML_STATEMENTS = frozenset({"INSERT", "UPDATE", "DELETE", "MERGE"})
 
@@ -1444,6 +1486,15 @@ def classify_statement_type(bq_sql: str) -> str:
     """
     import sqlglot
     from sqlglot import exp
+
+    # ``CREATE/DROP ROW ACCESS POLICY`` is not in sqlglot's BigQuery
+    # grammar — it falls back to a generic ``Command`` node — so classify
+    # it via the same regexes the executor uses to dispatch the DDL,
+    # before the parse-based path runs.
+    if _RAP_CREATE_RE.match(bq_sql):
+        return "CREATE_ROW_ACCESS_POLICY"
+    if _RAP_DROP_RE.match(bq_sql):
+        return "DROP_ROW_ACCESS_POLICY"
 
     try:
         tree = sqlglot.parse_one(bq_sql, read="bigquery")

@@ -9,7 +9,12 @@ import pytest
 import pytest_asyncio
 
 from bqemulator.api.dependencies import AppContext
-from bqemulator.catalog.ddl_sync import sync_created_table, sync_created_view
+from bqemulator.catalog.ddl_sync import (
+    _detect_create_schema,
+    sync_created_schema,
+    sync_created_table,
+    sync_created_view,
+)
 from bqemulator.catalog.memory_repository import MemoryCatalogRepository
 from bqemulator.catalog.models import DatasetMeta
 from bqemulator.config import Settings
@@ -182,15 +187,24 @@ class TestSyncCreatedTable:
         )
         assert ctx.catalog.get_table("p", "ds", "snap") is None
 
-    async def test_missing_dataset_is_silent_noop(self, ctx: AppContext) -> None:
-        """No dataset = no registration — DDL still ran in DuckDB."""
-        sync_created_table(
-            "CREATE TABLE `p.absent.t` AS SELECT 1",
-            "p",
-            ctx,
-        )
-        # No table was added because the dataset doesn't exist.
-        assert ctx.catalog.get_table("p", "absent", "t") is None
+    async def test_missing_dataset_is_auto_registered(self, ctx: AppContext) -> None:
+        """An unregistered dataset is auto-registered alongside the table.
+
+        Real BigQuery makes a table created via ``CREATE SCHEMA`` +
+        ``CREATE TABLE`` visible through INFORMATION_SCHEMA and the REST
+        API. The sync helper registers the missing dataset rather than
+        silently skipping — the old skip left the table catalog-invisible,
+        which broke row-access-policy target validation
+        (``Not found: table`` despite the table living in DuckDB).
+        """
+        ctx.engine.execute('CREATE SCHEMA IF NOT EXISTS "p__absent"')
+        ctx.engine.execute('CREATE TABLE "p__absent"."t" AS SELECT 1 AS id')
+        sync_created_table("CREATE TABLE `p.absent.t` AS SELECT 1 AS id", "p", ctx)
+        assert ctx.catalog.get_dataset("p", "absent") is not None
+        meta = ctx.catalog.get_table("p", "absent", "t")
+        assert meta is not None
+        assert meta.table_type == "TABLE"
+        assert [f.name for f in meta.schema_.fields] == ["id"]
 
 
 class TestSyncCreatedView:
@@ -282,14 +296,64 @@ class TestSyncCreatedView:
         sync_created_view("garbage :: not :: sql", "p", ctx)
         assert ctx.catalog.list_tables("p", "ds") == ()
 
-    async def test_missing_dataset_is_silent_noop(self, ctx: AppContext) -> None:
-        """No dataset = no registration — DDL still ran in DuckDB."""
-        sync_created_view(
-            "CREATE VIEW `p.absent.v` AS SELECT 1",
-            "p",
-            ctx,
-        )
-        assert ctx.catalog.get_table("p", "absent", "v") is None
+    async def test_missing_dataset_is_auto_registered(self, ctx: AppContext) -> None:
+        """An unregistered dataset is auto-registered alongside the view."""
+        ctx.engine.execute('CREATE SCHEMA IF NOT EXISTS "p__absent"')
+        ctx.engine.execute('CREATE VIEW "p__absent"."v" AS SELECT 1 AS id')
+        sync_created_view("CREATE VIEW `p.absent.v` AS SELECT 1 AS id", "p", ctx)
+        assert ctx.catalog.get_dataset("p", "absent") is not None
+        meta = ctx.catalog.get_table("p", "absent", "v")
+        assert meta is not None
+        assert meta.table_type == "VIEW"
+
+
+class TestSyncCreatedSchema:
+    """``sync_created_schema`` registers SQL ``CREATE SCHEMA`` datasets."""
+
+    @pytest.mark.parametrize(
+        ("sql", "expected"),
+        [
+            ("CREATE SCHEMA newds", ("p", "newds")),
+            ("CREATE SCHEMA IF NOT EXISTS newds", ("p", "newds")),
+            ("CREATE SCHEMA otherproj.newds", ("otherproj", "newds")),
+            ("CREATE SCHEMA `otherproj`.`newds`", ("otherproj", "newds")),
+            ("CREATE SCHEMA `otherproj.newds`", ("otherproj", "newds")),
+        ],
+    )
+    def test_detect_create_schema(self, sql: str, expected: tuple[str, str]) -> None:
+        assert _detect_create_schema(sql, "p") == expected
+
+    @pytest.mark.parametrize(
+        "sql",
+        [
+            "CREATE TABLE t (id INT64)",
+            "SELECT 1",
+            "DROP SCHEMA ds",
+            "this is not sql",
+        ],
+    )
+    def test_detect_create_schema_non_schema_returns_none(self, sql: str) -> None:
+        assert _detect_create_schema(sql, "p") is None
+
+    async def test_sync_registers_new_dataset(self, ctx: AppContext) -> None:
+        """``CREATE SCHEMA`` registers a catalog dataset."""
+        assert ctx.catalog.get_dataset("p", "newds") is None
+        sync_created_schema("CREATE SCHEMA newds", "p", ctx)
+        assert ctx.catalog.get_dataset("p", "newds") is not None
+
+    async def test_sync_is_idempotent_on_existing_dataset(self, ctx: AppContext) -> None:
+        """An already-registered dataset is left untouched (no duplicate)."""
+        before = ctx.catalog.get_dataset("p", "ds")
+        assert before is not None
+        sync_created_schema("CREATE SCHEMA IF NOT EXISTS ds", "p", ctx)
+        after = ctx.catalog.get_dataset("p", "ds")
+        assert after is not None
+        # Same etag — the existing entry was not replaced.
+        assert after.etag == before.etag
+
+    async def test_sync_non_schema_is_noop(self, ctx: AppContext) -> None:
+        sync_created_schema("CREATE TABLE `p.ds.t` (id INT64)", "p", ctx)
+        assert ctx.catalog.list_datasets("p") == (ctx.catalog.get_dataset("p", "ds"),)
 
 
 class TestExtractDdlMetadata:

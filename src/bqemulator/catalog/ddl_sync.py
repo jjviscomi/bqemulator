@@ -37,6 +37,7 @@ from sqlglot import exp
 
 from bqemulator.catalog.etag import generate_etag
 from bqemulator.catalog.models import (
+    DatasetMeta,
     FieldMode,
     TableFieldSchema,
     TableMeta,
@@ -69,11 +70,15 @@ def sync_created_table(bq_sql: str, project_id: str, ctx: AppContext) -> None:
     if not d_id or not t_id:
         return
     if ctx.catalog.get_dataset(p_id, d_id) is None:
-        # No matching dataset — the DDL ran in DuckDB but we have
-        # nowhere to register the metadata. Synthetic unit-test paths
-        # exercise this; conformance setup always creates the dataset
-        # via REST before issuing SQL DDL.
-        return
+        # The dataset was never registered via REST — register it now so
+        # a table created purely via SQL DDL (e.g. ``CREATE SCHEMA ds``
+        # then ``CREATE TABLE ds.t AS …``) becomes catalog-visible,
+        # matching real BigQuery where both surface via
+        # INFORMATION_SCHEMA and the REST API. Without this, the table
+        # lives in DuckDB but has no ``TableMeta``, so catalog consumers
+        # (INFORMATION_SCHEMA, ``tables.list``, row-access-policy target
+        # validation) can't see it.
+        _ensure_dataset(p_id, d_id, ctx)
     schema = _introspect_schema(p_id, d_id, t_id, ctx)
     num_rows = _introspect_num_rows(p_id, d_id, t_id, ctx)
     extras = _extract_ddl_metadata(bq_sql)
@@ -119,7 +124,9 @@ def sync_created_view(bq_sql: str, project_id: str, ctx: AppContext) -> None:
     if not d_id or not t_id:
         return
     if ctx.catalog.get_dataset(p_id, d_id) is None:
-        return
+        # Register the dataset so a view created purely via SQL DDL is
+        # catalog-visible (see ``sync_created_table`` for rationale).
+        _ensure_dataset(p_id, d_id, ctx)
     schema = _introspect_schema(p_id, d_id, t_id, ctx)
     # Re-serialise the body in BigQuery dialect so downstream re-parsing
     # (by the row-access rewriter's ``_expand_view``) sees canonical
@@ -146,6 +153,79 @@ def sync_created_view(bq_sql: str, project_id: str, ctx: AppContext) -> None:
         ctx.catalog.update_table(meta)
     else:
         ctx.catalog.create_table(meta)
+
+
+def sync_created_schema(bq_sql: str, project_id: str, ctx: AppContext) -> None:
+    """Register a catalog dataset for a SQL ``CREATE SCHEMA`` statement.
+
+    No-op if ``bq_sql`` is not a ``CREATE SCHEMA`` form (or is
+    unparseable) and idempotent — an existing dataset is left
+    untouched. BigQuery's ``CREATE SCHEMA`` (a.k.a. ``CREATE DATASET``)
+    creates a dataset that is fully visible via INFORMATION_SCHEMA and
+    the REST API; registering it here keeps SQL-created datasets in
+    parity with REST-created ones (``datasets.insert``). Call after a
+    successful ``CREATE SCHEMA`` execution.
+    """
+    detected = _detect_create_schema(bq_sql, project_id)
+    if detected is None:
+        return
+    p_id, d_id = detected
+    if not d_id:
+        return
+    _ensure_dataset(p_id, d_id, ctx)
+
+
+def _detect_create_schema(bq_sql: str, default_project: str) -> tuple[str, str] | None:
+    """Return ``(project_id, dataset_id)`` for a ``CREATE SCHEMA`` statement.
+
+    Returns ``None`` for any non-``CREATE SCHEMA`` form or unparseable
+    SQL. Handles bare (``ds``), project-qualified (``proj.ds``),
+    per-component-backticked (`` `proj`.`ds` ``), and whole-backticked
+    (`` `proj.ds` ``) shapes.
+    """
+    try:
+        tree = sqlglot.parse_one(bq_sql, read="bigquery")
+    except Exception:  # noqa: BLE001 — not CREATE SCHEMA / unparseable
+        return None
+    if not isinstance(tree, exp.Create) or (tree.kind or "").upper() != "SCHEMA":
+        return None
+    target = tree.this
+    if isinstance(target, exp.Schema):
+        target = target.this
+    if not isinstance(target, exp.Table):
+        return None
+    parts = [p for p in (target.catalog, target.db, target.name) if p]
+    # Whole-backticked ``\`proj.ds\``` lands as one dotted name.
+    if len(parts) == 1 and "." in parts[0]:
+        parts = parts[0].split(".")
+    if len(parts) == _PARTS_DATASET_QUALIFIED:
+        return parts[0], parts[1]
+    if len(parts) == 1:
+        return default_project, parts[0]
+    return None
+
+
+def _ensure_dataset(project_id: str, dataset_id: str, ctx: AppContext) -> None:
+    """Register a minimal catalog dataset if one doesn't already exist.
+
+    Idempotent. Mirrors the default-valued :class:`DatasetMeta` that
+    ``datasets.insert`` builds for a bare ``{datasetReference: …}`` body
+    (US location, no labels). Used by the SQL-DDL sync helpers so a
+    table, view, or schema created via SQL is catalog-visible even when
+    the dataset was never registered via REST.
+    """
+    if ctx.catalog.get_dataset(project_id, dataset_id) is not None:
+        return
+    now = ctx.clock.now()
+    ctx.catalog.create_dataset(
+        DatasetMeta(
+            project_id=project_id,
+            dataset_id=dataset_id,
+            creation_time=now,
+            last_modified_time=now,
+            etag=generate_etag(project_id, dataset_id, str(now)),
+        ),
+    )
 
 
 def _detect_plain_create_view(
