@@ -210,7 +210,7 @@ jobs:
         with: { name: bqemu-image, path: /tmp }
       - run: docker load -i /tmp/bqemu.tar
       - uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff # v5.6.0
-        with: { go-version: "1.22" }
+        with: { go-version: "1.25" }
       - name: make test
         env:
           BQEMU_IMAGE: ${{ needs.build-image.outputs.image }}
@@ -227,7 +227,7 @@ jobs:
         with: { name: bqemu-image, path: /tmp }
       - run: docker load -i /tmp/bqemu.tar
       - uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff # v5.6.0
-        with: { go-version: "1.22" }
+        with: { go-version: "1.25" }
       - name: make test
         env:
           BQEMU_IMAGE: ${{ needs.build-image.outputs.image }}

@@ -143,7 +143,11 @@ jobs:
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
       - uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff # v5.6.0
         with:
-          go-version: "1.22"
+          # Match the go.mod toolchain (go 1.25 / toolchain go1.25.10).
+          # setup-go v6 defaults GOTOOLCHAIN=local, so the installed Go
+          # must already satisfy the go.mod requirement — a stale 1.22
+          # pin no longer auto-downloads the newer toolchain.
+          go-version: "1.25"
           cache: true
           cache-dependency-path: tests/e2e/go_client/go.mod
       - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5.6.0
