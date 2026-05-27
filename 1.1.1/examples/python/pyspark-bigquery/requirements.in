@@ -1,0 +1,10 @@
+# Floors picked so the fully-pinned closure (generated via
+# ``pip-compile --generate-hashes``) passes osv-scanner cleanly:
+# - pyspark 3.5.2 closes PYSEC-2025-184.
+# - pyarrow 23.0.1 closes PYSEC-2026-113 (compute kernel CVE).
+# - pandas 2.0+ floor; no current open CVEs.
+pyspark>=3.5.2,<4.0
+google-cloud-bigquery>=3.20,<4.0
+google-cloud-bigquery-storage>=2.24,<3.0
+pyarrow>=23.0.1,<24.0
+pandas>=2.0,<3.0
