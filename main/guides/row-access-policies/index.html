@@ -1317,6 +1317,34 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="Creating a policy">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#sql-ddl-bq-query" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        SQL DDL (bq query)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#rest-resource" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        REST resource
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
         <li class="md-nav__item">
@@ -5211,6 +5239,34 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="Creating a policy">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#sql-ddl-bq-query" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        SQL DDL (bq query)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#rest-resource" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        REST resource
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
         <li class="md-nav__item">
@@ -5383,92 +5439,108 @@ protected table return zero rows.</p>
 <code>serviceAccount:…</code>, <code>group:…</code>, <code>domain:…</code>, <code>allUsers</code>, or
 <code>allAuthenticatedUsers</code>.</p>
 <h2 id="creating-a-policy">Creating a policy<a class="headerlink" href="#creating-a-policy" title="Permanent link">&para;</a></h2>
-<p>There is no DDL for row access policies in BigQuery's GoogleSQL
-surface yet — they are managed through the REST API. The emulator
-mirrors the same shape (<code>/rowAccessPolicies</code> resource).</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>curl<span class="w"> </span>-X<span class="w"> </span>POST<span class="w"> </span><span class="se">\</span>
-</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="w">  </span>http://localhost:9050/bigquery/v2/projects/demo/datasets/sales/tables/orders/rowAccessPolicies<span class="w"> </span><span class="se">\</span>
-</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="w">  </span>-H<span class="w"> </span><span class="s1">&#39;Content-Type: application/json&#39;</span><span class="w"> </span><span class="se">\</span>
-</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="w">  </span>-d<span class="w"> </span><span class="s1">&#39;{</span>
-</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="s1">    &quot;rowAccessPolicyReference&quot;: {</span>
-</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="s1">      &quot;projectId&quot;: &quot;demo&quot;,</span>
-</span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a><span class="s1">      &quot;datasetId&quot;: &quot;sales&quot;,</span>
-</span><span id="__span-0-8"><a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a><span class="s1">      &quot;tableId&quot;: &quot;orders&quot;,</span>
-</span><span id="__span-0-9"><a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a><span class="s1">      &quot;policyId&quot;: &quot;eu_only&quot;</span>
-</span><span id="__span-0-10"><a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a><span class="s1">    },</span>
-</span><span id="__span-0-11"><a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a><span class="s1">    &quot;filterPredicate&quot;: &quot;region = &#39;</span><span class="se">\&#39;</span><span class="s1">&#39;EU&#39;</span><span class="se">\&#39;</span><span class="s1">&#39;&quot;,</span>
-</span><span id="__span-0-12"><a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a><span class="s1">    &quot;grantees&quot;: [&quot;user:eu-analyst@example.com&quot;]</span>
-</span><span id="__span-0-13"><a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a><span class="s1">  }&#39;</span>
+<p>A policy can be created two ways. Both persist to the same catalog
+and are enforced identically.</p>
+<h3 id="sql-ddl-bq-query">SQL DDL (<code>bq query</code>)<a class="headerlink" href="#sql-ddl-bq-query" title="Permanent link">&para;</a></h3>
+<p>BigQuery's GoogleSQL <code>CREATE ROW ACCESS POLICY</code> statement, submitted
+through <code>jobs.query</code> or <code>jobs.insert</code>:</p>
+<div class="language-sql highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="k">CREATE</span><span class="w"> </span><span class="k">ROW</span><span class="w"> </span><span class="k">ACCESS</span><span class="w"> </span><span class="n">POLICY</span><span class="w"> </span><span class="n">eu_only</span>
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="w">  </span><span class="k">ON</span><span class="w"> </span><span class="n">sales</span><span class="p">.</span><span class="n">orders</span>
+</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="w">  </span><span class="k">GRANT</span><span class="w"> </span><span class="k">TO</span><span class="w"> </span><span class="p">(</span><span class="s1">&#39;user:eu-analyst@example.com&#39;</span><span class="p">)</span>
+</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="w">  </span><span class="n">FILTER</span><span class="w"> </span><span class="k">USING</span><span class="w"> </span><span class="p">(</span><span class="n">region</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;EU&#39;</span><span class="p">);</span>
+</span></code></pre></div>
+<p><code>CREATE OR REPLACE</code> and <code>IF NOT EXISTS</code> are accepted. Omitting the
+<code>GRANT TO</code> clause applies the policy to every authenticated caller
+(BigQuery's grantee-less semantic). Drop a policy with
+<code>DROP ROW ACCESS POLICY [IF EXISTS] eu_only ON sales.orders</code>. The
+target table must exist — a table created entirely through SQL
+(<code>CREATE SCHEMA sales; CREATE TABLE sales.orders …</code>) is registered in
+the catalog automatically, so it is a valid policy target.</p>
+<h3 id="rest-resource">REST resource<a class="headerlink" href="#rest-resource" title="Permanent link">&para;</a></h3>
+<p>The <code>/rowAccessPolicies</code> resource mirrors the SDK shape:</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>curl<span class="w"> </span>-X<span class="w"> </span>POST<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="w">  </span>http://localhost:9050/bigquery/v2/projects/demo/datasets/sales/tables/orders/rowAccessPolicies<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="w">  </span>-H<span class="w"> </span><span class="s1">&#39;Content-Type: application/json&#39;</span><span class="w"> </span><span class="se">\</span>
+</span><span id="__span-1-4"><a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="w">  </span>-d<span class="w"> </span><span class="s1">&#39;{</span>
+</span><span id="__span-1-5"><a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a><span class="s1">    &quot;rowAccessPolicyReference&quot;: {</span>
+</span><span id="__span-1-6"><a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a><span class="s1">      &quot;projectId&quot;: &quot;demo&quot;,</span>
+</span><span id="__span-1-7"><a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a><span class="s1">      &quot;datasetId&quot;: &quot;sales&quot;,</span>
+</span><span id="__span-1-8"><a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a><span class="s1">      &quot;tableId&quot;: &quot;orders&quot;,</span>
+</span><span id="__span-1-9"><a id="__codelineno-1-9" name="__codelineno-1-9" href="#__codelineno-1-9"></a><span class="s1">      &quot;policyId&quot;: &quot;eu_only&quot;</span>
+</span><span id="__span-1-10"><a id="__codelineno-1-10" name="__codelineno-1-10" href="#__codelineno-1-10"></a><span class="s1">    },</span>
+</span><span id="__span-1-11"><a id="__codelineno-1-11" name="__codelineno-1-11" href="#__codelineno-1-11"></a><span class="s1">    &quot;filterPredicate&quot;: &quot;region = &#39;</span><span class="se">\&#39;</span><span class="s1">&#39;EU&#39;</span><span class="se">\&#39;</span><span class="s1">&#39;&quot;,</span>
+</span><span id="__span-1-12"><a id="__codelineno-1-12" name="__codelineno-1-12" href="#__codelineno-1-12"></a><span class="s1">    &quot;grantees&quot;: [&quot;user:eu-analyst@example.com&quot;]</span>
+</span><span id="__span-1-13"><a id="__codelineno-1-13" name="__codelineno-1-13" href="#__codelineno-1-13"></a><span class="s1">  }&#39;</span>
 </span></code></pre></div>
 <p>The Python <code>google-cloud-bigquery</code> client also exposes the resource
 via <code>client._http</code> raw calls; future versions of the client are
 expected to add a higher-level wrapper.</p>
 <h2 id="querying-as-a-granted-caller">Querying as a granted caller<a class="headerlink" href="#querying-as-a-granted-caller" title="Permanent link">&para;</a></h2>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">google.api_core.client_options</span><span class="w"> </span><span class="kn">import</span> <span class="n">ClientOptions</span>
-</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">google.auth.credentials</span><span class="w"> </span><span class="kn">import</span> <span class="n">AnonymousCredentials</span>
-</span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="kn">from</span><span class="w"> </span><span class="nn">google.auth.transport.requests</span><span class="w"> </span><span class="kn">import</span> <span class="n">AuthorizedSession</span>
-</span><span id="__span-1-4"><a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="kn">from</span><span class="w"> </span><span class="nn">google.cloud</span><span class="w"> </span><span class="kn">import</span> <span class="n">bigquery</span>
-</span><span id="__span-1-5"><a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a>
-</span><span id="__span-1-6"><a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a><span class="n">session</span> <span class="o">=</span> <span class="n">AuthorizedSession</span><span class="p">(</span><span class="n">AnonymousCredentials</span><span class="p">())</span>
-</span><span id="__span-1-7"><a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a><span class="n">session</span><span class="o">.</span><span class="n">headers</span><span class="p">[</span><span class="s2">&quot;X-Bqemu-Caller&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;user:eu-analyst@example.com&quot;</span>
-</span><span id="__span-1-8"><a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a>
-</span><span id="__span-1-9"><a id="__codelineno-1-9" name="__codelineno-1-9" href="#__codelineno-1-9"></a><span class="n">client</span> <span class="o">=</span> <span class="n">bigquery</span><span class="o">.</span><span class="n">Client</span><span class="p">(</span>
-</span><span id="__span-1-10"><a id="__codelineno-1-10" name="__codelineno-1-10" href="#__codelineno-1-10"></a>    <span class="n">project</span><span class="o">=</span><span class="s2">&quot;demo&quot;</span><span class="p">,</span>
-</span><span id="__span-1-11"><a id="__codelineno-1-11" name="__codelineno-1-11" href="#__codelineno-1-11"></a>    <span class="n">credentials</span><span class="o">=</span><span class="n">AnonymousCredentials</span><span class="p">(),</span>
-</span><span id="__span-1-12"><a id="__codelineno-1-12" name="__codelineno-1-12" href="#__codelineno-1-12"></a>    <span class="n">client_options</span><span class="o">=</span><span class="n">ClientOptions</span><span class="p">(</span><span class="n">api_endpoint</span><span class="o">=</span><span class="s2">&quot;http://localhost:9050&quot;</span><span class="p">),</span>
-</span><span id="__span-1-13"><a id="__codelineno-1-13" name="__codelineno-1-13" href="#__codelineno-1-13"></a>    <span class="n">_http</span><span class="o">=</span><span class="n">session</span><span class="p">,</span>
-</span><span id="__span-1-14"><a id="__codelineno-1-14" name="__codelineno-1-14" href="#__codelineno-1-14"></a><span class="p">)</span>
-</span><span id="__span-1-15"><a id="__codelineno-1-15" name="__codelineno-1-15" href="#__codelineno-1-15"></a>
-</span><span id="__span-1-16"><a id="__codelineno-1-16" name="__codelineno-1-16" href="#__codelineno-1-16"></a><span class="n">rows</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">client</span><span class="o">.</span><span class="n">query</span><span class="p">(</span><span class="s2">&quot;SELECT id FROM `demo.sales.orders` ORDER BY id&quot;</span><span class="p">))</span>
-</span><span id="__span-1-17"><a id="__codelineno-1-17" name="__codelineno-1-17" href="#__codelineno-1-17"></a><span class="c1"># Only EU rows visible: [Row((1,)), Row((2,))]</span>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">google.api_core.client_options</span><span class="w"> </span><span class="kn">import</span> <span class="n">ClientOptions</span>
+</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">google.auth.credentials</span><span class="w"> </span><span class="kn">import</span> <span class="n">AnonymousCredentials</span>
+</span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="kn">from</span><span class="w"> </span><span class="nn">google.auth.transport.requests</span><span class="w"> </span><span class="kn">import</span> <span class="n">AuthorizedSession</span>
+</span><span id="__span-2-4"><a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="kn">from</span><span class="w"> </span><span class="nn">google.cloud</span><span class="w"> </span><span class="kn">import</span> <span class="n">bigquery</span>
+</span><span id="__span-2-5"><a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a>
+</span><span id="__span-2-6"><a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a><span class="n">session</span> <span class="o">=</span> <span class="n">AuthorizedSession</span><span class="p">(</span><span class="n">AnonymousCredentials</span><span class="p">())</span>
+</span><span id="__span-2-7"><a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a><span class="n">session</span><span class="o">.</span><span class="n">headers</span><span class="p">[</span><span class="s2">&quot;X-Bqemu-Caller&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;user:eu-analyst@example.com&quot;</span>
+</span><span id="__span-2-8"><a id="__codelineno-2-8" name="__codelineno-2-8" href="#__codelineno-2-8"></a>
+</span><span id="__span-2-9"><a id="__codelineno-2-9" name="__codelineno-2-9" href="#__codelineno-2-9"></a><span class="n">client</span> <span class="o">=</span> <span class="n">bigquery</span><span class="o">.</span><span class="n">Client</span><span class="p">(</span>
+</span><span id="__span-2-10"><a id="__codelineno-2-10" name="__codelineno-2-10" href="#__codelineno-2-10"></a>    <span class="n">project</span><span class="o">=</span><span class="s2">&quot;demo&quot;</span><span class="p">,</span>
+</span><span id="__span-2-11"><a id="__codelineno-2-11" name="__codelineno-2-11" href="#__codelineno-2-11"></a>    <span class="n">credentials</span><span class="o">=</span><span class="n">AnonymousCredentials</span><span class="p">(),</span>
+</span><span id="__span-2-12"><a id="__codelineno-2-12" name="__codelineno-2-12" href="#__codelineno-2-12"></a>    <span class="n">client_options</span><span class="o">=</span><span class="n">ClientOptions</span><span class="p">(</span><span class="n">api_endpoint</span><span class="o">=</span><span class="s2">&quot;http://localhost:9050&quot;</span><span class="p">),</span>
+</span><span id="__span-2-13"><a id="__codelineno-2-13" name="__codelineno-2-13" href="#__codelineno-2-13"></a>    <span class="n">_http</span><span class="o">=</span><span class="n">session</span><span class="p">,</span>
+</span><span id="__span-2-14"><a id="__codelineno-2-14" name="__codelineno-2-14" href="#__codelineno-2-14"></a><span class="p">)</span>
+</span><span id="__span-2-15"><a id="__codelineno-2-15" name="__codelineno-2-15" href="#__codelineno-2-15"></a>
+</span><span id="__span-2-16"><a id="__codelineno-2-16" name="__codelineno-2-16" href="#__codelineno-2-16"></a><span class="n">rows</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">client</span><span class="o">.</span><span class="n">query</span><span class="p">(</span><span class="s2">&quot;SELECT id FROM `demo.sales.orders` ORDER BY id&quot;</span><span class="p">))</span>
+</span><span id="__span-2-17"><a id="__codelineno-2-17" name="__codelineno-2-17" href="#__codelineno-2-17"></a><span class="c1"># Only EU rows visible: [Row((1,)), Row((2,))]</span>
 </span></code></pre></div>
 <h2 id="querying-as-a-non-granted-caller">Querying as a non-granted caller<a class="headerlink" href="#querying-as-a-non-granted-caller" title="Permanent link">&para;</a></h2>
 <p>The same query with a different caller header returns zero rows:</p>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="n">session</span><span class="o">.</span><span class="n">headers</span><span class="p">[</span><span class="s2">&quot;X-Bqemu-Caller&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;user:other@example.com&quot;</span>
-</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="n">rows</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">client</span><span class="o">.</span><span class="n">query</span><span class="p">(</span><span class="s2">&quot;SELECT id FROM `demo.sales.orders`&quot;</span><span class="p">))</span>
-</span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="c1"># []</span>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="n">session</span><span class="o">.</span><span class="n">headers</span><span class="p">[</span><span class="s2">&quot;X-Bqemu-Caller&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;user:other@example.com&quot;</span>
+</span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a><span class="n">rows</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">client</span><span class="o">.</span><span class="n">query</span><span class="p">(</span><span class="s2">&quot;SELECT id FROM `demo.sales.orders`&quot;</span><span class="p">))</span>
+</span><span id="__span-3-3"><a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a><span class="c1"># []</span>
 </span></code></pre></div>
 <h2 id="multiple-policies-on-the-same-table">Multiple policies on the same table<a class="headerlink" href="#multiple-policies-on-the-same-table" title="Permanent link">&para;</a></h2>
 <p>When more than one policy grants the caller, the emulator OR-combines
 the filters — a row is visible if <strong>any</strong> matching policy admits it.
 This matches BigQuery's documented "additive" semantics.</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="c1"># Policy 1: EU rows only</span>
-</span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>curl<span class="w"> </span>-X<span class="w"> </span>POST<span class="w"> </span>.../rowAccessPolicies<span class="w"> </span>-d<span class="w"> </span><span class="s1">&#39;{&quot;rowAccessPolicyReference&quot;:...,</span>
-</span><span id="__span-3-3"><a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a><span class="s1">  &quot;filterPredicate&quot;:&quot;region = &#39;</span><span class="se">\&#39;</span><span class="s1">&#39;EU&#39;</span><span class="se">\&#39;</span><span class="s1">&#39;&quot;, &quot;grantees&quot;:[&quot;user:m@x&quot;]}&#39;</span>
-</span><span id="__span-3-4"><a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a>
-</span><span id="__span-3-5"><a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a><span class="c1"># Policy 2: VIP rows only</span>
-</span><span id="__span-3-6"><a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a>curl<span class="w"> </span>-X<span class="w"> </span>POST<span class="w"> </span>.../rowAccessPolicies<span class="w"> </span>-d<span class="w"> </span><span class="s1">&#39;{&quot;rowAccessPolicyReference&quot;:...,</span>
-</span><span id="__span-3-7"><a id="__codelineno-3-7" name="__codelineno-3-7" href="#__codelineno-3-7"></a><span class="s1">  &quot;filterPredicate&quot;:&quot;vip = TRUE&quot;, &quot;grantees&quot;:[&quot;user:m@x&quot;]}&#39;</span>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="c1"># Policy 1: EU rows only</span>
+</span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a>curl<span class="w"> </span>-X<span class="w"> </span>POST<span class="w"> </span>.../rowAccessPolicies<span class="w"> </span>-d<span class="w"> </span><span class="s1">&#39;{&quot;rowAccessPolicyReference&quot;:...,</span>
+</span><span id="__span-4-3"><a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a><span class="s1">  &quot;filterPredicate&quot;:&quot;region = &#39;</span><span class="se">\&#39;</span><span class="s1">&#39;EU&#39;</span><span class="se">\&#39;</span><span class="s1">&#39;&quot;, &quot;grantees&quot;:[&quot;user:m@x&quot;]}&#39;</span>
+</span><span id="__span-4-4"><a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a>
+</span><span id="__span-4-5"><a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a><span class="c1"># Policy 2: VIP rows only</span>
+</span><span id="__span-4-6"><a id="__codelineno-4-6" name="__codelineno-4-6" href="#__codelineno-4-6"></a>curl<span class="w"> </span>-X<span class="w"> </span>POST<span class="w"> </span>.../rowAccessPolicies<span class="w"> </span>-d<span class="w"> </span><span class="s1">&#39;{&quot;rowAccessPolicyReference&quot;:...,</span>
+</span><span id="__span-4-7"><a id="__codelineno-4-7" name="__codelineno-4-7" href="#__codelineno-4-7"></a><span class="s1">  &quot;filterPredicate&quot;:&quot;vip = TRUE&quot;, &quot;grantees&quot;:[&quot;user:m@x&quot;]}&#39;</span>
 </span></code></pre></div>
 <p>The granted caller now sees rows where <code>region = 'EU' OR vip = TRUE</code>.</p>
 <h2 id="group-based-grantees">Group-based grantees<a class="headerlink" href="#group-based-grantees" title="Permanent link">&para;</a></h2>
 <p>Real BigQuery walks Google Workspace group membership; the emulator
 can't. To exercise <code>group:</code> grantees in tests, supply
 <code>X-Bqemu-Groups</code> alongside <code>X-Bqemu-Caller</code>:</p>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="n">session</span><span class="o">.</span><span class="n">headers</span><span class="p">[</span><span class="s2">&quot;X-Bqemu-Caller&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;user:eu-analyst@example.com&quot;</span>
-</span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a><span class="n">session</span><span class="o">.</span><span class="n">headers</span><span class="p">[</span><span class="s2">&quot;X-Bqemu-Groups&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;data-readers@example.com&quot;</span>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="n">session</span><span class="o">.</span><span class="n">headers</span><span class="p">[</span><span class="s2">&quot;X-Bqemu-Caller&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;user:eu-analyst@example.com&quot;</span>
+</span><span id="__span-5-2"><a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a><span class="n">session</span><span class="o">.</span><span class="n">headers</span><span class="p">[</span><span class="s2">&quot;X-Bqemu-Groups&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;data-readers@example.com&quot;</span>
 </span></code></pre></div>
 <p>A grantee <code>group:data-readers@example.com</code> then matches.</p>
 <h2 id="listing-and-managing-policies">Listing and managing policies<a class="headerlink" href="#listing-and-managing-policies" title="Permanent link">&para;</a></h2>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="c1"># List policies on a table</span>
-</span><span id="__span-5-2"><a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a>curl<span class="w"> </span>http://localhost:9050/bigquery/v2/projects/demo/datasets/sales/tables/orders/rowAccessPolicies
-</span><span id="__span-5-3"><a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a>
-</span><span id="__span-5-4"><a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a><span class="c1"># Update (PUT replaces the policy entirely)</span>
-</span><span id="__span-5-5"><a id="__codelineno-5-5" name="__codelineno-5-5" href="#__codelineno-5-5"></a>curl<span class="w"> </span>-X<span class="w"> </span>PUT<span class="w"> </span>.../rowAccessPolicies/eu_only<span class="w"> </span>-d<span class="w"> </span><span class="s1">&#39;...&#39;</span>
-</span><span id="__span-5-6"><a id="__codelineno-5-6" name="__codelineno-5-6" href="#__codelineno-5-6"></a>
-</span><span id="__span-5-7"><a id="__codelineno-5-7" name="__codelineno-5-7" href="#__codelineno-5-7"></a><span class="c1"># Delete</span>
-</span><span id="__span-5-8"><a id="__codelineno-5-8" name="__codelineno-5-8" href="#__codelineno-5-8"></a>curl<span class="w"> </span>-X<span class="w"> </span>DELETE<span class="w"> </span>.../rowAccessPolicies/eu_only
-</span><span id="__span-5-9"><a id="__codelineno-5-9" name="__codelineno-5-9" href="#__codelineno-5-9"></a>
-</span><span id="__span-5-10"><a id="__codelineno-5-10" name="__codelineno-5-10" href="#__codelineno-5-10"></a><span class="c1"># Batch-delete several at once</span>
-</span><span id="__span-5-11"><a id="__codelineno-5-11" name="__codelineno-5-11" href="#__codelineno-5-11"></a>curl<span class="w"> </span>-X<span class="w"> </span>POST<span class="w"> </span>.../rowAccessPolicies:batchDelete<span class="w"> </span><span class="se">\</span>
-</span><span id="__span-5-12"><a id="__codelineno-5-12" name="__codelineno-5-12" href="#__codelineno-5-12"></a><span class="w">  </span>-d<span class="w"> </span><span class="s1">&#39;{&quot;policyIds&quot;:[&quot;eu_only&quot;, &quot;vip&quot;]}&#39;</span>
-</span><span id="__span-5-13"><a id="__codelineno-5-13" name="__codelineno-5-13" href="#__codelineno-5-13"></a>
-</span><span id="__span-5-14"><a id="__codelineno-5-14" name="__codelineno-5-14" href="#__codelineno-5-14"></a><span class="c1"># IAM-shaped read of grantees</span>
-</span><span id="__span-5-15"><a id="__codelineno-5-15" name="__codelineno-5-15" href="#__codelineno-5-15"></a>curl<span class="w"> </span>-X<span class="w"> </span>POST<span class="w"> </span>.../rowAccessPolicies/eu_only:getIamPolicy
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="c1"># List policies on a table</span>
+</span><span id="__span-6-2"><a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a>curl<span class="w"> </span>http://localhost:9050/bigquery/v2/projects/demo/datasets/sales/tables/orders/rowAccessPolicies
+</span><span id="__span-6-3"><a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a>
+</span><span id="__span-6-4"><a id="__codelineno-6-4" name="__codelineno-6-4" href="#__codelineno-6-4"></a><span class="c1"># Update (PUT replaces the policy entirely)</span>
+</span><span id="__span-6-5"><a id="__codelineno-6-5" name="__codelineno-6-5" href="#__codelineno-6-5"></a>curl<span class="w"> </span>-X<span class="w"> </span>PUT<span class="w"> </span>.../rowAccessPolicies/eu_only<span class="w"> </span>-d<span class="w"> </span><span class="s1">&#39;...&#39;</span>
+</span><span id="__span-6-6"><a id="__codelineno-6-6" name="__codelineno-6-6" href="#__codelineno-6-6"></a>
+</span><span id="__span-6-7"><a id="__codelineno-6-7" name="__codelineno-6-7" href="#__codelineno-6-7"></a><span class="c1"># Delete</span>
+</span><span id="__span-6-8"><a id="__codelineno-6-8" name="__codelineno-6-8" href="#__codelineno-6-8"></a>curl<span class="w"> </span>-X<span class="w"> </span>DELETE<span class="w"> </span>.../rowAccessPolicies/eu_only
+</span><span id="__span-6-9"><a id="__codelineno-6-9" name="__codelineno-6-9" href="#__codelineno-6-9"></a>
+</span><span id="__span-6-10"><a id="__codelineno-6-10" name="__codelineno-6-10" href="#__codelineno-6-10"></a><span class="c1"># Batch-delete several at once</span>
+</span><span id="__span-6-11"><a id="__codelineno-6-11" name="__codelineno-6-11" href="#__codelineno-6-11"></a>curl<span class="w"> </span>-X<span class="w"> </span>POST<span class="w"> </span>.../rowAccessPolicies:batchDelete<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-6-12"><a id="__codelineno-6-12" name="__codelineno-6-12" href="#__codelineno-6-12"></a><span class="w">  </span>-d<span class="w"> </span><span class="s1">&#39;{&quot;policyIds&quot;:[&quot;eu_only&quot;, &quot;vip&quot;]}&#39;</span>
+</span><span id="__span-6-13"><a id="__codelineno-6-13" name="__codelineno-6-13" href="#__codelineno-6-13"></a>
+</span><span id="__span-6-14"><a id="__codelineno-6-14" name="__codelineno-6-14" href="#__codelineno-6-14"></a><span class="c1"># IAM-shaped read of grantees</span>
+</span><span id="__span-6-15"><a id="__codelineno-6-15" name="__codelineno-6-15" href="#__codelineno-6-15"></a>curl<span class="w"> </span>-X<span class="w"> </span>POST<span class="w"> </span>.../rowAccessPolicies/eu_only:getIamPolicy
 </span></code></pre></div>
 <h2 id="information_schemarow_access_policies">INFORMATION_SCHEMA.ROW_ACCESS_POLICIES<a class="headerlink" href="#information_schemarow_access_policies" title="Permanent link">&para;</a></h2>
-<div class="language-sql highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="k">SELECT</span><span class="w"> </span><span class="n">policy_name</span><span class="p">,</span><span class="w"> </span><span class="k">table_name</span><span class="p">,</span><span class="w"> </span><span class="n">grantees</span><span class="p">,</span><span class="w"> </span><span class="n">filter_predicate</span>
-</span><span id="__span-6-2"><a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a><span class="k">FROM</span><span class="w"> </span><span class="o">`</span><span class="n">demo</span><span class="p">.</span><span class="n">sales</span><span class="p">.</span><span class="n">INFORMATION_SCHEMA</span><span class="p">.</span><span class="n">ROW_ACCESS_POLICIES</span><span class="o">`</span><span class="p">;</span>
+<div class="language-sql highlight"><pre><span></span><code><span id="__span-7-1"><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="k">SELECT</span><span class="w"> </span><span class="n">policy_name</span><span class="p">,</span><span class="w"> </span><span class="k">table_name</span><span class="p">,</span><span class="w"> </span><span class="n">grantees</span><span class="p">,</span><span class="w"> </span><span class="n">filter_predicate</span>
+</span><span id="__span-7-2"><a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a><span class="k">FROM</span><span class="w"> </span><span class="o">`</span><span class="n">demo</span><span class="p">.</span><span class="n">sales</span><span class="p">.</span><span class="n">INFORMATION_SCHEMA</span><span class="p">.</span><span class="n">ROW_ACCESS_POLICIES</span><span class="o">`</span><span class="p">;</span>
 </span></code></pre></div>
 <table>
 <thead>

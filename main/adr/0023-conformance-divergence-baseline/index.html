@@ -6054,6 +6054,22 @@ even if the dispatch had been correct.</p>
 XPASSed and were removed from <code>divergences.py</code>. The registry
 shrinks from 162 to 159 entries; conformance metrics move from
 479 passed + 162 xfailed to <strong>482 passed + 159 xfailed</strong>.</p>
+<p><strong>Amendment (2026-05-27) — catalog sync extended to <code>CREATE SCHEMA</code>.</strong>
+The catalog auto-sync helper (<code>catalog/ddl_sync.py</code>) introduced for
+this bucket originally skipped registration when the target dataset
+was absent from the catalog — conformance setup always created the
+dataset via REST first, so the gap was invisible there. It surfaced
+for <code>CREATE ROW ACCESS POLICY</code> submitted via <code>jobs.query</code> against a
+table created purely through SQL (<code>CREATE SCHEMA ds; CREATE TABLE
+ds.t …</code>): the table lived in DuckDB but had no <code>TableMeta</code>, so
+row-access-policy target validation raised <code>Not found: table</code>. The
+helper now (a) registers a catalog dataset for SQL <code>CREATE SCHEMA</code>
+(<code>sync_created_schema</code>), matching real BigQuery where <code>CREATE SCHEMA</code>
+is visible via INFORMATION_SCHEMA + the REST API, and (b)
+auto-registers a missing dataset rather than skipping, so any
+SQL-created table or view is catalog-visible to INFORMATION_SCHEMA,
+<code>tables.list</code>, and RAP target validation. See ADR 0018's
+"CREATE / DROP ROW ACCESS POLICY via SQL DDL" amendment.</p>
 <h4 id="bucket-g-range-interval-wire-format-closed">Bucket G — RANGE / INTERVAL wire format — Closed<a class="headerlink" href="#bucket-g-range-interval-wire-format-closed" title="Permanent link">&para;</a></h4>
 <p><strong>Status.</strong> Closed. The closure ships three coordinated
 fixes:</p>

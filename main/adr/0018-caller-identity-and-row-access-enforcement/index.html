@@ -3638,6 +3638,17 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#create-drop-row-access-policy-via-sql-ddl-added-2026-05-27" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        CREATE / DROP ROW ACCESS POLICY via SQL DDL (added 2026-05-27)
+      
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -5308,6 +5319,17 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#create-drop-row-access-policy-via-sql-ddl-added-2026-05-27" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        CREATE / DROP ROW ACCESS POLICY via SQL DDL (added 2026-05-27)
+      
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -5683,6 +5705,41 @@ columns match the published BigQuery schema:</p>
 </table>
 <p>Grantees are emitted as a comma-separated string (the form BigQuery
 emits when reading the column through SQL).</p>
+<h3 id="create-drop-row-access-policy-via-sql-ddl-added-2026-05-27">CREATE / DROP ROW ACCESS POLICY via SQL DDL (added 2026-05-27)<a class="headerlink" href="#create-drop-row-access-policy-via-sql-ddl-added-2026-05-27" title="Permanent link">&para;</a></h3>
+<p>Policies are managed both through the REST <code>rowAccessPolicies</code>
+resource and through SQL DDL submitted to <code>jobs.query</code> / <code>jobs.insert</code>
+(the <code>bq query</code> path). sqlglot's BigQuery grammar does not model the
+RAP statements, so the executor detects and dispatches them with two
+regexes (<code>_RAP_CREATE_RE</code> / <code>_RAP_DROP_RE</code>) ahead of the translator.
+The accepted <code>CREATE</code> grammar matches BigQuery's:</p>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>CREATE [OR REPLACE] ROW ACCESS POLICY [IF NOT EXISTS] &lt;policy&gt;
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>  ON &lt;table&gt;
+</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>  [GRANT TO (&lt;grantee_list&gt;)]
+</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>  FILTER USING (&lt;bool_expr&gt;);
+</span></code></pre></div>
+<p>Decisions baked into the detector:</p>
+<ul>
+<li><strong><code>IF NOT EXISTS</code> is accepted</strong> (mirrors the <code>DROP … IF EXISTS</code>
+  form). A form the detector does not match falls through to the
+  translator and surfaces a parser error — it must never be a silent
+  no-op.</li>
+<li><strong><code>GRANT TO</code> is optional.</strong> A policy created without it applies to
+  every principal that can query the table; the emulator defaults the
+  grantee list to <code>("allAuthenticatedUsers",)</code> — the closest analogue
+  under the match rules above (an empty grantee tuple would match no
+  one, the opposite of BigQuery's semantic).</li>
+<li><strong>Backtick-quoting</strong> (whole-ref, per-component, and hyphenated
+  project ids) is accepted for both the policy id and the table ref.</li>
+<li><strong><code>classify_statement_type</code> recognises both forms</strong> via the same
+  regexes, so <code>statistics.query.statementType</code> reports
+  <code>CREATE_ROW_ACCESS_POLICY</code> / <code>DROP_ROW_ACCESS_POLICY</code> (a DROP is no
+  longer mislabelled as a CREATE).</li>
+</ul>
+<p>The DDL target table must be catalog-visible — <code>RowAccessPolicyManager</code>
+validates it via <code>catalog.get_table</code>. A table created purely through
+SQL (<code>CREATE SCHEMA ds; CREATE TABLE ds.t …</code>) is now registered in the
+catalog by the DDL-sync helpers (see ADR 0023 §1.F, amended the same
+day), so SQL-only tables are valid RAP targets.</p>
 <h2 id="consequences">Consequences<a class="headerlink" href="#consequences" title="Permanent link">&para;</a></h2>
 <ul>
 <li><strong>Positive.</strong> A single short-circuit (<code>catalog.list_all_policies()</code>
