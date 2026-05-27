@@ -547,6 +547,23 @@ XPASSed and were removed from `divergences.py`. The registry
 shrinks from 162 to 159 entries; conformance metrics move from
 479 passed + 162 xfailed to **482 passed + 159 xfailed**.
 
+**Amendment (2026-05-27) — catalog sync extended to `CREATE SCHEMA`.**
+The catalog auto-sync helper (`catalog/ddl_sync.py`) introduced for
+this bucket originally skipped registration when the target dataset
+was absent from the catalog — conformance setup always created the
+dataset via REST first, so the gap was invisible there. It surfaced
+for `CREATE ROW ACCESS POLICY` submitted via `jobs.query` against a
+table created purely through SQL (`CREATE SCHEMA ds; CREATE TABLE
+ds.t …`): the table lived in DuckDB but had no `TableMeta`, so
+row-access-policy target validation raised `Not found: table`. The
+helper now (a) registers a catalog dataset for SQL `CREATE SCHEMA`
+(`sync_created_schema`), matching real BigQuery where `CREATE SCHEMA`
+is visible via INFORMATION_SCHEMA + the REST API, and (b)
+auto-registers a missing dataset rather than skipping, so any
+SQL-created table or view is catalog-visible to INFORMATION_SCHEMA,
+`tables.list`, and RAP target validation. See ADR 0018's
+"CREATE / DROP ROW ACCESS POLICY via SQL DDL" amendment.
+
 #### Bucket G — RANGE / INTERVAL wire format — Closed
 
 **Status.** Closed. The closure ships three coordinated

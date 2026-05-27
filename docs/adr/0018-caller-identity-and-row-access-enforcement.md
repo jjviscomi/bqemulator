@@ -302,6 +302,46 @@ columns match the published BigQuery schema:
 Grantees are emitted as a comma-separated string (the form BigQuery
 emits when reading the column through SQL).
 
+### CREATE / DROP ROW ACCESS POLICY via SQL DDL (added 2026-05-27)
+
+Policies are managed both through the REST `rowAccessPolicies`
+resource and through SQL DDL submitted to `jobs.query` / `jobs.insert`
+(the `bq query` path). sqlglot's BigQuery grammar does not model the
+RAP statements, so the executor detects and dispatches them with two
+regexes (`_RAP_CREATE_RE` / `_RAP_DROP_RE`) ahead of the translator.
+The accepted `CREATE` grammar matches BigQuery's:
+
+```
+CREATE [OR REPLACE] ROW ACCESS POLICY [IF NOT EXISTS] <policy>
+  ON <table>
+  [GRANT TO (<grantee_list>)]
+  FILTER USING (<bool_expr>);
+```
+
+Decisions baked into the detector:
+
+- **`IF NOT EXISTS` is accepted** (mirrors the `DROP … IF EXISTS`
+  form). A form the detector does not match falls through to the
+  translator and surfaces a parser error — it must never be a silent
+  no-op.
+- **`GRANT TO` is optional.** A policy created without it applies to
+  every principal that can query the table; the emulator defaults the
+  grantee list to `("allAuthenticatedUsers",)` — the closest analogue
+  under the match rules above (an empty grantee tuple would match no
+  one, the opposite of BigQuery's semantic).
+- **Backtick-quoting** (whole-ref, per-component, and hyphenated
+  project ids) is accepted for both the policy id and the table ref.
+- **`classify_statement_type` recognises both forms** via the same
+  regexes, so `statistics.query.statementType` reports
+  `CREATE_ROW_ACCESS_POLICY` / `DROP_ROW_ACCESS_POLICY` (a DROP is no
+  longer mislabelled as a CREATE).
+
+The DDL target table must be catalog-visible — `RowAccessPolicyManager`
+validates it via `catalog.get_table`. A table created purely through
+SQL (`CREATE SCHEMA ds; CREATE TABLE ds.t …`) is now registered in the
+catalog by the DDL-sync helpers (see ADR 0023 §1.F, amended the same
+day), so SQL-only tables are valid RAP targets.
+
 ## Consequences
 
 - **Positive.** A single short-circuit (`catalog.list_all_policies()`
