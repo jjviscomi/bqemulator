@@ -5509,6 +5509,10 @@ a dedicated exit code):</p>
 <td>Example outputs that hard-code a version string (<code>{"status":"ok","version":"0.1.0"}</code>, <code>bqemulator 0.1.0</code>).</td>
 </tr>
 <tr>
+<td><a href="https://github.com/jjviscomi/bqemulator/blob/main/docs/index.md"><code>docs/index.md</code></a> — "Status" callout</td>
+<td>The <code>**vX.Y.Z** — production-stable</code> version string in the landing-page Status admonition. Not covered by <code>bump_version.py</code>; update <strong>every</strong> release.</td>
+</tr>
+<tr>
 <td>All four auto-generated reference docs (<a href="https://github.com/jjviscomi/bqemulator/blob/main/docs/reference/conformance-coverage-matrix.md"><code>conformance-coverage-matrix</code></a>, <a href="https://github.com/jjviscomi/bqemulator/blob/main/docs/reference/compatibility-matrix.md"><code>compatibility-matrix</code></a>, <a href="https://github.com/jjviscomi/bqemulator/blob/main/docs/reference/sql-function-mapping.md"><code>sql-function-mapping</code></a>, <a href="https://github.com/jjviscomi/bqemulator/blob/main/docs/reference/api-coverage.md"><code>api-coverage</code></a>)</td>
 <td>Run <code>make matrix coverage-matrix</code> and commit any diff. The umbrella <code>make matrix</code> covers compat-matrix + function-mapping + api-coverage in one call; <code>make coverage-matrix</code> is separate because it walks the conformance corpus. The Docs-drift CI gate runs the matching <code>--check</code> modes on every PR.</td>
 </tr>
