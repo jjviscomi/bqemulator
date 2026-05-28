@@ -217,11 +217,7 @@ def _unwrap_source(ddl: VersioningDDL) -> tuple[str, str, str]:
     survives ``python -O`` and so the failure mode is a normal client
     error rather than ``AssertionError``.
     """
-    if (
-        ddl.source_project is None
-        or ddl.source_dataset is None
-        or ddl.source_table is None
-    ):
+    if ddl.source_project is None or ddl.source_dataset is None or ddl.source_table is None:
         raise InvalidQueryError("Snapshot/clone DDL requires a source table reference")
     return ddl.source_project, ddl.source_dataset, ddl.source_table
 
