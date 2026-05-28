@@ -22,6 +22,7 @@ from typing import Annotated, Any
 from fastapi import APIRouter, Depends, Query, Request, Response, status
 
 from bqemulator.api.dependencies import AppContext, get_context
+from bqemulator.api.routes._rest_helpers import body_or_existing, existing_attr_or
 from bqemulator.catalog.etag import generate_etag
 from bqemulator.catalog.models import AccessEntry, DatasetMeta
 from bqemulator.domain.errors import (
@@ -189,20 +190,18 @@ def _rest_to_dataset_meta(
     return DatasetMeta(
         project_id=project_id,
         dataset_id=dataset_id,
-        friendly_name=body.get("friendlyName", existing.friendly_name if existing else None),
-        description=body.get("description", existing.description if existing else None),
-        labels=body.get("labels", existing.labels if existing else {}),
-        location=body.get("location", existing.location if existing else "US"),
-        default_table_expiration_ms=body.get(
-            "defaultTableExpirationMs",
-            existing.default_table_expiration_ms if existing else None,
+        friendly_name=body_or_existing(body, "friendlyName", existing, "friendly_name", None),
+        description=body_or_existing(body, "description", existing, "description", None),
+        labels=body_or_existing(body, "labels", existing, "labels", {}),
+        location=body_or_existing(body, "location", existing, "location", "US"),
+        default_table_expiration_ms=body_or_existing(
+            body, "defaultTableExpirationMs", existing, "default_table_expiration_ms", None
         ),
-        default_partition_expiration_ms=body.get(
-            "defaultPartitionExpirationMs",
-            existing.default_partition_expiration_ms if existing else None,
+        default_partition_expiration_ms=body_or_existing(
+            body, "defaultPartitionExpirationMs", existing, "default_partition_expiration_ms", None
         ),
         access_entries=access_entries,
-        creation_time=existing.creation_time if existing else now,
+        creation_time=existing_attr_or(existing, "creation_time", now),
         last_modified_time=now,
         etag=generate_etag(project_id, dataset_id, str(now)),
     )

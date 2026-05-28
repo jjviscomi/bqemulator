@@ -19,6 +19,7 @@ from typing import Annotated, Any
 from fastapi import APIRouter, Depends, Request, Response, status
 
 from bqemulator.api.dependencies import AppContext, get_context
+from bqemulator.api.routes._rest_helpers import body_or_existing, existing_attr_or
 from bqemulator.catalog.etag import generate_etag
 from bqemulator.catalog.models import RoutineArgument, RoutineMeta
 from bqemulator.domain.errors import (
@@ -114,27 +115,25 @@ def _rest_to_routine_meta(
     else:
         args = ()
 
-    return_type = body.get("returnType", existing.return_type if existing else None)
-    routine_type = body.get("routineType", existing.routine_type if existing else "SCALAR_FUNCTION")
-    language = body.get("language", existing.language if existing else "SQL")
-    definition = body.get("definitionBody", existing.definition_body if existing else "")
-    imported = body.get("importedLibraries", list(existing.imported_libraries) if existing else [])
-    description = body.get("description", existing.description if existing else None)
-    determinism = body.get("determinismLevel", existing.determinism_level if existing else None)
+    imported = body_or_existing(body, "importedLibraries", existing, "imported_libraries", [])
 
     return RoutineMeta(
         project_id=project_id,
         dataset_id=dataset_id,
         routine_id=routine_id,
-        routine_type=routine_type,
-        language=language,
-        definition_body=definition,
+        routine_type=body_or_existing(
+            body, "routineType", existing, "routine_type", "SCALAR_FUNCTION"
+        ),
+        language=body_or_existing(body, "language", existing, "language", "SQL"),
+        definition_body=body_or_existing(body, "definitionBody", existing, "definition_body", ""),
         arguments=args,
-        return_type=return_type,
+        return_type=body_or_existing(body, "returnType", existing, "return_type", None),
         imported_libraries=tuple(imported),
-        description=description,
-        determinism_level=determinism,
-        creation_time=existing.creation_time if existing else now,
+        description=body_or_existing(body, "description", existing, "description", None),
+        determinism_level=body_or_existing(
+            body, "determinismLevel", existing, "determinism_level", None
+        ),
+        creation_time=existing_attr_or(existing, "creation_time", now),
         last_modified_time=now,
         etag=generate_etag(project_id, dataset_id, routine_id, str(now)),
     )
