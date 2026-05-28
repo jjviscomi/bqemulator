@@ -144,8 +144,14 @@ class GzipRequestMiddleware:
             return
         body, disconnected = await _read_full_body(receive)
         if disconnected:
-            # Pass through; the downstream app handles the disconnect.
-            await self._app(scope, receive, send)
+            # ``_read_full_body`` already consumed the disconnect message
+            # from ``receive``. Synthesise a replacement receive that
+            # re-delivers the disconnect so the downstream app doesn't
+            # hang on the now-exhausted channel.
+            async def replay_disconnect() -> Message:
+                return {"type": "http.disconnect"}
+
+            await self._app(scope, replay_disconnect, send)
             return
         try:
             decompressed = gzip.decompress(body)

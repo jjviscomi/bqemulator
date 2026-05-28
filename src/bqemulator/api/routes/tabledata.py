@@ -131,20 +131,26 @@ def _build_insert_select(table_meta_fields: list[Any], reg_name: str) -> str:
 
 
 def _fields_raw_from_schema(fields: Any) -> list[dict[str, Any]]:
-    """Project a ``TableSchema.fields`` tuple onto :func:`_build_arrow_schema`'s shape."""
-    return [
-        {
-            "name": f.name,
-            "type": f.type,
-            "mode": f.mode,
-            **(
-                {"rangeElementType": {"type": f.range_element_type.type}}
-                if f.range_element_type is not None
-                else {}
-            ),
+    """Project a ``TableSchema.fields`` tuple onto :func:`_build_arrow_schema`'s shape.
+
+    Recurses into ``fields`` so nested ``RECORD`` / ``STRUCT`` schemas
+    reach the Arrow builder with their children intact; otherwise nested
+    inserts collapse to empty structs.
+    """
+
+    def _to_raw(field: Any) -> dict[str, Any]:
+        raw: dict[str, Any] = {
+            "name": field.name,
+            "type": field.type,
+            "mode": field.mode,
         }
-        for f in fields
-    ]
+        if getattr(field, "fields", None):
+            raw["fields"] = [_to_raw(child) for child in field.fields]
+        if getattr(field, "range_element_type", None) is not None:
+            raw["rangeElementType"] = {"type": field.range_element_type.type}
+        return raw
+
+    return [_to_raw(f) for f in fields]
 
 
 def _partition_rows_for_insert(

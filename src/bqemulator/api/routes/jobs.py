@@ -1202,12 +1202,12 @@ async def _build_dry_run_query_response(
     project_id: str,
     job_id: str,
     bq_sql: str,
-    query_params: Any,
-    session_id: Any,
+    query_params: list[dict[str, Any]] | None,
+    session_id: str | None,
     config: dict[str, Any],
-    ctx: Any,
-    caller: Any,
-    now: Any,
+    ctx: AppContext,
+    caller: CallerIdentity,
+    now: datetime,
 ) -> dict[str, Any]:
     """Build the dry-run response for the ``query`` job branch.
 
@@ -1268,11 +1268,11 @@ async def _execute_query_or_failed_meta(
     project_id: str,
     job_id: str,
     bq_sql: str,
-    query_params: Any,
+    query_params: list[dict[str, Any]] | None,
     query_config: dict[str, Any],
     config: dict[str, Any],
-    ctx: Any,
-    caller: Any,
+    ctx: AppContext,
+    caller: CallerIdentity,
 ) -> JobMeta:
     """Run ``execute_query_job`` + ``_apply_write_append``; persist failures via the async envelope.
 
@@ -1324,9 +1324,9 @@ async def _handle_query_job(
     config: dict[str, Any],
     *,
     dry_run: bool,
-    ctx: Any,
-    caller: Any,
-    now: Any,
+    ctx: AppContext,
+    caller: CallerIdentity,
+    now: datetime,
 ) -> JobMeta | dict[str, Any]:
     """Handle the ``"query"`` branch of :func:`insert_job`.
 
@@ -1408,7 +1408,7 @@ async def _handle_load_job_with_async_envelope(
     project_id: str,
     job_id: str,
     config: dict[str, Any],
-    ctx: Any,
+    ctx: AppContext,
 ) -> JobMeta:
     """Run ``execute_load_job``, wrapping engine-level errors in an async-error envelope.
 

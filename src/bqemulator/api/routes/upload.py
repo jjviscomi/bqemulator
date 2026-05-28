@@ -32,6 +32,7 @@ Reference docs:
 
 from __future__ import annotations
 
+import email.message
 import email.parser
 import email.policy
 import json
@@ -193,7 +194,7 @@ async def _iter_request_body(request: Request) -> Any:
 # ---------------------------------------------------------------------------
 
 
-def _parse_json_part(part: Any) -> dict[str, Any]:
+def _parse_json_part(part: email.message.Message) -> dict[str, Any]:
     """Decode the JSON envelope from a ``multipart/related`` first part.
 
     Validates the part's declared content-type contains ``json``, parses
@@ -217,7 +218,7 @@ def _parse_json_part(part: Any) -> dict[str, Any]:
     return envelope
 
 
-def _parse_media_part(part: Any) -> bytes:
+def _parse_media_part(part: email.message.Message) -> bytes:
     """Extract the media bytes from a ``multipart/related`` second part.
 
     Validates the part's declared content-type against the
