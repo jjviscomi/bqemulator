@@ -274,10 +274,13 @@ def _split_name_type(token: str) -> tuple[str, str]:
 def _extract_parens(type_str: str, prefix: str) -> str:
     """Extract the contents between ``PREFIX(`` and the matching ``)``.
 
+    Whitespace between the prefix keyword and ``(`` is tolerated, so both
+    ``STRUCT(a INT)`` and ``STRUCT (a INT)`` parse identically.
+
     Example: ``_extract_parens("STRUCT(a INT, b TEXT)", "STRUCT")`` → ``"a INT, b TEXT"``.
     """
-    idx = type_str.upper().index(prefix.upper() + "(")
-    start = idx + len(prefix) + 1
+    upper = type_str.upper()
+    start = upper.index("(", upper.index(prefix.upper()) + len(prefix)) + 1
     depth = 1
     pos = start
     while pos < len(type_str) and depth > 0:

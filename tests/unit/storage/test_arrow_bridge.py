@@ -629,10 +629,8 @@ class TestSpecializedTypesRange:
 class TestDetectIntervalForm:
     """``_detect_interval_form`` selects the ``parse_interval_literal`` form.
 
-    Pins the signature-tuple classification introduced when
-    ``_bq_interval_string_to_tuple`` was de-nested below rank C — every
-    branch of the original if/elif chain plus the unrecognised fallback,
-    and that a leading sign is treated as part of the value (not a
+    Covers every recognised interval form plus the unrecognised fallback,
+    and that a leading sign is treated as part of the value (not a field
     separator) so signed shorthands classify like their unsigned form.
     """
 

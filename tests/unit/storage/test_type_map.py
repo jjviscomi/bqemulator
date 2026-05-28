@@ -139,6 +139,14 @@ class TestDuckdbToBqParameterized:
         result = duckdb_to_bq("STRUCT(name VARCHAR, age BIGINT)")
         assert result == "STRUCT<name STRING, age INT64>"
 
+    def test_list_function_spaced(self) -> None:
+        # A space before the paren is tolerated; both forms resolve alike.
+        assert duckdb_to_bq("LIST (BIGINT)") == "ARRAY<INT64>"
+
+    def test_struct_function_spaced(self) -> None:
+        result = duckdb_to_bq("STRUCT (name VARCHAR, age BIGINT)")
+        assert result == "STRUCT<name STRING, age INT64>"
+
 
 # ---------------------------------------------------------------------------
 # Round-trip invariant
