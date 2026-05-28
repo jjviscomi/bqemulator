@@ -10,7 +10,8 @@ Reference:
 
 from __future__ import annotations
 
-from typing import Annotated, Any
+from collections.abc import Sequence
+from typing import Annotated, Any, Protocol, TypedDict
 
 from fastapi import APIRouter, Depends, Query, Request
 import pyarrow as pa
@@ -130,6 +131,78 @@ def _build_insert_select(table_meta_fields: list[Any], reg_name: str) -> str:
 # ---------------------------------------------------------------------------
 
 
+class _SchemaFieldLike(Protocol):
+    """Structural type of a catalog schema field (e.g. :class:`TableFieldSchema`).
+
+    Declared as a :class:`Protocol` so the helper accepts any object
+    exposing the BigQuery-shaped attribute surface — keeps the
+    forwarding helper decoupled from the concrete catalog model.
+    """
+
+    name: str
+    type: str
+    mode: str
+    fields: Sequence[_SchemaFieldLike]
+    range_element_type: _SchemaFieldLike | None
+
+
+class _RawSchemaField(TypedDict, total=False):
+    """:func:`_build_arrow_schema` input shape for a single field."""
+
+    name: str
+    type: str
+    mode: str
+    fields: list[_RawSchemaField]
+    rangeElementType: dict[str, str]
+
+
+def _fields_raw_from_schema(fields: Sequence[_SchemaFieldLike]) -> list[_RawSchemaField]:
+    """Project a ``TableSchema.fields`` tuple onto :func:`_build_arrow_schema`'s shape.
+
+    Recurses into ``fields`` so nested ``RECORD`` / ``STRUCT`` schemas
+    reach the Arrow builder with their children intact; otherwise nested
+    inserts collapse to empty structs.
+    """
+
+    def _to_raw(field: _SchemaFieldLike) -> _RawSchemaField:
+        raw: _RawSchemaField = {
+            "name": field.name,
+            "type": field.type,
+            "mode": field.mode,
+        }
+        if field.fields:
+            raw["fields"] = [_to_raw(child) for child in field.fields]
+        range_elem = field.range_element_type
+        if range_elem is not None:
+            raw["rangeElementType"] = {"type": range_elem.type}
+        return raw
+
+    return [_to_raw(f) for f in fields]
+
+
+def _partition_rows_for_insert(
+    rows: list[dict[str, Any]],
+    arrow_schema: Any,
+) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
+    """Split ``rows`` into ``(good, errors)`` by attempted per-row Arrow conversion.
+
+    Implements the ``skipInvalidRows=true`` partial-success contract:
+    each row's conversion is attempted in isolation; failures are
+    captured in the returned error list (formatted by
+    :func:`_format_insert_error`) instead of aborting the request.
+    """
+    good_rows: list[dict[str, Any]] = []
+    insert_errors: list[dict[str, Any]] = []
+    for idx, row in enumerate(rows):
+        try:
+            bq_rows_to_arrow([row], arrow_schema)
+        except (ValueError, TypeError) as exc:
+            insert_errors.append(_format_insert_error(idx, exc, row, arrow_schema))
+            continue
+        good_rows.append(row)
+    return good_rows, insert_errors
+
+
 @router.post("/projects/{project_id}/datasets/{dataset_id}/tables/{table_id}/insertAll")
 async def insert_all(
     project_id: str,
@@ -149,50 +222,21 @@ async def insert_all(
     if not rows:
         return {"kind": "bigquery#tableDataInsertAllResponse", "insertErrors": []}
 
-    # Build Arrow schema from the table's catalog schema.
-    fields_raw = [
-        {
-            "name": f.name,
-            "type": f.type,
-            "mode": f.mode,
-            **(
-                {
-                    "rangeElementType": {
-                        "type": f.range_element_type.type,
-                    },
-                }
-                if f.range_element_type is not None
-                else {}
-            ),
-        }
-        for f in table_meta.schema_.fields
-    ]
-    arrow_schema = _build_arrow_schema(fields_raw)
+    arrow_schema = _build_arrow_schema(_fields_raw_from_schema(table_meta.schema_.fields))
 
-    # When ``skipInvalidRows=true`` is set, attempt to convert each row
-    # individually and capture the per-row error so the request returns
-    # a partial success (matching BigQuery's ``insertErrors[]`` wire
-    # shape). Without the flag, the first bad row aborts the whole
-    # request with an internal error.
+    # ``skipInvalidRows=true`` requests partial success — convert each
+    # row in isolation and capture per-row failures in ``insertErrors[]``
+    # (matching BigQuery's wire shape). Without the flag, the first bad
+    # row aborts the whole request with an internal error.
     insert_errors: list[dict[str, Any]] = []
     if skip_invalid_rows:
-        good_rows: list[dict[str, Any]] = []
-        for idx, row in enumerate(rows):
-            try:
-                bq_rows_to_arrow([row], arrow_schema)
-            except (ValueError, TypeError) as exc:
-                insert_errors.append(_format_insert_error(idx, exc, row, arrow_schema))
-                continue
-            good_rows.append(row)
-        if not good_rows:
+        rows, insert_errors = _partition_rows_for_insert(rows, arrow_schema)
+        if not rows:
             return {
                 "kind": "bigquery#tableDataInsertAllResponse",
                 "insertErrors": insert_errors,
             }
-        arrow_table = bq_rows_to_arrow(good_rows, arrow_schema)
-    else:
-        # Convert JSON rows to Arrow, then insert into DuckDB.
-        arrow_table = bq_rows_to_arrow(rows, arrow_schema)
+    arrow_table = bq_rows_to_arrow(rows, arrow_schema)
 
     from uuid import uuid4
 
@@ -223,17 +267,15 @@ async def insert_all(
         # are required to be idempotent.
         ctx.snapshots.record_change(project_id, dataset_id, table_id)
 
-    response: dict[str, Any] = {"kind": "bigquery#tableDataInsertAllResponse"}
-    if insert_errors:
-        response["insertErrors"] = insert_errors
-    else:
-        response["insertErrors"] = []
-    return response
+    return {
+        "kind": "bigquery#tableDataInsertAllResponse",
+        "insertErrors": insert_errors,
+    }
 
 
 def _format_insert_error(
     idx: int,
-    exc: BaseException,
+    _exc: BaseException,
     row: dict[str, Any],
     arrow_schema: Any,
 ) -> dict[str, Any]:
@@ -243,6 +285,11 @@ def _format_insert_error(
     message}, ...]}`` per failing row. The emulator's best-effort
     location is the first column name from the request's ``json``
     payload — clients use this to highlight the offending field.
+
+    ``_exc`` is part of the contract (the raised conversion exception)
+    but is intentionally not consulted in the body — its text is not
+    echoed to the wire to avoid surfacing internal exception details
+    (CodeQL ``py/stack-trace-exposure``).
     """
     location = ""
     bad_value: Any = None
@@ -260,10 +307,13 @@ def _format_insert_error(
 
     # BigQuery's error wording is ``Cannot convert value to <type>
     # (bad value): <value>``. Rebuild the message in that shape using
-    # the failing field's declared type + the offending value, falling
-    # back to the raw exception text when the location isn't a known
-    # column.
-    message = str(exc)
+    # the failing field's declared type + the offending value. When the
+    # offending column can't be identified, fall back to a sanitised
+    # message — the ``index`` in the returned dict already lets clients
+    # correlate the failure with the input row. The raw exception text
+    # is intentionally NOT echoed to the wire to avoid surfacing
+    # internal exception details (CodeQL ``py/stack-trace-exposure``).
+    message = "Cannot convert row to the table's schema"
     if location:
         try:
             field_type = arrow_schema.field(location).type
