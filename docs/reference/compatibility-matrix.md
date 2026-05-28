@@ -139,7 +139,7 @@ surfaces).
 
 > **Auto-generated.** Edit fixtures under [`tests/conformance/`](https://github.com/jjviscomi/bqemulator/blob/main/tests/conformance) or update the XFAIL registry in [`tests/conformance/divergences.py`](https://github.com/jjviscomi/bqemulator/blob/main/tests/conformance/divergences.py), then run `make compat-matrix` to regenerate this block. The CI gate (`--check`) refuses to merge a PR whose committed snapshot has drifted from the corpus.
 
-- **Corpus totals**: 1244 fixtures (1170 SQL + 48 HTTP + 26 gRPC); **1231 PASS / 13 XFAIL**
+- **Corpus totals**: 1244 fixtures (1170 SQL + 48 HTTP + 26 gRPC); **1232 PASS / 12 XFAIL**
 - **XFAIL contract**: every pin in `KNOWN_DIVERGENCES` references an ADR or `out-of-scope.md` section — invented divergences are forbidden (see [ADR 0023](https://github.com/jjviscomi/bqemulator/blob/main/docs/adr/0023-conformance-divergence-baseline.md)).
 
 ### Per-phase fixture coverage
@@ -155,16 +155,16 @@ Each row aggregates fixtures by corpus (SQL / HTTP / gRPC) and the on-disk phase
 | SQL | `routines_scripting` | 58 | 58 | 0 | ✅ |
 | SQL | `row_access` | 23 | 22 | 1 | ⚠ |
 | SQL | `specialized_types` | 150 | 143 | 7 | ⚠ |
-| SQL | `standard_functions` | 662 | 657 | 5 | ⚠ |
+| SQL | `standard_functions` | 662 | 658 | 4 | ⚠ |
 | SQL | `versioning` | 24 | 24 | 0 | ✅ |
 | HTTP | `jobs` | 48 | 48 | 0 | ✅ |
 | gRPC | `storage_read` | 16 | 16 | 0 | ✅ |
 | gRPC | `storage_write` | 10 | 10 | 0 | ✅ |
-| **Total** | | **1244** | **1231** | **13** | ⚠ |
+| **Total** | | **1244** | **1232** | **12** | ⚠ |
 
 ### XFAIL pin registry
 
-All 13 entries in [`tests/conformance/divergences.py`](https://github.com/jjviscomi/bqemulator/blob/main/tests/conformance/divergences.py) — each rationale references an ADR or [`out-of-scope.md`](https://github.com/jjviscomi/bqemulator/blob/main/docs/reference/out-of-scope.md) section so closure paths stay traceable.
+All 12 entries in [`tests/conformance/divergences.py`](https://github.com/jjviscomi/bqemulator/blob/main/tests/conformance/divergences.py) — each rationale references an ADR or [`out-of-scope.md`](https://github.com/jjviscomi/bqemulator/blob/main/docs/reference/out-of-scope.md) section so closure paths stay traceable.
 
 | Fixture id | Rationale (short) |
 |---|---|
@@ -179,7 +179,6 @@ All 13 entries in [`tests/conformance/divergences.py`](https://github.com/jjvisc
 | [`standard_functions/agg_hll_count_init_basic`](https://github.com/jjviscomi/bqemulator/blob/main/tests/conformance/sql_corpus/standard_functions/agg_hll_count_init_basic) | HLL sketch BYTES format differs — see docs/reference/out-of-scope.md#hll-sketch-binary-format-hll_countinit-m… |
 | [`standard_functions/agg_hll_count_merge_partial_basic`](https://github.com/jjviscomi/bqemulator/blob/main/tests/conformance/sql_corpus/standard_functions/agg_hll_count_merge_partial_basic) | HLL sketch BYTES format differs — see docs/reference/out-of-scope.md#hll-sketch-binary-format-hll_countinit-m… |
 | [`standard_functions/bound_bignumeric_max`](https://github.com/jjviscomi/bqemulator/blob/main/tests/conformance/sql_corpus/standard_functions/bound_bignumeric_max) | BIGNUMERIC literal with 39 integer digits exceeds DuckDB's DECIMAL(38, 0) cap; literals with ≤ 38 integer dig… |
-| [`standard_functions/dt_format_date_min`](https://github.com/jjviscomi/bqemulator/blob/main/tests/conformance/sql_corpus/standard_functions/dt_format_date_min) | FORMAT_DATE %Y year-padding differs from BigQuery for years < 1000: BQ emits '1-01-01' for DATE '0001-01-01',… |
 | [`standard_functions/tpcds_q47`](https://github.com/jjviscomi/bqemulator/blob/main/tests/conformance/sql_corpus/standard_functions/tpcds_q47) | TPC-DS Q47-style multi-CTE pattern: a CTE that carries a window aggregate (AVG OVER PARTITION BY ... |
 
 <!-- END AUTO-GENERATED CONFORMANCE SNAPSHOT -->

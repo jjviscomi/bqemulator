@@ -477,45 +477,6 @@ standard pipeline. A full legacy-SQL parser remains out of scope.
 standard SQL (the canonical migration path BigQuery itself
 recommends) and submit it with `useLegacySql=false` (the default).
 
-### FORMAT_DATE `%Y` year-padding for years < 1000
-
-BigQuery's `FORMAT_DATE('%Y-%m-%d', DATE '0001-01-01')` returns
-``'1-01-01'`` — the ``%Y`` specifier does **not** zero-pad the
-year for values < 1000. DuckDB's ``STRFTIME(d, '%Y-%m-%d')``
-returns ``'0001-01-01'`` — it zero-pads ``%Y`` to four digits per
-POSIX ``strftime(3)``. The semantic difference only surfaces for
-dates between ``DATE '0001-01-01'`` and ``DATE '0999-12-31'``,
-which are vanishingly rare in real-world data: BigQuery itself
-caps DATE at ``DATE '0001-01-01'`` lower-bound but most
-real-world dates are post-1900.
-
-Closing this divergence cleanly requires either:
-
-1. A custom Python helper UDF (``bqemu_format_date``) that
-   implements BigQuery's exact ``strftime`` semantics for every
-   conversion specifier (``%Y`` without padding, ``%G`` with
-   ISO-week semantics, ``%U`` / ``%V`` / ``%W`` BigQuery-specific
-   week-number contracts, the locale-dependent ``%a`` / ``%A``
-   / ``%b`` / ``%B`` strings — currently all routed through
-   DuckDB's POSIX ``strftime``), wired through a new
-   ``FormatDateRule`` that intercepts every call. The maintenance
-   burden grows with every BigQuery format-specifier release.
-2. A narrow ``%Y``-specific pre-translator that rewrites
-   ``FORMAT_DATE('…%Y…', d)`` calls to a `REPLACE`-based emit
-   that strips leading zeros from the year. Brittle — the
-   year token can appear in arbitrary positions inside the
-   format string and the rewrite would have to track quoting.
-
-The conformance fixture
-[`standard_functions/dt_format_date_min`](https://github.com/jjviscomi/bqemulator/blob/main/tests/conformance/sql_corpus/standard_functions/dt_format_date_min)
-is pinned XFAIL against this divergence so the surface is tracked
-without forcing an inline closure.
-
-*Workaround*: clients that need the un-padded year for pre-1000
-dates should format the year explicitly (e.g.
-``CAST(EXTRACT(YEAR FROM d) AS STRING)``) or use a SAFE_CAST to
-strip leading zeros from the rendered output.
-
 ### CTE self-join with window aggregate (TPC-DS Q47)
 
 TPC-DS Q47 uses a multi-CTE pattern where a CTE (`v1`) is

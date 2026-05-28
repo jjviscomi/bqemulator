@@ -63,14 +63,6 @@ _BIGNUMERIC_CAP = (
     "fractional truncation (Path C of numeric_literals.py) — see "
     "docs/reference/out-of-scope.md#bignumeric-literals-with-39-integer-digits"
 )
-_FORMAT_DATE_YEAR_PAD = (
-    "FORMAT_DATE %Y year-padding differs from BigQuery for years < 1000: "
-    "BQ emits '1-01-01' for DATE '0001-01-01', DuckDB's STRFTIME emits "
-    "'0001-01-01' (POSIX strftime always pads %Y to 4 digits). Closure "
-    "needs a bqemu_format_date Python helper UDF or a narrow %Y "
-    "pre-translator — see "
-    "docs/reference/out-of-scope.md#format_date-y-year-padding-for-years-1000"
-)
 _CTE_SELF_JOIN_WINDOW_UNNEST = (
     "TPC-DS Q47-style multi-CTE pattern: a CTE that carries a window "
     "aggregate (AVG OVER PARTITION BY ... and RANK OVER ...) is self-"
@@ -113,8 +105,6 @@ KNOWN_DIVERGENCES: dict[str, str] = {
     "standard_functions/agg_hll_count_merge_partial_basic": _HLL_SKETCH_BINARY,
     # docs/reference/out-of-scope.md#bignumeric-literals-with-39-integer-digits
     "standard_functions/bound_bignumeric_max": _BIGNUMERIC_CAP,
-    # docs/reference/out-of-scope.md#format_date-y-year-padding-for-years-1000
-    "standard_functions/dt_format_date_min": _FORMAT_DATE_YEAR_PAD,
     # docs/reference/out-of-scope.md#cte-self-join-with-window-aggregate-tpc-ds-q47
     "standard_functions/tpcds_q47": _CTE_SELF_JOIN_WINDOW_UNNEST,
     # docs/reference/out-of-scope.md#iam-enforcement
