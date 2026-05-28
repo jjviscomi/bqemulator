@@ -151,38 +151,70 @@ def _apply_table_suffix_pushdown(
 
     pairs = [(tid[len(prefix) :], tid) for tid in table_ids]
 
-    # _TABLE_SUFFIX = 'x'
+    for filter_fn in _SUFFIX_PUSHDOWN_FILTERS:
+        match_result = filter_fn(bq_sql, pairs)
+        if match_result is not None:
+            return match_result
+    return table_ids
+
+
+def _suffix_equals_filter(
+    bq_sql: str,
+    pairs: list[tuple[str, str]],
+) -> list[str] | None:
+    """Match ``_TABLE_SUFFIX = 'x'`` and filter to the single matching suffix."""
     m = re.search(
         r"_TABLE_SUFFIX\s*=\s*(['\"])([^'\"]+)\1",
         bq_sql,
         flags=re.IGNORECASE,
     )
-    if m:
-        target = m.group(2)
-        return [tid for s, tid in pairs if s == target]
+    if m is None:
+        return None
+    target = m.group(2)
+    return [tid for s, tid in pairs if s == target]
 
-    # _TABLE_SUFFIX IN ('a', 'b')
+
+def _suffix_in_filter(
+    bq_sql: str,
+    pairs: list[tuple[str, str]],
+) -> list[str] | None:
+    """Match ``_TABLE_SUFFIX IN ('a', 'b', …)`` and filter to the listed suffixes."""
     m = re.search(
         r"_TABLE_SUFFIX\s+IN\s*\(([^)]+)\)",
         bq_sql,
         flags=re.IGNORECASE,
     )
-    if m:
-        values = re.findall(r"['\"]([^'\"]+)['\"]", m.group(1))
-        return [tid for s, tid in pairs if s in values]
+    if m is None:
+        return None
+    values = re.findall(r"['\"]([^'\"]+)['\"]", m.group(1))
+    return [tid for s, tid in pairs if s in values]
 
-    # _TABLE_SUFFIX BETWEEN 'a' AND 'b'
+
+def _suffix_between_filter(
+    bq_sql: str,
+    pairs: list[tuple[str, str]],
+) -> list[str] | None:
+    """Match ``_TABLE_SUFFIX BETWEEN 'a' AND 'b'`` and filter to the inclusive range."""
     m = re.search(
         r"_TABLE_SUFFIX\s+BETWEEN\s+(['\"])([^'\"]+)\1\s+AND\s+(['\"])([^'\"]+)\3",
         bq_sql,
         flags=re.IGNORECASE,
     )
-    if m:
-        low = m.group(2)
-        high = m.group(4)
-        return [tid for s, tid in pairs if low <= s <= high]
+    if m is None:
+        return None
+    low, high = m.group(2), m.group(4)
+    return [tid for s, tid in pairs if low <= s <= high]
 
-    # Single-sided inequality: >= / > / <= / <
+
+def _suffix_inequality_filter(
+    bq_sql: str,
+    pairs: list[tuple[str, str]],
+) -> list[str] | None:
+    """Match ``_TABLE_SUFFIX >= 'x'`` / ``>`` / ``<=`` / ``<`` and apply the comparator.
+
+    The dispatch order tries ``>=`` and ``<=`` before ``>`` and ``<``
+    so the regex engine doesn't mis-match the two-char operators.
+    """
     compare_fns: list[tuple[str, Callable[[str, str], bool]]] = [
         (r">=", lambda s, v: s >= v),
         (r"<=", lambda s, v: s <= v),
@@ -198,8 +230,20 @@ def _apply_table_suffix_pushdown(
         if m:
             target = m.group(2)
             return [tid for s, tid in pairs if op_fn(s, target)]
+    return None
 
-    return table_ids
+
+#: Pushdown filter dispatch table. Each entry takes the raw SQL + the
+#: ``(suffix, table_id)`` pair list and returns either a narrowed
+#: ``table_ids`` list (filter matched) or ``None`` (didn't match —
+#: try the next filter). The first match wins; if none match, the
+#: caller falls back to the full ``table_ids``.
+_SUFFIX_PUSHDOWN_FILTERS: tuple[Callable[[str, list[tuple[str, str]]], list[str] | None], ...] = (
+    _suffix_equals_filter,
+    _suffix_in_filter,
+    _suffix_between_filter,
+    _suffix_inequality_filter,
+)
 
 
 __all__ = ["expand_wildcard_tables"]

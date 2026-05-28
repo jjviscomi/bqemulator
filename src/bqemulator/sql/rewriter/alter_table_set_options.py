@@ -53,23 +53,38 @@ def _strip_leading_comments(sql: str) -> int:
         if ch.isspace():
             i += 1
             continue
-        # Line comment: ``-- …\n``.
-        if ch == "-" and i + 1 < n and sql[i + 1] == "-":
-            i += 2
-            while i < n and sql[i] != "\n":
-                i += 1
-            if i < n:
-                i += 1  # consume the newline itself
+        if ch == "-" and _starts_with(sql, i, "--"):
+            i = _skip_line_comment(sql, i + 2)
             continue
-        # Block comment: ``/* … */``.
-        if ch == "/" and i + 1 < n and sql[i + 1] == "*":
-            end = sql.find("*/", i + 2)
-            if end == -1:
-                return n  # unterminated — treat the whole thing as comment
-            i = end + 2
+        if ch == "/" and _starts_with(sql, i, "/*"):
+            i = _skip_block_comment(sql, i + 2)
             continue
         return i
     return n
+
+
+def _starts_with(sql: str, index: int, marker: str) -> bool:
+    """Return True if ``sql[index:]`` begins with ``marker`` without overrunning."""
+    return index + len(marker) <= len(sql) and sql[index : index + len(marker)] == marker
+
+
+def _skip_line_comment(sql: str, start: int) -> int:
+    r"""Advance past a ``-- …\n`` comment body and return the post-newline index."""
+    n = len(sql)
+    i = start
+    while i < n and sql[i] != "\n":
+        i += 1
+    if i < n:
+        i += 1  # consume the newline itself
+    return i
+
+
+def _skip_block_comment(sql: str, start: int) -> int:
+    """Advance past a ``/* … */`` block; an unterminated block consumes to EOF."""
+    end = sql.find("*/", start)
+    if end == -1:
+        return len(sql)
+    return end + 2
 
 
 def _peek_word(sql: str, start: int) -> tuple[str, int]:
@@ -110,66 +125,97 @@ def rewrite_alter_table_set_options(bq_sql: str) -> str:
     regexes (one for the comment prefix, one for the keyword + body
     walk). A scanner is both faster and ReDoS-immune by construction.
     """
-    # 1. Skip leading whitespace + SQL comments.
-    cursor = _strip_leading_comments(bq_sql)
-    if cursor >= len(bq_sql):
+    cursor = _match_alter_table_header(bq_sql)
+    if cursor is None:
         return bq_sql
+    cursor = _advance_past_table_ref_to_set(bq_sql, cursor)
+    if cursor is None:
+        return bq_sql
+    cursor = _match_options_keyword(bq_sql, cursor)
+    if cursor is None:
+        return bq_sql
+    close = _match_balanced_parens(bq_sql, cursor)
+    if close is None:
+        return bq_sql
+    if not _is_trailing_whitespace_or_semicolon(bq_sql, close + 1):
+        return bq_sql
+    return "SELECT 1"
 
-    # 2. Expect ``ALTER`` (case-insensitive).
-    word, cursor = _peek_word(bq_sql, cursor)
+
+def _match_alter_table_header(sql: str) -> int | None:
+    """Skip leading comments + match ``ALTER TABLE``; return the cursor after, or None."""
+    cursor = _strip_leading_comments(sql)
+    if cursor >= len(sql):
+        return None
+    word, cursor = _peek_word(sql, cursor)
     if word.casefold() != _ALTER:
-        return bq_sql
-
-    # 3. Expect ``TABLE``.
-    cursor = _skip_ws(bq_sql, cursor)
-    word, cursor = _peek_word(bq_sql, cursor)
+        return None
+    cursor = _skip_ws(sql, cursor)
+    word, cursor = _peek_word(sql, cursor)
     if word.casefold() != _TABLE:
-        return bq_sql
+        return None
+    return cursor
 
-    # 4. Walk word-by-word until we see ``SET`` (the table reference
-    #    between TABLE and SET can be one or more whitespace-delimited
-    #    tokens — backticked, dotted, etc.). Bail if we run out.
-    while cursor < len(bq_sql):
-        cursor = _skip_ws(bq_sql, cursor)
-        word, cursor = _peek_word(bq_sql, cursor)
+
+def _advance_past_table_ref_to_set(sql: str, cursor: int) -> int | None:
+    """Walk word-by-word until the ``SET`` keyword; return the cursor after it.
+
+    BigQuery's table reference between TABLE and SET can be one or
+    more whitespace-delimited tokens (backticked, dotted, …). Returns
+    ``None`` when the input is exhausted before ``SET`` is seen.
+    """
+    n = len(sql)
+    while cursor < n:
+        cursor = _skip_ws(sql, cursor)
+        word, cursor = _peek_word(sql, cursor)
         if not word:
-            return bq_sql
+            return None
         if word.casefold() == _SET:
-            break
+            return cursor
+    return None
 
-    # 5. Expect ``OPTIONS``.
-    cursor = _skip_ws(bq_sql, cursor)
-    word, after_options = _peek_word(bq_sql, cursor)
-    # ``OPTIONS`` may butt directly up against ``(``, so peek_word
-    # could capture ``OPTIONS(...``; trim the parenthesis if so.
+
+def _match_options_keyword(sql: str, cursor: int) -> int | None:
+    """Match the literal ``OPTIONS`` token after ``SET``; return the cursor after it.
+
+    ``OPTIONS`` may butt directly up against ``(``, so the peeked word
+    can capture ``OPTIONS(``; the parenthesis is trimmed off and the
+    cursor is set to point at the opening paren.
+    """
+    cursor = _skip_ws(sql, cursor)
+    word, after_options = _peek_word(sql, cursor)
     keyword = word
     paren_offset = keyword.find("(")
     if paren_offset != -1:
         after_options = cursor + paren_offset
         keyword = keyword[:paren_offset]
     if keyword.casefold() != _OPTIONS:
-        return bq_sql
+        return None
+    return after_options
 
-    # 6. The next non-whitespace char must be ``(``. Then find the
-    #    matching ``)`` (BigQuery option values are scalars/strings/
-    #    arrays — no nested function calls, so single-level balance
-    #    is enough).
-    cursor = _skip_ws(bq_sql, after_options)
-    if cursor >= len(bq_sql) or bq_sql[cursor] != "(":
-        return bq_sql
-    close = bq_sql.find(")", cursor + 1)
+
+def _match_balanced_parens(sql: str, cursor: int) -> int | None:
+    """Verify ``(`` at ``cursor`` (after optional WS) + return index of matching ``)``.
+
+    BigQuery option bodies are scalars/strings/arrays — no nested
+    function calls, so a single-level find is enough.
+    """
+    cursor = _skip_ws(sql, cursor)
+    if cursor >= len(sql) or sql[cursor] != "(":
+        return None
+    close = sql.find(")", cursor + 1)
     if close == -1:
-        return bq_sql
+        return None
+    return close
 
-    # 7. Everything after ``)`` must be whitespace + optional ``;``.
-    tail = _skip_ws(bq_sql, close + 1)
-    if tail < len(bq_sql) and bq_sql[tail] == ";":
+
+def _is_trailing_whitespace_or_semicolon(sql: str, start: int) -> bool:
+    """Return True if the slice from ``start`` is just whitespace + at most one ``;``."""
+    tail = _skip_ws(sql, start)
+    if tail < len(sql) and sql[tail] == ";":
         tail += 1
-    tail = _skip_ws(bq_sql, tail)
-    if tail != len(bq_sql):
-        return bq_sql
-
-    return "SELECT 1"
+    tail = _skip_ws(sql, tail)
+    return tail == len(sql)
 
 
 __all__ = ["rewrite_alter_table_set_options"]
