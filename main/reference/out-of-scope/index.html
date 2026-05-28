@@ -2255,17 +2255,6 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#format_date-y-year-padding-for-years-1000" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        FORMAT_DATE %Y year-padding for years &lt; 1000
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
   <a href="#cte-self-join-with-window-aggregate-tpc-ds-q47" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -5628,17 +5617,6 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#format_date-y-year-padding-for-years-1000" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        FORMAT_DATE %Y year-padding for years &lt; 1000
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
   <a href="#cte-self-join-with-window-aggregate-tpc-ds-q47" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -6138,41 +6116,6 @@ standard pipeline. A full legacy-SQL parser remains out of scope.</p>
 <p><em>Workaround for un-rewritten constructs</em>: rewrite the query to
 standard SQL (the canonical migration path BigQuery itself
 recommends) and submit it with <code>useLegacySql=false</code> (the default).</p>
-<h3 id="format_date-y-year-padding-for-years-1000">FORMAT_DATE <code>%Y</code> year-padding for years &lt; 1000<a class="headerlink" href="#format_date-y-year-padding-for-years-1000" title="Permanent link">&para;</a></h3>
-<p>BigQuery's <code>FORMAT_DATE('%Y-%m-%d', DATE '0001-01-01')</code> returns
-<code>'1-01-01'</code> — the <code>%Y</code> specifier does <strong>not</strong> zero-pad the
-year for values &lt; 1000. DuckDB's <code>STRFTIME(d, '%Y-%m-%d')</code>
-returns <code>'0001-01-01'</code> — it zero-pads <code>%Y</code> to four digits per
-POSIX <code>strftime(3)</code>. The semantic difference only surfaces for
-dates between <code>DATE '0001-01-01'</code> and <code>DATE '0999-12-31'</code>,
-which are vanishingly rare in real-world data: BigQuery itself
-caps DATE at <code>DATE '0001-01-01'</code> lower-bound but most
-real-world dates are post-1900.</p>
-<p>Closing this divergence cleanly requires either:</p>
-<ol>
-<li>A custom Python helper UDF (<code>bqemu_format_date</code>) that
-   implements BigQuery's exact <code>strftime</code> semantics for every
-   conversion specifier (<code>%Y</code> without padding, <code>%G</code> with
-   ISO-week semantics, <code>%U</code> / <code>%V</code> / <code>%W</code> BigQuery-specific
-   week-number contracts, the locale-dependent <code>%a</code> / <code>%A</code>
-   / <code>%b</code> / <code>%B</code> strings — currently all routed through
-   DuckDB's POSIX <code>strftime</code>), wired through a new
-   <code>FormatDateRule</code> that intercepts every call. The maintenance
-   burden grows with every BigQuery format-specifier release.</li>
-<li>A narrow <code>%Y</code>-specific pre-translator that rewrites
-   <code>FORMAT_DATE('…%Y…', d)</code> calls to a <code>REPLACE</code>-based emit
-   that strips leading zeros from the year. Brittle — the
-   year token can appear in arbitrary positions inside the
-   format string and the rewrite would have to track quoting.</li>
-</ol>
-<p>The conformance fixture
-<a href="https://github.com/jjviscomi/bqemulator/blob/main/tests/conformance/sql_corpus/standard_functions/dt_format_date_min"><code>standard_functions/dt_format_date_min</code></a>
-is pinned XFAIL against this divergence so the surface is tracked
-without forcing an inline closure.</p>
-<p><em>Workaround</em>: clients that need the un-padded year for pre-1000
-dates should format the year explicitly (e.g.
-<code>CAST(EXTRACT(YEAR FROM d) AS STRING)</code>) or use a SAFE_CAST to
-strip leading zeros from the rendered output.</p>
 <h3 id="cte-self-join-with-window-aggregate-tpc-ds-q47">CTE self-join with window aggregate (TPC-DS Q47)<a class="headerlink" href="#cte-self-join-with-window-aggregate-tpc-ds-q47" title="Permanent link">&para;</a></h3>
 <p>TPC-DS Q47 uses a multi-CTE pattern where a CTE (<code>v1</code>) is
 defined with two window aggregates — <code>AVG(SUM(...)) OVER (PARTITION

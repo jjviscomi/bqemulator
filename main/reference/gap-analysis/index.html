@@ -5349,9 +5349,6 @@ documented in <a href="../out-of-scope/">out-of-scope.md</a>, including:</p>
   BigQuery gates the view on <code>bigquery.rowAccessPolicies.list</code>; the
   emulator does not enforce IAM. See
   <a href="../out-of-scope/#iam-enforcement">out-of-scope.md#iam-enforcement</a>.</li>
-<li><strong><code>FORMAT_DATE %Y</code> year-padding for years &lt; 1000</strong> — DuckDB's POSIX
-  <code>strftime</code> zero-pads <code>%Y</code> where BigQuery does not. See
-  <a href="../out-of-scope/#format_date-y-year-padding-for-years-1000">out-of-scope.md#format_date-y-year-padding-for-years-1000</a>.</li>
 <li><strong>CTE self-join with window aggregate (TPC-DS Q47)</strong> — a SQLGlot
   CTE-inlining shape DuckDB's binder rejects. See
   <a href="../out-of-scope/#cte-self-join-with-window-aggregate-tpc-ds-q47">out-of-scope.md#cte-self-join-with-window-aggregate-tpc-ds-q47</a>.</li>

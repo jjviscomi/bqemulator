@@ -5310,7 +5310,7 @@ table below maps each BigQuery view to its rewriter function.</p>
 <p><strong>Auto-generated.</strong> Edit translation rules under <a href="https://github.com/jjviscomi/bqemulator/blob/main/src/bqemulator/sql/rules/"><code>src/bqemulator/sql/rules/</code></a> or rewriters under <a href="https://github.com/jjviscomi/bqemulator/blob/main/src/bqemulator/sql/rewriter/"><code>src/bqemulator/sql/rewriter/</code></a>, then run <code>make function-mapping</code> to regenerate this block. The CI gate (<code>--check</code>) refuses to merge a PR whose committed registry has drifted from the live source. Per-rule docstring summaries are extracted as the cell text — if a cell reads wrong, edit the rule's docstring.</p>
 </blockquote>
 <ul>
-<li><strong>Registered rules</strong>: 92 (13 rule modules)</li>
+<li><strong>Registered rules</strong>: 93 (13 rule modules)</li>
 <li><strong>Rewriter functions</strong>: 24 (24 rewriter modules; the INFORMATION_SCHEMA rewriter has its own hand-maintained per-view table below)</li>
 </ul>
 <h3 id="translation-rules-post-transpile-ast-passes">Translation rules (post-transpile AST passes)<a class="headerlink" href="#translation-rules-post-transpile-ast-passes" title="Permanent link">&para;</a></h3>
@@ -5407,6 +5407,12 @@ table below maps each BigQuery view to its rewriter function.</p>
 <td><code>EXTRACT(WEEK FROM x)</code></td>
 <td>Sunday-start week number</td>
 <td><code>EXTRACT_WEEK_SUNDAY_START</code></td>
+</tr>
+<tr>
+<td>Date / time / timestamp</td>
+<td><code>FORMAT_DATE('…%Y…', d)</code></td>
+<td>unpadded-year rewrite (years &lt; 1000)</td>
+<td><code>FORMAT_DATE_YEAR_PAD</code></td>
 </tr>
 <tr>
 <td>Date / time / timestamp</td>

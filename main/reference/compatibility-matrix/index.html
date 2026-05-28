@@ -5742,7 +5742,7 @@ surfaces).</p>
 <p><strong>Auto-generated.</strong> Edit fixtures under <a href="https://github.com/jjviscomi/bqemulator/blob/main/tests/conformance"><code>tests/conformance/</code></a> or update the XFAIL registry in <a href="https://github.com/jjviscomi/bqemulator/blob/main/tests/conformance/divergences.py"><code>tests/conformance/divergences.py</code></a>, then run <code>make compat-matrix</code> to regenerate this block. The CI gate (<code>--check</code>) refuses to merge a PR whose committed snapshot has drifted from the corpus.</p>
 </blockquote>
 <ul>
-<li><strong>Corpus totals</strong>: 1244 fixtures (1170 SQL + 48 HTTP + 26 gRPC); <strong>1231 PASS / 13 XFAIL</strong></li>
+<li><strong>Corpus totals</strong>: 1244 fixtures (1170 SQL + 48 HTTP + 26 gRPC); <strong>1232 PASS / 12 XFAIL</strong></li>
 <li><strong>XFAIL contract</strong>: every pin in <code>KNOWN_DIVERGENCES</code> references an ADR or <code>out-of-scope.md</code> section — invented divergences are forbidden (see <a href="https://github.com/jjviscomi/bqemulator/blob/main/docs/adr/0023-conformance-divergence-baseline.md">ADR 0023</a>).</li>
 </ul>
 <h3 id="per-phase-fixture-coverage">Per-phase fixture coverage<a class="headerlink" href="#per-phase-fixture-coverage" title="Permanent link">&para;</a></h3>
@@ -5819,8 +5819,8 @@ surfaces).</p>
 <td>SQL</td>
 <td><code>standard_functions</code></td>
 <td style="text-align: right;">662</td>
-<td style="text-align: right;">657</td>
-<td style="text-align: right;">5</td>
+<td style="text-align: right;">658</td>
+<td style="text-align: right;">4</td>
 <td style="text-align: center;">⚠</td>
 </tr>
 <tr>
@@ -5859,14 +5859,14 @@ surfaces).</p>
 <td><strong>Total</strong></td>
 <td></td>
 <td style="text-align: right;"><strong>1244</strong></td>
-<td style="text-align: right;"><strong>1231</strong></td>
-<td style="text-align: right;"><strong>13</strong></td>
+<td style="text-align: right;"><strong>1232</strong></td>
+<td style="text-align: right;"><strong>12</strong></td>
 <td style="text-align: center;">⚠</td>
 </tr>
 </tbody>
 </table>
 <h3 id="xfail-pin-registry">XFAIL pin registry<a class="headerlink" href="#xfail-pin-registry" title="Permanent link">&para;</a></h3>
-<p>All 13 entries in <a href="https://github.com/jjviscomi/bqemulator/blob/main/tests/conformance/divergences.py"><code>tests/conformance/divergences.py</code></a> — each rationale references an ADR or <a href="https://github.com/jjviscomi/bqemulator/blob/main/docs/reference/out-of-scope.md"><code>out-of-scope.md</code></a> section so closure paths stay traceable.</p>
+<p>All 12 entries in <a href="https://github.com/jjviscomi/bqemulator/blob/main/tests/conformance/divergences.py"><code>tests/conformance/divergences.py</code></a> — each rationale references an ADR or <a href="https://github.com/jjviscomi/bqemulator/blob/main/docs/reference/out-of-scope.md"><code>out-of-scope.md</code></a> section so closure paths stay traceable.</p>
 <table>
 <thead>
 <tr>
@@ -5918,10 +5918,6 @@ surfaces).</p>
 <tr>
 <td><a href="https://github.com/jjviscomi/bqemulator/blob/main/tests/conformance/sql_corpus/standard_functions/bound_bignumeric_max"><code>standard_functions/bound_bignumeric_max</code></a></td>
 <td>BIGNUMERIC literal with 39 integer digits exceeds DuckDB's DECIMAL(38, 0) cap; literals with ≤ 38 integer dig…</td>
-</tr>
-<tr>
-<td><a href="https://github.com/jjviscomi/bqemulator/blob/main/tests/conformance/sql_corpus/standard_functions/dt_format_date_min"><code>standard_functions/dt_format_date_min</code></a></td>
-<td>FORMAT_DATE %Y year-padding differs from BigQuery for years &lt; 1000: BQ emits '1-01-01' for DATE '0001-01-01',…</td>
 </tr>
 <tr>
 <td><a href="https://github.com/jjviscomi/bqemulator/blob/main/tests/conformance/sql_corpus/standard_functions/tpcds_q47"><code>standard_functions/tpcds_q47</code></a></td>
