@@ -14,6 +14,7 @@ import duckdb
 import pytest
 
 from bqemulator.domain.result import Ok
+from bqemulator.sql.rules.datetime_semantics import _split_format_on_year
 from bqemulator.sql.translator import SQLTranslator
 
 pytestmark = pytest.mark.unit
@@ -345,3 +346,101 @@ class TestAtTimeZoneNumericOffset:
             "SELECT TIMESTAMP '2026-05-21 16:00:00+00' AT TIME ZONE '+00:00' AS local_ts",
         )
         assert row == (_dt.datetime(2026, 5, 21, 16, 0, 0),)  # noqa: DTZ001
+
+
+class TestSplitFormatOnYear:
+    """The ``%Y`` tokenizer behind :class:`FormatDateYearPadRule`.
+
+    ``%%`` is a literal percent, so ``%%Y`` must not be a split point;
+    every other ``%`` directive is carried through as a two-character
+    token. *N* real ``%Y`` occurrences yield *N + 1* parts.
+    """
+
+    @pytest.mark.parametrize(
+        ("fmt", "parts"),
+        [
+            ("", [""]),  # empty format
+            ("%m-%d", ["%m-%d"]),  # no %Y at all
+            ("%Y", ["", ""]),  # bare %Y
+            ("%Y-%m-%d", ["", "-%m-%d"]),  # leading %Y
+            ("yr%Y", ["yr", ""]),  # trailing %Y
+            ("a%Yb%Yc", ["a", "b", "c"]),  # multiple %Y
+            ("%%Y", ["%%Y"]),  # escaped %% + literal Y — not a split
+            ("%%Y-%Y", ["%%Y-", ""]),  # escaped then real %Y
+            ("%%%Y", ["%%", ""]),  # %% then real %Y
+            ("%H:%M %Y", ["%H:%M ", ""]),  # other directives carried through
+        ],
+    )
+    def test_split(self, fmt: str, parts: list[str]) -> None:
+        assert _split_format_on_year(fmt) == parts
+
+
+class TestFormatDateYearPad:
+    """``FORMAT_DATE('…%Y…', d)`` emits the un-padded year for years < 1000.
+
+    DuckDB's ``STRFTIME`` zero-pads ``%Y`` to four digits; BigQuery emits
+    the minimum-width year. The rule substitutes only ``%Y`` and leaves
+    every other specifier on DuckDB's native ``STRFTIME`` path.
+    """
+
+    @pytest.mark.parametrize(
+        ("sql", "expected"),
+        [
+            # The closed divergence: year 1 → '1', not '0001'.
+            ("SELECT FORMAT_DATE('%Y-%m-%d', DATE '0001-01-01') AS s", "1-01-01"),
+            ("SELECT FORMAT_DATE('%Y-%m-%d', DATE '0085-03-07') AS s", "85-03-07"),
+            ("SELECT FORMAT_DATE('%Y-%m-%d', DATE '0999-12-31') AS s", "999-12-31"),
+            ("SELECT FORMAT_DATE('%Y', DATE '0007-02-03') AS s", "7"),
+            # %Y in trailing / middle positions.
+            ("SELECT FORMAT_DATE('year %Y', DATE '0042-01-01') AS s", "year 42"),
+            ("SELECT FORMAT_DATE('a%Yb', DATE '0003-01-01') AS s", "a3b"),
+            # Years >= 1000 are byte-identical (no regression).
+            ("SELECT FORMAT_DATE('%Y/%m/%d', DATE '2024-01-15') AS s", "2024/01/15"),
+        ],
+    )
+    def test_unpadded_year(
+        self,
+        t: SQLTranslator,
+        con: duckdb.DuckDBPyConnection,
+        sql: str,
+        expected: str,
+    ) -> None:
+        assert _execute(t, con, sql) == (expected,)
+
+    def test_null_date_propagates(self, t: SQLTranslator, con: duckdb.DuckDBPyConnection) -> None:
+        # A NULL date yields NULL through ``||``, matching BigQuery.
+        row = _execute(t, con, "SELECT FORMAT_DATE('%Y-%m-%d', CAST(NULL AS DATE)) AS s")
+        assert row == (None,)
+
+    def test_non_year_format_untouched(
+        self, t: SQLTranslator, con: duckdb.DuckDBPyConnection
+    ) -> None:
+        # No %Y → the rule doesn't fire; %B still renders via STRFTIME.
+        row = _execute(t, con, "SELECT FORMAT_DATE('%B', DATE '2024-01-15') AS s")
+        assert row == ("January",)
+
+    def test_column_operand(self, t: SQLTranslator, con: duckdb.DuckDBPyConnection) -> None:
+        # SQLGlot wraps a column operand in CAST(... AS DATE) too, so the
+        # rule fires on non-literal dates as well — not just literals.
+        row = _execute(
+            t,
+            con,
+            "SELECT FORMAT_DATE('%Y-%m-%d', d) AS s FROM (SELECT DATE '0005-06-07' AS d)",
+        )
+        assert row == ("5-06-07",)
+
+    def test_escaped_percent_y_not_substituted(self, t: SQLTranslator) -> None:
+        # ``%%Y`` is a literal percent + 'Y' — the year must NOT be spliced.
+        result = t.translate("SELECT FORMAT_DATE('%%Y', DATE '0001-01-01') AS s")
+        assert isinstance(result, Ok)
+        assert "EXTRACT(YEAR" not in result.value.upper()
+        assert "STRFTIME" in result.value.upper()
+
+    def test_format_datetime_scope_excluded(self, t: SQLTranslator) -> None:
+        # FORMAT_DATETIME's operand is CAST(... AS TIMESTAMP); the rule is
+        # scoped to DATE operands and must leave this on the native path.
+        result = t.translate(
+            "SELECT FORMAT_DATETIME('%Y-%m-%d %H:%M:%S', DATETIME '2024-01-15 12:30:45') AS s",
+        )
+        assert isinstance(result, Ok)
+        assert "EXTRACT(YEAR" not in result.value.upper()

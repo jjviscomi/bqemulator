@@ -504,6 +504,148 @@ class FormatTimeRule(TranslationRule):
         )
 
 
+def _split_format_on_year(fmt: str) -> list[str]:
+    """Split a strftime format string on the ``%Y`` directive.
+
+    Returns the literal / non-``%Y`` runs between ``%Y`` occurrences: *N*
+    occurrences of ``%Y`` yield *N + 1* parts (any of which may be
+    empty). ``%%`` is a literal percent, so ``%%Y`` is a literal ``%``
+    followed by a literal ``Y`` and is **not** a split point. Every other
+    ``%`` directive (``%m``, ``%d``, …) is carried through verbatim as a
+    two-character token so DuckDB's ``STRFTIME`` still formats it.
+
+    Used by :class:`FormatDateYearPadRule` to splice an unpadded year
+    between the surrounding format runs.
+    """
+    parts: list[str] = []
+    run: list[str] = []
+    i = 0
+    n = len(fmt)
+    while i < n:
+        if fmt[i] == "%" and i + 1 < n:
+            nxt = fmt[i + 1]
+            if nxt == "Y":
+                parts.append("".join(run))
+                run = []
+                i += 2
+                continue
+            # ``%%`` (literal percent) or any other directive — keep the
+            # two-character token together so it reaches STRFTIME intact.
+            run.append(fmt[i : i + 2])
+            i += 2
+            continue
+        run.append(fmt[i])
+        i += 1
+    parts.append("".join(run))
+    return parts
+
+
+#: A format string with no real ``%Y`` split point tokenizes to a single
+#: part; a real ``%Y`` yields at least two. Below this the rule is a no-op
+#: (the ``"%Y"`` substring that triggered :meth:`applies_to` was an
+#: escaped ``%%Y``).
+_MIN_YEAR_SPLIT_PARTS = 2
+
+
+@register
+class FormatDateYearPadRule(TranslationRule):
+    """``FORMAT_DATE('…%Y…', d)`` → unpadded-year rewrite (years < 1000).
+
+    DuckDB's ``STRFTIME`` zero-pads ``%Y`` to four digits per POSIX
+    ``strftime(3)`` (``DATE '0001-01-01'`` → ``'0001-01-01'``).
+    BigQuery's ``FORMAT_DATE`` emits the minimum-width year
+    (``'1-01-01'``). The two agree for years ≥ 1000, so the divergence
+    only surfaces for years 1-999; DuckDB exposes no no-pad flag
+    (``%-Y`` errors).
+
+    Rather than reimplement every conversion specifier in Python, this
+    rule keeps DuckDB's ``STRFTIME`` as the engine for every specifier
+    *except* ``%Y`` and substitutes only the year with
+    ``CAST(EXTRACT(YEAR FROM d) AS VARCHAR)`` (no zero-pad), splicing the
+    surrounding format runs back with ``||``::
+
+        FORMAT_DATE('%Y-%m-%d', d)
+            → CAST(EXTRACT(YEAR FROM d) AS VARCHAR) || STRFTIME(d, '-%m-%d')
+
+    ``NULL`` propagates through ``||`` (a NULL date yields NULL), matching
+    BigQuery. The whole concatenation is wrapped in ``CAST(… AS VARCHAR)``
+    to pin the column to STRING: an all-NULL ``||`` chain would otherwise
+    surface as INTEGER on the wire — the same hazard
+    :class:`ConcatStringTypeRule` guards against, which cannot fire on
+    our freshly-emitted node (the rule walker snapshots the tree before
+    rewriting). Empty format runs are dropped — DuckDB's ``STRFTIME``
+    rejects an empty format string.
+
+    Scope is ``FORMAT_DATE`` only: SQLGlot wraps every FORMAT_DATE
+    argument in ``CAST(… AS DATE)`` (for literals, columns and function
+    results alike), which distinguishes the call from ``FORMAT_DATETIME``
+    / ``FORMAT_TIMESTAMP`` (``CAST(… AS TIMESTAMP)``). A zoned ``%Y`` on
+    FORMAT_TIMESTAMP is a separate concern and is not in the conformance
+    corpus.
+
+    Fires only when the format is a string literal containing ``%Y``; a
+    dynamic (non-literal) format is left on DuckDB's native path.
+    """
+
+    name = "FORMAT_DATE_YEAR_PAD"
+
+    def applies_to(self, node: exp.Expression) -> bool:
+        """Match ``STRFTIME(CAST(… AS DATE), '<string literal with %Y>')``."""
+        if not isinstance(node, exp.TimeToStr):
+            return False
+        fmt = node.args.get("format")
+        if not isinstance(fmt, exp.Literal) or not fmt.is_string:
+            return False
+        if "%Y" not in str(fmt.this):
+            return False
+        inner = node.this
+        if not isinstance(inner, exp.Cast):
+            return False
+        target = inner.to
+        return target is not None and target.is_type(exp.DataType.Type.DATE)
+
+    def rewrite(self, node: exp.Expression) -> exp.Expression:
+        """Emit ``(… STRFTIME(d, run) || CAST(EXTRACT(YEAR FROM d) AS VARCHAR) …)``."""
+        date_expr = node.this
+        fmt_node = node.args.get("format")
+        if date_expr is None or fmt_node is None:
+            return node
+        parts = _split_format_on_year(str(fmt_node.this))
+        if len(parts) < _MIN_YEAR_SPLIT_PARTS:
+            # No real ``%Y`` split point — the match was an escaped
+            # ``%%Y``. Leave DuckDB's native STRFTIME untouched.
+            return node
+        terms: list[exp.Expression] = []
+        for index, part in enumerate(parts):
+            if part:
+                terms.append(
+                    exp.Anonymous(
+                        this="STRFTIME",
+                        expressions=[date_expr.copy(), exp.Literal.string(part)],
+                    ),
+                )
+            if index < len(parts) - 1:
+                terms.append(
+                    exp.Cast(
+                        this=exp.Extract(
+                            this=exp.Var(this="YEAR"),
+                            expression=date_expr.copy(),
+                        ),
+                        to=exp.DataType.build("VARCHAR"),
+                    ),
+                )
+        if not terms:
+            return node
+        concat = terms[0]
+        for term in terms[1:]:
+            concat = exp.DPipe(this=concat, expression=term)
+        # Wrap in ``CAST(… AS VARCHAR)`` so the column type stays STRING
+        # even when every operand is NULL (an all-NULL ``||`` chain
+        # otherwise lands on INTEGER on the wire). ``CAST`` also supplies
+        # the grouping the surrounding expression needs.
+        return exp.Cast(this=concat, to=exp.DataType.build("VARCHAR"))
+
+
 @register
 class ParseDatetimeRule(TranslationRule):
     """``PARSE_DATETIME(fmt, value)`` → ``strptime(value, fmt)``.
@@ -776,6 +918,7 @@ __all__ = [
     "ExtractDateFromTimestampRule",
     "ExtractDayofweekRule",
     "ExtractWeekSundayStartRule",
+    "FormatDateYearPadRule",
     "FormatPrintfRule",
     "FormatTimeRule",
     "JsonTypeLowerRule",
