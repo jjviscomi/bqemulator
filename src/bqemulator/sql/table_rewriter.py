@@ -72,61 +72,21 @@ def _rewrite_table_node(table_node: object, project_id: str) -> bool:
     from sqlglot import exp
 
     assert isinstance(table_node, exp.Table)  # noqa: S101 — invariant
-    catalog = table_node.catalog
-    db = table_node.db
     table_name = table_node.name
     this_node = table_node.this
     is_tvf = isinstance(this_node, exp.Anonymous)
+    catalog, db = _normalize_qualifier_parts(
+        table_node.catalog,
+        table_node.db,
+        is_tvf=is_tvf,
+    )
 
-    # BigQuery's backticked compound form ``\`proj.ds\``` is canonical
-    # for DDL like ``CREATE SCHEMA IF NOT EXISTS \`proj.ds\``` (the
-    # Airflow ``BigQueryInsertJobOperator`` example emits this shape).
-    # SQLGlot parses the whole back-ticked literal as a single
-    # identifier, which lands in ``db='proj.ds'`` without populating
-    # ``catalog``. Split it back into the canonical ``catalog`` / ``db``
-    # pair *before* the dataset-id validator below sees a dotted name
-    # and rejects it as invalid.
-    if db and "." in db and not catalog and not is_tvf:
-        catalog, _, db = db.partition(".")
-
-    # Leave references to bqemulator's *reserved* schemas alone. The
-    # time-travel rewriter emits ``_bqemulator_snapshots.<id>``
-    # references that must reach DuckDB unmangled. Exact match: a user
-    # dataset whose id starts with the prefix still gets the regular
-    # rewrite.
     if db in _RESERVED_SCHEMAS:
         return False
 
-    # BigQuery parity: when a SQL fixture references a dataset with
-    # characters outside the alphanumeric+underscore rule, BigQuery
-    # returns HTTP 400 / ``reason=invalid`` *before* attempting any
-    # catalog lookup. Without this guard the emulator falls through to
-    # DuckDB which raises a generic "schema not found" error, surfacing
-    # as HTTP 404 / ``reason=notFound`` — a divergence from real BQ.
-    # TVF call-sites are exempt: they route through
-    # :func:`qualified_routine_name_parts` which has its own dataset-id
-    # whitelist and accepts compound ``project.dataset`` qualifiers in
-    # the ``db`` slot (see :class:`TestTvfBacktickedCompoundQualifier`).
-    if db and not is_tvf and not _BQ_DATASET_RE.match(db):
-        _raise_invalid_dataset_id(db, table_name)
+    _validate_dataset_id_if_applicable(db, table_name, is_tvf=is_tvf)
 
-    # Schema-only references (``CREATE SCHEMA proj.ds`` /
-    # ``DROP SCHEMA proj.ds``) parse as ``Table(catalog=proj, db=ds,
-    # this=Identifier(""))`` in SQLGlot's AST — there is no table
-    # part. Without this short-circuit the three-part rewriter
-    # produces ``"proj__ds".""`` (empty trailing identifier) which
-    # DuckDB rejects with ``zero-length delimited identifier``.
-    # For two-part schema refs (``CREATE SCHEMA ds``) DuckDB's
-    # parser folds the catalog+db into the bare schema slot, and
-    # dbt-bigquery's ``CREATE SCHEMA IF NOT EXISTS \`proj\`.\`ds\``
-    # is the path that surfaces this.
-    #
-    # TVF call-sites also produce an empty ``table_name`` because
-    # ``this`` is an :class:`exp.Anonymous` (function call) rather
-    # than an :class:`exp.Identifier`. Skip the schema-only branch
-    # in that case and let the two/three-part rewriter route through
-    # the TVF flattening path.
-    if not table_name and not is_tvf and (catalog or db):
+    if _is_schema_only_ref(catalog, db, table_name, is_tvf=is_tvf):
         return _rewrite_schema_only_ref(
             table_node,
             project_id,
@@ -141,6 +101,77 @@ def _rewrite_table_node(table_node: object, project_id: str) -> bool:
         return True
     # Bare table names are left as-is — they resolve via DuckDB's search_path.
     return False
+
+
+def _normalize_qualifier_parts(
+    catalog: str,
+    db: str,
+    *,
+    is_tvf: bool,
+) -> tuple[str, str]:
+    r"""Split BigQuery's back-ticked compound ``\`proj.ds\``` into ``(catalog, db)``.
+
+    BigQuery's back-ticked compound qualifier is canonical for DDL
+    like ``CREATE SCHEMA IF NOT EXISTS \`proj.ds\``` (the Airflow
+    ``BigQueryInsertJobOperator`` example emits this shape). SQLGlot
+    parses the whole back-ticked literal as a single identifier, which
+    lands in ``db='proj.ds'`` without populating ``catalog``. The
+    canonical (catalog, db) form has to be recovered *before* the
+    dataset-id validator sees a dotted name and rejects it as invalid.
+
+    TVFs are exempt — their ``db`` slot carries the back-ticked
+    compound through for the routine-naming layer to split.
+    """
+    if db and "." in db and not catalog and not is_tvf:
+        catalog, _, db = db.partition(".")
+    return catalog, db
+
+
+def _validate_dataset_id_if_applicable(
+    db: str,
+    table_name: str,
+    *,
+    is_tvf: bool,
+) -> None:
+    """Raise ``InvalidQueryError`` for BigQuery-invalid dataset ids.
+
+    BigQuery returns HTTP 400 / ``reason=invalid`` *before* attempting
+    any catalog lookup when a dataset id contains characters outside
+    the alphanumeric+underscore rule. Without this guard the emulator
+    falls through to DuckDB which raises a generic "schema not found"
+    error, surfacing as HTTP 404 / ``reason=notFound``.
+
+    TVF call-sites are exempt: they route through
+    :func:`qualified_routine_name_parts` which has its own dataset-id
+    whitelist and accepts compound ``project.dataset`` qualifiers in
+    the ``db`` slot.
+    """
+    if db and not is_tvf and not _BQ_DATASET_RE.match(db):
+        _raise_invalid_dataset_id(db, table_name)
+
+
+def _is_schema_only_ref(
+    catalog: str,
+    db: str,
+    table_name: str,
+    *,
+    is_tvf: bool,
+) -> bool:
+    """Return True when the AST shape is a schema-only ``CREATE``/``DROP SCHEMA``.
+
+    Schema-only references parse as
+    ``Table(catalog=proj, db=ds, this=Identifier(""))`` in SQLGlot —
+    there is no table part. Without this branch the three-part
+    rewriter would produce ``"proj__ds".""`` (empty trailing
+    identifier), which DuckDB rejects with
+    ``zero-length delimited identifier``.
+
+    TVF call-sites also yield an empty ``table_name`` because
+    ``this`` is an :class:`exp.Anonymous` (function call); they are
+    excluded so the two/three-part rewriter handles them via the TVF
+    flattening path.
+    """
+    return not table_name and not is_tvf and bool(catalog or db)
 
 
 def _rewrite_schema_only_ref(
@@ -277,6 +308,21 @@ def _rewrite_schema_qualified_calls(tree: object, project_id: str) -> bool:
     """
     from sqlglot import exp
 
+    assert isinstance(tree, exp.Expression)  # noqa: S101
+    modified_dot = _rewrite_dot_anonymous_calls(tree, project_id)
+    modified_anon = _rewrite_anonymous_dotted_calls(tree, project_id)
+    return modified_dot or modified_anon
+
+
+def _rewrite_dot_anonymous_calls(tree: object, project_id: str) -> bool:
+    """Flatten ``Dot(Identifier, Anonymous)`` UDF call sites.
+
+    Matches the SQLGlot AST for ``dataset.routine(args)`` written
+    without backticks. Becomes
+    ``project__dataset__routine(args)`` in place.
+    """
+    from sqlglot import exp
+
     from bqemulator.domain.errors import InvalidQueryError, ValidationError
     from bqemulator.udf.naming import qualified_routine_name_parts
 
@@ -285,20 +331,18 @@ def _rewrite_schema_qualified_calls(tree: object, project_id: str) -> bool:
     for dot_node in list(tree.find_all(exp.Dot)):
         left = dot_node.this
         right = dot_node.expression
-        if not isinstance(left, exp.Identifier):
-            continue
-        if not isinstance(right, exp.Anonymous):
+        if not isinstance(left, exp.Identifier) or not isinstance(right, exp.Anonymous):
             continue
         dataset = left.name
         routine_name = right.name
         try:
             flat_name = qualified_routine_name_parts(project_id, dataset, routine_name)
         except ValidationError as exc:
-            # The SQL-boundary id whitelist rejected the dataset id —
-            # usually because it's a compound ``project.dataset``
-            # back-ticked qualifier that contained a dot. BigQuery's
-            # user-facing form for this is ``Function not found:
-            # `<qualifier>`.<routine> at [L:C]`` (see ADR 0022 §3).
+            # SQL-boundary id whitelist rejected the dataset id —
+            # usually a compound ``project.dataset`` back-ticked
+            # qualifier that contained a dot. BigQuery's user-facing
+            # form is ``Function not found: `<qualifier>`.<routine> at
+            # [L:C]`` (ADR 0022 §3).
             raise InvalidQueryError(
                 f"Function not found: `{dataset}`.{routine_name} at [1:8]",
                 location="query",
@@ -306,9 +350,26 @@ def _rewrite_schema_qualified_calls(tree: object, project_id: str) -> bool:
         right.set("this", flat_name)
         dot_node.replace(right)
         modified = True
+    return modified
 
+
+def _rewrite_anonymous_dotted_calls(tree: object, project_id: str) -> bool:
+    r"""Flatten ``Anonymous`` nodes whose name itself contains dots.
+
+    Matches ``\`dataset.routine\`(args)`` (a single back-ticked
+    identifier followed by ``(``) — SQLGlot keeps the whole quoted
+    string as the function name. Two- and three-part qualifiers are
+    both accepted; the three-part case lets users prefix with the
+    project id.
+    """
+    from sqlglot import exp
+
+    from bqemulator.domain.errors import InvalidQueryError, ValidationError
+    from bqemulator.udf.naming import qualified_routine_name_parts
+
+    assert isinstance(tree, exp.Expression)  # noqa: S101
+    modified = False
     for anon_node in list(tree.find_all(exp.Anonymous)):
-        # Skip the rewritten ones — they no longer contain a dot.
         name = anon_node.name
         if "." not in name:
             continue
