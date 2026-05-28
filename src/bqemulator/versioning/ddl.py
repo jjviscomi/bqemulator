@@ -205,15 +205,18 @@ _PARTS_DATASET_QUALIFIED = 2
 _PARTS_BARE = 1
 
 
-def _assert_source_present(ddl: VersioningDDL) -> None:
-    """Assert that ``ddl`` carries a complete ``(project, dataset, table)`` source triple.
+def _unwrap_source(ddl: VersioningDDL) -> tuple[str, str, str]:
+    """Return the ``(project, dataset, table)`` source triple, asserting presence.
 
     Snapshot / clone DDLs require the source to be set by the parser
-    before dispatch reaches this layer.
+    before dispatch reaches this layer; returning the narrowed triple
+    lets the caller pass it through to the manager without re-asserting
+    or casting at every argument position.
     """
     assert ddl.source_project is not None  # noqa: S101
     assert ddl.source_dataset is not None  # noqa: S101
     assert ddl.source_table is not None  # noqa: S101
+    return ddl.source_project, ddl.source_dataset, ddl.source_table
 
 
 async def execute_versioning_ddl(
@@ -230,14 +233,14 @@ async def execute_versioning_ddl(
     from bqemulator.versioning.snapshot_table import SnapshotTableManager
 
     if ddl.kind is VersioningDDLKind.CREATE_SNAPSHOT:
-        _assert_source_present(ddl)
+        src_project, src_dataset, src_table = _unwrap_source(ddl)
         await SnapshotTableManager(ctx).create(
             ddl.target_project,
             ddl.target_dataset,
             ddl.target_table,
-            ddl.source_project,
-            ddl.source_dataset,
-            ddl.source_table,
+            src_project,
+            src_dataset,
+            src_table,
         )
     elif ddl.kind is VersioningDDLKind.DROP_SNAPSHOT:
         await SnapshotTableManager(ctx).drop(
@@ -246,14 +249,14 @@ async def execute_versioning_ddl(
             ddl.target_table,
         )
     elif ddl.kind is VersioningDDLKind.CREATE_CLONE:
-        _assert_source_present(ddl)
+        src_project, src_dataset, src_table = _unwrap_source(ddl)
         await CloneManager(ctx).create(
             ddl.target_project,
             ddl.target_dataset,
             ddl.target_table,
-            ddl.source_project,
-            ddl.source_dataset,
-            ddl.source_table,
+            src_project,
+            src_dataset,
+            src_table,
         )
     elif ddl.kind is VersioningDDLKind.CREATE_MATERIALIZED_VIEW:
         assert ddl.view_query is not None  # noqa: S101
