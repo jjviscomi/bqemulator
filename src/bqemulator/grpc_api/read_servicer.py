@@ -144,6 +144,108 @@ def _build_read_sql(
     return sql
 
 
+def _resolve_read_target(
+    read_session: Any,
+    context: grpc.ServicerContext,
+) -> tuple[str, str, str, str, list[str] | None] | None:
+    """Parse + validate the read session's table reference.
+
+    Returns ``(project_id, dataset_id, table_id, target_ref,
+    selected_fields)`` or ``None`` on validation failure (the caller
+    short-circuits with an empty response; ``context`` status is
+    already set with INVALID_ARGUMENT).
+    """
+    parsed = _parse_table_path(read_session.table)
+    if parsed is None:
+        context.set_code(grpc.StatusCode.INVALID_ARGUMENT)
+        context.set_details(f"Invalid table path: {read_session.table}")
+        return None
+    project_id, dataset_id, table_id = parsed
+
+    try:
+        target_ref = quoted_table_ref(project_id, dataset_id, table_id)
+        selected_fields = _selected_fields(read_session)
+    except ValidationError as exc:
+        context.set_code(grpc.StatusCode.INVALID_ARGUMENT)
+        context.set_details(str(exc))
+        return None
+    return project_id, dataset_id, table_id, target_ref, selected_fields
+
+
+def _resolve_data_format(
+    read_session: Any,
+    context: grpc.ServicerContext,
+) -> tuple[str, Any] | None:
+    """Map the raw ``data_format`` proto enum to (session_format, wire_format).
+
+    The Java BQ Storage Read client defaults to AVRO; Python / Go /
+    Node default to ARROW. The proto3 default for an unset
+    ``DataFormat`` is 0 (``DATA_FORMAT_UNSPECIFIED``) — match real
+    BQ's behaviour and treat that as ARROW. Any other value (a
+    hypothetical future PROTO format) gets INVALID_ARGUMENT.
+
+    Read the raw underlying-pb int rather than the proto-plus
+    property so an unknown enum value doesn't trip proto-plus's
+    warnings-as-errors path under the test runner.
+
+    Returns ``None`` on an unsupported format with ``context`` already
+    set to INVALID_ARGUMENT.
+    """
+    from google.cloud.bigquery_storage_v1 import types
+
+    raw_format = read_session._pb.data_format  # noqa: SLF001
+    if raw_format in (
+        int(types.DataFormat.DATA_FORMAT_UNSPECIFIED),
+        int(types.DataFormat.ARROW),
+    ):
+        return FORMAT_ARROW, types.DataFormat.ARROW
+    if raw_format == int(types.DataFormat.AVRO):
+        return FORMAT_AVRO, types.DataFormat.AVRO
+    context.set_code(grpc.StatusCode.INVALID_ARGUMENT)
+    context.set_details(
+        f"Unsupported data_format: {raw_format!r}; supported: ARROW, AVRO",
+    )
+    return None
+
+
+def _build_read_session_response(
+    *,
+    state: Any,
+    read_session: Any,
+    session_format: str,
+    wire_format: Any,
+    arrow_table: pa.Table,
+) -> Any:
+    """Build the ReadSession response proto.
+
+    Real BigQuery echoes ``read_options`` back on the session so
+    clients can confirm the projection / filter / compression they
+    asked for; the wire-format conformance suite asserts that shape.
+    The schema field carried on the session depends on the chosen
+    wire format — Arrow sessions carry ``arrow_schema``, Avro
+    sessions carry ``avro_schema`` (proto oneof).
+    """
+    from google.cloud.bigquery_storage_v1 import types
+
+    session_kwargs: dict[str, Any] = {
+        "name": state.session_name,
+        "table": read_session.table,
+        "data_format": wire_format,
+        "streams": [types.ReadStream(name=s.name) for s in state.streams],
+        "estimated_total_bytes_scanned": arrow_table.nbytes,
+        "read_options": read_session.read_options or None,
+    }
+    if session_format == FORMAT_AVRO:
+        session_kwargs["avro_schema"] = types.AvroSchema(
+            schema=state.avro_schema_json,
+        )
+    else:
+        session_kwargs["arrow_schema"] = types.ArrowSchema(
+            serialized_schema=state.arrow_schema_bytes,
+        )
+    return types.ReadSession(**session_kwargs)
+
+
 if TYPE_CHECKING:
     from bqemulator.api.dependencies import AppContext
 
@@ -207,7 +309,7 @@ class BigQueryReadHandler(grpc.GenericRpcHandler):
             )
         return None
 
-    def _handle_create_read_session(  # noqa: PLR0915 — linear gRPC dispatch
+    def _handle_create_read_session(
         self,
         request_bytes: bytes,
         context: grpc.ServicerContext,
@@ -218,20 +320,10 @@ class BigQueryReadHandler(grpc.GenericRpcHandler):
         request = types.CreateReadSessionRequest.deserialize(request_bytes)
         read_session = request.read_session
 
-        parsed = _parse_table_path(read_session.table)
-        if parsed is None:
-            context.set_code(grpc.StatusCode.INVALID_ARGUMENT)
-            context.set_details(f"Invalid table path: {read_session.table}")
+        target = _resolve_read_target(read_session, context)
+        if target is None:
             return b""
-        project_id, dataset_id, table_id = parsed
-
-        try:
-            target_ref = quoted_table_ref(project_id, dataset_id, table_id)
-            selected_fields = _selected_fields(read_session)
-        except ValidationError as exc:
-            context.set_code(grpc.StatusCode.INVALID_ARGUMENT)
-            context.set_details(str(exc))
-            return b""
+        project_id, dataset_id, table_id, target_ref, selected_fields = target
 
         # Resolve the caller from gRPC metadata up-front so both the
         # row_restriction filter pre-pass (inside ``_build_read_sql``)
@@ -248,129 +340,126 @@ class BigQueryReadHandler(grpc.GenericRpcHandler):
         )
 
         sql = _build_read_sql(target_ref, selected_fields, read_session, caller=caller)
-
-        # Enforce row access policies on the Storage Read path. The
-        # caller was already resolved above. The rewriter wraps the
-        # protected table in a derived subquery with the policy's
-        # filter (or WHERE FALSE on no-match). We then run that
-        # rewritten SQL against DuckDB. Tables with no policies
-        # short-circuit at the rewriter so the cheap-path keeps the
-        # original DuckDB SQL.
-        if self._ctx.catalog.list_all_row_access_policies():
-            bq_sql = self._build_bq_read_sql(
-                project_id,
-                dataset_id,
-                table_id,
-                selected_fields,
-                read_session,
-            )
-            rewritten = rewrite_for_row_access(
-                bq_sql,
-                project_id=project_id,
-                caller=caller,
-                catalog=self._ctx.catalog,
-            )
-            if rewritten != bq_sql:
-                from bqemulator.sql.table_rewriter import rewrite_table_refs
-                from bqemulator.sql.translator import SQLTranslator
-
-                translate_result = SQLTranslator().translate(rewritten, caller=caller)
-                if hasattr(translate_result, "value"):
-                    duckdb_sql = translate_result.value
-                else:  # pragma: no cover — translator returned an Err
-                    context.set_code(grpc.StatusCode.INVALID_ARGUMENT)
-                    context.set_details("row-access rewrite failed to translate")
-                    return b""
-                sql = rewrite_table_refs(duckdb_sql, project_id)
+        sql_after_rap = self._apply_row_access_rewrite(
+            sql=sql,
+            project_id=project_id,
+            dataset_id=dataset_id,
+            table_id=table_id,
+            selected_fields=selected_fields,
+            read_session=read_session,
+            caller=caller,
+            context=context,
+        )
+        if sql_after_rap is None:
+            return b""
 
         try:
-            arrow_table = self._ctx.engine.fetch_arrow(sql)
+            arrow_table = self._ctx.engine.fetch_arrow(sql_after_rap)
         except Exception as exc:  # noqa: BLE001 — DuckDB can throw various exceptions
             context.set_code(grpc.StatusCode.NOT_FOUND)
             context.set_details(f"Table read failed: {exc}")
             return b""
 
-        # Decide the wire format. The Java BQ Storage Read client
-        # defaults to AVRO; Python / Go / Node default to ARROW. The
-        # proto3 default for an unset DataFormat is 0 (DATA_FORMAT_
-        # UNSPECIFIED) — match real BQ's behaviour and treat that as
-        # ARROW. Any other value (a hypothetical future PROTO format)
-        # gets INVALID_ARGUMENT.
-        #
-        # Read the raw underlying-pb int rather than the proto-plus
-        # property so an unknown enum value doesn't trip proto-plus's
-        # warnings-as-errors path under the test runner.
-        raw_format = read_session._pb.data_format  # noqa: SLF001
-        if raw_format in (
-            int(types.DataFormat.DATA_FORMAT_UNSPECIFIED),
-            int(types.DataFormat.ARROW),
-        ):
-            session_format = FORMAT_ARROW
-            wire_format = types.DataFormat.ARROW
-        elif raw_format == int(types.DataFormat.AVRO):
-            session_format = FORMAT_AVRO
-            wire_format = types.DataFormat.AVRO
-        else:
-            context.set_code(grpc.StatusCode.INVALID_ARGUMENT)
-            context.set_details(
-                f"Unsupported data_format: {raw_format!r}; supported: ARROW, AVRO",
-            )
+        formats = _resolve_data_format(read_session, context)
+        if formats is None:
             return b""
-
-        # Look up the source table's catalog metadata so the Avro
-        # schema emitter can honour ``mode='REQUIRED'``. DuckDB's
-        # query-result schema marks every column nullable regardless
-        # of the source-table REQUIRED flag — without this lookup,
-        # the Storage Read Avro path would wrap every column in a
-        # ``["null", T]`` union and diverge from real BigQuery's
-        # canonical schema. Falls back gracefully when the table is
-        # not in the catalog (synthetic / temp / dry-run queries).
-        required_field_names: frozenset[str] | None = None
-        catalog_table = self._ctx.catalog.get_table(project_id, dataset_id, table_id)
-        if catalog_table is not None:
-            required_field_names = frozenset(
-                f.name for f in catalog_table.schema_.fields if f.mode == "REQUIRED"
-            )
+        session_format, wire_format = formats
 
         # Create the read session.
-        max_streams = request.max_stream_count or 1
         state = create_read_session(
             project_id=project_id,
             table_ref=read_session.table,
             arrow_table=arrow_table,
-            max_streams=max_streams,
+            max_streams=request.max_stream_count or 1,
             selected_fields=selected_fields,
             data_format=session_format,
-            required_field_names=required_field_names,
+            required_field_names=self._required_field_names(
+                project_id,
+                dataset_id,
+                table_id,
+            ),
         )
 
-        # Build the response. Real BigQuery echoes ``read_options`` back on
-        # the session so clients can confirm the projection / filter /
-        # compression they asked for; the wire-format conformance suite
-        # asserts that shape. The schema field carried on the session
-        # depends on the chosen wire format — Arrow sessions carry
-        # ``arrow_schema``, Avro sessions carry ``avro_schema`` (proto
-        # oneof).
-        session_kwargs: dict[str, Any] = {
-            "name": state.session_name,
-            "table": read_session.table,
-            "data_format": wire_format,
-            "streams": [types.ReadStream(name=s.name) for s in state.streams],
-            "estimated_total_bytes_scanned": arrow_table.nbytes,
-            "read_options": read_session.read_options or None,
-        }
-        if session_format == FORMAT_AVRO:
-            session_kwargs["avro_schema"] = types.AvroSchema(
-                schema=state.avro_schema_json,
-            )
-        else:
-            session_kwargs["arrow_schema"] = types.ArrowSchema(
-                serialized_schema=state.arrow_schema_bytes,
-            )
-        response = types.ReadSession(**session_kwargs)
-
+        response = _build_read_session_response(
+            state=state,
+            read_session=read_session,
+            session_format=session_format,
+            wire_format=wire_format,
+            arrow_table=arrow_table,
+        )
         self._ctx.metrics.read_streams_active.inc(len(state.streams))
         return types.ReadSession.serialize(response)
+
+    def _apply_row_access_rewrite(
+        self,
+        *,
+        sql: str,
+        project_id: str,
+        dataset_id: str,
+        table_id: str,
+        selected_fields: list[str] | None,
+        read_session: Any,
+        caller: CallerIdentity,
+        context: grpc.ServicerContext,
+    ) -> str | None:
+        """Apply row-access-policy rewrite if any policies are registered.
+
+        Returns the (possibly unchanged) SQL or ``None`` on rewrite
+        failure — the caller short-circuits with an empty response in
+        that case (context status is already set).
+
+        Tables with no registered policies short-circuit at the
+        rewriter so the cheap-path keeps the original DuckDB SQL.
+        """
+        if not self._ctx.catalog.list_all_row_access_policies():
+            return sql
+
+        bq_sql = self._build_bq_read_sql(
+            project_id,
+            dataset_id,
+            table_id,
+            selected_fields,
+            read_session,
+        )
+        rewritten = rewrite_for_row_access(
+            bq_sql,
+            project_id=project_id,
+            caller=caller,
+            catalog=self._ctx.catalog,
+        )
+        if rewritten == bq_sql:
+            return sql
+
+        from bqemulator.sql.table_rewriter import rewrite_table_refs
+        from bqemulator.sql.translator import SQLTranslator
+
+        translate_result = SQLTranslator().translate(rewritten, caller=caller)
+        if not hasattr(translate_result, "value"):  # pragma: no cover — translator Err
+            context.set_code(grpc.StatusCode.INVALID_ARGUMENT)
+            context.set_details("row-access rewrite failed to translate")
+            return None
+        return rewrite_table_refs(translate_result.value, project_id)
+
+    def _required_field_names(
+        self,
+        project_id: str,
+        dataset_id: str,
+        table_id: str,
+    ) -> frozenset[str] | None:
+        """Return REQUIRED column names from the catalog for the Avro emitter.
+
+        DuckDB's query-result schema marks every column nullable
+        regardless of the source-table REQUIRED flag — without this
+        lookup, the Storage Read Avro path would wrap every column in
+        a ``["null", T]`` union and diverge from real BigQuery's
+        canonical schema. Returns ``None`` when the table is not in
+        the catalog (synthetic / temp / dry-run queries) so the Avro
+        emitter falls through to its nullable-by-default behaviour.
+        """
+        catalog_table = self._ctx.catalog.get_table(project_id, dataset_id, table_id)
+        if catalog_table is None:
+            return None
+        return frozenset(f.name for f in catalog_table.schema_.fields if f.mode == "REQUIRED")
 
     def _handle_read_rows(
         self,

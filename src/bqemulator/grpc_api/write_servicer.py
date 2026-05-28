@@ -468,10 +468,9 @@ class BigQueryWriteHandler(grpc.GenericRpcHandler):
         """
         from google.cloud.bigquery_storage_v1 import types
 
+        bound_ctx: tuple[WriteStream, pa.Schema] | None = None
         proto_decoder: ProtoRowDecoder | None = None
         arrow_schema_bytes: bytes | None = None
-        bound_stream: WriteStream | None = None
-        target_schema: pa.Schema | None = None
 
         max_request_bytes = self._ctx.settings.write_api_max_request_bytes
         max_buffered_rows = self._ctx.settings.write_api_max_stream_rows
@@ -481,45 +480,22 @@ class BigQueryWriteHandler(grpc.GenericRpcHandler):
             # deserialising so a malicious producer can't OOM the server
             # with a single giant Arrow/proto payload.
             if len(request_bytes) > max_request_bytes:
-                yield _error_response(
-                    bound_stream.name if bound_stream else "",
-                    (
-                        f"AppendRowsRequest exceeds the "
-                        f"{max_request_bytes}-byte size cap "
-                        f"({len(request_bytes)} bytes). "
-                        "Split the payload into smaller batches."
-                    ),
-                    status_code=grpc.StatusCode.RESOURCE_EXHAUSTED,
+                yield _oversize_error_response(
+                    request_bytes_len=len(request_bytes),
+                    max_bytes=max_request_bytes,
+                    bound_ctx=bound_ctx,
                 )
                 continue
 
             request = types.AppendRowsRequest.deserialize(request_bytes)
-            stream_name = request.write_stream
-
-            # Resolve the stream on first message (or whenever it changes —
-            # the real service requires a single stream per connection, but
-            # we resolve defensively).
-            if bound_stream is None or bound_stream.name != stream_name:
-                bound_stream = self._resolve_append_stream(stream_name, context)
-                if bound_stream is None:
-                    return
-                table_meta = self._ctx.catalog.get_table(
-                    bound_stream.project_id,
-                    bound_stream.dataset_id,
-                    bound_stream.table_id,
-                )
-                if table_meta is None:
-                    context.set_code(grpc.StatusCode.NOT_FOUND)
-                    context.set_details(
-                        f"Table gone: {bound_stream.project_id}."
-                        f"{bound_stream.dataset_id}.{bound_stream.table_id}",
-                    )
-                    return
-                target_schema = _table_arrow_schema(table_meta)
-
-            # bound_stream and target_schema are both set after the branch above.
-            if bound_stream is None or target_schema is None:  # pragma: no cover
+            bound_ctx = self._ensure_stream_bound(
+                request.write_stream,
+                bound_ctx,
+                context,
+            )
+            if bound_ctx is None:
                 return
+            bound_stream, target_schema = bound_ctx
 
             # Convert rows to a pyarrow.Table in the target schema.
             try:
@@ -533,37 +509,93 @@ class BigQueryWriteHandler(grpc.GenericRpcHandler):
                 yield _error_response(bound_stream.name, str(exc))
                 continue
 
-            strategy = select_strategy(bound_stream.stream_type)
             # proto-plus auto-unwraps Int64Value → int; presence is tracked
             # on the underlying protobuf message — accessed via the
             # public ``proto.Message.pb()`` classmethod.
             offset = int(request.offset) if _has_offset(request) else None
+            yield self._perform_append(
+                bound_stream,
+                rows_table,
+                offset,
+                max_buffered_rows,
+            )
 
-            # Serialise AppendRows per-stream so a misbehaving client that
-            # opens two connections on one stream can't race ``next_offset``
-            # or ``buffer``. Real BigQuery documents that only one
-            # connection may be open per stream; we enforce the invariant
-            # defensively.
-            with bound_stream.lock:
-                outcome = strategy.append(
-                    bound_stream,
-                    rows_table,
-                    offset,
-                    max_buffered_rows=max_buffered_rows,
+    def _ensure_stream_bound(
+        self,
+        stream_name: str,
+        bound_ctx: tuple[WriteStream, pa.Schema] | None,
+        context: grpc.ServicerContext,
+    ) -> tuple[WriteStream, pa.Schema] | None:
+        """Return the current bound context or rebind to ``stream_name``.
+
+        Returns ``None`` to signal a terminal error (``context`` already
+        carries the gRPC status code). Real BigQuery requires a single
+        stream per connection, but we rebind defensively if the client
+        switches streams mid-stream.
+        """
+        if bound_ctx is not None and bound_ctx[0].name == stream_name:
+            return bound_ctx
+        return self._bind_stream_to_target(stream_name, context)
+
+    def _bind_stream_to_target(
+        self,
+        stream_name: str,
+        context: grpc.ServicerContext,
+    ) -> tuple[WriteStream, pa.Schema] | None:
+        """Resolve a stream and pull its target Arrow schema.
+
+        Returns ``None`` when either the stream can't be resolved or its
+        target table is gone (``context`` already carries the gRPC
+        status code).
+        """
+        bound = self._resolve_append_stream(stream_name, context)
+        if bound is None:
+            return None
+        table_meta = self._ctx.catalog.get_table(
+            bound.project_id,
+            bound.dataset_id,
+            bound.table_id,
+        )
+        if table_meta is None:
+            context.set_code(grpc.StatusCode.NOT_FOUND)
+            context.set_details(
+                f"Table gone: {bound.project_id}.{bound.dataset_id}.{bound.table_id}",
+            )
+            return None
+        return bound, _table_arrow_schema(table_meta)
+
+    def _perform_append(
+        self,
+        bound_stream: WriteStream,
+        rows_table: pa.Table,
+        offset: int | None,
+        max_buffered_rows: int,
+    ) -> bytes:
+        """Append ``rows_table`` under the per-stream lock and return the response.
+
+        Serialise AppendRows per-stream so a misbehaving client that
+        opens two connections on one stream can't race ``next_offset``
+        or ``buffer``. Real BigQuery documents that only one
+        connection may be open per stream; we enforce the invariant
+        defensively.
+        """
+        strategy = select_strategy(bound_stream.stream_type)
+        with bound_stream.lock:
+            outcome = strategy.append(
+                bound_stream,
+                rows_table,
+                offset,
+                max_buffered_rows=max_buffered_rows,
+            )
+            if outcome.status is not AppendStatus.OK:
+                return _error_response(
+                    bound_stream.name,
+                    outcome.detail,
+                    status_code=_proto_to_grpc_status(outcome.status),
                 )
-
-                if outcome.status is not AppendStatus.OK:
-                    yield _error_response(
-                        bound_stream.name,
-                        outcome.detail,
-                        status_code=_proto_to_grpc_status(outcome.status),
-                    )
-                    continue
-
-                if outcome.committed_rows is not None and outcome.committed_rows.num_rows > 0:
-                    self._flush_to_target(bound_stream, outcome.committed_rows)
-
-            yield _ok_response(bound_stream.name, outcome)
+            if outcome.committed_rows is not None and outcome.committed_rows.num_rows > 0:
+                self._flush_to_target(bound_stream, outcome.committed_rows)
+        return _ok_response(bound_stream.name, outcome)
 
     # -- helpers -------------------------------------------------------------
 
@@ -776,6 +808,30 @@ def _ok_response(stream_name: str, outcome: AppendOutcome) -> bytes:
         write_stream=stream_name,
     )
     return types.AppendRowsResponse.serialize(response)
+
+
+def _oversize_error_response(
+    *,
+    request_bytes_len: int,
+    max_bytes: int,
+    bound_ctx: tuple[WriteStream, pa.Schema] | None,
+) -> bytes:
+    """Build the RESOURCE_EXHAUSTED response for an over-size AppendRows request.
+
+    The stream-name field on the response carries the active stream
+    when one is bound (so the client correlates the error to its
+    open writer); on a not-yet-bound connection it stays empty.
+    """
+    stream_name = bound_ctx[0].name if bound_ctx else ""
+    return _error_response(
+        stream_name,
+        (
+            f"AppendRowsRequest exceeds the {max_bytes}-byte size cap "
+            f"({request_bytes_len} bytes). "
+            "Split the payload into smaller batches."
+        ),
+        status_code=grpc.StatusCode.RESOURCE_EXHAUSTED,
+    )
 
 
 def _error_response(
