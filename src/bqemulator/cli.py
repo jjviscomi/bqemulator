@@ -121,36 +121,34 @@ def start(
     admin_enabled: bool | None,
 ) -> None:
     """Start the emulator (REST + gRPC)."""
-    # This command is inherently complex because it is a transparent
-    # pass-through from CLI flags to the ``Settings`` constructor. Every
-    # ``if flag is not None`` branch is required to preserve env-var /
-    # ``.bqemu.toml`` precedence (CLI > env > file > defaults). Extracting
-    # to a loop would not meaningfully reduce the branch count.
-    overrides: dict[str, object] = {}
-    if rest_host is not None:
-        overrides["rest_host"] = rest_host
-    if rest_port is not None:
-        overrides["rest_port"] = rest_port
-    if grpc_host is not None:
-        overrides["grpc_host"] = grpc_host
-    if grpc_port is not None:
-        overrides["grpc_port"] = grpc_port
+    # CLI flags pass through to the ``Settings`` constructor. The
+    # ``is not None`` guards preserve env-var / ``.bqemu.toml``
+    # precedence (CLI > env > file > defaults). Simple value→key
+    # passthroughs iterate once below; flags that carry a transform or
+    # side-effect (``ephemeral`` tri-state, ``data_dir`` implying
+    # persistent mode, the ``log_level`` / ``log_format`` enum casts)
+    # stay inline.
+    passthroughs = (
+        (rest_host, "rest_host"),
+        (rest_port, "rest_port"),
+        (grpc_host, "grpc_host"),
+        (grpc_port, "grpc_port"),
+        (default_project_id, "default_project_id"),
+        (admin_enabled, "admin_enabled"),
+    )
+    overrides: dict[str, object] = {key: value for value, key in passthroughs if value is not None}
     if ephemeral is True:
         overrides["persistence_mode"] = PersistenceMode.EPHEMERAL
     elif ephemeral is False:
         overrides["persistence_mode"] = PersistenceMode.PERSISTENT
     if data_dir is not None:
         overrides["data_dir"] = data_dir
-        # If a data_dir was given without explicit --persistent, infer persistent.
+        # ``--data-dir`` without explicit ``--persistent`` infers persistent.
         overrides.setdefault("persistence_mode", PersistenceMode.PERSISTENT)
-    if default_project_id is not None:
-        overrides["default_project_id"] = default_project_id
     if log_level is not None:
         overrides["log_level"] = LogLevel(log_level.lower())
     if log_format is not None:
         overrides["log_format"] = LogFormat(log_format.lower())
-    if admin_enabled is not None:
-        overrides["admin_enabled"] = admin_enabled
 
     # Env-var + .bqemu.toml resolution still happens; the overrides here
     # take highest priority (CLI flags). mypy cannot resolve **kwargs
