@@ -80,6 +80,12 @@ def _apply_schema_ctas_rewrite(create: exp.Create) -> bool:
     schema = create.this
     if not isinstance(schema, exp.Schema):
         return False
+    # ``Schema.this`` is *typically* a Table per SQLGlot's docs but the
+    # attribute is loosely typed; guard explicitly so a malformed AST
+    # doesn't blow up on the ``.copy()`` below.
+    table_ref = schema.this
+    if not isinstance(table_ref, exp.Table):
+        return False
     # CTAS body may be a bare SELECT or a UNION [ALL] chain. DuckDB
     # derives table column types from the FIRST SELECT, so only that
     # one needs cast projections.
@@ -97,7 +103,7 @@ def _apply_schema_ctas_rewrite(create: exp.Create) -> bool:
     # Replace ``Schema(table, columns)`` with the bare Table — DuckDB
     # then sees ``CREATE [OR REPLACE] TABLE <ref> AS SELECT CAST(...)
     # AS col, ...`` which it accepts.
-    create.set("this", schema.this.copy())
+    create.set("this", table_ref.copy())
     return True
 
 
