@@ -207,6 +207,21 @@ class TestInvalidDatasetId:
         with pytest.raises(ValidationError):
             rewrite_table_refs('SELECT * FROM "ds-with-dash"."tbl"', "proj")
 
+    def test_schema_only_invalid_dataset_id_omits_trailing_dot(self) -> None:
+        """``CREATE/DROP SCHEMA`` paths emit a ``location`` without trailing ``.``.
+
+        The schema-only path has no table component; the dataset-id
+        validator therefore receives an empty ``table_name``. The
+        emitted ``location`` should be the bare ``<dataset>`` form,
+        not ``<dataset>.`` (which is malformed for the error consumer).
+        """
+        from bqemulator.domain.errors import ValidationError
+
+        with pytest.raises(ValidationError) as exc:
+            rewrite_table_refs('CREATE SCHEMA proj."!!bad-ds!!"', "proj")
+        assert exc.value.location == "!!bad-ds!!"
+        assert not exc.value.location.endswith(".")
+
     def test_valid_dataset_id_passes_through(self) -> None:
         result = rewrite_table_refs("SELECT * FROM good_ds.tbl", "proj")
         assert '"proj__good_ds"' in result

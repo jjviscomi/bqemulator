@@ -381,44 +381,75 @@ class SQLTranslator:
             # SQLGlot produced it, so it should be valid.
             return sql
 
-        if schema:
-            try:
-                tree = qualify(tree, schema=schema, dialect="duckdb", infer_schema=True)
-                tree = annotate_types(tree, schema=schema)
-            except Exception as exc:  # noqa: BLE001
-                _log.debug("sql.annotate_types_skipped", error=str(exc))
+        # ``sqlglot.parse_one`` is typed as ``Expr`` in the stubs; the
+        # runtime value is an :class:`exp.Expression`. Asserting here
+        # narrows it for the rest of the function and the helpers.
+        assert isinstance(tree, exp.Expression)  # noqa: S101
+
+        if schema is not None:
+            tree = self._annotate_tree(tree, schema)
 
         modified = False
         # Snapshot nodes pre-order, then iterate in reverse — children
         # of any parent appear *after* the parent in pre-order, so
         # ``reversed(...)`` gives us a post-order-equivalent traversal.
-        nodes = list(tree.walk())
-        for node in reversed(nodes):
-            if node.parent is None and node is not tree:
-                # Node has been detached by an earlier replacement;
-                # skip it.
-                continue
+        for node in reversed(list(tree.walk())):
             node_expr: exp.Expression = node  # type: ignore[assignment]
-            for rule in self._rules:
-                if rule.applies_to(node_expr):
-                    replacement = rule.rewrite(node_expr)
-                    if replacement is not node:
-                        node.replace(replacement)
-                        modified = True
-                        # Subsequent rules in this pass see the
-                        # original ``node`` — but ``replace`` swapped
-                        # the AST, so any new candidates inside
-                        # ``replacement`` will be picked up either by
-                        # the reversed-walk visit of remaining items
-                        # (if their original positions still exist) or
-                        # not at all. Each rule produces DuckDB-native
-                        # output, so a single post-order pass is
-                        # sufficient.
-                        break
+            if self._apply_first_matching_rule(node_expr, tree):
+                modified = True
 
         if modified:
             return tree.sql(dialect="duckdb")
         return sql
+
+    @staticmethod
+    def _annotate_tree(
+        tree: exp.Expression,
+        schema: dict[str, Any],
+    ) -> exp.Expression:
+        """Run SQLGlot's ``qualify`` + ``annotate_types`` passes.
+
+        Failures are logged and the unannotated tree is returned;
+        rules that need type info gracefully skip. The runtime
+        ``isinstance`` check narrows SQLGlot's loosely-typed
+        ``Expr`` return to :class:`exp.Expression` without resorting
+        to a ``cast`` (which different stub revisions flag as either
+        required or redundant).
+        """
+        try:
+            qualified = qualify(tree, schema=schema, dialect="duckdb", infer_schema=True)
+            annotated = annotate_types(qualified, schema=schema)
+        except Exception as exc:  # noqa: BLE001
+            _log.debug("sql.annotate_types_skipped", error=str(exc))
+            return tree
+        assert isinstance(annotated, exp.Expression)  # noqa: S101 — stub-bridge narrowing
+        return annotated
+
+    def _apply_first_matching_rule(
+        self,
+        node: exp.Expression,
+        tree: exp.Expression,
+    ) -> bool:
+        """Apply the first matching rule to ``node`` (in place); return True if replaced.
+
+        Each rule produces DuckDB-native output, so a single
+        post-order pass is sufficient — once a rule replaces ``node``
+        we stop scanning further rules for it. Subsequent reversed-
+        walk iterations pick up the original positions inside the
+        replacement subtree on their own.
+        """
+        if node.parent is None and node is not tree:
+            # Node has been detached by an earlier replacement;
+            # skip it.
+            return False
+        for rule in self._rules:
+            if not rule.applies_to(node):
+                continue
+            replacement = rule.rewrite(node)
+            if replacement is not node:
+                node.replace(replacement)
+                return True
+        return False
 
 
 __all__ = ["SQLTranslator"]

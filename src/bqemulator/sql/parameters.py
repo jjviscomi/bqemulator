@@ -18,6 +18,9 @@ This module:
 
 from __future__ import annotations
 
+from collections.abc import Callable
+from datetime import date, datetime, time
+from decimal import Decimal
 import re
 from typing import Any
 
@@ -234,88 +237,112 @@ def _extract_value(param: dict[str, Any]) -> Any:
     pvalue = param.get("parameterValue", {})
     type_kind = ptype.get("type", "STRING").upper()
 
-    # ARRAY and STRUCT don't use "value" — they have nested structures.
+    # ARRAY / STRUCT don't use "value" — they have nested structures.
     # Handle them BEFORE the scalar null-check.
     if type_kind == "ARRAY":
-        array_values = pvalue.get("arrayValues", [])
-        element_type = ptype.get("arrayType", {})
-        return [
-            _extract_value({"parameterType": element_type, "parameterValue": av})
-            for av in array_values
-        ]
-
-    # STRUCT
+        return _extract_array_value(ptype, pvalue)
     if type_kind == "STRUCT":
-        struct_values = pvalue.get("structValues", {})
-        struct_types = ptype.get("structTypes", [])
-        result = {}
-        for st in struct_types:
-            field_name = st.get("name", "")
-            field_type = st.get("type", {})
-            field_value = struct_values.get(field_name, {})
-            result[field_name] = _extract_value(
-                {"parameterType": field_type, "parameterValue": field_value},
-            )
-        return result
+        return _extract_struct_value(ptype, pvalue)
 
     # Scalar types — "value" holds the raw string value.
     raw = pvalue.get("value")
     if raw is None:
         return None
-
-    if type_kind in ("INT64", "INTEGER"):
-        return int(raw)
-    if type_kind in ("FLOAT64", "FLOAT"):
-        return float(raw)
-    if type_kind in ("BOOL", "BOOLEAN"):
-        if isinstance(raw, bool):
-            return raw
-        return str(raw).lower() in ("true", "1")
-    if type_kind in ("NUMERIC", "BIGNUMERIC"):
-        from decimal import Decimal
-
-        return Decimal(str(raw))
-
-    # DATE / DATETIME / TIME / TIMESTAMP parameters must be converted
-    # to typed Python objects, not left as strings. DuckDB
-    # infers a prepared-statement parameter's column type from the
-    # Python value's type — a plain string binds as VARCHAR, which the
-    # BigQuery schema renderer surfaces as ``STRING`` rather than the
-    # declared BigQuery type. Passing a typed object preserves the
-    # column type all the way through to the wire-format response. The
-    # accepted on-wire string forms match BigQuery's REST documentation:
-    #
-    # * DATE       → ``YYYY-MM-DD``
-    # * DATETIME   → ``YYYY-MM-DD[ T]HH:MM:SS[.ffffff]`` (no timezone)
-    # * TIME       → ``HH:MM:SS[.ffffff]``
-    # * TIMESTAMP  → ``YYYY-MM-DD[ T]HH:MM:SS[.ffffff][Z|±HH:MM]``
-    if type_kind == "DATE":
-        from datetime import date
-
-        return date.fromisoformat(str(raw))
-    if type_kind == "DATETIME":
-        from datetime import datetime
-
-        text = str(raw).replace(" ", "T", 1)
-        return datetime.fromisoformat(text)
-    if type_kind == "TIME":
-        from datetime import time
-
-        return time.fromisoformat(str(raw))
-    if type_kind == "TIMESTAMP":
-        from datetime import datetime
-
-        text = str(raw)
-        # BigQuery wire-format accepts a trailing 'Z' for UTC; Python
-        # 3.11+ ``fromisoformat`` only accepts ``+00:00``.
-        if text.endswith("Z"):
-            text = text[:-1] + "+00:00"
-        text = text.replace(" ", "T", 1)
-        return datetime.fromisoformat(text)
-
+    converter = _SCALAR_CONVERTERS.get(type_kind)
+    if converter is not None:
+        return converter(raw)
     # All other types (STRING, BYTES, JSON, GEOGRAPHY, INTERVAL, RANGE)
     # are passed as strings — DuckDB handles the cast in the query itself.
     return str(raw)
+
+
+def _extract_array_value(ptype: dict[str, Any], pvalue: dict[str, Any]) -> list[Any]:
+    """Recursively extract each element of an ARRAY parameter."""
+    array_values = pvalue.get("arrayValues", [])
+    element_type = ptype.get("arrayType", {})
+    return [
+        _extract_value({"parameterType": element_type, "parameterValue": av}) for av in array_values
+    ]
+
+
+def _extract_struct_value(
+    ptype: dict[str, Any],
+    pvalue: dict[str, Any],
+) -> dict[str, Any]:
+    """Recursively extract each named field of a STRUCT parameter."""
+    struct_values = pvalue.get("structValues", {})
+    struct_types = ptype.get("structTypes", [])
+    result: dict[str, Any] = {}
+    for st in struct_types:
+        field_name = st.get("name", "")
+        field_type = st.get("type", {})
+        field_value = struct_values.get(field_name, {})
+        result[field_name] = _extract_value(
+            {"parameterType": field_type, "parameterValue": field_value},
+        )
+    return result
+
+
+def _coerce_bool(raw: Any) -> bool:
+    """Coerce a BigQuery BOOL/BOOLEAN parameter to ``bool``."""
+    if isinstance(raw, bool):
+        return raw
+    return str(raw).lower() in ("true", "1")
+
+
+def _coerce_numeric(raw: Any) -> Decimal:
+    """Coerce a BigQuery NUMERIC/BIGNUMERIC parameter to ``Decimal``."""
+    return Decimal(str(raw))
+
+
+def _coerce_date(raw: Any) -> date:
+    """Coerce a BigQuery DATE parameter (``YYYY-MM-DD``) to ``date``."""
+    return date.fromisoformat(str(raw))
+
+
+def _coerce_datetime(raw: Any) -> datetime:
+    """Coerce a BigQuery DATETIME parameter (``YYYY-MM-DD HH:MM:SS[.ffffff]``)."""
+    text = str(raw).replace(" ", "T", 1)
+    return datetime.fromisoformat(text)
+
+
+def _coerce_time(raw: Any) -> time:
+    """Coerce a BigQuery TIME parameter (``HH:MM:SS[.ffffff]``) to ``time``."""
+    return time.fromisoformat(str(raw))
+
+
+def _coerce_timestamp(raw: Any) -> datetime:
+    """Coerce a BigQuery TIMESTAMP parameter, normalising ``Z`` to ``+00:00``."""
+    text = str(raw)
+    # BigQuery wire-format accepts a trailing 'Z' for UTC; Python
+    # 3.11+ ``fromisoformat`` only accepts ``+00:00``.
+    if text.endswith("Z"):
+        text = text[:-1] + "+00:00"
+    text = text.replace(" ", "T", 1)
+    return datetime.fromisoformat(text)
+
+
+#: BigQuery scalar type name → Python coercion function. Date/time
+#: parameters MUST be converted to typed Python objects (not strings)
+#: because DuckDB infers prepared-statement parameter column types
+#: from the Python value's type — a plain string binds as VARCHAR,
+#: which the BigQuery schema renderer surfaces as ``STRING`` rather
+#: than the declared BigQuery type. Passing a typed object preserves
+#: the column type all the way through to the wire-format response.
+_SCALAR_CONVERTERS: dict[str, Callable[[Any], Any]] = {
+    "INT64": int,
+    "INTEGER": int,
+    "FLOAT64": float,
+    "FLOAT": float,
+    "BOOL": _coerce_bool,
+    "BOOLEAN": _coerce_bool,
+    "NUMERIC": _coerce_numeric,
+    "BIGNUMERIC": _coerce_numeric,
+    "DATE": _coerce_date,
+    "DATETIME": _coerce_datetime,
+    "TIME": _coerce_time,
+    "TIMESTAMP": _coerce_timestamp,
+}
 
 
 __all__ = ["bind_parameters"]
