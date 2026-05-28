@@ -20,7 +20,7 @@ from __future__ import annotations
 import contextlib
 from dataclasses import dataclass
 import re
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, ClassVar
 import uuid
 
 import pyarrow as pa
@@ -186,46 +186,59 @@ class ScriptInterpreter:
 
     # -- Dispatch --------------------------------------------------------
 
+    #: ``(stmt_subclass, method_name)`` pairs consulted by
+    #: :meth:`_exec_statement`. Storing method *names* instead of bound
+    #: functions sidesteps two pitfalls: (1) referencing unbound
+    #: ``ScriptInterpreter._exec_*`` in the class body would trip the
+    #: ``SLF001`` private-access lint at every call site, and (2) the
+    #: per-handler argument-type variance (``DeclareStmt`` etc.) can't
+    #: be expressed as a uniform ``Callable`` slot without per-entry
+    #: casts. The dispatch is order-stable: the first ``isinstance``
+    #: match wins. ``BreakStmt`` / ``ContinueStmt`` / ``SqlStmt`` route
+    #: through tiny adapter methods below so every entry shares the
+    #: ``(self, stmt) -> None`` shape.
+    _STATEMENT_DISPATCH: ClassVar[tuple[tuple[type[Statement], str], ...]] = (
+        (DeclareStmt, "_exec_declare"),
+        (SetStmt, "_exec_set"),
+        (IfStmt, "_exec_if"),
+        (WhileStmt, "_exec_while"),
+        (LoopStmt, "_exec_loop"),
+        (ForStmt, "_exec_for"),
+        (BreakStmt, "_exec_break_stmt"),
+        (ContinueStmt, "_exec_continue_stmt"),
+        (ReturnStmt, "_exec_return"),
+        (BeginStmt, "_exec_begin"),
+        (CallStmt, "_exec_call"),
+        (ExecuteImmediateStmt, "_exec_execute_immediate"),
+        (RaiseStmt, "_exec_raise"),
+        (CreateFunctionStmt, "_exec_create_function"),
+        (CreateProcedureStmt, "_exec_create_procedure"),
+        (SqlStmt, "_exec_sql_stmt"),
+    )
+
     async def _exec_statement(self, stmt: Statement) -> None:
         self._statements_executed += 1
         if self._statements_executed > self._max_statements:
             raise QuotaExceededError(
                 f"Script exceeded maximum statement count ({self._max_statements})",
             )
-        if isinstance(stmt, DeclareStmt):
-            await self._exec_declare(stmt)
-        elif isinstance(stmt, SetStmt):
-            await self._exec_set(stmt)
-        elif isinstance(stmt, IfStmt):
-            await self._exec_if(stmt)
-        elif isinstance(stmt, WhileStmt):
-            await self._exec_while(stmt)
-        elif isinstance(stmt, LoopStmt):
-            await self._exec_loop(stmt)
-        elif isinstance(stmt, ForStmt):
-            await self._exec_for(stmt)
-        elif isinstance(stmt, BreakStmt):
-            raise BreakSignal
-        elif isinstance(stmt, ContinueStmt):
-            raise ContinueSignal
-        elif isinstance(stmt, ReturnStmt):
-            await self._exec_return(stmt)
-        elif isinstance(stmt, BeginStmt):
-            await self._exec_begin(stmt)
-        elif isinstance(stmt, CallStmt):
-            await self._exec_call(stmt)
-        elif isinstance(stmt, ExecuteImmediateStmt):
-            await self._exec_execute_immediate(stmt)
-        elif isinstance(stmt, RaiseStmt):
-            await self._exec_raise(stmt)
-        elif isinstance(stmt, CreateFunctionStmt):
-            await self._exec_create_function(stmt)
-        elif isinstance(stmt, CreateProcedureStmt):
-            await self._exec_create_procedure(stmt)
-        elif isinstance(stmt, SqlStmt):
-            await self._exec_sql(stmt.sql)
-        else:
-            raise InvalidQueryError(f"Unknown statement type: {type(stmt).__name__}")
+        for stmt_type, method_name in self._STATEMENT_DISPATCH:
+            if isinstance(stmt, stmt_type):
+                await getattr(self, method_name)(stmt)
+                return
+        raise InvalidQueryError(f"Unknown statement type: {type(stmt).__name__}")
+
+    async def _exec_break_stmt(self, _stmt: BreakStmt) -> None:
+        """Dispatch adapter: ``BreakStmt`` raises the ``BreakSignal`` sentinel."""
+        raise BreakSignal
+
+    async def _exec_continue_stmt(self, _stmt: ContinueStmt) -> None:
+        """Dispatch adapter: ``ContinueStmt`` raises the ``ContinueSignal`` sentinel."""
+        raise ContinueSignal
+
+    async def _exec_sql_stmt(self, stmt: SqlStmt) -> None:
+        """Dispatch adapter: route ``SqlStmt`` to :meth:`_exec_sql` with its raw SQL."""
+        await self._exec_sql(stmt.sql)
 
     # -- Individual constructs -------------------------------------------
 
@@ -371,43 +384,86 @@ class ScriptInterpreter:
         if stmt.routine_ref.upper() == "BQ.REFRESH_MATERIALIZED_VIEW":
             await self._exec_call_refresh_mv(stmt)
             return
-        project_id, dataset_id, routine_id = self._resolve_ref(stmt.routine_ref)
-        routine = self._ctx.catalog.get_routine(project_id, dataset_id, routine_id)
-        if routine is None or routine.routine_type != "PROCEDURE":
-            raise resource_not_found(
-                ResourceRef("routine", project_id, dataset_id, routine_id),
-            )
+        routine = self._resolve_call_routine(stmt.routine_ref)
         if len(stmt.arg_exprs) != len(routine.arguments):
             raise InvalidQueryError(
                 f"Procedure {routine.routine_id} expects {len(routine.arguments)} "
                 f"arguments, got {len(stmt.arg_exprs)}",
             )
-        # Evaluate IN/INOUT args; remember OUT/INOUT slots (by caller
-        # variable name) so the procedure's frame values can be copied
-        # back to the caller's frame after the body returns. OUT
-        # parameters are not evaluated — the caller's variable is
-        # untouched on the way in (BigQuery initialises the procedure's
-        # local with NULL).
+        arg_values, writeback_names = await self._evaluate_call_arguments(
+            routine.arguments,
+            stmt.arg_exprs,
+        )
+        callee_frame = await self._invoke_procedure(routine, arg_values)
+        self._apply_callee_writebacks(writeback_names, routine.arguments, callee_frame)
+
+    def _resolve_call_routine(self, routine_ref: str) -> RoutineMeta:
+        """Resolve a routine reference and assert it's a PROCEDURE.
+
+        Raises ``resource_not_found`` when the routine doesn't exist or
+        isn't a procedure (functions can't be CALLed in BigQuery scripts).
+        """
+        project_id, dataset_id, routine_id = self._resolve_ref(routine_ref)
+        routine = self._ctx.catalog.get_routine(project_id, dataset_id, routine_id)
+        if routine is None or routine.routine_type != "PROCEDURE":
+            raise resource_not_found(
+                ResourceRef("routine", project_id, dataset_id, routine_id),
+            )
+        return routine
+
+    async def _evaluate_call_arguments(
+        self,
+        params: list[Any],
+        arg_exprs: list[str],
+    ) -> tuple[list[Any], list[str | None]]:
+        """Evaluate IN/INOUT args and capture OUT/INOUT writeback slots.
+
+        OUT parameters are not evaluated — BigQuery initialises the
+        callee's local with NULL. INOUT parameters are evaluated and
+        also receive a writeback. IN parameters are evaluated with no
+        writeback. The returned ``writeback_names`` list mirrors the
+        argument order, with ``None`` for slots that don't write back.
+        """
         arg_values: list[Any] = []
         writeback_names: list[str | None] = []
-        for param, expr in zip(routine.arguments, stmt.arg_exprs, strict=True):
-            mode = param.mode.upper() if param.mode else "IN"
-            caller_var = expr.strip()
-            is_bare_ident = caller_var.isidentifier()
-            if mode == "OUT":
-                arg_values.append(None)
-                writeback_names.append(caller_var if is_bare_ident else None)
-            elif mode == "INOUT":
-                arg_values.append(await self._eval_expr_scalar(expr))
-                writeback_names.append(caller_var if is_bare_ident else None)
-            else:
-                arg_values.append(await self._eval_expr_scalar(expr))
-                writeback_names.append(None)
-        callee_frame = await self._invoke_procedure(routine, arg_values)
-        for name, param in zip(writeback_names, routine.arguments, strict=True):
+        for param, expr in zip(params, arg_exprs, strict=True):
+            value, writeback = await self._evaluate_one_argument(param, expr)
+            arg_values.append(value)
+            writeback_names.append(writeback)
+        return arg_values, writeback_names
+
+    async def _evaluate_one_argument(
+        self,
+        param: Any,
+        expr: str,
+    ) -> tuple[Any, str | None]:
+        """Evaluate a single argument expression honouring its mode."""
+        mode = param.mode.upper() if param.mode else "IN"
+        caller_var = expr.strip()
+        writeback = caller_var if caller_var.isidentifier() else None
+        if mode == "OUT":
+            return None, writeback
+        value = await self._eval_expr_scalar(expr)
+        if mode == "INOUT":
+            return value, writeback
+        return value, None
+
+    def _apply_callee_writebacks(
+        self,
+        writeback_names: list[str | None],
+        params: list[Any],
+        callee_frame: dict[str, Any] | None,
+    ) -> None:
+        """Copy OUT/INOUT callee locals back to the caller frame.
+
+        ``callee_frame`` is None when the procedure body raised before
+        the writeback frame was published — there's nothing to
+        propagate in that case.
+        """
+        if callee_frame is None:
+            return
+        for name, param in zip(writeback_names, params, strict=True):
             if name is None:
-                continue
-            if callee_frame is None:
                 continue
             if param.name in callee_frame:
                 self._frames.set(name, callee_frame[param.name])
@@ -926,59 +982,100 @@ def _rewrite_vars_to_params(
 
     params: list[Any] = []
     replaced_any = False
-
-    def _next_placeholder(value: Any) -> exp.Placeholder:
-        params.append(value)
-        return exp.Placeholder(this=str(len(params)))
-
     for col in tree.find_all(exp.Column):
-        name = col.name
-        table = col.table
-        if table:
-            if table in visible:
-                container = visible[table].value
-                if isinstance(container, dict) and name in container:
-                    col.replace(_next_placeholder(container[name]))
-                    replaced_any = True
-            continue
-        if name not in visible:
-            continue
-        var_value = visible[name].value
-        var_type = visible[name].type_name
-        placeholder: exp.Expression = _next_placeholder(var_value)
-        # Preserve the declared variable type when DEFAULT NULL leaves
-        # ``value`` as Python ``None``. Without a CAST, the DuckDB driver
-        # binds NULL as the default INT64 type and the schema renderer
-        # surfaces the column as ``INTEGER`` even though the script said
-        # ``DECLARE x STRING DEFAULT NULL``. Wrapping the placeholder in
-        # a ``CAST(... AS <declared_type>)`` makes the type travel
-        # through to the wire schema — matching BigQuery's "declared
-        # type is authoritative" contract. STRUCT-valued variables
-        # short-circuit out via the ``table`` branch above so the CAST
-        # here only fires for scalar variables.
-        if var_value is None and var_type and var_type.upper() != "ANY":
-            # Defensive: fall back to bare placeholder if the declared
-            # type string is not parseable by ``exp.DataType.build``.
-            with contextlib.suppress(Exception):
-                placeholder = exp.Cast(this=placeholder, to=exp.DataType.build(var_type))
-        # ADR 0023 §1.E — BigQuery infers a projection's column name from
-        # the source identifier when the SELECT has no explicit AS
-        # (``SELECT label`` → column name ``label``). Replacing the column
-        # with a bound parameter erases that signal, so DuckDB falls back
-        # to ``$1``. Wrap the placeholder in an alias whenever the column
-        # is a top-level SELECT projection — scoped narrowly to bare
-        # identifiers, matching BigQuery's "single identifier → use as
-        # name" rule.
-        if isinstance(col.parent, exp.Select) and col.arg_key == "expressions":
-            placeholder = exp.Alias(this=placeholder, alias=exp.to_identifier(name))
-        col.replace(placeholder)
-        replaced_any = True
-
+        if _rewrite_one_column(col, visible, params):
+            replaced_any = True
     if not replaced_any:
         return bq_sql, []
+    return tree.sql(dialect="bigquery"), params
 
-    rewritten = tree.sql(dialect="bigquery")
-    return rewritten, params
+
+def _rewrite_one_column(
+    col: exp.Column,
+    visible: dict[str, Any],
+    params: list[Any],
+) -> bool:
+    """Replace ``col`` with a parameter placeholder when it resolves to a script var.
+
+    Returns ``True`` when a substitution happened (and ``params`` was
+    extended). ``False`` means the column referred to a real SQL
+    column (not a script variable) and was left alone.
+    """
+    if col.table:
+        return _rewrite_struct_field_column(col, visible, params)
+    name = col.name
+    if name not in visible:
+        return False
+    var = visible[name]
+    placeholder = _build_scalar_placeholder(var.value, var.type_name, params)
+    if _is_top_level_projection(col):
+        placeholder = exp.Alias(this=placeholder, alias=exp.to_identifier(name))
+    col.replace(placeholder)
+    return True
+
+
+def _rewrite_struct_field_column(
+    col: exp.Column,
+    visible: dict[str, Any],
+    params: list[Any],
+) -> bool:
+    """Handle ``table.field`` references where ``table`` is a STRUCT variable.
+
+    STRUCT-valued variables — including the implicit ``FOR row IN
+    (...)`` row variable — resolve ``var.field`` directly to the
+    inner field value. Non-STRUCT or unknown lookups fall through to
+    the caller (no substitution).
+    """
+    table = col.table
+    if table not in visible:
+        return False
+    container = visible[table].value
+    if not isinstance(container, dict) or col.name not in container:
+        return False
+    params.append(container[col.name])
+    col.replace(exp.Placeholder(this=str(len(params))))
+    return True
+
+
+def _build_scalar_placeholder(
+    value: Any,
+    type_name: str | None,
+    params: list[Any],
+) -> exp.Expression:
+    """Append ``value`` to ``params`` and return its Placeholder expression.
+
+    Preserves the declared variable type when DEFAULT NULL leaves
+    ``value`` as Python ``None``. Without a CAST, the DuckDB driver
+    binds NULL as the default INT64 type and the schema renderer
+    surfaces the column as ``INTEGER`` even though the script said
+    ``DECLARE x STRING DEFAULT NULL``. Wrapping the placeholder in
+    a ``CAST(... AS <declared_type>)`` makes the type travel through
+    to the wire schema — matching BigQuery's "declared type is
+    authoritative" contract. STRUCT-valued variables short-circuit
+    out via :func:`_rewrite_struct_field_column` so the CAST here
+    only fires for scalar variables.
+    """
+    params.append(value)
+    placeholder: exp.Expression = exp.Placeholder(this=str(len(params)))
+    if value is None and type_name and type_name.upper() != "ANY":
+        # Defensive: fall back to bare placeholder if the declared
+        # type string is not parseable by ``exp.DataType.build``.
+        with contextlib.suppress(Exception):
+            placeholder = exp.Cast(this=placeholder, to=exp.DataType.build(type_name))
+    return placeholder
+
+
+def _is_top_level_projection(col: exp.Column) -> bool:
+    """True when ``col`` is a top-level SELECT projection expression.
+
+    ADR 0023 §1.E — BigQuery infers a projection's column name from
+    the source identifier when the SELECT has no explicit AS
+    (``SELECT label`` → column name ``label``). Replacing the column
+    with a bound parameter erases that signal, so DuckDB falls back
+    to ``$1``. Used by :func:`_rewrite_one_column` to wrap the
+    placeholder in an alias and preserve the projected name.
+    """
+    return isinstance(col.parent, exp.Select) and col.arg_key == "expressions"
 
 
 #: Matches ``BEGIN`` / ``BEGIN TRANSACTION`` / ``START TRANSACTION``,

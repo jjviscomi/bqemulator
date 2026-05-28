@@ -9,6 +9,7 @@ script variables bound as parameters — see
 
 from __future__ import annotations
 
+from dataclasses import dataclass
 from typing import Any, ClassVar
 
 from bqemulator.domain.errors import InvalidQueryError
@@ -37,6 +38,90 @@ from bqemulator.udf.types import parse_bq_type_string
 
 # Tuple length for the (name, type, mode) form used by procedure args.
 _PROCEDURE_ARG_TUPLE_LEN = 3
+
+
+@dataclass(slots=True)
+class _TypeReadState:
+    """Mutable state threaded through :meth:`Parser._step_type_name`.
+
+    Holds the live bracket depth and a ``consumed_any`` flag so the
+    type-annotation reader can tell whether at least one token has
+    been absorbed (used to drive the post-loop error path).
+    """
+
+    depth: int = 0
+    consumed_any: bool = False
+
+
+@dataclass(slots=True)
+class _ArgListState:
+    """Mutable state threaded through :meth:`Parser._step_arg_list`."""
+
+    depth: int
+    start: int
+
+
+def _is_type_open_bracket(tok: Token) -> bool:
+    """True for a ``<`` OP token (opens a parameterised type)."""
+    return tok.kind == "OP" and tok.value == "<"
+
+
+def _is_type_close_bracket(tok: Token) -> bool:
+    """True for ``>``/``>>``/``>>>`` OP tokens (closing brackets).
+
+    The lexer fuses two/three consecutive ``>`` into a single OP
+    token; the closing-bracket count is recovered from the literal
+    length.
+    """
+    return tok.kind == "OP" and bool(tok.value) and set(tok.value) == {">"}
+
+
+def _is_open_paren(tok: Token) -> bool:
+    return tok.kind == "PUNCT" and tok.value == "("
+
+
+def _is_close_paren(tok: Token) -> bool:
+    return tok.kind == "PUNCT" and tok.value == ")"
+
+
+def _is_arg_separator(tok: Token, depth: int) -> bool:
+    """True for a top-level ``,`` argument separator (``depth == 1``)."""
+    return tok.kind == "PUNCT" and tok.value == "," and depth == 1
+
+
+def _is_stop_token(
+    tok: Token,
+    stop_puncts: tuple[str, ...],
+    stop_keywords: tuple[str, ...],
+) -> bool:
+    """True when ``tok`` is a top-level capture terminator."""
+    return (tok.kind == "PUNCT" and tok.value in stop_puncts) or (
+        tok.kind == "KEYWORD" and tok.value in stop_keywords
+    )
+
+
+def _classify_capture_token(
+    tok: Token,
+    depth: int,
+    stop_puncts: tuple[str, ...],
+    stop_keywords: tuple[str, ...],
+) -> tuple[int, bool]:
+    """Return ``(depth_delta, terminate)`` for ``tok`` in capture state.
+
+    ``depth_delta`` is +1 for ``(``, -1 for a matched ``)``, otherwise
+    0. ``terminate`` is True when the token should stop the capture
+    (without being consumed by the caller).
+    """
+    if _is_open_paren(tok):
+        return 1, False
+    if _is_close_paren(tok):
+        if depth == 0:
+            return 0, True
+        return -1, False
+    if depth == 0 and _is_stop_token(tok, stop_puncts, stop_keywords):
+        return 0, True
+    return 0, False
+
 
 # Keywords that start a known scripting construct.
 _SCRIPTING_STARTERS: frozenset[str] = frozenset(
@@ -696,48 +781,56 @@ class Parser:
         bracket depth: ``>>`` decrements depth by 2 and ``>>>`` by 3.
         """
         start = self._cursor.pos
-        depth = 0
-        consumed_any = False
+        state = _TypeReadState()
         while not self._cursor.at_eof():
-            tok = self._cursor.current
-            # Opening bracket — always advances the bracket depth.
-            if tok.kind == "OP" and tok.value == "<":
-                depth += 1
-                consumed_any = True
-                self._cursor.advance()
-                continue
-            # Closing brackets — may be one, two, or three ``>`` chars
-            # fused into a single OP token.
-            if tok.kind == "OP" and tok.value and set(tok.value) == {">"}:
-                if depth == 0:
-                    break
-                close_count = self._close_bracket_count(tok.value)
-                if close_count > depth:
-                    raise InvalidQueryError(
-                        f"Type annotation has more closing brackets than openings: {tok.value!r}"
-                    )
-                depth -= close_count
-                consumed_any = True
-                self._cursor.advance()
-                continue
-            # Inside the bracket span — any token is part of the
-            # parameterised type body.
-            if depth > 0:
-                consumed_any = True
-                self._cursor.advance()
-                continue
-            # Bare type identifier at the head — capture, then consume
-            # an optional ``(precision, scale)`` paren block (e.g.
-            # ``DECIMAL(38, 9)``).
-            if tok.kind in ("IDENT", "KEYWORD") and not consumed_any:
-                consumed_any = True
-                self._cursor.advance()
-                self._consume_precision_parens()
-                continue
-            break
-        if not consumed_any:
+            if not self._step_type_name(self._cursor.current, state):
+                break
+        if not state.consumed_any:
             raise InvalidQueryError(f"Expected type name, got {self._cursor.current.kind}")
         return self._cursor.slice(start, self._cursor.pos).strip()
+
+    def _step_type_name(self, tok: Token, state: _TypeReadState) -> bool:
+        """Advance one token of a type annotation; return True to keep reading.
+
+        Returns False when the cursor lands on a token that doesn't
+        belong to the annotation (the outer loop breaks; the token is
+        left unconsumed for the caller).
+        """
+        if _is_type_open_bracket(tok):
+            state.depth += 1
+            state.consumed_any = True
+            self._cursor.advance()
+            return True
+        if _is_type_close_bracket(tok):
+            return self._handle_type_close(tok, state)
+        if state.depth > 0:
+            state.consumed_any = True
+            self._cursor.advance()
+            return True
+        if tok.kind in ("IDENT", "KEYWORD") and not state.consumed_any:
+            state.consumed_any = True
+            self._cursor.advance()
+            self._consume_precision_parens()
+            return True
+        return False
+
+    def _handle_type_close(self, tok: Token, state: _TypeReadState) -> bool:
+        """Apply a ``>``/``>>``/``>>>`` closing-bracket token to ``state``.
+
+        Returns False when the close hits depth 0 (the type annotation
+        is fully consumed) or True after decrementing the depth.
+        """
+        if state.depth == 0:
+            return False
+        close_count = self._close_bracket_count(tok.value)
+        if close_count > state.depth:
+            raise InvalidQueryError(
+                f"Type annotation has more closing brackets than openings: {tok.value!r}",
+            )
+        state.depth -= close_count
+        state.consumed_any = True
+        self._cursor.advance()
+        return True
 
     def _capture_expr_until(
         self,
@@ -753,20 +846,17 @@ class Parser:
         depth = 0
         while not self._cursor.at_eof():
             tok = self._cursor.current
-            if tok.kind == "PUNCT" and tok.value == "(":
-                depth += 1
-            elif tok.kind == "PUNCT" and tok.value == ")":
-                if depth == 0:
-                    break
-                depth -= 1
-            elif depth == 0 and (
-                (tok.kind == "PUNCT" and tok.value in stop_puncts)
-                or (tok.kind == "KEYWORD" and tok.value in stop_keywords)
-            ):
+            depth_delta, terminate = _classify_capture_token(
+                tok,
+                depth,
+                stop_puncts,
+                stop_keywords,
+            )
+            if terminate:
                 break
+            depth += depth_delta
             self._cursor.advance()
-        end = self._cursor.pos
-        return self._cursor.slice(start, end)
+        return self._cursor.slice(start, self._cursor.pos)
 
     def _capture_comma_list_until(
         self,
@@ -790,29 +880,55 @@ class Parser:
         return items
 
     def _capture_arg_list(self) -> list[str]:
-        """Capture a comma-separated argument list inside ``( ... )``."""
+        """Capture a comma-separated argument list inside ``( ... )``.
+
+        Assumes the caller already consumed the outer ``(``. Returns the
+        captured argument slices (whitespace-stripped). Raises when the
+        matching ``)`` never arrives.
+        """
         items: list[str] = []
-        depth = 1  # assume caller already consumed the outer "("
-        start = self._cursor.pos
+        state = _ArgListState(depth=1, start=self._cursor.pos)
         while not self._cursor.at_eof():
-            tok = self._cursor.current
-            if tok.kind == "PUNCT" and tok.value == "(":
-                depth += 1
-            elif tok.kind == "PUNCT" and tok.value == ")":
-                depth -= 1
-                if depth == 0:
-                    slice_text = self._cursor.slice(start, self._cursor.pos).strip()
-                    if slice_text:
-                        items.append(slice_text)
-                    return items
-            elif tok.kind == "PUNCT" and tok.value == "," and depth == 1:
-                slice_text = self._cursor.slice(start, self._cursor.pos).strip()
-                items.append(slice_text)
-                self._cursor.advance()
-                start = self._cursor.pos
-                continue
-            self._cursor.advance()
+            done = self._step_arg_list(self._cursor.current, items, state)
+            if done is not None:
+                return done
         raise InvalidQueryError("Unterminated argument list")
+
+    def _step_arg_list(
+        self,
+        tok: Token,
+        items: list[str],
+        state: _ArgListState,
+    ) -> list[str] | None:
+        """Advance through one token of the argument list.
+
+        Returns the completed items list when the outer ``)`` closes,
+        else ``None`` to signal the caller to keep walking.
+        """
+        if _is_open_paren(tok):
+            state.depth += 1
+            self._cursor.advance()
+            return None
+        if _is_close_paren(tok):
+            state.depth -= 1
+            if state.depth == 0:
+                return self._finalise_arg_list(items, state.start)
+            self._cursor.advance()
+            return None
+        if _is_arg_separator(tok, state.depth):
+            items.append(self._cursor.slice(state.start, self._cursor.pos).strip())
+            self._cursor.advance()
+            state.start = self._cursor.pos
+            return None
+        self._cursor.advance()
+        return None
+
+    def _finalise_arg_list(self, items: list[str], start: int) -> list[str]:
+        """Append the trailing argument slice (if non-empty) and return ``items``."""
+        slice_text = self._cursor.slice(start, self._cursor.pos).strip()
+        if slice_text:
+            items.append(slice_text)
+        return items
 
     def _consume_optional_semicolon(self) -> None:
         if self._cursor.current.kind == "PUNCT" and self._cursor.current.value == ";":
@@ -848,6 +964,72 @@ def _unquote_string(raw: str) -> str:
     return _decode_bq_string_escapes(inner)
 
 
+#: Single-char BigQuery escape sequences. Sourced from BigQuery's
+#: quoted-literal grammar.
+_BQ_SIMPLE_ESCAPES: dict[str, str] = {
+    "\\": "\\",
+    "'": "'",
+    '"': '"',
+    "n": "\n",
+    "t": "\t",
+    "r": "\r",
+    "b": "\b",
+    "f": "\f",
+    "v": "\v",
+    "0": "\0",
+    "a": "\a",
+    "/": "/",
+    "?": "?",
+}
+
+
+def _decode_unicode_escape(s: str, i: int, n: int) -> tuple[str, int] | None:
+    r"""Decode a ``\uXXXX`` 4-hex-digit Unicode escape at ``s[i]``.
+
+    Returns ``(decoded_char, next_index)`` on success, ``None`` when
+    the lookahead is too short or the hex parse fails (the caller
+    falls back to the verbatim-backslash pass-through).
+    """
+    if i + 5 >= n or not s[i + 2 : i + 6].isalnum():
+        return None
+    try:
+        return chr(int(s[i + 2 : i + 6], 16)), i + 6
+    except ValueError:
+        return None
+
+
+def _decode_hex_escape(s: str, i: int, n: int) -> tuple[str, int] | None:
+    r"""Decode a ``\xXX`` 2-hex-digit byte escape at ``s[i]``."""
+    if i + 3 >= n:
+        return None
+    try:
+        return chr(int(s[i + 2 : i + 4], 16)), i + 4
+    except ValueError:
+        return None
+
+
+def _consume_bq_escape(s: str, i: int, n: int) -> tuple[str, int]:
+    r"""Consume one BigQuery escape sequence at ``s[i]``.
+
+    Returns ``(decoded_text, next_index)``. Unknown escapes pass the
+    leading ``\`` through verbatim and advance by 1 — this matches
+    BigQuery's permissive behaviour.
+    """
+    nxt = s[i + 1]
+    simple = _BQ_SIMPLE_ESCAPES.get(nxt)
+    if simple is not None:
+        return simple, i + 2
+    if nxt == "u":
+        unicode_match = _decode_unicode_escape(s, i, n)
+        if unicode_match is not None:
+            return unicode_match
+    if nxt == "x":
+        hex_match = _decode_hex_escape(s, i, n)
+        if hex_match is not None:
+            return hex_match
+    return s[i], i + 1
+
+
 def _decode_bq_string_escapes(s: str) -> str:
     r"""Decode BigQuery string-literal escape sequences in ``s``.
 
@@ -866,47 +1048,8 @@ def _decode_bq_string_escapes(s: str) -> str:
             out.append(ch)
             i += 1
             continue
-        nxt = s[i + 1]
-        mapping = {
-            "\\": "\\",
-            "'": "'",
-            '"': '"',
-            "n": "\n",
-            "t": "\t",
-            "r": "\r",
-            "b": "\b",
-            "f": "\f",
-            "v": "\v",
-            "0": "\0",
-            "a": "\a",
-            "/": "/",
-            "?": "?",
-        }
-        if nxt in mapping:
-            out.append(mapping[nxt])
-            i += 2
-            continue
-        if nxt == "u":
-            if i + 5 < n and s[i + 2 : i + 6].isalnum():
-                try:
-                    out.append(chr(int(s[i + 2 : i + 6], 16)))
-                    i += 6
-                    continue
-                except ValueError:
-                    pass
-            out.append(ch)
-            i += 1
-            continue
-        if nxt == "x" and i + 3 < n:
-            try:
-                out.append(chr(int(s[i + 2 : i + 4], 16)))
-                i += 4
-                continue
-            except ValueError:
-                pass
-        # Unknown escape: pass through verbatim.
-        out.append(ch)
-        i += 1
+        decoded, i = _consume_bq_escape(s, i, n)
+        out.append(decoded)
     return "".join(out)
 
 

@@ -96,6 +96,11 @@ class Token:
     raw_value: str = ""  # original source slice for STRING/IDENT — used for round-tripping
 
 
+def _is_ident_start(ch: str) -> bool:
+    """True when ``ch`` may legally start a SQL identifier."""
+    return ch.isalpha() or ch == "_"
+
+
 class Lexer:
     """Greedy lexer for BigQuery scripts."""
 
@@ -120,24 +125,52 @@ class Lexer:
 
         start = self._pos
         ch = self._source[self._pos]
+        token = self._dispatch_first_char(ch, start)
+        if token is not None:
+            return token
+        return self._read_operator_or_punct(start)
 
+    def _dispatch_first_char(self, ch: str, start: int) -> Token | None:
+        """Route the next-token decision based on the leading character.
+
+        Returns ``None`` when ``ch`` doesn't match any literal /
+        identifier / numeric / at-sign opener — the caller falls
+        through to :meth:`_read_operator_or_punct`. Splitting the
+        cascade out keeps :meth:`_next_token` under the cyclomatic
+        ceiling without changing tokenisation order.
+        """
         if ch == "`":
             return self._read_backtick_ident(start)
         if ch in ("'", '"'):
             return self._read_string(start)
-        if ch.isalpha() or ch == "_":
-            # Check for raw-string prefix r'...' or R'...'
-            if ch.lower() == "r" and start + 1 < len(self._source):
-                nxt = self._source[start + 1]
-                if nxt in ("'", '"'):
-                    self._pos += 1
-                    return self._read_string(start, raw=True)
-            return self._read_identifier(start)
-        if ch.isdigit() or (ch == "." and self._peek_digit()):
+        if _is_ident_start(ch):
+            return self._read_ident_or_raw_string(ch, start)
+        if self._is_number_start(ch):
             return self._read_number(start)
         if ch == "@":
             return self._read_at(start)
-        return self._read_operator_or_punct(start)
+        return None
+
+    def _is_number_start(self, ch: str) -> bool:
+        """True for digits and for a ``.`` followed by a digit (``.5``)."""
+        if ch.isdigit():
+            return True
+        return ch == "." and self._peek_digit()
+
+    def _read_ident_or_raw_string(self, ch: str, start: int) -> Token:
+        """Read either an identifier or a raw-string literal.
+
+        BigQuery's raw-string prefix is ``r``/``R`` followed by ``'``
+        or ``"``. When the prefix matches, advance past the ``r`` and
+        delegate to :meth:`_read_string` with ``raw=True``. Otherwise
+        fall through to :meth:`_read_identifier`.
+        """
+        if ch.lower() == "r" and start + 1 < len(self._source):
+            nxt = self._source[start + 1]
+            if nxt in ("'", '"'):
+                self._pos += 1
+                return self._read_string(start, raw=True)
+        return self._read_identifier(start)
 
     # -- Whitespace + comments --------------------------------------------
 
