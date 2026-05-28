@@ -53,7 +53,7 @@ def _field_to_rest(field: TableFieldSchema) -> dict[str, Any]:
     return out
 
 
-def _time_partitioning_to_rest(tp: Any) -> dict[str, Any]:
+def _time_partitioning_to_rest(tp: TimePartitioning) -> dict[str, Any]:
     """Serialize a time-partitioning spec to the BigQuery REST shape."""
     part_body: dict[str, Any] = {"type": tp.type}
     if tp.field:
