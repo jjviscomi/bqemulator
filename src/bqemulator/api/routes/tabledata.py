@@ -10,7 +10,8 @@ Reference:
 
 from __future__ import annotations
 
-from typing import Annotated, Any
+from collections.abc import Sequence
+from typing import Annotated, Any, Protocol, TypedDict
 
 from fastapi import APIRouter, Depends, Query, Request
 import pyarrow as pa
@@ -130,7 +131,32 @@ def _build_insert_select(table_meta_fields: list[Any], reg_name: str) -> str:
 # ---------------------------------------------------------------------------
 
 
-def _fields_raw_from_schema(fields: Any) -> list[dict[str, Any]]:
+class _SchemaFieldLike(Protocol):
+    """Structural type of a catalog schema field (e.g. :class:`TableFieldSchema`).
+
+    Declared as a :class:`Protocol` so the helper accepts any object
+    exposing the BigQuery-shaped attribute surface — keeps the
+    forwarding helper decoupled from the concrete catalog model.
+    """
+
+    name: str
+    type: str
+    mode: str
+    fields: Sequence[_SchemaFieldLike]
+    range_element_type: _SchemaFieldLike | None
+
+
+class _RawSchemaField(TypedDict, total=False):
+    """:func:`_build_arrow_schema` input shape for a single field."""
+
+    name: str
+    type: str
+    mode: str
+    fields: list[_RawSchemaField]
+    rangeElementType: dict[str, str]
+
+
+def _fields_raw_from_schema(fields: Sequence[_SchemaFieldLike]) -> list[_RawSchemaField]:
     """Project a ``TableSchema.fields`` tuple onto :func:`_build_arrow_schema`'s shape.
 
     Recurses into ``fields`` so nested ``RECORD`` / ``STRUCT`` schemas
@@ -138,16 +164,17 @@ def _fields_raw_from_schema(fields: Any) -> list[dict[str, Any]]:
     inserts collapse to empty structs.
     """
 
-    def _to_raw(field: Any) -> dict[str, Any]:
-        raw: dict[str, Any] = {
+    def _to_raw(field: _SchemaFieldLike) -> _RawSchemaField:
+        raw: _RawSchemaField = {
             "name": field.name,
             "type": field.type,
             "mode": field.mode,
         }
-        if getattr(field, "fields", None):
+        if field.fields:
             raw["fields"] = [_to_raw(child) for child in field.fields]
-        if getattr(field, "range_element_type", None) is not None:
-            raw["rangeElementType"] = {"type": field.range_element_type.type}
+        range_elem = field.range_element_type
+        if range_elem is not None:
+            raw["rangeElementType"] = {"type": range_elem.type}
         return raw
 
     return [_to_raw(f) for f in fields]
