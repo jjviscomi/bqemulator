@@ -218,7 +218,7 @@ class TestInvalidDatasetId:
         from bqemulator.domain.errors import ValidationError
 
         with pytest.raises(ValidationError) as exc:
-            rewrite_table_refs("CREATE SCHEMA proj.\"!!bad-ds!!\"", "proj")
+            rewrite_table_refs('CREATE SCHEMA proj."!!bad-ds!!"', "proj")
         assert exc.value.location == "!!bad-ds!!"
         assert not exc.value.location.endswith(".")
 
