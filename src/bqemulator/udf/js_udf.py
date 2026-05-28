@@ -337,24 +337,34 @@ def _asyncio_loop_running() -> bool:
     return True
 
 
+def _coerce_datetime_for_json(value: datetime) -> str:
+    """Render a ``datetime`` as its ISO-8601 string, defaulting naive values to UTC."""
+    if value.tzinfo is None:
+        value = value.replace(tzinfo=UTC)
+    return value.isoformat()
+
+
+#: Type → coercer dispatch for :func:`_to_json_value`. Order matters where
+#: a more specific subclass precedes its parent — ``datetime`` is a
+#: ``date`` subclass, so it must be matched first to apply tz-aware
+#: handling before the bare ``(date, time)`` branch sees it.
+_JSON_COERCERS: tuple[tuple[Any, Any], ...] = (
+    (bytes, lambda v: base64.b64encode(v).decode("ascii")),
+    (Decimal, str),
+    (datetime, _coerce_datetime_for_json),
+    ((date, time), lambda v: v.isoformat()),
+    ((list, tuple), lambda v: [_to_json_value(x) for x in v]),
+    (dict, lambda v: {str(k): _to_json_value(x) for k, x in v.items()}),
+)
+
+
 def _to_json_value(value: Any) -> Any:
     """Coerce a DuckDB-side Python value for JSON → V8 transport."""
     if value is None or isinstance(value, (bool, int, float, str)):
         return value
-    if isinstance(value, bytes):
-        return base64.b64encode(value).decode("ascii")
-    if isinstance(value, Decimal):
-        return str(value)
-    if isinstance(value, datetime):
-        if value.tzinfo is None:
-            value = value.replace(tzinfo=UTC)
-        return value.isoformat()
-    if isinstance(value, (date, time)):
-        return value.isoformat()
-    if isinstance(value, (list, tuple)):
-        return [_to_json_value(v) for v in value]
-    if isinstance(value, dict):
-        return {str(k): _to_json_value(v) for k, v in value.items()}
+    for types, coercer in _JSON_COERCERS:
+        if isinstance(value, types):
+            return coercer(value)
     # Fallback — orjson-style default: round-trip through JSON.
     return json.loads(json.dumps(value, default=str))
 

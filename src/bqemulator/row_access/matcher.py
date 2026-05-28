@@ -36,37 +36,18 @@ def grantee_matches(grantee: str, caller: CallerIdentity) -> bool:
     g = grantee.strip()
     if not g:
         return False
-
     if g == "allUsers":
         return True
-
     if g == "allAuthenticatedUsers":
         return caller.is_authenticated
-
     if ":" not in g:
         return False
-
     kind, value = g.split(":", 1)
     value = value.strip()
     if not value:
         return False
-
-    if kind in ("user", "serviceAccount"):
-        return _email_matches(value, caller, kind)
-
-    if kind == "domain":
-        host = value.lower()
-        caller_domain = caller.domain
-        return caller_domain is not None and caller_domain == host
-
-    if kind == "group":
-        # caller.groups is treated case-sensitively on the local part
-        # to match the user/serviceAccount rule. The host is normalised
-        # to lower-case in the matcher.
-        norm_value = _normalise_email(value)
-        return any(_normalise_email(g) == norm_value for g in caller.groups)
-
-    return False
+    matcher = _KIND_MATCHERS.get(kind)
+    return matcher(value, caller) if matcher is not None else False
 
 
 def _email_matches(email: str, caller: CallerIdentity, expect_kind: str) -> bool:
@@ -85,6 +66,35 @@ def _normalise_email(email: str) -> str:
         return email
     local, host = email.split("@", 1)
     return f"{local}@{host.lower()}"
+
+
+def _domain_matches(host: str, caller: CallerIdentity) -> bool:
+    """Match a ``domain:<host>`` grantee against the caller's email host."""
+    caller_domain = caller.domain
+    return caller_domain is not None and caller_domain == host.lower()
+
+
+def _group_matches(value: str, caller: CallerIdentity) -> bool:
+    """Match a ``group:<email>`` grantee against the caller's ``groups`` list.
+
+    Local part is compared case-sensitively (to match the user /
+    serviceAccount rule); the host is normalised to lower-case via
+    :func:`_normalise_email`.
+    """
+    norm_value = _normalise_email(value)
+    return any(_normalise_email(g) == norm_value for g in caller.groups)
+
+
+#: Kind prefix → matcher dispatch for :func:`grantee_matches`. Each
+#: matcher takes ``(value, caller)`` and returns whether the grantee
+#: applies. ``user`` / ``serviceAccount`` share :func:`_email_matches`
+#: with the kind name pinned.
+_KIND_MATCHERS = {
+    "user": lambda v, c: _email_matches(v, c, "user"),
+    "serviceAccount": lambda v, c: _email_matches(v, c, "serviceAccount"),
+    "domain": _domain_matches,
+    "group": _group_matches,
+}
 
 
 class GranteeMatcher:
