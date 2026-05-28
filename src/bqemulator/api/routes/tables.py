@@ -53,6 +53,18 @@ def _field_to_rest(field: TableFieldSchema) -> dict[str, Any]:
     return out
 
 
+def _time_partitioning_to_rest(tp: TimePartitioning) -> dict[str, Any]:
+    """Serialize a time-partitioning spec to the BigQuery REST shape."""
+    part_body: dict[str, Any] = {"type": tp.type}
+    if tp.field:
+        part_body["field"] = tp.field
+    if tp.expiration_ms is not None:
+        part_body["expirationMs"] = str(tp.expiration_ms)
+    if tp.require_partition_filter:
+        part_body["requirePartitionFilter"] = True
+    return part_body
+
+
 def _table_to_rest(t: TableMeta) -> dict[str, Any]:
     """Serialize a ``TableMeta`` to the BigQuery REST shape."""
     ref = {
@@ -89,15 +101,7 @@ def _table_to_rest(t: TableMeta) -> dict[str, Any]:
     if t.labels:
         body["labels"] = t.labels
     if t.time_partitioning:
-        tp = t.time_partitioning
-        part_body: dict[str, Any] = {"type": tp.type}
-        if tp.field:
-            part_body["field"] = tp.field
-        if tp.expiration_ms is not None:
-            part_body["expirationMs"] = str(tp.expiration_ms)
-        if tp.require_partition_filter:
-            part_body["requirePartitionFilter"] = True
-        body["timePartitioning"] = part_body
+        body["timePartitioning"] = _time_partitioning_to_rest(t.time_partitioning)
     if t.clustering:
         body["clustering"] = {"fields": list(t.clustering.fields)}
     return body
