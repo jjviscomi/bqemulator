@@ -242,7 +242,7 @@ async def insert_all(
 
 def _format_insert_error(
     idx: int,
-    exc: BaseException,
+    _exc: BaseException,
     row: dict[str, Any],
     arrow_schema: Any,
 ) -> dict[str, Any]:
@@ -252,6 +252,11 @@ def _format_insert_error(
     message}, ...]}`` per failing row. The emulator's best-effort
     location is the first column name from the request's ``json``
     payload — clients use this to highlight the offending field.
+
+    ``_exc`` is part of the contract (the raised conversion exception)
+    but is intentionally not consulted in the body — its text is not
+    echoed to the wire to avoid surfacing internal exception details
+    (CodeQL ``py/stack-trace-exposure``).
     """
     location = ""
     bad_value: Any = None
@@ -269,10 +274,13 @@ def _format_insert_error(
 
     # BigQuery's error wording is ``Cannot convert value to <type>
     # (bad value): <value>``. Rebuild the message in that shape using
-    # the failing field's declared type + the offending value, falling
-    # back to the raw exception text when the location isn't a known
-    # column.
-    message = str(exc)
+    # the failing field's declared type + the offending value. When the
+    # offending column can't be identified, fall back to a sanitised
+    # message — the ``index`` in the returned dict already lets clients
+    # correlate the failure with the input row. The raw exception text
+    # is intentionally NOT echoed to the wire to avoid surfacing
+    # internal exception details (CodeQL ``py/stack-trace-exposure``).
+    message = "Cannot convert row to the table's schema"
     if location:
         try:
             field_type = arrow_schema.field(location).type

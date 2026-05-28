@@ -501,8 +501,15 @@ class TestFormatInsertErrorHelper:
         # The remapped error message names the failing type.
         assert "integer" in out["errors"][0]["message"].lower()
 
-    def test_format_error_with_unknown_column_keeps_original_message(self) -> None:
-        """When the json payload contains no recognised column, location is empty."""
+    def test_format_error_with_unknown_column_uses_sanitised_message(self) -> None:
+        """When the json payload contains no recognised column, location is empty.
+
+        The fallback message is a sanitised generic string — the raw
+        exception text is intentionally NOT echoed to the wire, to avoid
+        surfacing internal exception details (CodeQL
+        ``py/stack-trace-exposure``). Clients correlate the failure
+        with their input via the ``index`` field on the returned dict.
+        """
         import pyarrow as pa
 
         from bqemulator.api.routes.tabledata import _format_insert_error
@@ -515,8 +522,9 @@ class TestFormatInsertErrorHelper:
             schema,
         )
         assert out["errors"][0]["location"] == ""
-        # Falls back to the raw exception text.
-        assert "raw" in out["errors"][0]["message"]
+        # Sanitised generic fallback; the raw exception text is not present.
+        assert out["errors"][0]["message"] == "Cannot convert row to the table's schema"
+        assert "raw" not in out["errors"][0]["message"]
 
     def test_format_error_non_dict_payload(self) -> None:
         """A non-dict row leaves location empty (line 252-253)."""
