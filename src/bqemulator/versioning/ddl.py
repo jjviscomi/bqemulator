@@ -205,6 +205,17 @@ _PARTS_DATASET_QUALIFIED = 2
 _PARTS_BARE = 1
 
 
+def _assert_source_present(ddl: VersioningDDL) -> None:
+    """Assert that ``ddl`` carries a complete ``(project, dataset, table)`` source triple.
+
+    Snapshot / clone DDLs require the source to be set by the parser
+    before dispatch reaches this layer.
+    """
+    assert ddl.source_project is not None  # noqa: S101
+    assert ddl.source_dataset is not None  # noqa: S101
+    assert ddl.source_table is not None  # noqa: S101
+
+
 async def execute_versioning_ddl(
     ddl: VersioningDDL,
     ctx: AppContext,
@@ -219,9 +230,7 @@ async def execute_versioning_ddl(
     from bqemulator.versioning.snapshot_table import SnapshotTableManager
 
     if ddl.kind is VersioningDDLKind.CREATE_SNAPSHOT:
-        assert ddl.source_project is not None  # noqa: S101
-        assert ddl.source_dataset is not None  # noqa: S101
-        assert ddl.source_table is not None  # noqa: S101
+        _assert_source_present(ddl)
         await SnapshotTableManager(ctx).create(
             ddl.target_project,
             ddl.target_dataset,
@@ -237,9 +246,7 @@ async def execute_versioning_ddl(
             ddl.target_table,
         )
     elif ddl.kind is VersioningDDLKind.CREATE_CLONE:
-        assert ddl.source_project is not None  # noqa: S101
-        assert ddl.source_dataset is not None  # noqa: S101
-        assert ddl.source_table is not None  # noqa: S101
+        _assert_source_present(ddl)
         await CloneManager(ctx).create(
             ddl.target_project,
             ddl.target_dataset,
