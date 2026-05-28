@@ -193,6 +193,48 @@ async def _iter_request_body(request: Request) -> Any:
 # ---------------------------------------------------------------------------
 
 
+def _parse_json_part(part: Any) -> dict[str, Any]:
+    """Decode the JSON envelope from a ``multipart/related`` first part.
+
+    Validates the part's declared content-type contains ``json``, parses
+    the payload, and confirms the result is a JSON object.
+    """
+    json_ct = (part.get_content_type() or "").lower()
+    if "json" not in json_ct:
+        raise InvalidQueryError(
+            f"multipart upload's first part must be JSON; got {json_ct!r}",
+        )
+    try:
+        envelope = json.loads(part.get_payload(decode=True) or b"{}")
+    except json.JSONDecodeError as exc:
+        raise InvalidQueryError(
+            f"multipart upload's first part is not valid JSON: {exc}",
+        ) from exc
+    if not isinstance(envelope, dict):
+        raise InvalidQueryError(
+            "multipart upload's first part must be a JSON object",
+        )
+    return envelope
+
+
+def _parse_media_part(part: Any) -> bytes:
+    """Extract the media bytes from a ``multipart/related`` second part.
+
+    Validates the part's declared content-type against the
+    :data:`_PERMITTED_MEDIA_CONTENT_TYPES` whitelist so an upload
+    can't be coerced into materialising an arbitrary MIME envelope.
+    """
+    media_ct = (part.get_content_type() or "").lower()
+    if not _is_permitted_media_type(media_ct):
+        raise InvalidQueryError(
+            f"multipart upload's second part has unsupported Content-Type {media_ct!r}",
+        )
+    media_bytes = part.get_payload(decode=True) or b""
+    if not isinstance(media_bytes, bytes):  # pragma: no cover — defensive
+        media_bytes = bytes(media_bytes)
+    return media_bytes
+
+
 def _parse_multipart_related(content_type: str, body: bytes) -> tuple[dict[str, Any], bytes]:
     """Parse a ``multipart/related`` body into ``(load_config, media_bytes)``.
 
@@ -212,50 +254,21 @@ def _parse_multipart_related(content_type: str, body: bytes) -> tuple[dict[str, 
         raise InvalidQueryError(
             f"multipart upload requires Content-Type: multipart/related; got {content_type!r}",
         )
-
     # The stdlib parser expects the headers + body together. Reconstruct
     # a minimal RFC 822 message: a single Content-Type header followed
     # by a blank line, then the body.
     header_line = f"Content-Type: {content_type}\r\n\r\n".encode()
     parser = email.parser.BytesParser(policy=email.policy.default)
     message = parser.parsebytes(header_line + body)
-
     if not message.is_multipart():
         raise InvalidQueryError("multipart upload body is not a multipart envelope")
-
     parts = list(message.iter_parts())
     if len(parts) != _MULTIPART_RELATED_PART_COUNT:
         raise InvalidQueryError(
             f"multipart upload requires exactly 2 parts; got {len(parts)}",
         )
-
     json_part, media_part = parts
-    json_ct = (json_part.get_content_type() or "").lower()
-    if "json" not in json_ct:
-        raise InvalidQueryError(
-            f"multipart upload's first part must be JSON; got {json_ct!r}",
-        )
-    try:
-        configuration_envelope = json.loads(json_part.get_payload(decode=True) or b"{}")
-    except json.JSONDecodeError as exc:
-        raise InvalidQueryError(
-            f"multipart upload's first part is not valid JSON: {exc}",
-        ) from exc
-    if not isinstance(configuration_envelope, dict):
-        raise InvalidQueryError(
-            "multipart upload's first part must be a JSON object",
-        )
-
-    media_ct = (media_part.get_content_type() or "").lower()
-    if not _is_permitted_media_type(media_ct):
-        raise InvalidQueryError(
-            f"multipart upload's second part has unsupported Content-Type {media_ct!r}",
-        )
-    media_bytes = media_part.get_payload(decode=True) or b""
-    if not isinstance(media_bytes, bytes):  # pragma: no cover — defensive
-        media_bytes = bytes(media_bytes)
-
-    return configuration_envelope, media_bytes
+    return _parse_json_part(json_part), _parse_media_part(media_part)
 
 
 def _is_permitted_media_type(media_ct: str) -> bool:

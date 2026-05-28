@@ -42,6 +42,74 @@ _CORRELATION_HEADERS = (
 )
 
 
+def _get_content_encoding(headers: list[tuple[bytes, bytes]]) -> bytes | None:
+    """Return the lower-cased / stripped ``content-encoding`` value, or ``None``."""
+    for key, value in headers:
+        if key.lower() == b"content-encoding":
+            return value.lower().strip()
+    return None
+
+
+async def _read_full_body(receive: Receive) -> tuple[bytes, bool]:
+    """Buffer the ASGI request body. Returns ``(body, disconnected)``.
+
+    ``disconnected`` is ``True`` if a non-``http.request`` message
+    arrives mid-upload (e.g. ``http.disconnect``); the caller should
+    pass through to the downstream app in that case.
+    """
+    buf = bytearray()
+    more = True
+    while more:
+        message = await receive()
+        if message["type"] != "http.request":
+            return b"", True
+        buf.extend(message.get("body", b""))
+        more = message.get("more_body", False)
+    return bytes(buf), False
+
+
+def _rebuild_headers_for_decoded(
+    headers: list[tuple[bytes, bytes]],
+    new_length: int,
+) -> list[tuple[bytes, bytes]]:
+    """Strip ``content-encoding`` / old ``content-length`` and set the decoded length."""
+    new_headers: list[tuple[bytes, bytes]] = [
+        (key, value)
+        for key, value in headers
+        if key.lower() not in (b"content-encoding", b"content-length")
+    ]
+    new_headers.append((b"content-length", str(new_length).encode("ascii")))
+    return new_headers
+
+
+def _unsupported_encoding_response(encoding: bytes) -> JSONResponse:
+    """Build the 415 response for an unsupported ``Content-Encoding``."""
+    return JSONResponse(
+        status_code=415,
+        content={
+            "error": {
+                "code": 415,
+                "message": f"Unsupported Content-Encoding: {encoding.decode('latin-1')}",
+                "status": "UNSUPPORTED_MEDIA_TYPE",
+            },
+        },
+    )
+
+
+def _malformed_gzip_response(exc: OSError) -> JSONResponse:
+    """Build the 400 response for an undecodable gzip body."""
+    return JSONResponse(
+        status_code=400,
+        content={
+            "error": {
+                "code": 400,
+                "message": f"Malformed gzip request body: {exc}",
+                "status": "INVALID_ARGUMENT",
+            },
+        },
+    )
+
+
 class GzipRequestMiddleware:
     """Decode ``Content-Encoding: gzip`` request bodies before routing.
 
@@ -64,72 +132,30 @@ class GzipRequestMiddleware:
         if scope["type"] != "http":
             await self._app(scope, receive, send)
             return
-
         headers = scope.get("headers", [])
-        encoding: bytes | None = None
-        for key, value in headers:
-            if key.lower() == b"content-encoding":
-                encoding = value.lower().strip()
-                break
-
+        encoding = _get_content_encoding(headers)
         if encoding is None or encoding == b"identity":
             await self._app(scope, receive, send)
             return
-
         if encoding != b"gzip":
             # Other encodings (deflate, br) aren't supported. Surface
             # a 415 immediately rather than letting JSON parsing fail.
-            response = JSONResponse(
-                status_code=415,
-                content={
-                    "error": {
-                        "code": 415,
-                        "message": (f"Unsupported Content-Encoding: {encoding.decode('latin-1')}"),
-                        "status": "UNSUPPORTED_MEDIA_TYPE",
-                    },
-                },
-            )
-            await response(scope, receive, send)
+            await _unsupported_encoding_response(encoding)(scope, receive, send)
             return
-
-        compressed = bytearray()
-        more = True
-        while more:
-            message = await receive()
-            if message["type"] != "http.request":
-                # Pass disconnects through unchanged.
-                await self._app(scope, receive, send)
-                return
-            compressed.extend(message.get("body", b""))
-            more = message.get("more_body", False)
-
+        body, disconnected = await _read_full_body(receive)
+        if disconnected:
+            # Pass through; the downstream app handles the disconnect.
+            await self._app(scope, receive, send)
+            return
         try:
-            decompressed = gzip.decompress(bytes(compressed))
+            decompressed = gzip.decompress(body)
         except OSError as exc:
-            response = JSONResponse(
-                status_code=400,
-                content={
-                    "error": {
-                        "code": 400,
-                        "message": f"Malformed gzip request body: {exc}",
-                        "status": "INVALID_ARGUMENT",
-                    },
-                },
-            )
-            await response(scope, receive, send)
+            await _malformed_gzip_response(exc)(scope, receive, send)
             return
-
-        # Rebuild the scope's headers: drop content-encoding, update
-        # content-length to the decoded size.
-        new_headers: list[tuple[bytes, bytes]] = []
-        for key, value in headers:
-            lk = key.lower()
-            if lk in (b"content-encoding", b"content-length"):
-                continue
-            new_headers.append((key, value))
-        new_headers.append((b"content-length", str(len(decompressed)).encode("ascii")))
-        scope = {**scope, "headers": new_headers}
-
+        scope = {
+            **scope,
+            "headers": _rebuild_headers_for_decoded(headers, len(decompressed)),
+        }
         delivered = False
 
         async def replay_receive() -> Message:
