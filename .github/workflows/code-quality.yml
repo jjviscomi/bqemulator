@@ -26,6 +26,7 @@ on:
       - "pyproject.toml"
       - ".vulture_whitelist.py"
       - ".jscpd.json"
+      - ".lychee.toml"
       - "Makefile"
       # Run on every workflow / dependabot example change too, so the
       # ``Quality gates`` job emits a status on PRs that only touch
