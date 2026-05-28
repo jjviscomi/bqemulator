@@ -131,6 +131,25 @@ def bq_to_duckdb(bq_type: str) -> str:
     return result
 
 
+def _duckdb_compound_to_bq(duckdb_type: str, upper: str) -> str | None:
+    """Map a parameterized DuckDB type (ARRAY/LIST/STRUCT) to BigQuery, else ``None``.
+
+    Recurses into :func:`duckdb_to_bq` for element / field types. Returns
+    ``None`` for non-compound types so the caller falls through to the
+    DECIMAL handling and the direct / alias lookups.
+    """
+    stripped = duckdb_type.strip()
+    if upper.endswith("[]"):  # ARRAY suffix, e.g. ``BIGINT[]``
+        return f"ARRAY<{duckdb_to_bq(stripped[:-2].strip())}>"
+    if upper.startswith(("LIST(", "LIST (")):
+        return f"ARRAY<{duckdb_to_bq(_extract_parens(stripped, 'LIST'))}>"
+    if upper.startswith(("STRUCT(", "STRUCT (")):
+        fields = _parse_struct_fields(_extract_parens(stripped, "STRUCT"))
+        bq_fields = ", ".join(f"{name} {duckdb_to_bq(ft)}" for name, ft in fields)
+        return f"STRUCT<{bq_fields}>"
+    return None
+
+
 def duckdb_to_bq(duckdb_type: str) -> str:
     """Convert a DuckDB type name to its BigQuery equivalent.
 
@@ -142,24 +161,12 @@ def duckdb_to_bq(duckdb_type: str) -> str:
     """
     upper = duckdb_type.strip().upper()
 
-    # LIST / ARRAY suffix
-    if upper.endswith("[]"):
-        inner = duckdb_type.strip()[:-2].strip()
-        return f"ARRAY<{duckdb_to_bq(inner)}>"
+    # Parameterized types (ARRAY suffix / LIST(...) / STRUCT(...)).
+    compound = _duckdb_compound_to_bq(duckdb_type, upper)
+    if compound is not None:
+        return compound
 
-    # LIST(element_type)
-    if upper.startswith("LIST(") or upper.startswith("LIST ("):
-        inner = _extract_parens(duckdb_type.strip(), "LIST")
-        return f"ARRAY<{duckdb_to_bq(inner)}>"
-
-    # STRUCT(...)
-    if upper.startswith("STRUCT(") or upper.startswith("STRUCT ("):
-        inner = _extract_parens(duckdb_type.strip(), "STRUCT")
-        fields = _parse_struct_fields(inner)
-        bq_fields = ", ".join(f"{name} {duckdb_to_bq(ft)}" for name, ft in fields)
-        return f"STRUCT<{bq_fields}>"
-
-    # DECIMAL with explicit precision/scale -> NUMERIC or BIGNUMERIC
+    # DECIMAL with explicit precision/scale → NUMERIC or BIGNUMERIC.
     bignumeric_threshold = 38
     if upper.startswith("DECIMAL"):
         precision, _scale = _parse_decimal_params(upper)
@@ -167,13 +174,8 @@ def duckdb_to_bq(duckdb_type: str) -> str:
             return "BIGNUMERIC"
         return "NUMERIC"
 
-    # Direct lookup
-    result = _DUCKDB_TO_BQ.get(upper)
-    if result is not None:
-        return result
-
-    # Alias lookup
-    result = _DUCKDB_ALIASES.get(upper)
+    # Direct lookup, then alias lookup (both map to non-empty BQ names).
+    result = _DUCKDB_TO_BQ.get(upper) or _DUCKDB_ALIASES.get(upper)
     if result is not None:
         return result
 

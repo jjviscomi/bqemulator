@@ -247,6 +247,50 @@ _BQ_TYPE_FORMATTERS: tuple[tuple[Callable[[pa.DataType], bool], Callable[..., An
     (pa.types.is_struct, _fmt_bq_struct),
 )
 
+#: Sentinel returned by :func:`_format_special_value` when the value is
+#: not one of the metadata-driven special cases and should fall through
+#: to the regular Arrow-type dispatch.
+_UNHANDLED = object()
+
+
+def _format_range_field(value: Any, range_meta: tuple[str, bool]) -> Any:
+    """Format a BigQuery RANGE value (ADR 0023 §1.G).
+
+    ``range_meta`` is ``(bq_element_type, is_repeated)``. A REPEATED
+    RANGE renders as a list of ``{"v": <range string>}`` dicts; a scalar
+    RANGE renders as a single ``[start, end)`` string.
+    """
+    bq_elem, is_repeated = range_meta
+    if is_repeated:
+        if isinstance(value, list):
+            return [{"v": _format_range_value(elem, bq_elem)} for elem in value]
+        return []
+    return _format_range_value(value, bq_elem)
+
+
+def _format_special_value(value: Any, arrow_type: pa.DataType, field: pa.Field | None) -> Any:
+    """Format the metadata-driven special cases, or return :data:`_UNHANDLED`.
+
+    RANGE / GEOGRAPHY / INTERVAL don't fit the plain Arrow-type dispatch
+    because they consult BigQuery RANGE / GEOGRAPHY metadata on ``field``
+    or the Arrow-internal interval struct rather than the column type
+    alone. Returns :data:`_UNHANDLED` so the caller can fall through.
+    """
+    range_meta = _bq_range_metadata(field)
+    if range_meta is not None:
+        return _format_range_field(value, range_meta)
+    # GEOGRAPHY — Arrow binary with the geoarrow.wkb extension.
+    if field is not None and _is_geometry_field(field) and isinstance(value, (bytes, bytearray)):
+        return wkb_to_wkt(value)
+    # INTERVAL — Arrow month_day_nano interval (a struct internally, so it
+    # must be handled before the dispatch table's struct predicate).
+    if pa.types.is_interval(arrow_type):
+        months = getattr(value, "months", 0)
+        days = getattr(value, "days", 0)
+        nanos = getattr(value, "nanoseconds", 0)
+        return format_bq_interval(int(months), int(days), int(nanos))
+    return _UNHANDLED
+
 
 def _format_bq_value(
     value: Any,
@@ -277,39 +321,17 @@ def _format_bq_value(
       parser iterates the value unconditionally.
     - STRUCT<…> → ``{"f": [{"v": ...}, ...]}`` (recursive).
     """
-    # Pre-checks driven by ``field`` metadata or by Arrow-internal
-    # types whose handlers don't fit the regular dispatch shape (they
-    # consult the BigQuery RANGE / GEOGRAPHY / INTERVAL metadata, not
-    # the Arrow column type alone).
     if value is None:
         if pa.types.is_list(arrow_type) or pa.types.is_large_list(arrow_type):
             return []
         return None
 
-    # ADR 0023 §1.G — BigQuery RANGE columns surface on the wire as a
-    # single string (``[start, end)``). For a REPEATED RANGE the
-    # element string is wrapped in the usual ``{"v": ...}`` form.
-    range_meta = _bq_range_metadata(field)
-    if range_meta is not None:
-        bq_elem, is_repeated = range_meta
-        if is_repeated:
-            if isinstance(value, list):
-                return [{"v": _format_range_value(elem, bq_elem)} for elem in value]
-            return []
-        return _format_range_value(value, bq_elem)
-
-    # GEOGRAPHY — encoded as Arrow binary with the geoarrow.wkb extension.
-    if field is not None and _is_geometry_field(field) and isinstance(value, (bytes, bytearray)):
-        return wkb_to_wkt(value)
-
-    # INTERVAL — Arrow month_day_nano interval (a struct in pyarrow's
-    # internal representation, so the dispatch table's struct
-    # predicate would otherwise capture it).
-    if pa.types.is_interval(arrow_type):
-        months = getattr(value, "months", 0)
-        days = getattr(value, "days", 0)
-        nanos = getattr(value, "nanoseconds", 0)
-        return format_bq_interval(int(months), int(days), int(nanos))
+    # RANGE / GEOGRAPHY / INTERVAL consult ``field`` metadata or the
+    # Arrow-internal interval struct, so they're resolved ahead of the
+    # plain Arrow-type dispatch.
+    special = _format_special_value(value, arrow_type, field)
+    if special is not _UNHANDLED:
+        return special
 
     # Regular Arrow-type dispatch.
     for predicate, formatter in _BQ_TYPE_FORMATTERS:
@@ -580,30 +602,38 @@ def _coerce_interval(value: Any) -> Any:
     return value
 
 
+def _detect_interval_form(cleaned: str) -> str:
+    """Pick the ``parse_interval_literal`` form for a canonical interval string.
+
+    ``cleaned`` is classified by the separators it contains. The
+    signature tuple ``(has_space, has_colon, has_dash)`` selects the
+    form via exact equality (which keeps the branch conditions simple):
+
+    * ``Y-M D H:M:S`` → YEAR TO SECOND (space + colon, dash in the day part)
+    * ``D H:M:S`` → DAY TO SECOND (space + colon, no dash in the day part)
+    * ``H:M:S`` / ``H:M`` → HOUR TO SECOND / HOUR TO MINUTE (colon only)
+    * ``Y-M`` → YEAR TO MONTH (dash only)
+    * anything else → single-``DAY`` shorthand
+    """
+    has_space = " " in cleaned
+    has_colon = ":" in cleaned
+    has_dash = "-" in cleaned
+    sep = (has_space, has_colon, has_dash)
+    if has_space and has_colon:
+        return "YEAR TO SECOND" if "-" in cleaned.split(maxsplit=1)[0] else "DAY TO SECOND"
+    if sep == (False, True, False):
+        return "HOUR TO SECOND" if cleaned.count(":") == 2 else "HOUR TO MINUTE"  # noqa: PLR2004
+    if sep == (False, False, True):
+        return "YEAR TO MONTH"
+    return "DAY"
+
+
 def _bq_interval_string_to_tuple(text: str) -> tuple[int, int, int]:
     """Parse a BigQuery interval canonical string into ``(months, days, nanos)``."""
-    from bqemulator.types.interval import (
-        parse_interval_literal,
-    )
+    from bqemulator.types.interval import parse_interval_literal
 
     cleaned = text.strip()
-    # Best-effort detection: ``Y-M D H:M:S`` → YEAR TO SECOND form.
-    if " " in cleaned and ":" in cleaned and "-" in cleaned.split()[0]:
-        parts = parse_interval_literal(cleaned, "YEAR TO SECOND")
-    elif " " in cleaned and ":" in cleaned:
-        # ``D H:M:S`` → DAY TO SECOND.
-        parts = parse_interval_literal(cleaned, "DAY TO SECOND")
-    elif "-" in cleaned and " " not in cleaned and ":" not in cleaned:
-        parts = parse_interval_literal(cleaned, "YEAR TO MONTH")
-    elif ":" in cleaned and " " not in cleaned and "-" not in cleaned:
-        # ``H:M:S`` or ``H:M`` → HOUR TO SECOND / HOUR TO MINUTE.
-        if cleaned.count(":") == 2:  # noqa: PLR2004
-            parts = parse_interval_literal(cleaned, "HOUR TO SECOND")
-        else:
-            parts = parse_interval_literal(cleaned, "HOUR TO MINUTE")
-    else:
-        # Fall back to single-day shorthand.
-        parts = parse_interval_literal(cleaned, "DAY")
+    parts = parse_interval_literal(cleaned, _detect_interval_form(cleaned))
     months = parts.years * 12 + parts.months
     nanos = (
         parts.hours * 3600 * 1_000_000_000
@@ -611,6 +641,23 @@ def _bq_interval_string_to_tuple(text: str) -> tuple[int, int, int]:
         + int(parts.seconds * 1_000_000_000)
     )
     return (months, parts.days, nanos)
+
+
+#: Predicate → BigQuery scalar type-name dispatch for
+#: :func:`arrow_type_to_bq_type_name`. The TIMESTAMP case is handled
+#: separately because its name depends on the tz flag, not the predicate
+#: alone. These Arrow scalar predicates are mutually exclusive, so order
+#: is irrelevant.
+_ARROW_SCALAR_TO_BQ_NAME: tuple[tuple[Callable[[pa.DataType], bool], str], ...] = (
+    (lambda t: pa.types.is_int64(t) or pa.types.is_int32(t), "INTEGER"),
+    (lambda t: pa.types.is_float64(t) or pa.types.is_float32(t), "FLOAT"),
+    (pa.types.is_boolean, "BOOLEAN"),
+    (lambda t: pa.types.is_string(t) or pa.types.is_large_string(t), "STRING"),
+    (pa.types.is_date, "DATE"),
+    (pa.types.is_time, "TIME"),
+    (pa.types.is_decimal, "NUMERIC"),
+    (pa.types.is_binary, "BYTES"),
+)
 
 
 def arrow_type_to_bq_type_name(arrow_type: Any) -> str:
@@ -622,24 +669,13 @@ def arrow_type_to_bq_type_name(arrow_type: Any) -> str:
     only need scalar leaf-type names — REPEATED / record handling is
     not part of this helper.
     """
-    if pa.types.is_int64(arrow_type) or pa.types.is_int32(arrow_type):
-        return "INTEGER"
-    if pa.types.is_float64(arrow_type) or pa.types.is_float32(arrow_type):
-        return "FLOAT"
-    if pa.types.is_boolean(arrow_type):
-        return "BOOLEAN"
-    if pa.types.is_string(arrow_type) or pa.types.is_large_string(arrow_type):
-        return "STRING"
+    # TIMESTAMP's name depends on the tz flag, so resolve it ahead of the
+    # predicate dispatch table.
     if pa.types.is_timestamp(arrow_type):
         return "TIMESTAMP" if arrow_type.tz else "DATETIME"
-    if pa.types.is_date(arrow_type):
-        return "DATE"
-    if pa.types.is_time(arrow_type):
-        return "TIME"
-    if pa.types.is_decimal(arrow_type):
-        return "NUMERIC"
-    if pa.types.is_binary(arrow_type):
-        return "BYTES"
+    for predicate, name in _ARROW_SCALAR_TO_BQ_NAME:
+        if predicate(arrow_type):
+            return name
     return "STRING"
 
 

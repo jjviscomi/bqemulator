@@ -9,6 +9,7 @@ import pyarrow as pa
 import pytest
 
 from bqemulator.storage.arrow_bridge import (
+    _detect_interval_form,
     arrow_table_to_bq_rows,
     bq_rows_to_arrow,
 )
@@ -622,3 +623,28 @@ class TestSpecializedTypesRange:
         val = table.column("r")[0].as_py()
         assert val["start"] == date(2024, 1, 1)
         assert val["end"] == date(2024, 12, 31)
+
+
+class TestDetectIntervalForm:
+    """``_detect_interval_form`` selects the ``parse_interval_literal`` form.
+
+    Pins the signature-tuple classification introduced when
+    ``_bq_interval_string_to_tuple`` was de-nested below rank C — every
+    branch of the original if/elif chain plus the unrecognised fallback.
+    """
+
+    @pytest.mark.parametrize(
+        ("text", "form"),
+        [
+            ("1-2 3 4:5:6", "YEAR TO SECOND"),  # Y-M D H:M:S — dash in the day part
+            ("3 4:5:6", "DAY TO SECOND"),  # D H:M:S — no dash in the day part
+            ("4:5:6", "HOUR TO SECOND"),  # H:M:S — two colons
+            ("4:5", "HOUR TO MINUTE"),  # H:M — one colon
+            ("1-2", "YEAR TO MONTH"),  # Y-M — dash only
+            ("5", "DAY"),  # bare day shorthand
+            ("", "DAY"),  # empty → fallback (no split IndexError)
+            ("1-2:3", "DAY"),  # dash + colon, no space → unrecognised → DAY
+        ],
+    )
+    def test_form_selection(self, text: str, form: str) -> None:
+        assert _detect_interval_form(text) == form
