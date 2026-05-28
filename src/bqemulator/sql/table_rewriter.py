@@ -211,14 +211,20 @@ def _raise_invalid_dataset_id(dataset_id: str, table_id: str) -> None:
     matching our :data:`_BQ_DATASET_RE`). The wording is reproduced
     verbatim so the conformance ``message_pattern`` matcher absorbs it
     via :doc:`/adr/0023-conformance-error-shape-parity`.
+
+    ``location`` omits the trailing ``.<table>`` segment when
+    ``table_id`` is empty (schema-only DDL paths like
+    ``CREATE SCHEMA proj.<bad-ds>``) so the error shape stays
+    well-formed across both table-bound and schema-only call sites.
     """
     from bqemulator.domain.errors import ValidationError
 
+    location = f"{dataset_id}.{table_id}" if table_id else dataset_id
     raise ValidationError(
         f'Invalid dataset ID "{dataset_id}". '
         "Dataset IDs must be alphanumeric (plus underscores and dashes) "
         "and must be at most 1024 characters long.",
-        location=f"{dataset_id}.{table_id}",
+        location=location,
     )
 
 

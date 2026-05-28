@@ -18,6 +18,7 @@ This module:
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from datetime import date, datetime, time
 from decimal import Decimal
 import re
@@ -328,7 +329,7 @@ def _coerce_timestamp(raw: Any) -> datetime:
 #: which the BigQuery schema renderer surfaces as ``STRING`` rather
 #: than the declared BigQuery type. Passing a typed object preserves
 #: the column type all the way through to the wire-format response.
-_SCALAR_CONVERTERS: dict[str, Any] = {
+_SCALAR_CONVERTERS: dict[str, Callable[[Any], Any]] = {
     "INT64": int,
     "INTEGER": int,
     "FLOAT64": float,
