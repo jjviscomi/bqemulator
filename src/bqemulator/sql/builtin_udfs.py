@@ -221,24 +221,40 @@ def bqemu_json_array_insert(
     if not tokens or tokens[-1][0] != "index":
         return json_str
     target_index = cast("int", tokens[-1][1])
-    cursor: Any = obj
-    for kind, value_step in tokens[:-1]:
-        if kind == "key":
-            if not isinstance(cursor, dict) or value_step not in cursor:
-                return json_str
-            cursor = cursor[value_step]
-        else:
-            idx = cast("int", value_step)
-            if not isinstance(cursor, list) or not 0 <= idx < len(cursor):
-                return json_str
-            cursor = cursor[idx]
-    if not isinstance(cursor, list):
-        return json_str
     if target_index < 0:
+        return json_str
+    cursor = _walk_json_path_to_array(obj, tokens[:-1])
+    if cursor is None:
         return json_str
     insert_at = min(target_index, len(cursor))
     cursor.insert(insert_at, value)
     return json.dumps(obj)
+
+
+def _walk_json_path_to_array(obj: Any, tokens: list[tuple[str, Any]]) -> list[Any] | None:
+    """Walk ``obj`` through the parsed path ``tokens``; return the final array.
+
+    Returns ``None`` if any step doesn't resolve cleanly:
+
+    * ``key`` step where the cursor isn't a dict or the key is absent;
+    * ``index`` step where the cursor isn't a list or the index is
+      out of range;
+    * final cursor isn't a list (the array we're going to insert into).
+    """
+    cursor: Any = obj
+    for kind, value_step in tokens:
+        if kind == "key":
+            if not isinstance(cursor, dict) or value_step not in cursor:
+                return None
+            cursor = cursor[value_step]
+        else:
+            idx = cast("int", value_step)
+            if not isinstance(cursor, list) or not 0 <= idx < len(cursor):
+                return None
+            cursor = cursor[idx]
+    if not isinstance(cursor, list):
+        return None
+    return cursor
 
 
 def bqemu_normalize(value: str | None, form: str | None) -> str | None:
@@ -551,26 +567,43 @@ def bqemu_instr_occurrence(
     BigQuery semantics: ``occurrence`` must be > 0; ``start`` must be
     non-zero. NULL inputs propagate as NULL.
     """
-    if haystack is None or needle is None or start is None or occurrence is None:
+    if None in (haystack, needle, start, occurrence):
         return None
+    # mypy: the None check above narrows all four to their non-None type.
+    assert haystack is not None  # noqa: S101
+    assert needle is not None  # noqa: S101
+    assert start is not None  # noqa: S101
+    assert occurrence is not None  # noqa: S101
     if needle == "":
         return 0
-    if occurrence < 1:
-        # BigQuery raises; we surface NULL to keep query execution
-        # rather than failing the whole pipeline.
+    # BigQuery raises on either invalid input; we surface NULL to keep the
+    # query running rather than failing the whole pipeline.
+    if occurrence < 1 or start == 0:
         return None
     n = len(haystack)
-    if start == 0:
-        return None
-    if start > 0:
-        index = start - 1
-    else:
-        # ``start = -1`` means "start from the last character".
-        index = n + start
-        if index < 0:
-            return 0
+    index = _resolve_instr_start_index(start, n)
+    if index is None:
+        return 0
+    return _find_nth_occurrence(haystack, needle, index, occurrence)
+
+
+def _find_nth_occurrence(
+    haystack: str,
+    needle: str,
+    start_index: int,
+    occurrence: int,
+) -> int:
+    """Return the 1-based position of the ``occurrence``-th match of ``needle``.
+
+    Searches ``haystack`` from ``start_index`` (0-based) forward.
+    Returns ``0`` when the requested occurrence does not exist.
+    Pre-conditions: ``needle`` is non-empty, ``occurrence >= 1``,
+    ``start_index >= 0``.
+    """
     found = 0
-    while index <= n - len(needle):
+    index = start_index
+    limit = len(haystack) - len(needle)
+    while index <= limit:
         position = haystack.find(needle, index)
         if position < 0:
             return 0
@@ -579,6 +612,23 @@ def bqemu_instr_occurrence(
             return position + 1
         index = position + 1
     return 0
+
+
+def _resolve_instr_start_index(start: int, haystack_len: int) -> int | None:
+    """Translate BigQuery's 1-based ``start`` to a 0-based haystack index.
+
+    Positive ``start`` is a forward offset; negative ``start`` counts
+    from the end (``-1`` is the last character). Returns ``None`` when
+    a negative offset falls before the start of the string — the
+    caller treats that as ``no match``.
+
+    Pre-condition: ``start != 0`` (the caller rejects zero before
+    reaching here).
+    """
+    if start > 0:
+        return start - 1
+    index = haystack_len + start
+    return index if index >= 0 else None
 
 
 def bqemu_to_base32(value: bytes | None) -> str | None:
@@ -693,16 +743,27 @@ def bqemu_soundex(value: str | None) -> str | None:
     out = first
     prev = _SOUNDEX_TABLE.get(first, "")
     for char in letters[1:]:
-        if char in ("H", "W"):
-            continue
-        if char in _SOUNDEX_VOWELS:
-            prev = ""
-            continue
-        code = _SOUNDEX_TABLE.get(char, "")
-        if code and code != prev:
-            out += code
-            prev = code
+        emit, prev = _soundex_step(char, prev)
+        out += emit
     return (out + "000")[:4]
+
+
+def _soundex_step(char: str, prev: str) -> tuple[str, str]:
+    """Advance the Soundex tracker by one input character.
+
+    Returns ``(to_emit, new_prev)``. ``to_emit`` is the digit appended
+    to the running result (or empty string for skipped / collapsed
+    characters); ``new_prev`` is the tracker value to pass back on the
+    next call.
+    """
+    if char in ("H", "W"):
+        return "", prev
+    if char in _SOUNDEX_VOWELS:
+        return "", ""
+    code = _SOUNDEX_TABLE.get(char, "")
+    if code and code != prev:
+        return code, code
+    return "", prev
 
 
 def bqemu_sha512(value: str | None) -> bytes | None:
@@ -832,38 +893,7 @@ def bqemu_parse_timestamp_iso(
     if fmt is None or value is None:
         return None
     py_fmt = _EZ_SPECIFIER_RE.sub("%z", fmt)
-    # ``%Z`` parsing in Python is locale-sensitive and silently accepts
-    # only the local-zone abbreviation. To enforce BQ-strict behaviour
-    # without locale dependence, intercept ``%Z`` by:
-    # 1. Finding the literal text that ``%Z`` is supposed to match.
-    # 2. Validating that text as an IANA zone via ``ZoneInfo``.
-    # 3. If valid, replacing both ``%Z`` and the matched text in the
-    #    format / value so the rest of the format can parse cleanly.
-    # 4. Applying the zone to the naive parse result.
-    parsed_zone: _datetime.tzinfo | None = None
-    if "%Z" in py_fmt:
-        prefix, _, suffix = py_fmt.partition("%Z")
-        # The text matched by ``%Z`` is everything between the prefix
-        # match and the start of the suffix. We do a greedy match on a
-        # zone-name regex: an alphabetic token possibly containing
-        # ``/`` (for IANA) or ``+-`` digits (for offset-style names).
-        prefix_len_in_value = _strict_prefix_len(prefix, value)
-        if prefix_len_in_value is None:
-            msg = f"Failed to parse input string '{value}'"
-            raise ValueError(msg)
-        rest = value[prefix_len_in_value:]
-        zone_match = re.match(r"[A-Za-z][A-Za-z0-9_+\-/]*", rest)
-        if zone_match is None:
-            msg = f"Failed to parse input string '{value}'"
-            raise ValueError(msg)
-        zone_text = zone_match.group(0)
-        parsed_zone = _parse_iso_offset_or_zone(zone_text)
-        if parsed_zone is None:
-            msg = f"Invalid time zone: {zone_text}"
-            raise ValueError(msg)
-        # Splice the zone token out of both format and value.
-        py_fmt = prefix + suffix
-        value = value[:prefix_len_in_value] + rest[zone_match.end() :]
+    py_fmt, value, parsed_zone = _extract_z_zone(py_fmt, value)
     try:
         # DTZ007 is deliberately silenced here: the zone token has been
         # stripped from ``value`` + ``py_fmt`` above, so the strptime
@@ -878,6 +908,50 @@ def bqemu_parse_timestamp_iso(
     if dt.tzinfo is not None:
         dt = dt.astimezone(_datetime.UTC).replace(tzinfo=None)
     return dt
+
+
+def _extract_z_zone(
+    py_fmt: str,
+    value: str,
+) -> tuple[str, str, _datetime.tzinfo | None]:
+    """Intercept ``%Z`` in ``py_fmt`` and resolve it via ``ZoneInfo``.
+
+    Python's ``strptime`` ``%Z`` handling is locale-sensitive and
+    silently accepts only the local zone abbreviation, so we replace
+    it with explicit validation:
+
+    1. Find the literal text that ``%Z`` is supposed to match by
+       computing how many characters of ``value`` the preceding format
+       segment consumes.
+    2. Greedy-match the zone token at that offset and validate it via
+       :func:`_parse_iso_offset_or_zone`.
+    3. Splice the zone token out of both format and value so the
+       remaining ``strptime`` call sees a clean naive timestamp.
+
+    Returns ``(stripped_fmt, stripped_value, parsed_zone)``. If
+    ``py_fmt`` has no ``%Z``, the inputs are returned unchanged with
+    ``parsed_zone=None``.
+    """
+    if "%Z" not in py_fmt:
+        return py_fmt, value, None
+    prefix, _, suffix = py_fmt.partition("%Z")
+    prefix_len_in_value = _strict_prefix_len(prefix, value)
+    if prefix_len_in_value is None:
+        msg = f"Failed to parse input string '{value}'"
+        raise ValueError(msg)
+    rest = value[prefix_len_in_value:]
+    zone_match = re.match(r"[A-Za-z][A-Za-z0-9_+\-/]*", rest)
+    if zone_match is None:
+        msg = f"Failed to parse input string '{value}'"
+        raise ValueError(msg)
+    zone_text = zone_match.group(0)
+    parsed_zone = _parse_iso_offset_or_zone(zone_text)
+    if parsed_zone is None:
+        msg = f"Invalid time zone: {zone_text}"
+        raise ValueError(msg)
+    new_fmt = prefix + suffix
+    new_value = value[:prefix_len_in_value] + rest[zone_match.end() :]
+    return new_fmt, new_value, parsed_zone
 
 
 def _strict_prefix_len(prefix_fmt: str, value: str) -> int | None:
@@ -1045,29 +1119,54 @@ def _parse_polygon_rings(wkt: str) -> list[list[tuple[float, float]]]:
     depth = 0
     current = ""
     for char in body:
-        if char == "(":
-            depth += 1
-            if depth == _WKT_RING_DEPTH:
-                current = ""
-                continue
-            if depth > _WKT_RING_DEPTH:
-                current += char
-        elif char == ")":
-            depth -= 1
-            if depth == 1:
-                vertices = [
-                    (float(m.group(1)), float(m.group(2))) for m in _WKT_VERTEX_RE.finditer(current)
-                ]
-                if vertices:
-                    rings.append(vertices)
-                current = ""
-            elif depth >= 1:
-                current += char
-            if depth == 0:
-                break
-        elif depth >= _WKT_RING_DEPTH:
-            current += char
+        depth, current, done = _consume_polygon_char(char, depth, current, rings)
+        if done:
+            break
     return rings
+
+
+def _consume_polygon_char(
+    char: str,
+    depth: int,
+    current: str,
+    rings: list[list[tuple[float, float]]],
+) -> tuple[int, str, bool]:
+    """Drive one step of the WKT POLYGON ring scanner.
+
+    Returns ``(new_depth, new_current, done)``. ``done`` is ``True``
+    when the outer ``)`` closes the POLYGON envelope and the scanner
+    should stop. ``rings`` is mutated in place when a ring closes —
+    the function appends the parsed vertex list whenever depth drops
+    back to 1.
+    """
+    if char == "(":
+        depth += 1
+        if depth == _WKT_RING_DEPTH:
+            return depth, "", False
+        if depth > _WKT_RING_DEPTH:
+            return depth, current + char, False
+        return depth, current, False
+    if char == ")":
+        depth -= 1
+        if depth == 1:
+            _emit_polygon_ring(current, rings)
+            return depth, "", False
+        if depth == 0:
+            return depth, current, True
+        return depth, current + char, False
+    if depth >= _WKT_RING_DEPTH:
+        return depth, current + char, False
+    return depth, current, False
+
+
+def _emit_polygon_ring(
+    raw: str,
+    rings: list[list[tuple[float, float]]],
+) -> None:
+    """Parse ``raw`` (one ring's interior text) and append to ``rings`` if non-empty."""
+    vertices = [(float(m.group(1)), float(m.group(2))) for m in _WKT_VERTEX_RE.finditer(raw)]
+    if vertices:
+        rings.append(vertices)
 
 
 def bqemu_st_distance_spheroidal(wkt1: str | None, wkt2: str | None) -> float | None:
@@ -1336,24 +1435,39 @@ def _walk_geojson_geometry(obj: object) -> object:
             obj["geometries"] = [_walk_geojson_geometry(g) for g in geometries]
         return obj
     coords = obj.get("coordinates")
-    if coords is None:
+    if not isinstance(coords, list):
         return obj
-    if geom_type == "LineString" and isinstance(coords, list):
-        obj["coordinates"] = _interpolate_vertices_geodesic(coords)
+    interpolator = _GEOJSON_COORD_INTERPOLATORS.get(geom_type)
+    if interpolator is None:
+        # Point / MultiPoint / unknown — no edges to interpolate.
         return obj
-    if geom_type == "Polygon" and isinstance(coords, list):
-        obj["coordinates"] = [_interpolate_vertices_geodesic(ring) for ring in coords]
-        return obj
-    if geom_type == "MultiLineString" and isinstance(coords, list):
-        obj["coordinates"] = [_interpolate_vertices_geodesic(line) for line in coords]
-        return obj
-    if geom_type == "MultiPolygon" and isinstance(coords, list):
-        obj["coordinates"] = [
-            [_interpolate_vertices_geodesic(ring) for ring in polygon] for polygon in coords
-        ]
-        return obj
-    # Point / MultiPoint — no edges to interpolate.
+    obj["coordinates"] = interpolator(coords)
     return obj
+
+
+def _interpolate_polygon(coords: list[Any]) -> list[Any]:
+    """Interpolate every ring of a single ``Polygon``'s coordinate array."""
+    return [_interpolate_vertices_geodesic(ring) for ring in coords]
+
+
+def _interpolate_multilinestring(coords: list[Any]) -> list[Any]:
+    """Interpolate every line of a ``MultiLineString``'s coordinate array."""
+    return [_interpolate_vertices_geodesic(line) for line in coords]
+
+
+def _interpolate_multipolygon(coords: list[Any]) -> list[Any]:
+    """Interpolate every ring of every polygon in a ``MultiPolygon``."""
+    return [_interpolate_polygon(polygon) for polygon in coords]
+
+
+# Geometry-type → coordinate-interpolator dispatch. ``LineString`` is a
+# direct call; the *Multi* variants are one extra level of nesting each.
+_GEOJSON_COORD_INTERPOLATORS: dict[object, Any] = {
+    "LineString": _interpolate_vertices_geodesic,
+    "Polygon": _interpolate_polygon,
+    "MultiLineString": _interpolate_multilinestring,
+    "MultiPolygon": _interpolate_multipolygon,
+}
 
 
 def bqemu_geojson_geodesic_interp(value: str | None) -> str | None:
