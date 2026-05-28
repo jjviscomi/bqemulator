@@ -58,6 +58,35 @@ async def test_redirects_to_snapshot_table_when_one_matches(
     assert "_bqemulator_snapshots" in out
 
 
+async def test_bigquery_utc_suffix_literal_falls_back_to_duckdb(
+    full_ctx: AppContext,
+    make_dataset,
+    make_table,
+    frozen_clock,
+) -> None:
+    """BigQuery-style ``'YYYY-MM-DD HH:MM:SS UTC'`` literals route through DuckDB.
+
+    ``datetime.fromisoformat`` rejects the trailing ``UTC`` zone name,
+    so the literal fast-path returns ``None`` and the DuckDB
+    evaluator — which accepts the suffix — handles the literal.
+    """
+    make_dataset("p", "ds")
+    make_table("p", "ds", "t", rows=[(1, "a")])
+    snap = full_ctx.snapshots.capture("p", "ds", "t")
+    assert snap is not None
+
+    frozen_clock.advance(seconds=10)
+    # Build the literal from a naive datetime so the result is offset-free
+    # regardless of which timezone the frozen clock yields, then append the
+    # explicit ``UTC`` zone name to exercise the BigQuery-style path.
+    naive_target = frozen_clock.now().replace(tzinfo=None, microsecond=0)
+    target_str = naive_target.isoformat(sep=" ")
+    sql = f"SELECT * FROM ds.t FOR SYSTEM_TIME AS OF TIMESTAMP '{target_str} UTC'"
+    out = rewrite_for_system_time(sql, "p", full_ctx.snapshots, full_ctx.engine)
+    assert snap.duckdb_table in out
+    assert "_bqemulator_snapshots" in out
+
+
 async def test_raises_out_of_range_when_target_in_future(
     full_ctx: AppContext,
     make_dataset,

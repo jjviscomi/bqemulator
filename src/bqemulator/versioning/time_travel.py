@@ -101,53 +101,38 @@ def rewrite_for_system_time(
     return bq_sql
 
 
-def _resolve_target_ts(
-    version: exp.Expression,
+def _parse_literal_iso_timestamp(literal_value: str) -> datetime | None:
+    """Parse an ISO-8601 ``AS OF`` literal; return ``None`` for non-ISO forms.
+
+    Returning ``None`` (rather than raising) lets the caller fall back
+    to the DuckDB evaluation path, which handles BigQuery-style
+    timestamp literals that ``datetime.fromisoformat`` rejects — most
+    importantly the named-timezone form ``'YYYY-MM-DD HH:MM:SS UTC'``.
+    A naive value (no tz info) is defaulted to UTC.
+    """
+    try:
+        parsed = datetime.fromisoformat(literal_value)
+    except ValueError:
+        return None
+    if parsed.tzinfo is None:
+        parsed = parsed.replace(tzinfo=UTC)
+    return parsed
+
+
+def _eval_timestamp_via_duckdb(
+    expr_node: exp.Expression | str,
     engine: DuckDBEngine,
 ) -> datetime:
-    """Evaluate the ``AS OF <expr>`` expression to a Python datetime.
+    """Evaluate a non-literal ``AS OF`` expression via DuckDB; return a UTC datetime.
 
-    The expression may be a literal timestamp, a function call such as
-    ``TIMESTAMP '...'`` or ``TIMESTAMP_SUB(CURRENT_TIMESTAMP(), INTERVAL
-    1 HOUR)``, or any scalar expression that evaluates to a timestamp.
-
-    Evaluation strategy:
-
-    1. If the expression is a string literal in ISO-8601 form, parse it
-       directly with :func:`datetime.fromisoformat`. This is the
-       overwhelmingly common case and avoids spinning up DuckDB +
-       Python's ``pytz`` (which DuckDB requires only to handle
-       ``TIMESTAMP WITH TIME ZONE``).
-    2. Otherwise we fall back to DuckDB, but force the result type to
-       a *naïve* ``TIMESTAMP`` and attach UTC ourselves — so the
-       evaluation never crosses a ``TIMESTAMPTZ`` boundary that
-       requires ``pytz`` at the Python layer.
+    Forces a naïve ``TIMESTAMP`` cast so DuckDB does not reach for
+    Python's ``pytz`` (which is required only for ``TIMESTAMP WITH
+    TIME ZONE``); UTC is attached at the Python layer.
     """
-    expr_node = version.args.get("expression") or version.this
-    if expr_node is None:
-        raise InvalidQueryError("FOR SYSTEM_TIME AS OF requires an expression")
-
-    # Fast path: literal timestamps and date strings. We accept the
-    # ``Cast(Literal(...), TIMESTAMPTZ)`` shape SQLGlot emits for
-    # ``TIMESTAMP '...'`` plus a bare string literal.
-    literal_value = _extract_literal_timestamp(expr_node)
-    if literal_value is not None:
-        try:
-            parsed = datetime.fromisoformat(literal_value)
-        except ValueError as exc:
-            raise InvalidQueryError(
-                f"FOR SYSTEM_TIME AS OF requires an ISO-8601 timestamp: {exc}",
-            ) from exc
-        if parsed.tzinfo is None:
-            parsed = parsed.replace(tzinfo=UTC)
-        return parsed
-
     if isinstance(expr_node, exp.Expression):
         expr_sql = expr_node.sql(dialect="bigquery")
     else:
         expr_sql = str(expr_node)
-
-    # Force a naïve TIMESTAMP so DuckDB doesn't reach for pytz.
     try:
         duckdb_expr_list = sqlglot.transpile(
             f"SELECT CAST(({expr_sql}) AS TIMESTAMP)",
@@ -161,25 +146,56 @@ def _resolve_target_ts(
     duckdb_expr = duckdb_expr_list[0] if duckdb_expr_list else ""
     if not duckdb_expr:
         raise InvalidQueryError("Empty FOR SYSTEM_TIME AS OF expression")
-
     try:
         result = engine.execute(duckdb_expr).fetchone()
     except Exception as exc:
         raise InvalidQueryError(
             f"Could not evaluate FOR SYSTEM_TIME AS OF expression: {exc}",
         ) from exc
-
     if result is None or result[0] is None:
         raise InvalidQueryError("FOR SYSTEM_TIME AS OF evaluated to NULL")
-
     value = result[0]
-    if isinstance(value, datetime):
-        if value.tzinfo is None:
-            value = value.replace(tzinfo=UTC)
-        return value
-    raise InvalidQueryError(
-        f"FOR SYSTEM_TIME AS OF must be a TIMESTAMP, got {type(value).__name__}",
-    )
+    if not isinstance(value, datetime):
+        raise InvalidQueryError(
+            f"FOR SYSTEM_TIME AS OF must be a TIMESTAMP, got {type(value).__name__}",
+        )
+    if value.tzinfo is None:
+        value = value.replace(tzinfo=UTC)
+    return value
+
+
+def _resolve_target_ts(
+    version: exp.Expression,
+    engine: DuckDBEngine,
+) -> datetime:
+    """Evaluate the ``AS OF <expr>`` expression to a Python datetime.
+
+    The expression may be a literal timestamp, a function call such as
+    ``TIMESTAMP '...'`` or ``TIMESTAMP_SUB(CURRENT_TIMESTAMP(), INTERVAL
+    1 HOUR)``, or any scalar expression that evaluates to a timestamp.
+
+    Evaluation strategy:
+
+    1. If the expression is a string literal in ISO-8601 form, parse it
+       directly via :func:`_parse_literal_iso_timestamp`. This is the
+       overwhelmingly common case and avoids spinning up DuckDB +
+       Python's ``pytz`` (required only for ``TIMESTAMP WITH TIME ZONE``).
+    2. If the literal is present but ``fromisoformat`` rejects it
+       (e.g. BigQuery's ``'YYYY-MM-DD HH:MM:SS UTC'`` form), fall
+       through to :func:`_eval_timestamp_via_duckdb`.
+    3. For non-literal expressions, :func:`_eval_timestamp_via_duckdb`
+       forces a naïve ``TIMESTAMP`` and attaches UTC at the Python
+       layer, so the evaluation never crosses a ``TIMESTAMPTZ`` boundary.
+    """
+    expr_node = version.args.get("expression") or version.this
+    if expr_node is None:
+        raise InvalidQueryError("FOR SYSTEM_TIME AS OF requires an expression")
+    literal_value = _extract_literal_timestamp(expr_node)
+    if literal_value is not None:
+        parsed = _parse_literal_iso_timestamp(literal_value)
+        if parsed is not None:
+            return parsed
+    return _eval_timestamp_via_duckdb(expr_node, engine)
 
 
 def _extract_literal_timestamp(node: exp.Expression | str) -> str | None:

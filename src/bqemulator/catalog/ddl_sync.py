@@ -175,6 +175,27 @@ def sync_created_schema(bq_sql: str, project_id: str, ctx: AppContext) -> None:
     _ensure_dataset(p_id, d_id, ctx)
 
 
+def _unwrap_table_target(target: exp.Expression | None) -> exp.Table | None:
+    """Unwrap an ``exp.Schema`` shell and return the inner :class:`exp.Table`, or ``None``."""
+    if isinstance(target, exp.Schema):
+        target = target.this
+    return target if isinstance(target, exp.Table) else None
+
+
+def _split_table_ref_parts(target: exp.Table) -> list[str]:
+    """Return the non-empty ``(catalog, db, name)`` parts.
+
+    A whole-backticked dotted name (`` `proj.ds` ``) lands as a single
+    component and is split on the dot so the caller sees the same
+    parts shape as the per-component-backticked form.
+    """
+    parts = [p for p in (target.catalog, target.db, target.name) if p]
+    # Whole-backticked ``\`proj.ds\``` lands as one dotted name.
+    if len(parts) == 1 and "." in parts[0]:
+        return parts[0].split(".")
+    return parts
+
+
 def _detect_create_schema(bq_sql: str, default_project: str) -> tuple[str, str] | None:
     """Return ``(project_id, dataset_id)`` for a ``CREATE SCHEMA`` statement.
 
@@ -189,15 +210,10 @@ def _detect_create_schema(bq_sql: str, default_project: str) -> tuple[str, str] 
         return None
     if not isinstance(tree, exp.Create) or (tree.kind or "").upper() != "SCHEMA":
         return None
-    target = tree.this
-    if isinstance(target, exp.Schema):
-        target = target.this
-    if not isinstance(target, exp.Table):
+    target = _unwrap_table_target(tree.this)
+    if target is None:
         return None
-    parts = [p for p in (target.catalog, target.db, target.name) if p]
-    # Whole-backticked ``\`proj.ds\``` lands as one dotted name.
-    if len(parts) == 1 and "." in parts[0]:
-        parts = parts[0].split(".")
+    parts = _split_table_ref_parts(target)
     if len(parts) == _PARTS_DATASET_QUALIFIED:
         return parts[0], parts[1]
     if len(parts) == 1:
@@ -228,6 +244,14 @@ def _ensure_dataset(project_id: str, dataset_id: str, ctx: AppContext) -> None:
     )
 
 
+def _is_materialized_view(tree: exp.Create) -> bool:
+    """Return ``True`` when the parsed ``CREATE`` tree carries a ``MATERIALIZED`` property."""
+    properties = tree.args.get("properties")
+    if not isinstance(properties, exp.Properties):
+        return False
+    return any(isinstance(p, exp.MaterializedProperty) for p in properties.expressions)
+
+
 def _detect_plain_create_view(
     bq_sql: str,
 ) -> tuple[exp.Table | None, exp.Expression | None]:
@@ -246,17 +270,11 @@ def _detect_plain_create_view(
         return None, None
     if (tree.kind or "").upper() != "VIEW":
         return None, None
-    # ``materialized`` property → MATERIALIZED VIEW; route via the MV
-    # manager instead of syncing here.
-    properties = tree.args.get("properties")
-    if isinstance(properties, exp.Properties):
-        for prop in properties.expressions:
-            if isinstance(prop, exp.MaterializedProperty):
-                return None, None
-    target = tree.this
-    if isinstance(target, exp.Schema):
-        target = target.this
-    if not isinstance(target, exp.Table):
+    # MATERIALIZED VIEW → route via the MV manager instead of syncing here.
+    if _is_materialized_view(tree):
+        return None, None
+    target = _unwrap_table_target(tree.this)
+    if target is None:
         return None, None
     body = tree.expression
     if body is None:
