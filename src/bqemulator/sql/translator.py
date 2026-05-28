@@ -15,7 +15,7 @@ tasks concurrently.
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, cast
+from typing import TYPE_CHECKING, Any
 
 import sqlglot
 from sqlglot import exp
@@ -410,21 +410,20 @@ class SQLTranslator:
         """Run SQLGlot's ``qualify`` + ``annotate_types`` passes.
 
         Failures are logged and the unannotated tree is returned;
-        rules that need type info gracefully skip. The SQLGlot
-        ``qualify`` / ``annotate_types`` return type is the narrower
-        ``Expr`` from the stubs; in practice both pass-throughs of a
-        :class:`exp.Expression` produce one, so the casts here are
-        safe.
+        rules that need type info gracefully skip. The runtime
+        ``isinstance`` check narrows SQLGlot's loosely-typed
+        ``Expr`` return to :class:`exp.Expression` without resorting
+        to a ``cast`` (which different stub revisions flag as either
+        required or redundant).
         """
         try:
-            qualified = cast(
-                "exp.Expression",
-                qualify(tree, schema=schema, dialect="duckdb", infer_schema=True),
-            )
-            return annotate_types(qualified, schema=schema)
+            qualified = qualify(tree, schema=schema, dialect="duckdb", infer_schema=True)
+            annotated = annotate_types(qualified, schema=schema)
         except Exception as exc:  # noqa: BLE001
             _log.debug("sql.annotate_types_skipped", error=str(exc))
             return tree
+        assert isinstance(annotated, exp.Expression)  # noqa: S101 — stub-bridge narrowing
+        return annotated
 
     def _apply_first_matching_rule(
         self,
