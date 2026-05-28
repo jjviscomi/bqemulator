@@ -49,8 +49,13 @@ transpile and is not touched here.
 
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
 import sqlglot
 from sqlglot import exp
+
+if TYPE_CHECKING:
+    from collections.abc import Callable
 
 _DATE_RETURNING_FUNCTIONS = (exp.DateAdd, exp.DateSub, exp.DateFromUnixDate)
 
@@ -66,11 +71,8 @@ def rewrite_datetime_helpers(bq_sql: str) -> str:
     Parse failures are tolerated: we return the original SQL so the
     downstream SQLGlot transpile surfaces its own parse error message.
     """
-    upper = bq_sql.upper()
-    needs_last_day = "LAST_DAY" in upper and "WEEK" in upper
-    needs_date_cast = "DATE_ADD" in upper or "DATE_SUB" in upper or "DATE_FROM_UNIX_DATE" in upper
-    needs_timestamp_micros_millis = "TIMESTAMP_MICROS" in upper or "TIMESTAMP_MILLIS" in upper
-    if not (needs_last_day or needs_date_cast or needs_timestamp_micros_millis):
+    needs = _detect_rewrite_needs(bq_sql.upper())
+    if not any(needs.values()):
         return bq_sql
 
     try:
@@ -79,15 +81,30 @@ def rewrite_datetime_helpers(bq_sql: str) -> str:
         return bq_sql
 
     modified = False
-    if needs_last_day:
-        modified |= _rewrite_last_day_week(parsed)
-    if needs_date_cast:
-        modified |= _rewrite_date_function_results(parsed)
-    if needs_timestamp_micros_millis:
-        modified |= _rewrite_timestamp_micros_millis(parsed)
+    for key, rewriter in _DATETIME_REWRITE_PASSES:
+        if needs[key]:
+            modified |= rewriter(parsed)
     if not modified:
         return bq_sql
     return parsed.sql(dialect="bigquery")
+
+
+def _detect_rewrite_needs(upper_sql: str) -> dict[str, bool]:
+    """Return a ``{pass_key: bool}`` map of which datetime passes are needed.
+
+    Splitting the cheap-but-branchy marker checks out of the main
+    entry-point keeps that function's cyclomatic complexity low; the
+    string scans here are still ``O(len(sql))`` and run only once.
+    """
+    return {
+        "last_day_week": "LAST_DAY" in upper_sql and "WEEK" in upper_sql,
+        "date_cast": (
+            "DATE_ADD" in upper_sql or "DATE_SUB" in upper_sql or "DATE_FROM_UNIX_DATE" in upper_sql
+        ),
+        "timestamp_micros_millis": (
+            "TIMESTAMP_MICROS" in upper_sql or "TIMESTAMP_MILLIS" in upper_sql
+        ),
+    }
 
 
 def _rewrite_date_function_results(tree: exp.Expression) -> bool:
@@ -245,6 +262,17 @@ def _name(node: exp.Expression) -> str:
     if isinstance(node, exp.Literal):
         return str(node.this)
     return node.name or str(node.this or "")
+
+
+#: Ordered dispatch of (needs-key, rewriter) pairs. Matches the order
+#: of ``_detect_rewrite_needs``'s output keys. Order is presentation-
+#: only — each rewriter targets a distinct AST shape so ordering does
+#: not affect the outcome.
+_DATETIME_REWRITE_PASSES: tuple[tuple[str, Callable[[exp.Expression], bool]], ...] = (
+    ("last_day_week", _rewrite_last_day_week),
+    ("date_cast", _rewrite_date_function_results),
+    ("timestamp_micros_millis", _rewrite_timestamp_micros_millis),
+)
 
 
 __all__ = ["rewrite_datetime_helpers"]

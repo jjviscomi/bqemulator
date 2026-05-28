@@ -34,40 +34,55 @@ def rewrite_unnest_offset(bq_sql: str) -> str:
     except Exception:  # noqa: BLE001
         return bq_sql
 
-    offset_names: set[str] = set()
-    for unnest in tree.find_all(exp.Unnest):
-        offset_expr = unnest.args.get("offset")
-        if isinstance(offset_expr, exp.Identifier):
-            offset_names.add(offset_expr.name)
-        elif offset_expr is True:
-            # BigQuery allows ``WITH OFFSET`` without a name; default is
-            # ``offset``. We handle that case too.
-            offset_names.add("offset")
-
+    offset_names = _collect_offset_names(tree)
     if not offset_names:
         return bq_sql
 
+    if not _rebase_offset_columns(tree, offset_names):
+        return bq_sql
+    return tree.sql(dialect="bigquery")
+
+
+def _collect_offset_names(tree: exp.Expression) -> set[str]:
+    """Return every offset column name introduced by a ``WITH OFFSET`` clause.
+
+    Falls back to ``"offset"`` for the un-aliased ``WITH OFFSET`` form
+    (BigQuery's documented default).
+    """
+    names: set[str] = set()
+    for unnest in tree.find_all(exp.Unnest):
+        offset_expr = unnest.args.get("offset")
+        if isinstance(offset_expr, exp.Identifier):
+            names.add(offset_expr.name)
+        elif offset_expr is True:
+            names.add("offset")
+    return names
+
+
+def _rebase_offset_columns(tree: exp.Expression, offset_names: set[str]) -> bool:
+    """Replace every ``Column(name in offset_names)`` with ``(col - 1)``.
+
+    Skips the column reference that sits inside an Unnest's own offset
+    slot (where it names the alias, not a usage). Preserves wrapping
+    ``Alias`` nodes so ``WITH OFFSET AS off`` projections retain their
+    alias on the rebased expression.
+
+    Returns ``True`` when at least one column was rebased.
+    """
     modified = False
     for col in list(tree.find_all(exp.Column)):
         if col.name not in offset_names:
             continue
-        # Skip the Column that sits inside the Unnest's own offset slot.
         if col.find_ancestor(exp.Unnest) is not None and col.parent_select is None:
             continue
-        # Replace ``col`` with ``col - 1``.
-        parent = col.parent
         replacement = exp.Paren(this=exp.Sub(this=col.copy(), expression=exp.Literal.number(1)))
-        # Preserve aliasing: if the column sits inside an Alias, leave the
-        # alias unchanged but swap its inner expression.
+        parent = col.parent
         if isinstance(parent, exp.Alias):
             parent.set("this", replacement)
         else:
             col.replace(replacement)
         modified = True
-
-    if not modified:
-        return bq_sql
-    return tree.sql(dialect="bigquery")
+    return modified
 
 
 __all__ = ["rewrite_unnest_offset"]

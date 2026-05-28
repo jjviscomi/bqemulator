@@ -44,10 +44,13 @@ names and call shapes need rewriting.
 from __future__ import annotations
 
 import re
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 import sqlglot
 from sqlglot import exp
+
+if TYPE_CHECKING:
+    from collections.abc import Callable
 
 from bqemulator.types.interval import parse_interval_literal, parts_to_duckdb_expr
 from bqemulator.types.range_type import END_FIELD, START_FIELD
@@ -68,10 +71,21 @@ def rewrite_specialized_types(bq_sql: str) -> str:
     in its own clean format.
     """
     upper = bq_sql.upper()
+    upper_nospace = upper.replace(" ", "")
     needs_interval = "INTERVAL" in upper and "TO" in upper
-    needs_range_ctor = "RANGE(" in upper.replace(" ", "")
-    needs_range_literal = "RANGE<" in upper.replace(" ", "")
-    if not (needs_interval or needs_range_ctor or needs_range_literal):
+    needs_range_ctor = "RANGE(" in upper_nospace
+    needs_range_literal = "RANGE<" in upper_nospace
+    # The column-type pass and the literal pass share the same gate
+    # (any RANGE<T> mention triggers both). The literal pass must run
+    # first so any ``Cast(literal, RANGE<T>)`` is fully replaced before
+    # the column-type pass walks the remaining ``DataType.RANGE`` nodes.
+    passes: list[tuple[bool, Callable[[exp.Expression], bool]]] = [
+        (needs_interval, _rewrite_intervals),
+        (needs_range_ctor, _rewrite_range_constructor),
+        (needs_range_literal, _rewrite_range_literals),
+        (needs_range_literal, _rewrite_range_data_types),
+    ]
+    if not any(needed for needed, _ in passes):
         return bq_sql
 
     try:
@@ -79,18 +93,11 @@ def rewrite_specialized_types(bq_sql: str) -> str:
     except sqlglot.errors.ParseError:
         return bq_sql
 
-    modified_interval = _rewrite_intervals(parsed) if needs_interval else False
-    modified_range_ctor = _rewrite_range_constructor(parsed) if needs_range_ctor else False
-    modified_range_literal = _rewrite_range_literals(parsed) if needs_range_literal else False
-    # The column-type pass runs after the literal pass so any
-    # ``Cast(literal, RANGE<T>)`` shape has already been replaced with
-    # a ``STRUCT(...)`` expression (the literal handler replaces the
-    # entire Cast node, not just the type). Whatever ``DataType.RANGE``
-    # nodes remain belong to column definitions or non-literal CASTs.
-    modified_range_type = _rewrite_range_data_types(parsed) if needs_range_literal else False
-    if not (
-        modified_interval or modified_range_ctor or modified_range_literal or modified_range_type
-    ):
+    modified = False
+    for needed, rewriter in passes:
+        if needed:
+            modified |= rewriter(parsed)
+    if not modified:
         return bq_sql
     return parsed.sql(dialect="bigquery")
 

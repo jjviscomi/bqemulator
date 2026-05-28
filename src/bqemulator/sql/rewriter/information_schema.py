@@ -722,33 +722,60 @@ def _columns_as_values(
             else {}
         )
         for ordinal, field in enumerate(t.schema_.fields, start=1):
-            col_name = _sql_literal(field.name)
-            is_nullable = _sql_literal("YES" if field.mode != "REQUIRED" else "NO")
-            data_type = _sql_literal(_render_data_type(field))
-            is_generated = _sql_literal("NEVER")
-            generation_expr = "NULL"
-            is_stored = _sql_literal("NEVER")
-            is_hidden = _sql_literal("NO")
-            is_updatable = _sql_literal("YES" if t.table_type == "TABLE" else "NO")
-            is_system_defined = _sql_literal("NO")
-            is_partitioning = _sql_literal(
-                "YES" if partition_field is not None and field.name == partition_field else "NO",
-            )
-            clust_pos = (
-                str(clustering_fields[field.name]) if field.name in clustering_fields else "NULL"
-            )
-            coll = _sql_literal(field.collation) if field.collation else "NULL"
             rows.append(
-                f"({pid}, {did}, {tid}, {col_name}, {ordinal}, {is_nullable}, "
-                f"{data_type}, {is_generated}, {generation_expr}, {is_stored}, "
-                f"{is_hidden}, {is_updatable}, {is_system_defined}, "
-                f"{is_partitioning}, {clust_pos}, {coll})",
+                _column_row_literal(
+                    pid=pid,
+                    did=did,
+                    tid=tid,
+                    ordinal=ordinal,
+                    table=t,
+                    field=field,
+                    partition_field=partition_field,
+                    clustering_fields=clustering_fields,
+                ),
             )
     if not rows:
         return _empty_columns_values_subquery()
     col_list = ", ".join(_COLUMNS_COLUMNS)
     joined = ", ".join(rows)
     return f"(SELECT * FROM (VALUES {joined}) AS v({col_list}))"
+
+
+def _column_row_literal(
+    *,
+    pid: str,
+    did: str,
+    tid: str,
+    ordinal: int,
+    table: TableMeta,
+    field: TableFieldSchema,
+    partition_field: str | None,
+    clustering_fields: dict[str, int],
+) -> str:
+    """Render one row of the ``INFORMATION_SCHEMA.COLUMNS`` VALUES literal.
+
+    The column ordering matches :data:`_COLUMNS_COLUMNS` exactly — the
+    caller stitches the rows together inside ``(VALUES ...)``.
+    """
+    col_name = _sql_literal(field.name)
+    is_nullable = _sql_literal("YES" if field.mode != "REQUIRED" else "NO")
+    data_type = _sql_literal(_render_data_type(field))
+    is_updatable = _sql_literal("YES" if table.table_type == "TABLE" else "NO")
+    is_partitioning = _sql_literal(
+        "YES" if partition_field is not None and field.name == partition_field else "NO",
+    )
+    clust_pos = str(clustering_fields[field.name]) if field.name in clustering_fields else "NULL"
+    coll = _sql_literal(field.collation) if field.collation else "NULL"
+    is_generated = _sql_literal("NEVER")
+    is_stored = _sql_literal("NEVER")
+    is_hidden = _sql_literal("NO")
+    is_system_defined = _sql_literal("NO")
+    return (
+        f"({pid}, {did}, {tid}, {col_name}, {ordinal}, {is_nullable}, "
+        f"{data_type}, {is_generated}, NULL, {is_stored}, "
+        f"{is_hidden}, {is_updatable}, {is_system_defined}, "
+        f"{is_partitioning}, {clust_pos}, {coll})"
+    )
 
 
 def _empty_columns_values_subquery() -> str:

@@ -59,49 +59,7 @@ def rewrite_timestamp_iso_helpers(bq_sql: str) -> str:
 
     modified = False
     for node in list(parsed.walk()):
-        replacement: exp.Expression | None = None
-        if isinstance(node, exp.TimeToStr):
-            # SQLGlot maps both FORMAT_TIMESTAMP and FORMAT_DATETIME to
-            # ``TimeToStr``. We only intervene when a zone arg is set
-            # (FORMAT_TIMESTAMP with explicit zone) or the format
-            # carries a ``%E`` specifier (any FORMAT_* call).
-            fmt = node.args.get("format")
-            zone = node.args.get("zone")
-            needs_helper = zone is not None or (
-                isinstance(fmt, exp.Literal) and fmt.is_string and "%E" in str(fmt.this)
-            )
-            if needs_helper and fmt is not None:
-                ts = node.this
-                if ts is None:
-                    continue
-                zone_arg: exp.Expression = (
-                    zone.copy() if zone is not None else exp.Literal.string("UTC")
-                )
-                replacement = exp.Anonymous(
-                    this="bqemu_format_timestamp_iso",
-                    expressions=[fmt.copy(), ts.copy(), zone_arg],
-                )
-        elif isinstance(node, exp.StrToTime):
-            # PARSE_TIMESTAMP / PARSE_DATETIME — both arrive as
-            # ``StrToTime``. We only intervene when the format carries
-            # a BigQuery-only ``%Ez`` or a ``%Z`` named-zone token.
-            fmt = node.args.get("format")
-            if not _format_has_ez_or_z(fmt) or fmt is None:
-                continue
-            value = node.this
-            if value is None:
-                continue
-            helper_call = exp.Anonymous(
-                this="bqemu_parse_timestamp_iso",
-                expressions=[fmt.copy(), value.copy()],
-            )
-            # Wrap in ``timezone('UTC', …)`` so the wire-format
-            # renderer surfaces the result as ``TIMESTAMP`` (matching
-            # :class:`ParseTimestampUtcRule`'s contract).
-            replacement = exp.Anonymous(
-                this="timezone",
-                expressions=[exp.Literal.string("UTC"), helper_call],
-            )
+        replacement = _rewrite_node(node)
         if replacement is not None:
             node.replace(replacement)
             modified = True
@@ -109,6 +67,69 @@ def rewrite_timestamp_iso_helpers(bq_sql: str) -> str:
     if not modified:
         return bq_sql
     return parsed.sql(dialect="bigquery")
+
+
+def _rewrite_node(node: exp.Expression) -> exp.Expression | None:
+    """Dispatch a single AST node to the matching rewrite helper.
+
+    Returns the replacement expression or ``None`` when the node is
+    not eligible (wrong type, missing args, or format string without
+    a `%Ez` / `%Z` token).
+    """
+    if isinstance(node, exp.TimeToStr):
+        return _rewrite_format_timestamp(node)
+    if isinstance(node, exp.StrToTime):
+        return _rewrite_parse_timestamp(node)
+    return None
+
+
+def _rewrite_format_timestamp(node: exp.TimeToStr) -> exp.Expression | None:
+    """Build the ``bqemu_format_timestamp_iso`` call for a ``FORMAT_*`` node.
+
+    SQLGlot maps both ``FORMAT_TIMESTAMP`` and ``FORMAT_DATETIME`` to
+    :class:`exp.TimeToStr`. We rewrite when either the call carries a
+    zone argument (``FORMAT_TIMESTAMP`` with explicit zone) or the
+    format string contains a ``%E`` specifier (every ``FORMAT_*`` call).
+    """
+    fmt = node.args.get("format")
+    if fmt is None:
+        return None
+    zone = node.args.get("zone")
+    fmt_has_e = isinstance(fmt, exp.Literal) and fmt.is_string and "%E" in str(fmt.this)
+    if zone is None and not fmt_has_e:
+        return None
+    ts = node.this
+    if ts is None:
+        return None
+    zone_arg: exp.Expression = zone.copy() if zone is not None else exp.Literal.string("UTC")
+    return exp.Anonymous(
+        this="bqemu_format_timestamp_iso",
+        expressions=[fmt.copy(), ts.copy(), zone_arg],
+    )
+
+
+def _rewrite_parse_timestamp(node: exp.StrToTime) -> exp.Expression | None:
+    """Build the ``timezone('UTC', bqemu_parse_timestamp_iso(...))`` call.
+
+    Triggered when the format carries a BigQuery-only ``%Ez`` or a
+    ``%Z`` named-zone token. The outer ``timezone('UTC', …)`` wrap
+    surfaces the result as ``TIMESTAMP`` on the wire, matching
+    :class:`ParseTimestampUtcRule`.
+    """
+    fmt = node.args.get("format")
+    if fmt is None or not _format_has_ez_or_z(fmt):
+        return None
+    value = node.this
+    if value is None:
+        return None
+    helper_call = exp.Anonymous(
+        this="bqemu_parse_timestamp_iso",
+        expressions=[fmt.copy(), value.copy()],
+    )
+    return exp.Anonymous(
+        this="timezone",
+        expressions=[exp.Literal.string("UTC"), helper_call],
+    )
 
 
 __all__ = ["rewrite_timestamp_iso_helpers"]

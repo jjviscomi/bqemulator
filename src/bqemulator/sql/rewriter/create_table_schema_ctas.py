@@ -58,53 +58,74 @@ def rewrite_create_table_schema_ctas(bq_sql: str) -> str:
 
     modified = False
     for create in tree.find_all(exp.Create):
-        if (create.args.get("kind") or "").upper() != "TABLE":
-            continue
-        schema = create.this
-        if not isinstance(schema, exp.Schema):
-            continue
-        # CTAS body may be a bare ``SELECT`` or a ``UNION [ALL]`` chain
-        # of SELECT clauses. DuckDB derives the table's column types
-        # from the FIRST SELECT in the chain, so we only need to cast
-        # that one.
-        first_select = _first_select(create.expression)
-        if first_select is None:
-            continue
-        col_defs = [e for e in schema.expressions if isinstance(e, exp.ColumnDef)]
-        projections = first_select.expressions
-        if not col_defs:
-            continue
-        if len(col_defs) != len(projections):
-            # Column-count mismatch — leave the SQL alone so the user
-            # sees whatever error the downstream parser produces.
-            continue
-
-        new_projections: list[exp.Expression] = []
-        for col_def, proj in zip(col_defs, projections, strict=True):
-            value = proj.this if isinstance(proj, exp.Alias) else proj
-            kind = col_def.kind
-            if kind is None:
-                # Schema entry without a declared type — preserve the
-                # projection unchanged so DuckDB infers the type.
-                new_projections.append(proj.copy())
-                continue
-            cast_expr = exp.Cast(this=value.copy(), to=kind.copy())
-            new_projections.append(
-                exp.Alias(this=cast_expr, alias=col_def.this.copy()),
-            )
-
-        first_select.set("expressions", new_projections)
-
-        # Replace the Schema(table, columns) wrapper with the bare
-        # Table — DuckDB then sees ``CREATE [OR REPLACE] TABLE <ref>
-        # AS SELECT CAST(...) AS col, ...`` which it accepts.
-        table = schema.this.copy()
-        create.set("this", table)
-        modified = True
+        if _apply_schema_ctas_rewrite(create):
+            modified = True
 
     if not modified:
         return bq_sql
     return tree.sql(dialect="bigquery")
+
+
+def _apply_schema_ctas_rewrite(create: exp.Create) -> bool:
+    """Rewrite a single ``CREATE TABLE (schema) AS SELECT …`` to bare CTAS.
+
+    Returns ``True`` when the create node was rewritten in place;
+    ``False`` for any other shape (different ``kind``, no ``Schema``,
+    body without a leaf ``Select``, no ``ColumnDef`` entries, or a
+    column-count mismatch — the latter is left to the downstream
+    parser to surface as a clean error).
+    """
+    if (create.args.get("kind") or "").upper() != "TABLE":
+        return False
+    schema = create.this
+    if not isinstance(schema, exp.Schema):
+        return False
+    # ``Schema.this`` is *typically* a Table per SQLGlot's docs but the
+    # attribute is loosely typed; guard explicitly so a malformed AST
+    # doesn't blow up on the ``.copy()`` below.
+    table_ref = schema.this
+    if not isinstance(table_ref, exp.Table):
+        return False
+    # CTAS body may be a bare SELECT or a UNION [ALL] chain. DuckDB
+    # derives table column types from the FIRST SELECT, so only that
+    # one needs cast projections.
+    first_select = _first_select(create.expression)
+    if first_select is None:
+        return False
+    col_defs = [e for e in schema.expressions if isinstance(e, exp.ColumnDef)]
+    if not col_defs:
+        return False
+    projections = first_select.expressions
+    if len(col_defs) != len(projections):
+        return False
+
+    first_select.set("expressions", _cast_projections_to_schema(col_defs, projections))
+    # Replace ``Schema(table, columns)`` with the bare Table — DuckDB
+    # then sees ``CREATE [OR REPLACE] TABLE <ref> AS SELECT CAST(...)
+    # AS col, ...`` which it accepts.
+    create.set("this", table_ref.copy())
+    return True
+
+
+def _cast_projections_to_schema(
+    col_defs: list[exp.ColumnDef],
+    projections: list[exp.Expression],
+) -> list[exp.Expression]:
+    """Wrap each projection in ``CAST(<value> AS <col_def.kind>) AS <col_def.name>``.
+
+    A ``ColumnDef`` without a declared ``kind`` (DuckDB infers the
+    type) carries the original projection through unchanged.
+    """
+    casts: list[exp.Expression] = []
+    for col_def, proj in zip(col_defs, projections, strict=True):
+        value = proj.this if isinstance(proj, exp.Alias) else proj
+        kind = col_def.kind
+        if kind is None:
+            casts.append(proj.copy())
+            continue
+        cast_expr = exp.Cast(this=value.copy(), to=kind.copy())
+        casts.append(exp.Alias(this=cast_expr, alias=col_def.this.copy()))
+    return casts
 
 
 def _first_select(body: exp.Expression | None) -> exp.Select | None:
