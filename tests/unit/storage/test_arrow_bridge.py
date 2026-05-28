@@ -11,6 +11,7 @@ import pytest
 from bqemulator.storage.arrow_bridge import (
     _detect_interval_form,
     arrow_table_to_bq_rows,
+    arrow_type_to_bq_type_name,
     bq_rows_to_arrow,
 )
 
@@ -630,7 +631,9 @@ class TestDetectIntervalForm:
 
     Pins the signature-tuple classification introduced when
     ``_bq_interval_string_to_tuple`` was de-nested below rank C — every
-    branch of the original if/elif chain plus the unrecognised fallback.
+    branch of the original if/elif chain plus the unrecognised fallback,
+    and that a leading sign is treated as part of the value (not a
+    separator) so signed shorthands classify like their unsigned form.
     """
 
     @pytest.mark.parametrize(
@@ -644,7 +647,43 @@ class TestDetectIntervalForm:
             ("5", "DAY"),  # bare day shorthand
             ("", "DAY"),  # empty → fallback (no split IndexError)
             ("1-2:3", "DAY"),  # dash + colon, no space → unrecognised → DAY
+            # Signed shorthands — the leading sign is part of the value,
+            # not a separator, so each classifies like its unsigned form.
+            ("-4:5", "HOUR TO MINUTE"),
+            ("-4:5:6", "HOUR TO SECOND"),
+            ("-3", "DAY"),
+            ("-1-2", "YEAR TO MONTH"),
+            ("-1-2 3 4:5:6", "YEAR TO SECOND"),
         ],
     )
     def test_form_selection(self, text: str, form: str) -> None:
         assert _detect_interval_form(text) == form
+
+
+class TestArrowTypeToBqTypeName:
+    """``arrow_type_to_bq_type_name`` maps Arrow scalar types to BQ names."""
+
+    @pytest.mark.parametrize(
+        ("arrow_type", "name"),
+        [
+            (pa.int64(), "INTEGER"),
+            (pa.int32(), "INTEGER"),
+            (pa.float64(), "FLOAT"),
+            (pa.bool_(), "BOOLEAN"),
+            (pa.string(), "STRING"),
+            (pa.large_string(), "STRING"),
+            (pa.date32(), "DATE"),
+            (pa.time64("us"), "TIME"),
+            (pa.decimal128(38, 9), "NUMERIC"),
+            (pa.binary(), "BYTES"),
+            (pa.large_binary(), "BYTES"),  # must map to BYTES, not fall through to STRING
+        ],
+    )
+    def test_scalar_mapping(self, arrow_type: pa.DataType, name: str) -> None:
+        assert arrow_type_to_bq_type_name(arrow_type) == name
+
+    def test_timestamp_tz_is_timestamp(self) -> None:
+        assert arrow_type_to_bq_type_name(pa.timestamp("us", tz="UTC")) == "TIMESTAMP"
+
+    def test_timestamp_naive_is_datetime(self) -> None:
+        assert arrow_type_to_bq_type_name(pa.timestamp("us")) == "DATETIME"

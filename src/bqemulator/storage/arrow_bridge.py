@@ -615,14 +615,19 @@ def _detect_interval_form(cleaned: str) -> str:
     * ``Y-M`` → YEAR TO MONTH (dash only)
     * anything else → single-``DAY`` shorthand
     """
-    has_space = " " in cleaned
-    has_colon = ":" in cleaned
-    has_dash = "-" in cleaned
+    # Classify on the sign-stripped text: a leading ``+`` / ``-`` is part
+    # of the value, not a field separator. Without this, ``-4:5`` reads as
+    # "contains a dash" and misclassifies (→ DAY instead of HOUR TO
+    # MINUTE). The signed ``cleaned`` is still what gets parsed downstream.
+    signless = cleaned.lstrip("+-")
+    has_space = " " in signless
+    has_colon = ":" in signless
+    has_dash = "-" in signless
     sep = (has_space, has_colon, has_dash)
     if has_space and has_colon:
-        return "YEAR TO SECOND" if "-" in cleaned.split(maxsplit=1)[0] else "DAY TO SECOND"
+        return "YEAR TO SECOND" if "-" in signless.split(maxsplit=1)[0] else "DAY TO SECOND"
     if sep == (False, True, False):
-        return "HOUR TO SECOND" if cleaned.count(":") == 2 else "HOUR TO MINUTE"  # noqa: PLR2004
+        return "HOUR TO SECOND" if signless.count(":") == 2 else "HOUR TO MINUTE"  # noqa: PLR2004
     if sep == (False, False, True):
         return "YEAR TO MONTH"
     return "DAY"
@@ -656,7 +661,7 @@ _ARROW_SCALAR_TO_BQ_NAME: tuple[tuple[Callable[[pa.DataType], bool], str], ...] 
     (pa.types.is_date, "DATE"),
     (pa.types.is_time, "TIME"),
     (pa.types.is_decimal, "NUMERIC"),
-    (pa.types.is_binary, "BYTES"),
+    (lambda t: pa.types.is_binary(t) or pa.types.is_large_binary(t), "BYTES"),
 )
 
 
