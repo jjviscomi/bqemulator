@@ -58,6 +58,39 @@ async def test_redirects_to_snapshot_table_when_one_matches(
     assert "_bqemulator_snapshots" in out
 
 
+async def test_bigquery_utc_suffix_literal_falls_back_to_duckdb(
+    full_ctx: AppContext,
+    make_dataset,
+    make_table,
+    frozen_clock,
+) -> None:
+    """BigQuery-style ``'YYYY-MM-DD HH:MM:SS UTC'`` literals route through DuckDB.
+
+    ``datetime.fromisoformat`` rejects the trailing ``UTC`` zone name,
+    so the literal fast-path must return ``None`` and let the DuckDB
+    evaluator (which accepts the suffix) handle it. Regression test
+    for the latent bug surfaced when the resolver was split into
+    ``_parse_literal_iso_timestamp`` + ``_eval_timestamp_via_duckdb``.
+    """
+    make_dataset("p", "ds")
+    make_table("p", "ds", "t", rows=[(1, "a")])
+    snap = full_ctx.snapshots.capture("p", "ds", "t")
+    assert snap is not None
+
+    frozen_clock.advance(seconds=10)
+    # Format without microseconds so DuckDB cleanly accepts ``... UTC``.
+    target = frozen_clock.now().replace(microsecond=0).isoformat(sep=" ")
+    # Strip any tz info the isoformat already wrote, then append ``UTC``.
+    target_no_tz = target.split("+", 1)[0]
+    sql = (
+        f"SELECT * FROM ds.t FOR SYSTEM_TIME AS OF "
+        f"TIMESTAMP '{target_no_tz} UTC'"
+    )
+    out = rewrite_for_system_time(sql, "p", full_ctx.snapshots, full_ctx.engine)
+    assert snap.duckdb_table in out
+    assert "_bqemulator_snapshots" in out
+
+
 async def test_raises_out_of_range_when_target_in_future(
     full_ctx: AppContext,
     make_dataset,

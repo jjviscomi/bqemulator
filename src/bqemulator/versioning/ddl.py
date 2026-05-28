@@ -206,16 +206,23 @@ _PARTS_BARE = 1
 
 
 def _unwrap_source(ddl: VersioningDDL) -> tuple[str, str, str]:
-    """Return the ``(project, dataset, table)`` source triple, asserting presence.
+    """Return the ``(project, dataset, table)`` source triple.
 
     Snapshot / clone DDLs require the source to be set by the parser
     before dispatch reaches this layer; returning the narrowed triple
-    lets the caller pass it through to the manager without re-asserting
-    or casting at every argument position.
+    lets the caller pass it through to the manager without casting at
+    every argument position.
+
+    Uses an explicit raise rather than ``assert`` so the invariant
+    survives ``python -O`` and so the failure mode is a normal client
+    error rather than ``AssertionError``.
     """
-    assert ddl.source_project is not None  # noqa: S101
-    assert ddl.source_dataset is not None  # noqa: S101
-    assert ddl.source_table is not None  # noqa: S101
+    if (
+        ddl.source_project is None
+        or ddl.source_dataset is None
+        or ddl.source_table is None
+    ):
+        raise InvalidQueryError("Snapshot/clone DDL requires a source table reference")
     return ddl.source_project, ddl.source_dataset, ddl.source_table
 
 
