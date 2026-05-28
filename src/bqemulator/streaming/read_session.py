@@ -20,6 +20,7 @@ the same format without re-deriving it from the request.
 
 from __future__ import annotations
 
+from collections.abc import Callable, Iterable
 from dataclasses import dataclass, field
 import io
 from uuid import uuid4
@@ -74,6 +75,95 @@ _SESSIONS: dict[str, ReadSessionState] = {}
 _SMALL_TABLE_BYTE_THRESHOLD = 1_000_000
 
 
+def _project_columns(
+    arrow_table: pa.Table,
+    selected_fields: list[str] | None,
+) -> pa.Table:
+    """Apply ``selected_fields`` column projection if any non-missing columns survive."""
+    if not selected_fields:
+        return arrow_table
+    available = set(arrow_table.column_names)
+    cols = [c for c in selected_fields if c in available]
+    if not cols:
+        return arrow_table
+    return arrow_table.select(cols)
+
+
+def _compute_stream_layout(
+    num_rows: int,
+    table_bytes: int,
+    max_streams: int,
+) -> tuple[int, int]:
+    """Return ``(effective_streams, chunk_size)`` for a session.
+
+    Real BigQuery treats ``max_stream_count`` as an upper bound and
+    returns fewer streams when the table is too small to benefit from
+    parallel reads — empirically, tables under ~1 MB get 1 stream
+    regardless. The 10-stream ceiling mirrors observed wire behaviour
+    on the gRPC-corpus conformance suite.
+    """
+    requested = max(max_streams, 1)
+    if table_bytes < _SMALL_TABLE_BYTE_THRESHOLD:
+        # Small-table cap: 1 stream regardless of max_stream_count.
+        effective_streams = 1 if num_rows > 0 else 0
+    else:
+        effective_streams = min(requested, 10, max(num_rows, 1))
+    chunk_size = max(num_rows // effective_streams, 1) if effective_streams > 0 else 0
+    return effective_streams, chunk_size
+
+
+def _build_streams(
+    session_name: str,
+    effective_streams: int,
+    chunk_size: int,
+    num_rows: int,
+) -> list[ReadStream]:
+    """Mint ``effective_streams`` :class:`ReadStream` entries covering ``num_rows``."""
+    streams: list[ReadStream] = []
+    for i in range(effective_streams):
+        start = i * chunk_size
+        end = (i + 1) * chunk_size if i < effective_streams - 1 else num_rows
+        if start >= num_rows:
+            break
+        stream_name = f"{session_name}/streams/{i}"
+        streams.append(ReadStream(name=stream_name, start_row=start, end_row=end))
+    return streams
+
+
+def _serialise_arrow_schema(schema: pa.Schema) -> bytes:
+    """Return the Arrow IPC ``Schema`` message bytes for ``schema``.
+
+    pyarrow 24.x stubs mark ``pa.ipc.new_stream`` as untyped; earlier
+    versions ship a proper signature. ``unused-ignore`` keeps the
+    suppression cross-version-compatible.
+    """
+    schema_sink = io.BytesIO()
+    writer = pa.ipc.new_stream(schema_sink, schema)  # type: ignore[no-untyped-call,unused-ignore]
+    writer.close()
+    return schema_sink.getvalue()
+
+
+def _avro_schema_for(
+    arrow_schema: pa.Schema,
+    data_format: str,
+    required_field_names: frozenset[str] | None,
+) -> str:
+    """Return the Avro JSON schema string for AVRO sessions; empty for ARROW.
+
+    Pre-computed once at session creation so every :func:`ReadRows`
+    call (and any split-stream child) serves the same schema without
+    re-deriving it.
+    """
+    if data_format != FORMAT_AVRO:
+        return ""
+    from bqemulator.streaming.avro_serializer import arrow_schema_to_avro_json
+
+    return arrow_schema_to_avro_json(
+        arrow_schema,
+        required_field_names=required_field_names,
+    )
+
+
 def create_read_session(
     project_id: str,
     table_ref: str,  # noqa: ARG001 — used for session naming context in future
@@ -107,59 +197,24 @@ def create_read_session(
         A :class:`ReadSessionState` with the materialized data and
         stream assignments.
     """
-    # Apply column projection if requested.
-    if selected_fields:
-        available = set(arrow_table.column_names)
-        cols = [c for c in selected_fields if c in available]
-        if cols:
-            arrow_table = arrow_table.select(cols)
+    arrow_table = _project_columns(arrow_table, selected_fields)
 
     session_id = uuid4().hex[:16]
     session_name = f"projects/{project_id}/locations/US/sessions/{session_id}"
 
-    # Split rows across streams. Real BigQuery treats
-    # ``max_stream_count`` as an upper bound and returns fewer streams
-    # when the table is too small to benefit from parallel reads —
-    # empirically, tables under ~1 MB get 1 stream regardless. Match
-    # that contract so the gRPC-corpus wire-format diff holds.
     num_rows = arrow_table.num_rows
-    table_bytes = arrow_table.nbytes
-    requested = max(max_streams, 1)
-    if table_bytes < _SMALL_TABLE_BYTE_THRESHOLD:
-        # Small-table cap: 1 stream regardless of max_stream_count.
-        effective_streams = 1 if num_rows > 0 else 0
-    else:
-        effective_streams = min(requested, 10, max(num_rows, 1))
-    chunk_size = max(num_rows // effective_streams, 1) if effective_streams > 0 else 0
-
-    streams: list[ReadStream] = []
-    for i in range(effective_streams):
-        start = i * chunk_size
-        end = (i + 1) * chunk_size if i < effective_streams - 1 else num_rows
-        if start >= num_rows:
-            break
-        stream_name = f"{session_name}/streams/{i}"
-        streams.append(ReadStream(name=stream_name, start_row=start, end_row=end))
-
-    # pyarrow 24.x stubs mark ``pa.ipc.new_stream`` as untyped; earlier
-    # versions ship a proper signature. ``unused-ignore`` keeps the
-    # suppression cross-version-compatible.
-    schema_sink = io.BytesIO()
-    writer = pa.ipc.new_stream(schema_sink, arrow_table.schema)  # type: ignore[no-untyped-call,unused-ignore]
-    writer.close()
-    schema_bytes = schema_sink.getvalue()
-
-    # Pre-compute the Avro schema JSON for AVRO sessions so every
-    # ReadRows call (and any split-stream child) serves the same
-    # schema without re-deriving it. Arrow sessions skip this.
-    avro_schema_json = ""
-    if data_format == FORMAT_AVRO:
-        from bqemulator.streaming.avro_serializer import arrow_schema_to_avro_json
-
-        avro_schema_json = arrow_schema_to_avro_json(
-            arrow_table.schema,
-            required_field_names=required_field_names,
-        )
+    effective_streams, chunk_size = _compute_stream_layout(
+        num_rows,
+        arrow_table.nbytes,
+        max_streams,
+    )
+    streams = _build_streams(session_name, effective_streams, chunk_size, num_rows)
+    schema_bytes = _serialise_arrow_schema(arrow_table.schema)
+    avro_schema_json = _avro_schema_for(
+        arrow_table.schema,
+        data_format,
+        required_field_names,
+    )
 
     state = ReadSessionState(
         session_name=session_name,
@@ -242,6 +297,50 @@ def split_stream(stream_name: str, fraction: float) -> tuple[str, str] | None:
     return primary_name, remainder_name
 
 
+def _is_any_list_type(arrow_type: pa.DataType) -> bool:
+    """True for list, large_list, or fixed_size_list (single-value-type containers)."""
+    return (
+        pa.types.is_list(arrow_type)
+        or pa.types.is_large_list(arrow_type)
+        or pa.types.is_fixed_size_list(arrow_type)
+    )
+
+
+def _list_child_types(arrow_type: pa.DataType) -> Iterable[pa.DataType]:
+    yield arrow_type.value_type
+
+
+def _map_child_types(arrow_type: pa.DataType) -> Iterable[pa.DataType]:
+    yield arrow_type.key_type
+    yield arrow_type.item_type
+
+
+def _struct_or_union_child_types(arrow_type: pa.DataType) -> Iterable[pa.DataType]:
+    for field_ in arrow_type:
+        yield field_.type
+
+
+#: Dispatch table for ``_type_contains_dictionary``. Each entry pairs a
+#: matcher with a child-type generator; the first matching entry decides
+#: whether any nested child carries a dictionary. Keeping the dispatch
+#: as data instead of inlined ``if`` branches drops the function's
+#: cyclomatic complexity below the C-rank ceiling without changing the
+#: traversal contract (top-level dict short-circuits; everything else
+#: walks its children).
+_NESTED_TYPE_DISPATCH: tuple[
+    tuple[
+        Callable[[pa.DataType], bool],
+        Callable[[pa.DataType], Iterable[pa.DataType]],
+    ],
+    ...,
+] = (
+    (pa.types.is_struct, _struct_or_union_child_types),
+    (_is_any_list_type, _list_child_types),
+    (pa.types.is_map, _map_child_types),
+    (pa.types.is_union, _struct_or_union_child_types),
+)
+
+
 def _type_contains_dictionary(arrow_type: pa.DataType) -> bool:
     """Return ``True`` if ``arrow_type`` or any nested child is dict-encoded.
 
@@ -252,20 +351,9 @@ def _type_contains_dictionary(arrow_type: pa.DataType) -> bool:
     """
     if pa.types.is_dictionary(arrow_type):
         return True
-    if pa.types.is_struct(arrow_type):
-        return any(_type_contains_dictionary(f.type) for f in arrow_type)
-    if (
-        pa.types.is_list(arrow_type)
-        or pa.types.is_large_list(arrow_type)
-        or pa.types.is_fixed_size_list(arrow_type)
-    ):
-        return _type_contains_dictionary(arrow_type.value_type)
-    if pa.types.is_map(arrow_type):
-        return _type_contains_dictionary(arrow_type.key_type) or _type_contains_dictionary(
-            arrow_type.item_type
-        )
-    if pa.types.is_union(arrow_type):
-        return any(_type_contains_dictionary(f.type) for f in arrow_type)
+    for matcher, child_types_fn in _NESTED_TYPE_DISPATCH:
+        if matcher(arrow_type):
+            return any(_type_contains_dictionary(t) for t in child_types_fn(arrow_type))
     return False
 
 
