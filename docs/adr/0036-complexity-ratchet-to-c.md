@@ -265,3 +265,38 @@ cost.
   `--max-average`).
 - AGENTS.md "Pre-commit gate (mandatory)" — the contract this ADR
   extends by adding `make quality-complexity` to `make verify`.
+
+## Update (2026-05-28): follow-up ratchet to rank B in ADR 0041
+
+The C-ratchet ran for ~6 months and ADR 0036's "Alternatives
+considered" §3 rejection of an immediate rank-B ceiling has been
+revisited.
+
+The original verdict — "many structurally reasonable Python functions
+land at rank B-C" — held only until a sustained refactor pass tested
+it empirically. The PR-1 through PR-11 sweep
+([#90](https://github.com/jjviscomi/bqemulator/pull/90) through
+[#102](https://github.com/jjviscomi/bqemulator/pull/102)) closed
+every remaining rank-C function in `src/` (~60 functions across 26
+files) using the same bucket-A (helper extraction) and bucket-B
+(dispatch table) patterns this ADR established for the D/E sweep.
+The bucket-C "irreducible domain complexity" escape hatch — predicted
+to absorb up to ~20% of refactor targets — stayed at 0 hits, just
+like it did for the D/E audit.
+
+[ADR 0041](0041-complexity-ratchet-to-b.md) ratchets the
+`--max-absolute` ceiling from rank C to rank B
+(`xenon --max-absolute B --max-modules C --max-average A`) on top
+of this ADR's foundations. The two ADRs co-exist:
+
+* **This ADR (0036) remains in effect** for everything except the
+  per-function absolute ceiling — the gate's promotion-to-required
+  status, the bucket A/B/C taxonomy, the duplication / dead-code
+  gates' non-blocking posture, the rationale for keeping the
+  project-wide average at rank A and module average at rank C.
+* **ADR 0041 layers** a tighter `--max-absolute` on top after the
+  PR-1…PR-11 sweep demonstrated empirically that the rank-C bucket
+  was uniformly refactorable.
+
+ADR 0036 is not superseded — it's the ground floor that ADR 0041
+builds on.

@@ -225,6 +225,7 @@ nav:
       - "0038 SESSION_USER() pre-translator substitution": adr/0038-session-user.md
       - "0039 SLSA Build Provenance on GitHub Release assets": adr/0039-artifact-attestations.md
       - "0040 SESSION_USER coverage closure: aliases + Storage Read pre-pass": adr/0040-session-user-coverage-closure.md
+      - "0041 Cyclomatic-complexity ratchet to rank B + campaign retrospective": adr/0041-complexity-ratchet-to-b.md
   - RFCs: rfcs/README.md
   - Examples:
       - Overview: examples/README.md

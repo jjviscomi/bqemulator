@@ -103,25 +103,31 @@ linkcheck: ## Run lychee with the workspace-aware self-link remap (CI parity)
 # Wiring status:
 #
 #   - ``quality-complexity`` is REQUIRED (part of ``make verify``, no
-#     ``continue-on-error`` on its CI step). ADR 0036 ratcheted the
-#     threshold from rank E to rank C and promoted the gate.
+#     ``continue-on-error`` on its CI step). ADR 0036 promoted the
+#     gate from non-blocking to required and ratcheted the threshold
+#     from rank E to rank C; ADR 0041 ratcheted it further from rank
+#     C to rank B after the PR-1 through PR-11 sweep closed every
+#     remaining rank-C function (~60 of them across 26 files).
 #   - ``quality-duplication`` and ``quality-dead-code`` are still
 #     non-blocking in CI; their own promote-to-required PRs come
 #     when the baselines settle.
 
 .PHONY: quality-complexity
-quality-complexity: ## Cyclomatic-complexity ceiling via xenon — REQUIRED gate (ratcheted to C in ADR 0036)
-	# Threshold: every function in src/bqemulator must rank C or
-	# better (cyclomatic complexity ≤ 20), every module average must
+quality-complexity: ## Cyclomatic-complexity ceiling via xenon — REQUIRED gate (ratcheted to B in ADR 0041)
+	# Threshold: every function in src/bqemulator must rank B or
+	# better (cyclomatic complexity ≤ 10), every module average must
 	# stay ≤ rank C, and the project-wide average must stay ≤ rank A.
-	# ADR 0036 documents the audit + the bucket-A/B refactors that
-	# closed the original 10 D+E functions. Any new function above
-	# rank C either gets a behavior-preserving refactor (typically a
-	# dispatch table or helper extraction) or a separate PR adding
-	# a documented xenon ``--exclude`` carve-out (a new bucket-C
-	# irreducibility verdict — bar is genuine domain-shaped
-	# complexity, not accumulated cruft).
-	xenon --max-absolute C --max-modules C --max-average A src/bqemulator
+	# ADR 0036 documents the original C-ratchet bucket-A/B refactor
+	# patterns; ADR 0041 documents the C→B campaign retrospective.
+	# Any new function above rank B either gets a behavior-preserving
+	# refactor (dispatch table or helper extraction — see the existing
+	# ``_DUCKDB_TRANSLATORS`` / ``_ARROW_TO_BQ_RULES`` /
+	# ``_LOAD_FORMAT_HANDLERS`` / ``_STATEMENT_DISPATCH`` examples for
+	# the canonical shape) or a separate PR adding a documented xenon
+	# ``--exclude`` carve-out (a new bucket-C irreducibility verdict —
+	# bar is genuine domain-shaped complexity, not accumulated cruft;
+	# the empirical bucket-C rate across PR-1…PR-11 was 0%).
+	xenon --max-absolute B --max-modules C --max-average A src/bqemulator
 
 .PHONY: quality-duplication
 quality-duplication: ## Cross-file DRY check via jscpd (non-blocking)
