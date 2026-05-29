@@ -16,7 +16,7 @@
         <link rel="prev" href="../0040-session-user-coverage-closure/">
       
       
-        <link rel="next" href="../../rfcs/">
+        <link rel="next" href="../0042-module-ceiling-ratchet-to-b/">
       
       
         
@@ -2950,6 +2950,8 @@
       
         
       
+        
+      
     
     
     
@@ -4361,10 +4363,49 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#update-2026-05-28-follow-up-max-modules-ratchet-in-adr-0042" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Update (2026-05-28): follow-up --max-modules ratchet in ADR 0042
+      
+    </span>
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
       
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../0042-module-ceiling-ratchet-to-b/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0042 Per-module-average ratchet to rank B (no-refactor follow-on)
+  
+
+    
+  </span>
+  
+  
+
+      </a>
     </li>
   
 
@@ -5465,6 +5506,17 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#update-2026-05-28-follow-up-max-modules-ratchet-in-adr-0042" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Update (2026-05-28): follow-up --max-modules ratchet in ADR 0042
+      
+    </span>
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -6005,6 +6057,35 @@ complexity is domain-shaped, not accumulated."</p>
   extends; <code>make verify</code> runs <code>make quality-complexity</code> against
   the new ceiling.</li>
 </ul>
+<h2 id="update-2026-05-28-follow-up-max-modules-ratchet-in-adr-0042">Update (2026-05-28): follow-up <code>--max-modules</code> ratchet in ADR 0042<a class="headerlink" href="#update-2026-05-28-follow-up-max-modules-ratchet-in-adr-0042" title="Permanent link">&para;</a></h2>
+<p>This ADR's "Why we keep <code>--max-modules</code> at C" section held the
+per-module-average ratchet open as "the right ratchet for them is a
+separate audit + per-module PR sequence if/when justified, not a
+side-effect of the per-function ratchet."</p>
+<p>A focused audit immediately following this PR's merge tested that
+assumption empirically: <strong>the per-function C→B campaign drove module
+averages down to ≤B as a side effect.</strong> <code>xenon --max-modules B
+src/bqemulator</code> exited 0 against <code>main</code> at HEAD <code>247fb60</code> (this PR's
+own merge commit) with zero refactor work required. The audit found:</p>
+<ul>
+<li><strong>0 modules</strong> with CC average above rank B (CC &gt; 10).</li>
+<li><strong>14 modules</strong> in the rank-B band (CC avg 6.01–10.00) — all
+  passing the rank-B threshold; would become the audit list for a
+  future B→A ratchet (out of scope).</li>
+<li><strong>120+ modules</strong> at rank A (CC avg ≤ 5.0).</li>
+</ul>
+<p>The mechanism: splitting branchy functions into dispatch tables +
+helpers redistributed complexity weight across more (smaller,
+lower-rank) functions, which lowered the per-module <em>average</em> even
+where function count grew. The campaign's per-function bucket-A/B
+patterns are also per-module-average favourable patterns.</p>
+<p><a href="../0042-module-ceiling-ratchet-to-b/">ADR 0042</a> is the single-PR
+config flip (<code>xenon --max-modules C → B</code>) that lands the
+already-met threshold as the standing rule. ADR 0041 is not
+superseded — it remains the per-function ratchet ADR; ADR 0042
+documents the per-module-average ratchet as a complementary axis.
+The "Why we keep <code>--max-modules</code> at C" section above is the
+historical record of the held question; ADR 0042 is the resolution.</p>
 
 
 
