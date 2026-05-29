@@ -6,6 +6,8 @@ routes each job type to its command implementation.
 
 from __future__ import annotations
 
+from collections.abc import Callable
+from dataclasses import dataclass
 import re
 from typing import TYPE_CHECKING, Any
 
@@ -66,55 +68,95 @@ JOB_RESULTS: dict[str, pa.Table] = {}
 JOB_SCHEMAS: dict[str, list[dict[str, Any]]] = {}
 
 
+def _is_any_list_arrow_type(arrow_type: pa.DataType) -> bool:
+    """True for ``list`` and ``large_list`` Arrow types (single test, REPEATED mode)."""
+    return pa.types.is_list(arrow_type) or pa.types.is_large_list(arrow_type)
+
+
+def _is_any_float_arrow_type(arrow_type: pa.DataType) -> bool:
+    """True for ``float32`` and ``float64`` Arrow types (both map to BQ ``FLOAT``)."""
+    return pa.types.is_float64(arrow_type) or pa.types.is_float32(arrow_type)
+
+
+def _is_any_string_arrow_type(arrow_type: pa.DataType) -> bool:
+    """True for ``string`` and ``large_string`` Arrow types."""
+    return pa.types.is_string(arrow_type) or pa.types.is_large_string(arrow_type)
+
+
+def _list_element_bq_type(arrow_type: pa.DataType) -> str:
+    """Recurse through a LIST type to return the BigQuery type of the element."""
+    return _arrow_type_to_bq_type(arrow_type.value_type)
+
+
+def _timestamp_bq_type(arrow_type: pa.DataType) -> str:
+    """``timestamp(tz)`` → ``TIMESTAMP``; ``timestamp(no tz)`` → ``DATETIME``."""
+    return "TIMESTAMP" if arrow_type.tz else "DATETIME"
+
+
+def _decimal_bq_type(arrow_type: pa.DataType) -> str:
+    """ADR 0023 §1.B: scale > 9 → ``BIGNUMERIC``; otherwise ``NUMERIC``.
+
+    BigQuery's NUMERIC has fixed scale 9 and BIGNUMERIC carries scale up
+    to 38. Any DECIMAL whose scale exceeds 9 originated from a
+    BIGNUMERIC literal / column / ``bqemu_to_bignumeric`` marker —
+    surface it as BIGNUMERIC on the wire so the schema matches
+    BigQuery's recorded baseline.
+    """
+    scale = getattr(arrow_type, "scale", 0) or 0
+    return "BIGNUMERIC" if scale > 9 else "NUMERIC"  # noqa: PLR2004 — BigQuery NUMERIC scale boundary
+
+
+#: Ordered Arrow-type → BigQuery-type dispatch rules. Each entry is
+#: ``(predicate, mapper)`` where ``mapper`` is either a constant ``str``
+#: (the BigQuery type name) or a :class:`Callable` that takes the Arrow
+#: type and returns the BigQuery type. The first matching predicate
+#: wins; unmatched types fall back to ``STRING``.
+#:
+#: Ordering matters:
+#:
+#: * LIST / large_list must come first because they recurse on
+#:   ``value_type`` — without that the inner type would never be
+#:   exercised by the trailing rules.
+#: * ADR 0023 §1.B: DuckDB's ``SIGN(INT)`` returns ``TINYINT`` (Arrow
+#:   ``int8``); the catch-all ``is_integer`` rule covers those too.
+#: * ADR 0023 §1.G: ``MonthDayNano`` Arrow interval surfaces as
+#:   ``INTERVAL`` so DuckDB's INTERVAL columns don't slip through to the
+#:   STRING fallback (the value renderer already produces the canonical
+#:   ``Y-M D H:M:S`` string for the body).
+_ARROW_TO_BQ_RULES: tuple[
+    tuple[Callable[[pa.DataType], bool], str | Callable[[pa.DataType], str]],
+    ...,
+] = (
+    (_is_any_list_arrow_type, _list_element_bq_type),
+    (pa.types.is_integer, "INTEGER"),
+    (_is_any_float_arrow_type, "FLOAT"),
+    (pa.types.is_boolean, "BOOLEAN"),
+    (_is_any_string_arrow_type, "STRING"),
+    (pa.types.is_timestamp, _timestamp_bq_type),
+    (pa.types.is_date, "DATE"),
+    (pa.types.is_time, "TIME"),
+    (pa.types.is_interval, "INTERVAL"),
+    (pa.types.is_decimal, _decimal_bq_type),
+    (pa.types.is_binary, "BYTES"),
+    (pa.types.is_struct, "RECORD"),
+)
+
+
 def _arrow_type_to_bq_type(arrow_type: pa.DataType) -> str:
     """Map a pyarrow scalar type to a BigQuery type name for response schemas.
 
     For LIST types, returns the BigQuery type of the *element*. The
-    REPEATED mode is recorded separately by :func:`_arrow_field_to_schema_entry`
-    so the wire format matches BigQuery's
-    ``{type: <elem>, mode: REPEATED}`` shape.
+    REPEATED mode is recorded separately by
+    :func:`_arrow_field_to_schema_entry` so the wire format matches
+    BigQuery's ``{type: <elem>, mode: REPEATED}`` shape.
+
+    Dispatch order is defined by :data:`_ARROW_TO_BQ_RULES` — see its
+    docstring for the ordering invariants. Unmatched types fall back
+    to ``STRING``.
     """
-    if pa.types.is_list(arrow_type) or pa.types.is_large_list(arrow_type):
-        return _arrow_type_to_bq_type(arrow_type.value_type)
-    # ADR 0023 §1.B: DuckDB's ``SIGN(INT)`` returns ``TINYINT`` (Arrow
-    # ``int8``) and several smaller-width arithmetic shortcuts emit
-    # ``SMALLINT`` (``int16``). Both map to BigQuery's ``INTEGER`` on the
-    # wire — the unsigned variants likewise. Without these cases the
-    # fallback would surface the column as ``STRING``.
-    if pa.types.is_integer(arrow_type):
-        return "INTEGER"
-    if pa.types.is_float64(arrow_type) or pa.types.is_float32(arrow_type):
-        return "FLOAT"
-    if pa.types.is_boolean(arrow_type):
-        return "BOOLEAN"
-    if pa.types.is_string(arrow_type) or pa.types.is_large_string(arrow_type):
-        return "STRING"
-    if pa.types.is_timestamp(arrow_type):
-        return "TIMESTAMP" if arrow_type.tz else "DATETIME"
-    if pa.types.is_date(arrow_type):
-        return "DATE"
-    if pa.types.is_time(arrow_type):
-        return "TIME"
-    # ADR 0023 §1.G: ``MonthDayNano`` interval Arrow type → ``INTERVAL``
-    # on the wire. Without this branch DuckDB's INTERVAL columns
-    # surface as the STRING fallback (the value renderer already
-    # produces a canonical ``Y-M D H:M:S`` string).
-    if pa.types.is_interval(arrow_type):
-        return "INTERVAL"
-    if pa.types.is_decimal(arrow_type):
-        # ADR 0023 §1.B: BigQuery's NUMERIC has fixed scale 9 and
-        # BIGNUMERIC carries scale up to 38. Any DECIMAL whose scale
-        # exceeds 9 originated from a BIGNUMERIC literal / column /
-        # ``bqemu_to_bignumeric`` marker — surface it as BIGNUMERIC on
-        # the wire so the schema matches BigQuery's recorded baseline.
-        scale = getattr(arrow_type, "scale", 0) or 0
-        if scale > 9:  # noqa: PLR2004 — BigQuery NUMERIC scale boundary
-            return "BIGNUMERIC"
-        return "NUMERIC"
-    if pa.types.is_binary(arrow_type):
-        return "BYTES"
-    if pa.types.is_struct(arrow_type):
-        return "RECORD"
+    for predicate, mapper in _ARROW_TO_BQ_RULES:
+        if predicate(arrow_type):
+            return mapper(arrow_type) if callable(mapper) else mapper
     return "STRING"
 
 
@@ -270,19 +312,7 @@ async def execute_query_job(
     been updated keep working.
     """
     now = ctx.clock.now()
-
-    # ADR 0022 §3: scripting-lexer errors (``Unterminated string
-    # literal`` etc.) are raised directly as InvalidQueryError; route
-    # them through the mapper so the BigQuery-shape wording (``Syntax
-    # error: Unclosed string literal at [L:C]``) is surfaced before the
-    # error reaches the route handler.
-    try:
-        script = parse_script(bq_sql)
-    except DomainError as exc:
-        translated = translate_runtime_error(exc)
-        if translated is exc:
-            raise
-        raise translated from exc
+    script = _parse_script_or_raise(bq_sql)
     is_scripted = len(script.statements) != 1 or not isinstance(
         script.statements[0],
         SqlStmt,
@@ -296,62 +326,17 @@ async def execute_query_job(
     # and the field is omitted.
     statement_type = "SCRIPT" if is_scripted else classify_statement_type(bq_sql)
 
-    # Intercept versioning DDL (CREATE SNAPSHOT / CLONE / MATERIALIZED
-    # VIEW) and row-access-policy DDL before the SQL translator ever
-    # sees them. Only applies to single-statement input — multi-
-    # statement scripts dispatch these per-statement inside
-    # ``ScriptInterpreter`` (ADR 0023 §1.F) so the matching regexes
-    # don't greedy-match across statement boundaries.
     if not is_scripted:
-        rap_result = _maybe_run_row_access_ddl(project_id, bq_sql, ctx)
-        if rap_result is not None:
-            arrow_table = rap_result
-            JOB_RESULTS[job_id] = arrow_table
-            JOB_SCHEMAS[job_id] = build_response_schema(arrow_table.schema)
-            ctx.metrics.sql_translation_total.labels(outcome="ok").inc()
-            return JobMeta(
-                project_id=project_id,
-                job_id=job_id,
-                job_type="QUERY",
-                state="DONE",
-                configuration={"query": {"query": bq_sql}},
-                statistics=_build_query_statistics(
-                    total_rows=0,
-                    # ``classify_statement_type`` recognises both the
-                    # CREATE and DROP RAP forms via the same regexes the
-                    # handler dispatched on, so this is the correct type
-                    # for either branch (a bare hardcoded
-                    # ``CREATE_ROW_ACCESS_POLICY`` would mislabel DROPs).
-                    statement_type=statement_type,
-                    num_dml_affected_rows=None,
-                ),
-                creation_time=now,
-                start_time=now,
-                end_time=ctx.clock.now(),
-                etag=generate_etag(project_id, job_id, str(now)),
-            )
-        ddl_result = await _maybe_run_versioning_ddl(project_id, bq_sql, ctx)
-        if ddl_result is not None:
-            arrow_table = ddl_result
-            JOB_RESULTS[job_id] = arrow_table
-            JOB_SCHEMAS[job_id] = build_response_schema(arrow_table.schema)
-            ctx.metrics.sql_translation_total.labels(outcome="ok").inc()
-            return JobMeta(
-                project_id=project_id,
-                job_id=job_id,
-                job_type="QUERY",
-                state="DONE",
-                configuration={"query": {"query": bq_sql}},
-                statistics=_build_query_statistics(
-                    total_rows=0,
-                    statement_type=statement_type or "CREATE_SNAPSHOT_TABLE",
-                    num_dml_affected_rows=None,
-                ),
-                creation_time=now,
-                start_time=now,
-                end_time=ctx.clock.now(),
-                etag=generate_etag(project_id, job_id, str(now)),
-            )
+        early_exit = await _run_query_fast_paths(
+            project_id=project_id,
+            job_id=job_id,
+            bq_sql=bq_sql,
+            statement_type=statement_type,
+            now=now,
+            ctx=ctx,
+        )
+        if early_exit is not None:
+            return early_exit
 
     # Refuse DML against immutable table types (SNAPSHOT,
     # MATERIALIZED_VIEW). BigQuery treats these as read-only.
@@ -361,53 +346,22 @@ async def execute_query_job(
         principal="user:anonymous@bqemulator.local",
         is_authenticated=False,
     )
-    if is_scripted:
-        interpreter = ScriptInterpreter(ctx, project_id, caller=effective_caller)
-        arrow_table = await _run_script(interpreter, bq_sql, ctx)
-    else:
-        arrow_table = await _run_single_sql(
-            project_id,
-            bq_sql,
-            query_params,
-            ctx,
-            caller=effective_caller,
-        )
-        # ADR 0023 §1.F — register plain ``CREATE [OR REPLACE] TABLE``
-        # outputs in the catalog so downstream lookups (versioning
-        # managers, INFORMATION_SCHEMA) find them. MATERIALIZED VIEW,
-        # CLONE, and SNAPSHOT forms route through dedicated managers
-        # and are not synced here. ``CREATE SCHEMA`` is synced first so a
-        # table created in a SQL-only dataset finds its dataset already
-        # registered (``sync_created_table`` also auto-registers a
-        # missing dataset as a fallback).
-        sync_created_schema(bq_sql, project_id, ctx)
-        sync_created_table(bq_sql, project_id, ctx)
-        # ADR 0018 (revised 2026-05-19) — register plain ``CREATE
-        # [OR REPLACE] VIEW`` outputs in the catalog so the row-access
-        # rewriter's ``_expand_view`` branch can recurse through the
-        # view body and apply caller-bound policies on the base
-        # tables it references. Closes the ``rap_filter_via_view``
-        # conformance fixture.
-        sync_created_view(bq_sql, project_id, ctx)
+    arrow_table = await _run_query_body(
+        project_id=project_id,
+        bq_sql=bq_sql,
+        query_params=query_params,
+        ctx=ctx,
+        is_scripted=is_scripted,
+        effective_caller=effective_caller,
+    )
 
     # Capture snapshots for tables modified by this statement, and
     # propagate TableDataChanged so dependent MVs flip stale.
     await _capture_dml_snapshots(project_id, bq_sql, ctx)
 
-    # DML statements return a 1-column ``Count`` table from DuckDB;
-    # real BigQuery returns a 0-column schema + 0 rows + a
-    # ``numDmlAffectedRows`` statistic. Strip the Count column for the
-    # wire-format response and capture the affected-rows count for
-    # the statistics payload.
-    num_dml_affected_rows: int | None = None
-    if statement_type in _DML_STATEMENTS:
-        num_dml_affected_rows = _extract_dml_affected_rows(arrow_table)
-        arrow_table = _EMPTY_ARROW
-
+    arrow_table, num_dml_affected_rows = _finalize_dml_result(arrow_table, statement_type)
     JOB_RESULTS[job_id] = arrow_table
-    schema_fields = build_response_schema(arrow_table.schema)
-    JOB_SCHEMAS[job_id] = schema_fields
-
+    JOB_SCHEMAS[job_id] = build_response_schema(arrow_table.schema)
     ctx.metrics.sql_translation_total.labels(outcome="ok").inc()
 
     statistics = _build_query_statistics(
@@ -433,6 +387,159 @@ async def execute_query_job(
         end_time=ctx.clock.now(),
         etag=generate_etag(project_id, job_id, str(now)),
     )
+
+
+def _parse_script_or_raise(bq_sql: str) -> Any:
+    """Parse ``bq_sql`` to a :class:`Script`, routing lexer errors through the mapper.
+
+    ADR 0022 §3: scripting-lexer errors (``Unterminated string literal``
+    etc.) are raised directly as :class:`InvalidQueryError`; the mapper
+    rewrites them into BigQuery-shape wording (``Syntax error: Unclosed
+    string literal at [L:C]``) before the error reaches the route
+    handler. Errors the mapper doesn't recognise propagate unchanged.
+    """
+    try:
+        return parse_script(bq_sql)
+    except DomainError as exc:
+        translated = translate_runtime_error(exc)
+        if translated is exc:
+            raise
+        raise translated from exc
+
+
+async def _run_query_fast_paths(
+    *,
+    project_id: str,
+    job_id: str,
+    bq_sql: str,
+    statement_type: str,
+    now: Any,
+    ctx: AppContext,
+) -> JobMeta | None:
+    """Intercept the versioning-DDL and row-access-policy DDL fast paths.
+
+    Only applies to single-statement input — multi-statement scripts
+    dispatch these per-statement inside :class:`ScriptInterpreter`
+    (ADR 0023 §1.F) so the matching regexes don't greedy-match across
+    statement boundaries. Returns ``None`` when ``bq_sql`` is neither a
+    RAP DDL nor a versioning DDL.
+    """
+    rap_result = _maybe_run_row_access_ddl(project_id, bq_sql, ctx)
+    if rap_result is not None:
+        # ``classify_statement_type`` recognises both the CREATE and DROP
+        # RAP forms via the same regexes the handler dispatched on, so
+        # this is the correct type for either branch (a bare hardcoded
+        # ``CREATE_ROW_ACCESS_POLICY`` would mislabel DROPs).
+        return _build_ddl_job_meta(
+            project_id=project_id,
+            job_id=job_id,
+            bq_sql=bq_sql,
+            statement_type=statement_type,
+            arrow_table=rap_result,
+            now=now,
+            ctx=ctx,
+        )
+    ddl_result = await _maybe_run_versioning_ddl(project_id, bq_sql, ctx)
+    if ddl_result is not None:
+        return _build_ddl_job_meta(
+            project_id=project_id,
+            job_id=job_id,
+            bq_sql=bq_sql,
+            statement_type=statement_type or "CREATE_SNAPSHOT_TABLE",
+            arrow_table=ddl_result,
+            now=now,
+            ctx=ctx,
+        )
+    return None
+
+
+def _build_ddl_job_meta(
+    *,
+    project_id: str,
+    job_id: str,
+    bq_sql: str,
+    statement_type: str,
+    arrow_table: pa.Table,
+    now: Any,
+    ctx: AppContext,
+) -> JobMeta:
+    """Record the DDL-fast-path result and return the closing :class:`JobMeta`.
+
+    Both the RAP-DDL and versioning-DDL branches end with the same
+    shape — register an empty result, bump the SQL-translation metric,
+    and return a ``DONE`` job meta with a zero-row statistics block.
+    """
+    JOB_RESULTS[job_id] = arrow_table
+    JOB_SCHEMAS[job_id] = build_response_schema(arrow_table.schema)
+    ctx.metrics.sql_translation_total.labels(outcome="ok").inc()
+    return JobMeta(
+        project_id=project_id,
+        job_id=job_id,
+        job_type="QUERY",
+        state="DONE",
+        configuration={"query": {"query": bq_sql}},
+        statistics=_build_query_statistics(
+            total_rows=0,
+            statement_type=statement_type,
+            num_dml_affected_rows=None,
+        ),
+        creation_time=now,
+        start_time=now,
+        end_time=ctx.clock.now(),
+        etag=generate_etag(project_id, job_id, str(now)),
+    )
+
+
+async def _run_query_body(
+    *,
+    project_id: str,
+    bq_sql: str,
+    query_params: list[dict[str, Any]] | None,
+    ctx: AppContext,
+    is_scripted: bool,
+    effective_caller: CallerIdentity,
+) -> pa.Table:
+    """Execute ``bq_sql`` via the scripting interpreter or the legacy single-SQL path.
+
+    The legacy path also syncs ``CREATE [OR REPLACE] {SCHEMA|TABLE|VIEW}``
+    outputs into the catalog so downstream lookups (versioning managers,
+    INFORMATION_SCHEMA, the row-access rewriter's ``_expand_view``
+    branch) find them. MATERIALIZED VIEW, CLONE, and SNAPSHOT forms
+    route through dedicated managers and are not synced here.
+    ``CREATE SCHEMA`` is synced first so a table created in a SQL-only
+    dataset finds its dataset already registered (``sync_created_table``
+    also auto-registers a missing dataset as a fallback).
+    """
+    if is_scripted:
+        interpreter = ScriptInterpreter(ctx, project_id, caller=effective_caller)
+        return await _run_script(interpreter, bq_sql, ctx)
+    arrow_table = await _run_single_sql(
+        project_id,
+        bq_sql,
+        query_params,
+        ctx,
+        caller=effective_caller,
+    )
+    sync_created_schema(bq_sql, project_id, ctx)
+    sync_created_table(bq_sql, project_id, ctx)
+    sync_created_view(bq_sql, project_id, ctx)
+    return arrow_table
+
+
+def _finalize_dml_result(
+    arrow_table: pa.Table,
+    statement_type: str,
+) -> tuple[pa.Table, int | None]:
+    """Trim DuckDB's DML ``Count`` column and surface the affected-rows count.
+
+    DML statements return a 1-column ``Count`` table from DuckDB; real
+    BigQuery returns a 0-column schema + 0 rows + a
+    ``numDmlAffectedRows`` statistic. The caller writes both the
+    trimmed Arrow table and the row-count into the response body.
+    """
+    if statement_type not in _DML_STATEMENTS:
+        return arrow_table, None
+    return _EMPTY_ARROW, _extract_dml_affected_rows(arrow_table)
 
 
 #: Dataset id under which bqemulator advertises anonymous-result tables.
@@ -606,7 +713,7 @@ async def _run_script(
     return pa.table({})
 
 
-async def execute_load_job(  # noqa: PLR0915 — linear format dispatch, ADR 0027
+async def execute_load_job(
     project_id: str,
     job_id: str,
     config: dict[str, Any],
@@ -618,18 +725,7 @@ async def execute_load_job(  # noqa: PLR0915 — linear format dispatch, ADR 002
     native readers, plus ORC via the optional ``pyorc`` package (G1).
     """
     now = ctx.clock.now()
-    load_config = config.get("load", {})
-
-    dest_table = load_config.get("destinationTable", {})
-    dest_project = dest_table.get("projectId", project_id)
-    dest_dataset = dest_table.get("datasetId", "")
-    dest_table_id = dest_table.get("tableId", "")
-    source_uris = load_config.get("sourceUris", [])
-    source_format = load_config.get("sourceFormat", "CSV").upper()
-    write_disposition = load_config.get("writeDisposition", "WRITE_APPEND")
-    create_disposition = load_config.get("createDisposition", "CREATE_IF_NEEDED")
-
-    target_ref = quoted_table_ref(dest_project, dest_dataset, dest_table_id)
+    job = _parse_load_job_config(project_id, config)
 
     # CREATE_IF_NEEDED — materialise the destination from the explicit
     # schema (bq CLI / SDK clients pass ``load.schema.fields``) before
@@ -638,127 +734,37 @@ async def execute_load_job(  # noqa: PLR0915 — linear format dispatch, ADR 002
     # COPY/INSERT call below will raise a binder error which the load
     # error wrapper translates to a proper ``invalid`` job error.
     if (
-        create_disposition == "CREATE_IF_NEEDED"
-        and ctx.catalog.get_table(dest_project, dest_dataset, dest_table_id) is None
+        job.create_disposition == "CREATE_IF_NEEDED"
+        and ctx.catalog.get_table(job.project_id, job.dataset_id, job.table_id) is None
     ):
         _maybe_create_load_destination(
-            dest_project=dest_project,
-            dest_dataset=dest_dataset,
-            dest_table_id=dest_table_id,
-            load_config=load_config,
+            dest_project=job.project_id,
+            dest_dataset=job.dataset_id,
+            dest_table_id=job.table_id,
+            load_config=job.raw_config,
             now=now,
             ctx=ctx,
         )
 
     # Resolve URIs: gs:// → local path under GCS_LOCAL_ROOT, or file:// → local.
-    resolved_paths = [_resolve_uri(uri, ctx) for uri in source_uris]
+    resolved_paths = [_resolve_uri(uri, ctx) for uri in job.source_uris]
     for path in resolved_paths:
         _validate_local_path(path)
 
     async with ctx.engine.write_lock():
-        # Handle write disposition.
-        if write_disposition == "WRITE_TRUNCATE":
-            ctx.engine.execute(f"DELETE FROM {target_ref}")
-        elif write_disposition == "WRITE_EMPTY":
-            count = ctx.engine.execute(
-                f"SELECT COUNT(*) FROM {target_ref}",
-            ).fetchone()
-            if count and count[0] > 0:
-                raise InvalidQueryError(
-                    f"Table {dest_dataset}.{dest_table_id} is not empty and "
-                    "writeDisposition is WRITE_EMPTY",
-                )
-
+        _apply_load_write_disposition(job, ctx)
         for path in resolved_paths:
-            # DuckDB accepts ? placeholders for file paths in COPY and
-            # read_* functions, so we parameterise rather than string-
-            # concatenate to shut the door on path-injection (even though
-            # _validate_local_path already vetted the value).
-            if source_format == "CSV":
-                ctx.engine.execute(
-                    f"COPY {target_ref} FROM ? (FORMAT CSV, HEADER)",
-                    [path],
-                )
-            elif source_format in ("NEWLINE_DELIMITED_JSON", "JSON"):
-                ctx.engine.execute(
-                    f"COPY {target_ref} FROM ? (FORMAT JSON)",
-                    [path],
-                )
-            elif source_format == "PARQUET":
-                ctx.engine.execute(
-                    f"INSERT INTO {target_ref} SELECT * FROM read_parquet(?)",
-                    [path],
-                )
-            elif source_format == "AVRO":
-                # DuckDB's ``avro`` extension provides ``read_avro``. It is
-                # loaded at engine boot (best-effort) via
-                # :meth:`DuckDBEngine._load_format_extensions`; if loading
-                # failed the SELECT below raises a ``Table Function with
-                # name read_avro does not exist`` catalog error, which we
-                # surface back to the client as an UnsupportedFeatureError.
-                # G1-follow-up (2026-05-20): when the Avro file uses the
-                # ``decimal`` logical type, DuckDB returns the column as
-                # BLOB and the auto-cast to NUMERIC fails — pre-detect
-                # this via the writer schema and route through the
-                # fastavro fallback (which decodes ``decimal`` to Python
-                # ``Decimal`` directly). All other Avro shapes stay on
-                # the fast DuckDB path. Any other failure (missing file,
-                # genuine schema mismatch) bubbles through error_mapper
-                # unchanged and is converted to a DONE-with-errorResult
-                # JobMeta by the outer wrapper below.
-                if is_decimal_logical_avro(path):
-                    arrow_table = read_avro_to_arrow(path)
-                    ctx.engine.connection.register("_bqemu_avro_load", arrow_table)
-                    try:
-                        ctx.engine.execute(
-                            f"INSERT INTO {target_ref} SELECT * FROM _bqemu_avro_load",
-                        )
-                    finally:
-                        ctx.engine.connection.unregister("_bqemu_avro_load")
-                else:
-                    try:
-                        ctx.engine.execute(
-                            f"INSERT INTO {target_ref} SELECT * FROM read_avro(?)",
-                            [path],
-                        )
-                    except Exception as exc:
-                        if _is_missing_extension_error(exc, "read_avro"):
-                            raise UnsupportedFeatureError(
-                                "Load from AVRO requires DuckDB's ``avro`` "
-                                "extension. Re-enable BQEMU_ENABLE_FORMAT_"
-                                "EXTENSIONS or run the emulator with "
-                                "network access to extensions.duckdb.org.",
-                            ) from exc
-                        raise
-            elif source_format == "ORC":
-                arrow_table = read_orc_to_arrow(path)
-                # arrow_scan reads from a Python-side Arrow table the
-                # caller binds at execution time. We register a temporary
-                # view via ``register`` (DuckDB's relation API) so the
-                # INSERT picks up the schema correctly.
-                ctx.engine.connection.register("_bqemu_orc_load", arrow_table)
-                try:
-                    ctx.engine.execute(
-                        f"INSERT INTO {target_ref} SELECT * FROM _bqemu_orc_load",
-                    )
-                finally:
-                    ctx.engine.connection.unregister("_bqemu_orc_load")
-            else:
-                raise InvalidQueryError(f"Unknown source format: {source_format}")
+            _load_path_into_target(path, job, ctx)
 
-    # Update row count.
-    count_result = ctx.engine.execute(
-        f"SELECT COUNT(*) FROM {target_ref}",
-    ).fetchone()
-    new_count = count_result[0] if count_result else 0
+    new_count = _refresh_load_row_count(job, ctx)
 
-    table_meta = ctx.catalog.get_table(dest_project, dest_dataset, dest_table_id)
+    table_meta = ctx.catalog.get_table(job.project_id, job.dataset_id, job.table_id)
     if table_meta is not None:
         ctx.catalog.update_table(table_meta.model_copy(update={"num_rows": new_count}))
         # Capture a snapshot + notify dependents. The load path
         # already released its write lock; reacquire for the snapshot CTAS.
         async with ctx.engine.write_lock():
-            ctx.snapshots.record_change(dest_project, dest_dataset, dest_table_id)
+            ctx.snapshots.record_change(job.project_id, job.dataset_id, job.table_id)
 
     return JobMeta(
         project_id=project_id,
@@ -772,6 +778,202 @@ async def execute_load_job(  # noqa: PLR0915 — linear format dispatch, ADR 002
         end_time=ctx.clock.now(),
         etag=generate_etag(project_id, job_id, str(now)),
     )
+
+
+@dataclass(frozen=True, slots=True)
+class _LoadJobConfig:
+    """Parsed shape of a ``configuration.load`` block.
+
+    Carrying the resolved values as a frozen dataclass keeps the
+    per-step helpers (write-disposition, per-format loader,
+    row-count refresh) trivially callable without re-deriving the
+    config from the raw dict on each call.
+    """
+
+    project_id: str
+    dataset_id: str
+    table_id: str
+    target_ref: str
+    source_uris: list[str]
+    source_format: str
+    write_disposition: str
+    create_disposition: str
+    raw_config: dict[str, Any]
+
+
+def _parse_load_job_config(project_id: str, config: dict[str, Any]) -> _LoadJobConfig:
+    """Extract a typed :class:`_LoadJobConfig` from the raw REST payload."""
+    load_config = config.get("load", {})
+    dest_table = load_config.get("destinationTable", {})
+    dest_project = dest_table.get("projectId", project_id)
+    dest_dataset = dest_table.get("datasetId", "")
+    dest_table_id = dest_table.get("tableId", "")
+    return _LoadJobConfig(
+        project_id=dest_project,
+        dataset_id=dest_dataset,
+        table_id=dest_table_id,
+        target_ref=quoted_table_ref(dest_project, dest_dataset, dest_table_id),
+        source_uris=load_config.get("sourceUris", []),
+        source_format=load_config.get("sourceFormat", "CSV").upper(),
+        write_disposition=load_config.get("writeDisposition", "WRITE_APPEND"),
+        create_disposition=load_config.get("createDisposition", "CREATE_IF_NEEDED"),
+        raw_config=load_config,
+    )
+
+
+def _apply_load_write_disposition(job: _LoadJobConfig, ctx: AppContext) -> None:
+    """Honour ``writeDisposition`` (WRITE_TRUNCATE / WRITE_EMPTY) before the load runs."""
+    if job.write_disposition == "WRITE_TRUNCATE":
+        ctx.engine.execute(f"DELETE FROM {job.target_ref}")
+        return
+    if job.write_disposition == "WRITE_EMPTY":
+        count = ctx.engine.execute(
+            f"SELECT COUNT(*) FROM {job.target_ref}",
+        ).fetchone()
+        if count and count[0] > 0:
+            raise InvalidQueryError(
+                f"Table {job.dataset_id}.{job.table_id} is not empty and "
+                "writeDisposition is WRITE_EMPTY",
+            )
+
+
+def _load_path_into_target(path: str, job: _LoadJobConfig, ctx: AppContext) -> None:
+    """Dispatch ``path`` to the per-format loader for :attr:`_LoadJobConfig.source_format`.
+
+    DuckDB accepts ``?`` placeholders for file paths in ``COPY`` and
+    ``read_*`` functions, so the per-format helpers parameterise rather
+    than string-concatenate to shut the door on path-injection (even
+    though :func:`_validate_local_path` already vetted the value).
+    """
+    handler = _LOAD_FORMAT_HANDLERS.get(job.source_format)
+    if handler is None:
+        raise InvalidQueryError(f"Unknown source format: {job.source_format}")
+    handler(path, job.target_ref, ctx)
+
+
+def _load_csv(path: str, target_ref: str, ctx: AppContext) -> None:
+    ctx.engine.execute(
+        f"COPY {target_ref} FROM ? (FORMAT CSV, HEADER)",
+        [path],
+    )
+
+
+def _load_json(path: str, target_ref: str, ctx: AppContext) -> None:
+    ctx.engine.execute(
+        f"COPY {target_ref} FROM ? (FORMAT JSON)",
+        [path],
+    )
+
+
+def _load_parquet(path: str, target_ref: str, ctx: AppContext) -> None:
+    ctx.engine.execute(
+        f"INSERT INTO {target_ref} SELECT * FROM read_parquet(?)",
+        [path],
+    )
+
+
+def _load_avro(path: str, target_ref: str, ctx: AppContext) -> None:
+    """Route Avro inputs through the fastavro fallback when the writer schema is decimal-logical.
+
+    DuckDB's ``avro`` extension provides ``read_avro`` and is loaded at
+    engine boot (best-effort) via
+    :meth:`DuckDBEngine._load_format_extensions`. If loading failed the
+    SELECT below raises a ``Table Function with name read_avro does not
+    exist`` catalog error, which we surface as
+    :class:`UnsupportedFeatureError`.
+
+    G1-follow-up (2026-05-20): when the Avro file uses the ``decimal``
+    logical type, DuckDB returns the column as BLOB and the auto-cast
+    to NUMERIC fails — pre-detect this via the writer schema and route
+    through the fastavro fallback (which decodes ``decimal`` to Python
+    ``Decimal`` directly). All other Avro shapes stay on the fast
+    DuckDB path. Any other failure (missing file, genuine schema
+    mismatch) bubbles through error_mapper unchanged.
+    """
+    if is_decimal_logical_avro(path):
+        _insert_via_arrow_view(
+            arrow_table=read_avro_to_arrow(path),
+            view_name="_bqemu_avro_load",
+            target_ref=target_ref,
+            ctx=ctx,
+        )
+        return
+    try:
+        ctx.engine.execute(
+            f"INSERT INTO {target_ref} SELECT * FROM read_avro(?)",
+            [path],
+        )
+    except Exception as exc:
+        if _is_missing_extension_error(exc, "read_avro"):
+            raise UnsupportedFeatureError(
+                "Load from AVRO requires DuckDB's ``avro`` "
+                "extension. Re-enable BQEMU_ENABLE_FORMAT_"
+                "EXTENSIONS or run the emulator with "
+                "network access to extensions.duckdb.org.",
+            ) from exc
+        raise
+
+
+def _load_orc(path: str, target_ref: str, ctx: AppContext) -> None:
+    """Route ORC inputs through the pyorc → Arrow bridge.
+
+    DuckDB has no native ORC reader, so the pyorc fallback decodes the
+    file into a pyarrow Table and we register it as a DuckDB view via
+    ``connection.register`` so the INSERT picks up the schema
+    correctly.
+    """
+    _insert_via_arrow_view(
+        arrow_table=read_orc_to_arrow(path),
+        view_name="_bqemu_orc_load",
+        target_ref=target_ref,
+        ctx=ctx,
+    )
+
+
+def _insert_via_arrow_view(
+    *,
+    arrow_table: pa.Table,
+    view_name: str,
+    target_ref: str,
+    ctx: AppContext,
+) -> None:
+    """Register an Arrow table as a temp DuckDB view, INSERT-SELECT, then unregister.
+
+    Shared between :func:`_load_avro` (fastavro-decoded decimal-logical
+    files) and :func:`_load_orc` (pyorc-decoded files). The
+    ``unregister`` runs in a ``finally`` so the temp view doesn't leak
+    on insert failure.
+    """
+    ctx.engine.connection.register(view_name, arrow_table)
+    try:
+        ctx.engine.execute(
+            f"INSERT INTO {target_ref} SELECT * FROM {view_name}",
+        )
+    finally:
+        ctx.engine.connection.unregister(view_name)
+
+
+#: Per-source-format load handlers. The dispatch dict keys are the
+#: canonical BigQuery ``sourceFormat`` values (also accepting the
+#: ``"JSON"`` alias for ``NEWLINE_DELIMITED_JSON`` that some clients
+#: emit). Unknown formats fall through to an :class:`InvalidQueryError`
+#: in :func:`_load_path_into_target`.
+_LOAD_FORMAT_HANDLERS: dict[str, Callable[[str, str, AppContext], None]] = {
+    "CSV": _load_csv,
+    "NEWLINE_DELIMITED_JSON": _load_json,
+    "JSON": _load_json,
+    "PARQUET": _load_parquet,
+    "AVRO": _load_avro,
+    "ORC": _load_orc,
+}
+
+
+def _refresh_load_row_count(job: _LoadJobConfig, ctx: AppContext) -> int:
+    """Return the destination row count after the load completes."""
+    count_result = ctx.engine.execute(
+        f"SELECT COUNT(*) FROM {job.target_ref}",
+    ).fetchone()
+    return count_result[0] if count_result else 0
 
 
 async def execute_extract_job(
@@ -1031,8 +1233,6 @@ async def _copy_table_into_destination(
     WRITE_TRUNCATE / WRITE_EMPTY) for the rows-only path when the
     destination already exists.
     """
-    from bqemulator.catalog.models import TableMeta, TableSchema
-
     src_meta = ctx.catalog.get_table(src_proj, src_ds, src_table_id)
     if src_meta is None:
         raise resource_not_found(
@@ -1051,52 +1251,106 @@ async def _copy_table_into_destination(
                 raise resource_not_found(
                     ResourceRef("table", dst_proj, dst_ds, dst_table_id),
                 )
-            ctx.engine.execute(
-                f"CREATE TABLE {dst_ref} AS SELECT * FROM {src_ref}",
+            _create_copy_destination(
+                src_meta=src_meta,
+                src_ref=src_ref,
+                dst_proj=dst_proj,
+                dst_ds=dst_ds,
+                dst_table_id=dst_table_id,
+                dst_ref=dst_ref,
+                ctx=ctx,
             )
-            now = ctx.clock.now()
-            count_row = ctx.engine.execute(
-                f"SELECT COUNT(*) FROM {dst_ref}",
-            ).fetchone()
-            num_rows = int(count_row[0]) if count_row else 0
-            new_meta = TableMeta(
-                project_id=dst_proj,
-                dataset_id=dst_ds,
-                table_id=dst_table_id,
-                table_type="TABLE",
-                schema=(src_meta.schema_ or TableSchema()),
-                labels={},
-                time_partitioning=src_meta.time_partitioning,
-                range_partitioning=src_meta.range_partitioning,
-                clustering=src_meta.clustering,
-                creation_time=now,
-                last_modified_time=now,
-                num_rows=num_rows,
-                num_bytes=0,
-                etag=generate_etag(
-                    dst_proj,
-                    dst_ds,
-                    dst_table_id,
-                    "TABLE",
-                    str(now),
-                ),
-            )
-            ctx.catalog.create_table(new_meta)
         else:
-            if write_disposition == "WRITE_TRUNCATE":
-                ctx.engine.execute(f"DELETE FROM {dst_ref}")
-            elif write_disposition == "WRITE_EMPTY":
-                existing = ctx.engine.execute(
-                    f"SELECT COUNT(*) FROM {dst_ref}",
-                ).fetchone()
-                if existing and existing[0] > 0:
-                    raise InvalidQueryError(
-                        f"Table {dst_ds}.{dst_table_id} is not empty and "
-                        "writeDisposition is WRITE_EMPTY",
-                    )
+            _apply_copy_write_disposition(
+                dst_ds=dst_ds,
+                dst_table_id=dst_table_id,
+                dst_ref=dst_ref,
+                write_disposition=write_disposition,
+                ctx=ctx,
+            )
             ctx.engine.execute(f"INSERT INTO {dst_ref} SELECT * FROM {src_ref}")
 
         ctx.snapshots.record_change(dst_proj, dst_ds, dst_table_id)
+
+
+def _create_copy_destination(
+    *,
+    src_meta: Any,
+    src_ref: str,
+    dst_proj: str,
+    dst_ds: str,
+    dst_table_id: str,
+    dst_ref: str,
+    ctx: AppContext,
+) -> None:
+    """Materialise the destination of a copy job under CREATE_IF_NEEDED.
+
+    Issues ``CREATE TABLE ... AS SELECT * FROM ...`` against DuckDB then
+    registers a :class:`TableMeta` carrying the source's schema,
+    partitioning, and clustering so downstream lookups against the
+    new destination find the same shape as the source.
+    """
+    from bqemulator.catalog.models import TableMeta, TableSchema
+
+    ctx.engine.execute(
+        f"CREATE TABLE {dst_ref} AS SELECT * FROM {src_ref}",
+    )
+    now = ctx.clock.now()
+    count_row = ctx.engine.execute(
+        f"SELECT COUNT(*) FROM {dst_ref}",
+    ).fetchone()
+    num_rows = int(count_row[0]) if count_row else 0
+    new_meta = TableMeta(
+        project_id=dst_proj,
+        dataset_id=dst_ds,
+        table_id=dst_table_id,
+        table_type="TABLE",
+        schema=(src_meta.schema_ or TableSchema()),
+        labels={},
+        time_partitioning=src_meta.time_partitioning,
+        range_partitioning=src_meta.range_partitioning,
+        clustering=src_meta.clustering,
+        creation_time=now,
+        last_modified_time=now,
+        num_rows=num_rows,
+        num_bytes=0,
+        etag=generate_etag(
+            dst_proj,
+            dst_ds,
+            dst_table_id,
+            "TABLE",
+            str(now),
+        ),
+    )
+    ctx.catalog.create_table(new_meta)
+
+
+def _apply_copy_write_disposition(
+    *,
+    dst_ds: str,
+    dst_table_id: str,
+    dst_ref: str,
+    write_disposition: str,
+    ctx: AppContext,
+) -> None:
+    """Honour ``writeDisposition`` for the rows-only path of a copy job.
+
+    ``WRITE_TRUNCATE`` empties the destination before the INSERT;
+    ``WRITE_EMPTY`` raises when the destination already carries rows
+    (BigQuery's documented refusal semantic). ``WRITE_APPEND`` is the
+    no-op default and falls through.
+    """
+    if write_disposition == "WRITE_TRUNCATE":
+        ctx.engine.execute(f"DELETE FROM {dst_ref}")
+        return
+    if write_disposition == "WRITE_EMPTY":
+        existing = ctx.engine.execute(
+            f"SELECT COUNT(*) FROM {dst_ref}",
+        ).fetchone()
+        if existing and existing[0] > 0:
+            raise InvalidQueryError(
+                f"Table {dst_ds}.{dst_table_id} is not empty and writeDisposition is WRITE_EMPTY",
+            )
 
 
 def _is_missing_extension_error(exc: BaseException, function_name: str) -> bool:
@@ -1504,39 +1758,62 @@ def classify_statement_type(bq_sql: str) -> str:
     Falls back to ``""`` rather than guessing for unparseable input so
     a malformed query doesn't get a misleading classification.
     """
-    import sqlglot
-    from sqlglot import exp
+    rap_type = _classify_rap_ddl(bq_sql)
+    if rap_type:
+        return rap_type
+    tree = _parse_for_classification(bq_sql)
+    if tree is None:
+        return ""
+    return _classify_parsed_tree(tree)
 
-    # ``CREATE/DROP ROW ACCESS POLICY`` is not in sqlglot's BigQuery
-    # grammar — it falls back to a generic ``Command`` node — so classify
-    # it via the same regexes the executor uses to dispatch the DDL,
-    # before the parse-based path runs.
+
+def _classify_rap_ddl(bq_sql: str) -> str:
+    """Pre-classify ``CREATE/DROP ROW ACCESS POLICY`` DDL via regex.
+
+    ``ROW ACCESS POLICY`` DDL is not in sqlglot's BigQuery grammar — it
+    falls back to a generic ``Command`` node — so we classify it via
+    the same regexes the executor uses to dispatch the DDL, before the
+    parse-based path runs.
+    """
     rap_sql = _strip_trailing_semicolon(bq_sql)
     if _RAP_CREATE_RE.match(rap_sql):
         return "CREATE_ROW_ACCESS_POLICY"
     if _RAP_DROP_RE.match(rap_sql):
         return "DROP_ROW_ACCESS_POLICY"
+    return ""
+
+
+def _parse_for_classification(bq_sql: str) -> Any | None:
+    """Parse ``bq_sql`` for classification; return ``None`` when SQLGlot can't parse."""
+    import sqlglot
 
     try:
-        tree = sqlglot.parse_one(bq_sql, read="bigquery")
+        return sqlglot.parse_one(bq_sql, read="bigquery")
     except Exception:  # noqa: BLE001 — best-effort classification
-        return ""
+        return None
+
+
+def _classify_parsed_tree(tree: Any) -> str:
+    """Map a SQLGlot AST node to its BigQuery ``statementType`` name.
+
+    Falls through to ``""`` for anything the dispatch doesn't recognise
+    so callers can treat the field as "unknown" rather than a wrong
+    label.
+    """
+    from sqlglot import exp
 
     dml = _classify_dml(tree, exp)
     if dml:
         return dml
-
     if isinstance(tree, exp.Select):
         return "SELECT"
     if isinstance(tree, exp.Create):
         return _classify_create(tree)
     if isinstance(tree, exp.Drop):
         return _classify_drop(tree)
-
     alter_cls = getattr(exp, "AlterTable", None) or getattr(exp, "Alter", None)
     if alter_cls is not None and isinstance(tree, alter_cls):
         return "ALTER_TABLE"
-
     return ""
 
 
@@ -1575,56 +1852,114 @@ def _extract_dml_affected_rows(arrow_table: pa.Table) -> int:
 _EMPTY_ARROW = pa.table({})
 
 
+class _DmlTableCollector:
+    """Accumulator for the destination tables of a DML statement.
+
+    Centralises the dedup / falsy-coordinate guard so the per-node-type
+    collector helpers only express the AST traversal — the
+    "is this a complete table ref?" check lives in :meth:`add`.
+    """
+
+    __slots__ = ("_out", "_project_id", "_seen")
+
+    def __init__(self, project_id: str) -> None:
+        self._project_id = project_id
+        self._out: list[tuple[str, str, str]] = []
+        self._seen: set[tuple[str, str, str]] = set()
+
+    def add(self, table_node: Any) -> None:
+        """Record ``table_node`` if it has both dataset + table names; dedup repeats."""
+        dataset = table_node.db
+        table = table_node.name
+        if not dataset or not table:
+            return
+        proj = table_node.catalog or self._project_id
+        key = (proj, dataset, table)
+        if key in self._seen:
+            return
+        self._seen.add(key)
+        self._out.append(key)
+
+    def result(self) -> list[tuple[str, str, str]]:
+        """Return the collected table refs in insertion order."""
+        return list(self._out)
+
+
 def _dml_target_tables(
     tree: Any,
     project_id: str,
 ) -> list[tuple[str, str, str]]:
-    """Extract the destination table(s) of a DML tree."""
+    """Extract the destination table(s) of a DML tree.
+
+    Dispatches per AST node type — INSERT, UPDATE/DELETE/TRUNCATE,
+    MERGE, fallback ``Command`` — each routed to a small helper that
+    walks the relevant ``this`` / ``expressions`` slots.
+    """
     from sqlglot import exp
 
-    out: list[tuple[str, str, str]] = []
-    seen: set[tuple[str, str, str]] = set()
-
-    def _add_from_table_node(table_node: exp.Table) -> None:
-        dataset = table_node.db
-        table = table_node.name
-        proj = table_node.catalog or project_id
-        if not dataset or not table:
-            return
-        key = (proj, dataset, table)
-        if key in seen:
-            return
-        seen.add(key)
-        out.append(key)
-
+    collector = _DmlTableCollector(project_id)
     truncate_cls = getattr(exp, "TruncateTable", None)
     if isinstance(tree, exp.Insert):
-        this = tree.this
-        if isinstance(this, exp.Table):
-            _add_from_table_node(this)
-        elif isinstance(this, exp.Schema):
-            inner = this.this
-            if isinstance(inner, exp.Table):
-                _add_from_table_node(inner)
-    elif isinstance(tree, (exp.Update, exp.Delete)) or (
-        truncate_cls is not None and isinstance(tree, truncate_cls)
-    ):
-        this = tree.this
-        if isinstance(this, exp.Table):
-            _add_from_table_node(this)
-        for expr in tree.args.get("expressions", []) or []:
-            if isinstance(expr, exp.Table):
-                _add_from_table_node(expr)
+        _collect_insert_targets(tree, exp, collector)
+    elif _is_update_delete_truncate(tree, exp, truncate_cls):
+        _collect_update_delete_truncate_targets(tree, exp, collector)
     elif isinstance(tree, exp.Merge):
-        this = tree.this
-        if isinstance(this, exp.Table):
-            _add_from_table_node(this)
+        _collect_merge_targets(tree, exp, collector)
     elif isinstance(tree, exp.Command):
-        # Command-fallback TRUNCATE: parse the body for the table name.
-        body = str(tree.expression) if tree.expression is not None else ""
-        for table_node in _parse_fallback_tables(body):
-            _add_from_table_node(table_node)
-    return out
+        _collect_command_targets(tree, collector)
+    return collector.result()
+
+
+def _is_update_delete_truncate(tree: Any, exp_module: Any, truncate_cls: type | None) -> bool:
+    """True for UPDATE / DELETE / TRUNCATE-style DML nodes."""
+    if isinstance(tree, (exp_module.Update, exp_module.Delete)):
+        return True
+    return truncate_cls is not None and isinstance(tree, truncate_cls)
+
+
+def _collect_insert_targets(tree: Any, exp_module: Any, collector: _DmlTableCollector) -> None:
+    """Collect the target of ``INSERT [INTO]`` — directly or via ``exp.Schema``."""
+    this = tree.this
+    if isinstance(this, exp_module.Table):
+        collector.add(this)
+        return
+    if isinstance(this, exp_module.Schema):
+        inner = this.this
+        if isinstance(inner, exp_module.Table):
+            collector.add(inner)
+
+
+def _collect_update_delete_truncate_targets(
+    tree: Any,
+    exp_module: Any,
+    collector: _DmlTableCollector,
+) -> None:
+    """Collect the target(s) of UPDATE / DELETE / TRUNCATE statements.
+
+    The primary target lives under ``tree.this``; SQLGlot folds
+    multi-table TRUNCATE / DELETE secondary targets into the
+    ``expressions`` slot.
+    """
+    this = tree.this
+    if isinstance(this, exp_module.Table):
+        collector.add(this)
+    for expr in tree.args.get("expressions", []) or []:
+        if isinstance(expr, exp_module.Table):
+            collector.add(expr)
+
+
+def _collect_merge_targets(tree: Any, exp_module: Any, collector: _DmlTableCollector) -> None:
+    """Collect the destination table of a MERGE statement (always under ``tree.this``)."""
+    this = tree.this
+    if isinstance(this, exp_module.Table):
+        collector.add(this)
+
+
+def _collect_command_targets(tree: Any, collector: _DmlTableCollector) -> None:
+    """Command-fallback TRUNCATE — parse the body for table names."""
+    body = str(tree.expression) if tree.expression is not None else ""
+    for table_node in _parse_fallback_tables(body):
+        collector.add(table_node)
 
 
 def _parse_fallback_tables(body: str) -> list[Any]:
