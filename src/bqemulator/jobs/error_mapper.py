@@ -31,6 +31,7 @@ mapper is the emulator-side counterpart to.
 
 from __future__ import annotations
 
+from collections.abc import Callable
 import re
 
 from bqemulator.domain.errors import (
@@ -235,6 +236,13 @@ def translate_runtime_error(
     real BigQuery's per-reason convention — see
     ``tests/conformance/sql_corpus/*/error_*/expected.json`` for the
     recorded baselines).
+
+    Internally the function delegates each DuckDB / SQLGlot error
+    family to a ``_try_*`` translator. The dispatch tuple
+    :data:`_DUCKDB_TRANSLATORS` orders the translators so the
+    schema-not-found rule fires before the table-not-found rule (their
+    regexes can both match the same message — DuckDB folds the schema
+    name into the table reference for project-qualified lookups).
     """
     raw = str(exc)
 
@@ -244,160 +252,266 @@ def translate_runtime_error(
     # whitelist rejects. The BigQuery user-facing form is "Function not
     # found".
     if isinstance(exc, ValidationError):
-        if (match := _INVALID_SQL_ID_RE.search(raw)) is not None:
-            return InvalidQueryError(
-                f"Function not found: `{match['value']}`.<routine> at [1:8] "
-                f"(emulator detected malformed identifier: {raw})",
-                location="query",
-            )
-        # Other validation errors pass through unchanged — the route
-        # layer already renders them via the ``invalid`` reason.
-        return exc
+        return _translate_validation_error(exc, raw)
 
-    # Scripting-lexer "Unterminated string literal" (from
-    # ``scripting/lexer.py``). Detected via the BigQuery-style rewrite
-    # in :mod:`bqemulator.sql.errors` is bypassed because the lexer
-    # raises directly; the mapper handles it here.
-    if _UNTERMINATED_STRING_RE.search(raw) is not None:
-        return InvalidQueryError(
-            "Syntax error: Unclosed string literal at [1:8]",
-            location="query",
-        )
-
-    # Schema-not-found has to be checked before the table-not-found
-    # branch because DuckDB's schema-missing message also matches
-    # _TABLE_NOT_FOUND_RE (the table reference is the full
-    # ``project__dataset.table`` form).
-    if (schema_match := _SCHEMA_NOT_FOUND_RE.search(raw)) is not None:
-        schema_name = schema_match["schema"]
-        # Recover the project + dataset from DuckDB's ``project__dataset``
-        # schema name. Real BigQuery surfaces a schema lookup against a
-        # malformed project as ``Access Denied`` (a security choice —
-        # leaking "project exists vs not" via 404 vs 403 is forbidden).
-        if "__" in schema_name:
-            project_id, dataset_id = schema_name.split("__", 1)
-            if _is_bq_invalid_project_format(project_id):
-                bq_qualified = f"{project_id}:{dataset_id}"
-                table_ref = _extract_table_from_duckdb(raw, fallback=bq_qualified)
-                return PermissionDeniedError(
-                    f"Access Denied: Table {bq_qualified}.{table_ref}: "
-                    f"User does not have permission to query table "
-                    f"{bq_qualified}.{table_ref}, or perhaps it does not exist.",
-                )
-            bq_dataset = f"{project_id}:{dataset_id}"
-        else:
-            bq_dataset = schema_name
-        return NotFoundError(
-            f"Not found: Dataset {bq_dataset} was not found in location US",
-        )
-
-    schema_prefix = _extract_schema_prefix(raw, duckdb_sql=duckdb_sql)
-
-    if (already := _TABLE_ALREADY_EXISTS_RE.search(raw)) is not None:
-        return AlreadyExistsError(
-            f"Already Exists: Table {schema_prefix}{already['table']}",
-        )
-
-    if (notfound := _TABLE_NOT_FOUND_RE.search(raw)) is not None:
-        return NotFoundError(
-            f"Not found: Table {schema_prefix}{notfound['table']} was not found in location US",
-        )
-
-    if (fn := _SCALAR_FUNCTION_NOT_FOUND_RE.search(raw)) is not None:
-        return InvalidQueryError(
-            f"Function not found: {fn['fn']} at [1:8]",
-            location="query",
-        )
-
-    if _CONCAT_NO_ARGS_RE.search(raw) is not None:
-        return InvalidQueryError(
-            "No matching signature for function CONCAT with no arguments\n"
-            "  Signature: CONCAT(STRING, [STRING, ...])\n"
-            "    Signature requires at least 1 argument, found 0 arguments\n"
-            "  Signature: CONCAT(BYTES, [BYTES, ...])\n"
-            "    Signature requires at least 1 argument, found 0 arguments at [1:8]",
-            location="query",
-        )
-
-    if _SUBSTRING_BAD_ARITY_RE.search(raw) is not None:
-        return InvalidQueryError(
-            "No matching signature for function SUBSTR\n"
-            "  Argument types: STRING\n"
-            "  Signature: SUBSTR(STRING, INT64, [INT64])\n"
-            "    Signature requires at least 2 arguments, found 1 argument\n"
-            "  Signature: SUBSTR(BYTES, INT64, [INT64])\n"
-            "    Signature requires at least 2 arguments, found 1 argument at [1:8]",
-            location="query",
-        )
-
-    if (literal_cast := _BINDER_PLUS_STR_INT_RE.search(raw)) is not None:
-        del literal_cast  # The full match presence is enough — operand text comes from `raw`.
-        return InvalidQueryError(
-            'Could not cast literal "a" to type DATE at [1:8] '
-            f"(emulator binder rejected mixed-type operation: {raw})",
-            location="query",
-        )
-
-    if _BINDER_EQ_MISMATCH_RE.search(raw) is not None or (
-        _CONVERSION_STRING_TO_INT_RE.search(raw) is not None
-    ):
-        return InvalidQueryError(
-            "No matching signature for operator = for argument types: STRING, INT64\n"
-            "  Signature: T1 = T1\n"
-            "    Unable to find common supertype for templated argument <T1>\n"
-            "      Input types for <T1>: {INT64, STRING} at [1:1]\n"
-            f"  (DuckDB: {raw})",
-            location="query",
-        )
-
-    if _DIVISION_BY_ZERO_RE.search(raw) is not None:
-        return InvalidQueryError(
-            f"division by zero: 1 / 0 ({raw})",
-            location="query",
-        )
-
-    if _INT_OVERFLOW_RE.search(raw) is not None:
-        return InvalidQueryError(
-            f"Integer Overflow ({raw})",
-            location="query",
-        )
-
-    if (date_match := _INVALID_DATE_RE.search(raw)) is not None:
-        return InvalidQueryError(
-            f"Invalid date: '{date_match['value']}'",
-            location="query",
-        )
-
-    if (tz_match := _UNKNOWN_TIMEZONE_RE.search(raw)) is not None:
-        # DuckDB's ICU rejection of an unrecognised zone leaks the
-        # candidate-zones list, which would break the conformance
-        # ``message_pattern`` regex match against BigQuery's clean
-        # ``Invalid time zone: <zone>`` form. The captured zone name
-        # is preserved so the user-facing message still points at the
-        # offending input.
-        return InvalidQueryError(
-            f"Invalid time zone: {tz_match['zone']}",
-            location="query",
-        )
-
-    if (js_match := _JS_UDF_ERROR_RE.search(raw)) is not None:
-        # BigQuery JS UDF errors surface in the documented shape
-        # ``Error: <message> at <routine>(<arg_kinds>) line 1, column 1``.
-        # The emulator does not have the original arg-kind list at the
-        # error site (DuckDB only echoes the inner V8 exception). The
-        # conformance ``message_pattern`` uses ``re.search`` against the
-        # rendered ``message_pattern`` regex, so a BQ-shape prefix plus
-        # the recorded routine name is sufficient — see
-        # ``routines_scripting/js_udf_throws/expected.json``.
-        return InvalidQueryError(
-            f"Error: {js_match['message']} at {js_match['routine']}(INT64) line 1, column 1",
-            location="query",
-        )
+    for translator in _DUCKDB_TRANSLATORS:
+        translated = translator(raw, duckdb_sql)
+        if translated is not None:
+            return translated
 
     return InvalidQueryError(
         f"Query execution failed: {raw}",
         location="query",
     )
+
+
+def _translate_validation_error(exc: ValidationError, raw: str) -> DomainError:
+    """Translate identifier-validation errors to the BQ ``Function not found`` form."""
+    if (match := _INVALID_SQL_ID_RE.search(raw)) is not None:
+        return InvalidQueryError(
+            f"Function not found: `{match['value']}`.<routine> at [1:8] "
+            f"(emulator detected malformed identifier: {raw})",
+            location="query",
+        )
+    # Other validation errors pass through unchanged — the route
+    # layer already renders them via the ``invalid`` reason.
+    return exc
+
+
+def _try_unterminated_string(raw: str, _duckdb_sql: str | None) -> DomainError | None:
+    """Scripting-lexer "Unterminated string literal" → BQ-shape syntax error.
+
+    The lexer raises directly (the BQ-style rewrite in
+    :mod:`bqemulator.sql.errors` is bypassed); the mapper handles it
+    here.
+    """
+    if _UNTERMINATED_STRING_RE.search(raw) is None:
+        return None
+    return InvalidQueryError(
+        "Syntax error: Unclosed string literal at [1:8]",
+        location="query",
+    )
+
+
+def _try_schema_not_found(raw: str, _duckdb_sql: str | None) -> DomainError | None:
+    """Schema-missing → ``Not found: Dataset`` or ``Access Denied``.
+
+    Schema-not-found has to be checked before the table-not-found branch
+    because DuckDB's schema-missing message also matches
+    :data:`_TABLE_NOT_FOUND_RE` (the table reference is the full
+    ``project__dataset.table`` form). Real BigQuery surfaces a schema
+    lookup against a malformed project as ``Access Denied`` (a security
+    choice — leaking "project exists vs not" via 404 vs 403 is
+    forbidden).
+    """
+    match = _SCHEMA_NOT_FOUND_RE.search(raw)
+    if match is None:
+        return None
+    schema_name = match["schema"]
+    if "__" not in schema_name:
+        return NotFoundError(
+            f"Not found: Dataset {schema_name} was not found in location US",
+        )
+    project_id, dataset_id = schema_name.split("__", 1)
+    bq_dataset = f"{project_id}:{dataset_id}"
+    if _is_bq_invalid_project_format(project_id):
+        table_ref = _extract_table_from_duckdb(raw, fallback=bq_dataset)
+        return PermissionDeniedError(
+            f"Access Denied: Table {bq_dataset}.{table_ref}: "
+            f"User does not have permission to query table "
+            f"{bq_dataset}.{table_ref}, or perhaps it does not exist.",
+        )
+    return NotFoundError(
+        f"Not found: Dataset {bq_dataset} was not found in location US",
+    )
+
+
+def _try_table_already_exists(raw: str, duckdb_sql: str | None) -> DomainError | None:
+    """Catalog-error "Table … already exists" → ``Already Exists``."""
+    match = _TABLE_ALREADY_EXISTS_RE.search(raw)
+    if match is None:
+        return None
+    schema_prefix = _extract_schema_prefix(raw, duckdb_sql=duckdb_sql)
+    return AlreadyExistsError(
+        f"Already Exists: Table {schema_prefix}{match['table']}",
+    )
+
+
+def _try_table_not_found(raw: str, duckdb_sql: str | None) -> DomainError | None:
+    """Catalog-error "Table … does not exist" → ``Not found: Table``."""
+    match = _TABLE_NOT_FOUND_RE.search(raw)
+    if match is None:
+        return None
+    schema_prefix = _extract_schema_prefix(raw, duckdb_sql=duckdb_sql)
+    return NotFoundError(
+        f"Not found: Table {schema_prefix}{match['table']} was not found in location US",
+    )
+
+
+def _try_scalar_function_not_found(raw: str, _duckdb_sql: str | None) -> DomainError | None:
+    """Catalog-error "Scalar Function … does not exist" → BQ ``Function not found``."""
+    match = _SCALAR_FUNCTION_NOT_FOUND_RE.search(raw)
+    if match is None:
+        return None
+    return InvalidQueryError(
+        f"Function not found: {match['fn']} at [1:8]",
+        location="query",
+    )
+
+
+def _try_concat_no_args(raw: str, _duckdb_sql: str | None) -> DomainError | None:
+    """SQLGlot zero-arg CONCAT → BQ ``No matching signature`` block."""
+    if _CONCAT_NO_ARGS_RE.search(raw) is None:
+        return None
+    return InvalidQueryError(
+        "No matching signature for function CONCAT with no arguments\n"
+        "  Signature: CONCAT(STRING, [STRING, ...])\n"
+        "    Signature requires at least 1 argument, found 0 arguments\n"
+        "  Signature: CONCAT(BYTES, [BYTES, ...])\n"
+        "    Signature requires at least 1 argument, found 0 arguments at [1:8]",
+        location="query",
+    )
+
+
+def _try_substring_bad_arity(raw: str, _duckdb_sql: str | None) -> DomainError | None:
+    """DuckDB SUBSTR/SUBSTRING arity failure → BQ ``No matching signature`` block."""
+    if _SUBSTRING_BAD_ARITY_RE.search(raw) is None:
+        return None
+    return InvalidQueryError(
+        "No matching signature for function SUBSTR\n"
+        "  Argument types: STRING\n"
+        "  Signature: SUBSTR(STRING, INT64, [INT64])\n"
+        "    Signature requires at least 2 arguments, found 1 argument\n"
+        "  Signature: SUBSTR(BYTES, INT64, [INT64])\n"
+        "    Signature requires at least 2 arguments, found 1 argument at [1:8]",
+        location="query",
+    )
+
+
+def _try_binder_plus_str_int(raw: str, _duckdb_sql: str | None) -> DomainError | None:
+    """DuckDB binder ``+(STRING, INTEGER)`` rejection → BQ "Could not cast literal"."""
+    if _BINDER_PLUS_STR_INT_RE.search(raw) is None:
+        return None
+    return InvalidQueryError(
+        'Could not cast literal "a" to type DATE at [1:8] '
+        f"(emulator binder rejected mixed-type operation: {raw})",
+        location="query",
+    )
+
+
+def _try_binder_eq_mismatch(raw: str, _duckdb_sql: str | None) -> DomainError | None:
+    """DuckDB equality / string→int conversion mismatch → BQ ``No matching signature``."""
+    if (
+        _BINDER_EQ_MISMATCH_RE.search(raw) is None
+        and _CONVERSION_STRING_TO_INT_RE.search(raw) is None
+    ):
+        return None
+    return InvalidQueryError(
+        "No matching signature for operator = for argument types: STRING, INT64\n"
+        "  Signature: T1 = T1\n"
+        "    Unable to find common supertype for templated argument <T1>\n"
+        "      Input types for <T1>: {INT64, STRING} at [1:1]\n"
+        f"  (DuckDB: {raw})",
+        location="query",
+    )
+
+
+def _try_division_by_zero(raw: str, _duckdb_sql: str | None) -> DomainError | None:
+    """DuckDB div/0 → BQ "division by zero"."""
+    if _DIVISION_BY_ZERO_RE.search(raw) is None:
+        return None
+    return InvalidQueryError(
+        f"division by zero: 1 / 0 ({raw})",
+        location="query",
+    )
+
+
+def _try_int_overflow(raw: str, _duckdb_sql: str | None) -> DomainError | None:
+    """DuckDB INT arithmetic overflow → BQ "Integer Overflow"."""
+    if _INT_OVERFLOW_RE.search(raw) is None:
+        return None
+    return InvalidQueryError(
+        f"Integer Overflow ({raw})",
+        location="query",
+    )
+
+
+def _try_invalid_date(raw: str, _duckdb_sql: str | None) -> DomainError | None:
+    """DuckDB ``invalid date field format`` → BQ "Invalid date"."""
+    match = _INVALID_DATE_RE.search(raw)
+    if match is None:
+        return None
+    return InvalidQueryError(
+        f"Invalid date: '{match['value']}'",
+        location="query",
+    )
+
+
+def _try_unknown_timezone(raw: str, _duckdb_sql: str | None) -> DomainError | None:
+    """DuckDB ICU "Unknown TimeZone" → BQ "Invalid time zone: <zone>".
+
+    DuckDB's ICU rejection of an unrecognised zone leaks the
+    candidate-zones list, which would break the conformance
+    ``message_pattern`` regex match against BigQuery's clean
+    ``Invalid time zone: <zone>`` form. The captured zone name is
+    preserved so the user-facing message still points at the offending
+    input.
+    """
+    match = _UNKNOWN_TIMEZONE_RE.search(raw)
+    if match is None:
+        return None
+    return InvalidQueryError(
+        f"Invalid time zone: {match['zone']}",
+        location="query",
+    )
+
+
+def _try_js_udf_error(raw: str, _duckdb_sql: str | None) -> DomainError | None:
+    """DuckDB JS UDF wrapper → BQ ``Error: <msg> at <routine>(INT64) line 1, column 1``.
+
+    BigQuery JS UDF errors surface in the documented shape
+    ``Error: <message> at <routine>(<arg_kinds>) line 1, column 1``. The
+    emulator does not have the original arg-kind list at the error site
+    (DuckDB only echoes the inner V8 exception). The conformance
+    ``message_pattern`` uses ``re.search`` against the rendered
+    ``message_pattern`` regex, so a BQ-shape prefix plus the recorded
+    routine name is sufficient — see
+    ``routines_scripting/js_udf_throws/expected.json``.
+    """
+    match = _JS_UDF_ERROR_RE.search(raw)
+    if match is None:
+        return None
+    return InvalidQueryError(
+        f"Error: {match['message']} at {match['routine']}(INT64) line 1, column 1",
+        location="query",
+    )
+
+
+#: Ordered DuckDB / SQLGlot error-family translators. ``translate_runtime_error``
+#: walks the tuple top-to-bottom and returns the first non-``None`` result.
+#:
+#: Ordering matters: schema-not-found must precede table-not-found because
+#: DuckDB's schema-missing message also matches the table-not-found regex
+#: (the table reference is the full ``project__dataset.table`` form). The
+#: more-specific binder / conversion patterns precede the generic
+#: division-by-zero / integer-overflow patterns so the operand types are
+#: preserved in the rewritten message.
+_DUCKDB_TRANSLATORS: tuple[Callable[[str, str | None], DomainError | None], ...] = (
+    _try_unterminated_string,
+    _try_schema_not_found,
+    _try_table_already_exists,
+    _try_table_not_found,
+    _try_scalar_function_not_found,
+    _try_concat_no_args,
+    _try_substring_bad_arity,
+    _try_binder_plus_str_int,
+    _try_binder_eq_mismatch,
+    _try_division_by_zero,
+    _try_int_overflow,
+    _try_invalid_date,
+    _try_unknown_timezone,
+    _try_js_udf_error,
+)
 
 
 def _extract_table_from_duckdb(raw: str, *, fallback: str) -> str:

@@ -225,52 +225,91 @@ class UploadSessionManager:
         would exceed ``Settings.upload_max_bytes``.
         """
         session = self.get(session_id)
+        start, end_inclusive, declared_total = self._extract_range_fields(content_range)
+        self._verify_offset_matches(session, start)
+        self._verify_size_caps(session, chunk, declared_total)
+        self._reconcile_declared_total(session, declared_total)
+        self._write_chunk(session, chunk)
+        session.last_active_at = self._clock.now()
+        complete = self._is_session_complete(session, end_inclusive, declared_total)
+        return session, complete
 
-        start: int | None = None
-        declared_total: int | None = None
-        end_inclusive: int | None = None
-        if content_range is not None:
-            start, end_inclusive, declared_total = self._parse_content_range(content_range)
+    @staticmethod
+    def _extract_range_fields(
+        content_range: str | None,
+    ) -> tuple[int | None, int | None, int | None]:
+        """Parse ``content_range`` to ``(start, end_inclusive, total)`` or all-``None``."""
+        if content_range is None:
+            return None, None, None
+        return UploadSessionManager._parse_content_range(content_range)
 
+    @staticmethod
+    def _verify_offset_matches(session: UploadSession, start: int | None) -> None:
+        """Reject out-of-order chunks where ``start`` doesn't match the cursor."""
         if start is not None and start != session.received_bytes:
             raise ContentRangeError(
                 f"Content-Range start={start} does not match the session's "
                 f"current offset {session.received_bytes}",
             )
 
+    def _verify_size_caps(
+        self,
+        session: UploadSession,
+        chunk: bytes,
+        declared_total: int | None,
+    ) -> None:
+        """Reject the append when chunk or declared total exceeds ``upload_max_bytes``."""
         prospective = session.received_bytes + len(chunk)
         if prospective > self._max_bytes:
             raise UploadSizeExceededError(declared=prospective, cap=self._max_bytes)
         if declared_total is not None and declared_total > self._max_bytes:
             raise UploadSizeExceededError(declared=declared_total, cap=self._max_bytes)
 
-        if declared_total is not None:
-            if session.declared_total_bytes is None:
-                session.declared_total_bytes = declared_total
-            elif session.declared_total_bytes != declared_total:
-                raise ContentRangeError(
-                    f"Content-Range total={declared_total} disagrees with the "
-                    f"previously declared total {session.declared_total_bytes}",
-                )
+    @staticmethod
+    def _reconcile_declared_total(
+        session: UploadSession,
+        declared_total: int | None,
+    ) -> None:
+        """Stash or cross-check a newly observed ``total`` against the session's running value."""
+        if declared_total is None:
+            return
+        if session.declared_total_bytes is None:
+            session.declared_total_bytes = declared_total
+            return
+        if session.declared_total_bytes != declared_total:
+            raise ContentRangeError(
+                f"Content-Range total={declared_total} disagrees with the "
+                f"previously declared total {session.declared_total_bytes}",
+            )
 
-        if chunk:
-            with session.staging_path.open("ab") as fh:
-                fh.write(chunk)
-            session.received_bytes = prospective
+    @staticmethod
+    def _write_chunk(session: UploadSession, chunk: bytes) -> None:
+        """Append ``chunk`` to the staging file and advance the byte cursor."""
+        if not chunk:
+            return
+        with session.staging_path.open("ab") as fh:
+            fh.write(chunk)
+        session.received_bytes += len(chunk)
 
-        session.last_active_at = self._clock.now()
+    @staticmethod
+    def _is_session_complete(
+        session: UploadSession,
+        end_inclusive: int | None,
+        declared_total: int | None,
+    ) -> bool:
+        """Return True when the session has received its declared total.
 
-        # A chunk that spans the final byte (end_inclusive == total - 1)
-        # indicates completion. If the client didn't supply Content-Range
-        # we can't infer completion from the chunk alone — the caller
-        # explicitly marks the session complete via :meth:`finalize`.
-        complete = False
+        A chunk that spans the final byte (``end_inclusive == total - 1``)
+        also indicates completion. If the client didn't supply
+        Content-Range we can't infer completion from the chunk alone —
+        the caller explicitly marks the session complete via
+        :meth:`finalize`.
+        """
         if session.declared_total_bytes is not None:
-            complete = session.received_bytes >= session.declared_total_bytes
-        elif end_inclusive is not None and declared_total is not None:
-            complete = end_inclusive + 1 == declared_total
-
-        return session, complete
+            return session.received_bytes >= session.declared_total_bytes
+        if end_inclusive is not None and declared_total is not None:
+            return end_inclusive + 1 == declared_total
+        return False
 
     def status(self, session_id: str) -> UploadSession:
         """Return the current state of a session without mutating it.

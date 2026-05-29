@@ -107,46 +107,102 @@ def _avro_schema_to_arrow(avro_schema: Any) -> pa.Schema:
 
 
 def _avro_field_to_arrow(avro_type: Any) -> pa.DataType:
-    """Convert a single Avro field-type spec to an Arrow type."""
+    """Convert a single Avro field-type spec to an Arrow type.
+
+    Dispatches on the Python shape of the schema node:
+
+    * ``list`` — nullable union (``["null", "<T>"]``) — delegates to
+      :func:`_avro_union_to_arrow`.
+    * ``dict`` — logical-type or complex-type spec — delegates to
+      :func:`_avro_dict_to_arrow`.
+    * anything else — primitive string form (``"boolean"``, ``"int"``,
+      ``"long"``, …) — handled by :func:`_avro_primitive_to_arrow`.
+    """
+    if isinstance(avro_type, list):
+        return _avro_union_to_arrow(avro_type)
+    if isinstance(avro_type, dict):
+        return _avro_dict_to_arrow(avro_type)
+    return _avro_primitive_to_arrow(avro_type)
+
+
+def _avro_union_to_arrow(avro_type: list[Any]) -> pa.DataType:
+    """Resolve a nullable-union spec (``["null", "<T>"]``) to its Arrow type.
+
+    Arrow types are always nullable, so we strip the ``"null"`` branch
+    and recurse on the remaining type. Multi-type unions are rare in
+    BigQuery exports — they fall back to ``string`` so the load doesn't
+    silently drop data.
+    """
     import pyarrow as pa
 
-    if isinstance(avro_type, list):
-        # Nullable union: ["null", "<T>"] — Arrow types are always
-        # nullable so we drop the "null" branch and recurse.
-        non_null = [t for t in avro_type if t != "null"]
-        if len(non_null) == 1:
-            return _avro_field_to_arrow(non_null[0])
-        # Multi-type unions are rare in BigQuery exports; fall back to string.
-        return pa.string()
+    non_null = [t for t in avro_type if t != "null"]
+    if len(non_null) == 1:
+        return _avro_field_to_arrow(non_null[0])
+    return pa.string()
 
-    if isinstance(avro_type, dict):
-        logical = avro_type.get("logicalType")
-        base = avro_type.get("type")
-        if logical == "decimal":
-            precision = int(avro_type.get("precision", 38))
-            scale = int(avro_type.get("scale", 9))
-            return pa.decimal128(precision, scale)
-        if logical == "date":
-            return pa.date32()
-        if logical in {"timestamp-millis", "timestamp-micros"}:
-            return pa.timestamp("us", tz="UTC")
-        if base == "record":
-            sub_fields = [
-                pa.field(field["name"], _avro_field_to_arrow(field["type"]))
-                for field in avro_type.get("fields", [])
-            ]
-            return pa.struct(sub_fields)
-        if base == "array":
-            return pa.list_(_avro_field_to_arrow(avro_type["items"]))
-        if base == "map":
-            # Avro maps are <string, V>; pyarrow models as map<string, V>.
-            return pa.map_(pa.string(), _avro_field_to_arrow(avro_type["values"]))
-        if base == "bytes":
-            return pa.binary()
-        # Recursively resolve the nested type.
-        return _avro_field_to_arrow(base)
 
-    # String-form primitives.
+def _avro_dict_to_arrow(avro_type: dict[str, Any]) -> pa.DataType:
+    """Resolve an Avro dict-form spec (logical or complex type) to Arrow.
+
+    Logical types win over the base ``"type"`` key — fastavro's writer
+    schema attaches ``logicalType`` to a base of the same physical
+    representation (e.g. ``logicalType=decimal`` over ``type=bytes``).
+    When the logical-type branch returns ``None`` the dispatch falls
+    through to :func:`_avro_complex_to_arrow` for the base shape.
+    """
+    logical = avro_type.get("logicalType")
+    if logical is not None:
+        logical_result = _avro_logical_to_arrow(avro_type, logical)
+        if logical_result is not None:
+            return logical_result
+    return _avro_complex_to_arrow(avro_type)
+
+
+def _avro_logical_to_arrow(avro_type: dict[str, Any], logical: str) -> pa.DataType | None:
+    """Map an Avro logical-type spec to Arrow, or ``None`` for unknown logicals."""
+    import pyarrow as pa
+
+    if logical == "decimal":
+        precision = int(avro_type.get("precision", 38))
+        scale = int(avro_type.get("scale", 9))
+        return pa.decimal128(precision, scale)
+    if logical == "date":
+        return pa.date32()
+    if logical in {"timestamp-millis", "timestamp-micros"}:
+        return pa.timestamp("us", tz="UTC")
+    return None
+
+
+def _avro_complex_to_arrow(avro_type: dict[str, Any]) -> pa.DataType:
+    """Map an Avro complex-type spec (``record``/``array``/``map``/``bytes``) to Arrow."""
+    import pyarrow as pa
+
+    base = avro_type.get("type")
+    if base == "record":
+        sub_fields = [
+            pa.field(field["name"], _avro_field_to_arrow(field["type"]))
+            for field in avro_type.get("fields", [])
+        ]
+        return pa.struct(sub_fields)
+    if base == "array":
+        return pa.list_(_avro_field_to_arrow(avro_type["items"]))
+    if base == "map":
+        # Avro maps are <string, V>; pyarrow models as map<string, V>.
+        return pa.map_(pa.string(), _avro_field_to_arrow(avro_type["values"]))
+    if base == "bytes":
+        return pa.binary()
+    # Recursively resolve the nested type.
+    return _avro_field_to_arrow(base)
+
+
+def _avro_primitive_to_arrow(avro_type: Any) -> pa.DataType:
+    """Map a primitive Avro spec (``"boolean"``, ``"int"``, …) to Arrow.
+
+    Unknown primitives fall back to ``string`` so the load doesn't
+    silently drop data.
+    """
+    import pyarrow as pa
+
     return {
         "boolean": pa.bool_(),
         "int": pa.int32(),
