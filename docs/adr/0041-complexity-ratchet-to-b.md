@@ -365,3 +365,36 @@ complexity is domain-shaped, not accumulated."
 * `AGENTS.md` "Pre-PR gate (mandatory)" — the contract this ADR
   extends; `make verify` runs `make quality-complexity` against
   the new ceiling.
+
+## Update (2026-05-28): follow-up `--max-modules` ratchet in ADR 0042
+
+This ADR's "Why we keep `--max-modules` at C" section held the
+per-module-average ratchet open as "the right ratchet for them is a
+separate audit + per-module PR sequence if/when justified, not a
+side-effect of the per-function ratchet."
+
+A focused audit immediately following this PR's merge tested that
+assumption empirically: **the per-function C→B campaign drove module
+averages down to ≤B as a side effect.** `xenon --max-modules B
+src/bqemulator` exited 0 against `main` at HEAD `247fb60` (this PR's
+own merge commit) with zero refactor work required. The audit found:
+
+* **0 modules** with CC average above rank B (CC > 10).
+* **14 modules** in the rank-B band (CC avg 6.01–10.00) — all
+  passing the rank-B threshold; would become the audit list for a
+  future B→A ratchet (out of scope).
+* **120+ modules** at rank A (CC avg ≤ 5.0).
+
+The mechanism: splitting branchy functions into dispatch tables +
+helpers redistributed complexity weight across more (smaller,
+lower-rank) functions, which lowered the per-module *average* even
+where function count grew. The campaign's per-function bucket-A/B
+patterns are also per-module-average favourable patterns.
+
+[ADR 0042](0042-module-ceiling-ratchet-to-b.md) is the single-PR
+config flip (`xenon --max-modules C → B`) that lands the
+already-met threshold as the standing rule. ADR 0041 is not
+superseded — it remains the per-function ratchet ADR; ADR 0042
+documents the per-module-average ratchet as a complementary axis.
+The "Why we keep `--max-modules` at C" section above is the
+historical record of the held question; ADR 0042 is the resolution.
