@@ -104,21 +104,29 @@ linkcheck: ## Run lychee with the workspace-aware self-link remap (CI parity)
 #
 #   - ``quality-complexity`` is REQUIRED (part of ``make verify``, no
 #     ``continue-on-error`` on its CI step). ADR 0036 promoted the
-#     gate from non-blocking to required and ratcheted the threshold
-#     from rank E to rank C; ADR 0041 ratcheted it further from rank
-#     C to rank B after the PR-1 through PR-11 sweep closed every
-#     remaining rank-C function (~60 of them across 26 files).
+#     gate from non-blocking to required and ratcheted the absolute
+#     threshold from rank E to rank C; ADR 0041 ratcheted it further
+#     from rank C to rank B after the PR-1 through PR-11 sweep closed
+#     every remaining rank-C function (~60 across 26 files); ADR 0042
+#     ratcheted the per-module-average threshold from rank C to rank B
+#     as a single-PR config flip (the per-function campaign drove
+#     module averages down to ≤B as a side effect — verified by
+#     ``xenon --max-modules B`` exit 0 pre-flip; zero refactor work
+#     required for the module ratchet).
 #   - ``quality-duplication`` and ``quality-dead-code`` are still
 #     non-blocking in CI; their own promote-to-required PRs come
 #     when the baselines settle.
 
 .PHONY: quality-complexity
-quality-complexity: ## Cyclomatic-complexity ceiling via xenon — REQUIRED gate (ratcheted to B in ADR 0041)
+quality-complexity: ## Cyclomatic-complexity ceiling via xenon — REQUIRED gate (per-function + per-module both at B in ADR 0041 + ADR 0042)
 	# Threshold: every function in src/bqemulator must rank B or
 	# better (cyclomatic complexity ≤ 10), every module average must
-	# stay ≤ rank C, and the project-wide average must stay ≤ rank A.
+	# stay ≤ rank B (CC avg ≤ 10), and the project-wide average must
+	# stay ≤ rank A (currently 3.06 against the 5.0 rank-A ceiling).
 	# ADR 0036 documents the original C-ratchet bucket-A/B refactor
-	# patterns; ADR 0041 documents the C→B campaign retrospective.
+	# patterns; ADR 0041 documents the per-function C→B campaign
+	# retrospective; ADR 0042 documents the per-module C→B audit
+	# (campaign side-effect, no extra refactor work).
 	# Any new function above rank B either gets a behavior-preserving
 	# refactor (dispatch table or helper extraction — see the existing
 	# ``_DUCKDB_TRANSLATORS`` / ``_ARROW_TO_BQ_RULES`` /
@@ -127,7 +135,7 @@ quality-complexity: ## Cyclomatic-complexity ceiling via xenon — REQUIRED gate
 	# ``--exclude`` carve-out (a new bucket-C irreducibility verdict —
 	# bar is genuine domain-shaped complexity, not accumulated cruft;
 	# the empirical bucket-C rate across PR-1…PR-11 was 0%).
-	xenon --max-absolute B --max-modules C --max-average A src/bqemulator
+	xenon --max-absolute B --max-modules B --max-average A src/bqemulator
 
 .PHONY: quality-duplication
 quality-duplication: ## Cross-file DRY check via jscpd (non-blocking)

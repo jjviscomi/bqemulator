@@ -2,12 +2,17 @@ name: Code quality
 
 # Quality gates: cyclomatic complexity (xenon), DRY / duplication
 # (jscpd), dead code (vulture). Wired per ADR 0035; complexity
-# promoted to required + ratcheted to rank C in ADR 0036; ratcheted
-# from rank C to rank B in ADR 0041 after the PR-1…PR-11 sweep.
+# promoted to required + per-function ratcheted to rank C in
+# ADR 0036; per-function ratcheted from rank C to rank B in
+# ADR 0041 after the PR-1…PR-11 sweep; per-module-average ratcheted
+# from rank C to rank B in ADR 0042 (the per-function campaign drove
+# module averages down to ≤B as a side effect — no refactor required
+# for the module ratchet).
 #
 # Wiring status:
 #   - Complexity (xenon): REQUIRED. No ``continue-on-error``. A
-#     function above rank B (cyclomatic complexity > 10) fails the
+#     function above rank B (cyclomatic complexity > 10) OR a module
+#     whose average complexity exceeds rank B (CC avg > 10) fails the
 #     workflow. Branch protection lists this job in required-checks.
 #   - Duplication (jscpd) + dead code (vulture): still non-blocking
 #     (``continue-on-error: true``). Each gets its own ratchet PR
@@ -102,11 +107,15 @@ jobs:
       - name: Cyclomatic complexity (xenon)
         id: complexity
         # Required gate as of ADR 0036 — fails the workflow on any
-        # function ranked above B (ADR 0041 ratcheted the absolute
+        # function ranked above B OR any module whose average exceeds
+        # rank B. ADR 0041 ratcheted the per-function ``--max-absolute``
         # ceiling from C to B once the PR-1…PR-11 sweep closed every
-        # rank-C function). Drop ``continue-on-error`` (which the
-        # duplication / dead-code steps still keep) once those gates
-        # ratchet to required on their own follow-up PRs.
+        # rank-C function; ADR 0042 ratcheted the per-module-average
+        # ``--max-modules`` ceiling from C to B as a single-PR config
+        # flip (the per-function campaign drove module averages down
+        # to ≤B as a side effect). Drop ``continue-on-error`` (which
+        # the duplication / dead-code steps still keep) once those
+        # gates ratchet to required on their own follow-up PRs.
         run: make quality-complexity
 
       - name: Cross-file duplication (jscpd)
@@ -133,10 +142,10 @@ jobs:
             echo ""
             echo "| Gate | Outcome | Blocking |"
             echo "|---|---|---|"
-            echo "| Cyclomatic complexity (xenon) | ${{ steps.complexity.outcome }} | ✅ required (ADR 0036 + 0041) |"
+            echo "| Cyclomatic complexity (xenon) | ${{ steps.complexity.outcome }} | ✅ required (ADR 0036 + 0041 + 0042) |"
             echo "| Cross-file duplication (jscpd) | ${{ steps.duplication.outcome }} | ⏳ non-blocking |"
             echo "| Dead code (vulture) | ${{ steps.dead-code.outcome }} | ⏳ non-blocking |"
             echo ""
             echo "The non-blocking gates have follow-up ratchet PRs scheduled —"
-            echo "see ADR 0035 + ADR 0036 + ADR 0041 for the promotion pattern."
+            echo "see ADR 0035 + ADR 0036 + ADR 0041 + ADR 0042 for the promotion pattern."
           } >> "$GITHUB_STEP_SUMMARY"
