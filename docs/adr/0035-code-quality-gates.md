@@ -314,3 +314,36 @@ the missing whitelist for the one new finding.
 - [`vulture` docs](https://github.com/jendrikseipp/vulture) — whitelist semantics.
 - AGENTS.md "Pre-commit gate (mandatory)" — the contract this ADR
   carefully **doesn't** extend yet.
+
+## Update (2026-05-28): ratchet lineage E → C → B
+
+This ADR's "Follow-up promote-to-required PR" section §1 predicted a
+gentle E → D ratchet "if no D-rank function merged in the meantime."
+The actual evolution skipped the D step and went directly to C, then
+later to B, via two follow-up ADRs:
+
+* **[ADR 0036](0036-complexity-ratchet-to-c.md)** ratcheted
+  `--max-absolute E → C` and promoted the gate from non-blocking to
+  required in a single atomic PR. The bucket-A/B/C taxonomy ADR 0036
+  established for refactor classification is the lens every
+  subsequent campaign PR used.
+* **[ADR 0041](0041-complexity-ratchet-to-b.md)** ratcheted
+  `--max-absolute C → B` after the PR-1 through PR-11 campaign
+  (PRs [#90](https://github.com/jjviscomi/bqemulator/pull/90)
+  through [#102](https://github.com/jjviscomi/bqemulator/pull/102))
+  closed every remaining rank-C function in `src/` using the same
+  bucket-A (helper extraction) and bucket-B (dispatch table)
+  patterns ADR 0036 documented for the D/E sweep.
+
+Both ratchet ADRs supersede the threshold portion of this ADR but
+leave the foundational decisions — three independent tools (xenon /
+jscpd / vulture), non-blocking-first introduction, separate
+duplication / dead-code lifecycles — intact.
+
+The bucket-C "irreducible domain complexity" escape hatch from
+ADR 0036 stayed at **0 hits across 70+ refactors** spanning both
+ratchet campaigns. That empirical signal informs ADR 0041's
+trajectory toward an even tighter ceiling; whether to ratchet
+`--max-modules C → B` is the next question (currently held — module
+averages aren't the same metric as per-function ceilings; see
+ADR 0041 "Why we keep `--max-modules` at C").
