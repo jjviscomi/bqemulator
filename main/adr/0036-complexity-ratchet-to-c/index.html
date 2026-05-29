@@ -2948,6 +2948,8 @@
       
         
       
+        
+      
     
     
     
@@ -4219,6 +4221,17 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#update-2026-05-28-follow-up-ratchet-to-rank-b-in-adr-0041" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Update (2026-05-28): follow-up ratchet to rank B in ADR 0041
+      
+    </span>
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -4327,6 +4340,34 @@
     
   
     0040 SESSION_USER coverage closure: aliases + Storage Read pre-pass
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../0041-complexity-ratchet-to-b/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0041 Cyclomatic-complexity ratchet to rank B + campaign retrospective
   
 
     
@@ -5435,6 +5476,17 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#update-2026-05-28-follow-up-ratchet-to-rank-b-in-adr-0041" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Update (2026-05-28): follow-up ratchet to rank B in ADR 0041
+      
+    </span>
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -5876,6 +5928,37 @@ cost.</p>
 <li>AGENTS.md "Pre-commit gate (mandatory)" — the contract this ADR
   extends by adding <code>make quality-complexity</code> to <code>make verify</code>.</li>
 </ul>
+<h2 id="update-2026-05-28-follow-up-ratchet-to-rank-b-in-adr-0041">Update (2026-05-28): follow-up ratchet to rank B in ADR 0041<a class="headerlink" href="#update-2026-05-28-follow-up-ratchet-to-rank-b-in-adr-0041" title="Permanent link">&para;</a></h2>
+<p>The C-ratchet ran for ~6 months and ADR 0036's "Alternatives
+considered" §3 rejection of an immediate rank-B ceiling has been
+revisited.</p>
+<p>The original verdict — "many structurally reasonable Python functions
+land at rank B-C" — held only until a sustained refactor pass tested
+it empirically. The PR-1 through PR-11 sweep
+(<a href="https://github.com/jjviscomi/bqemulator/pull/90">#90</a> through
+<a href="https://github.com/jjviscomi/bqemulator/pull/102">#102</a>) closed
+every remaining rank-C function in <code>src/</code> (~60 functions across 26
+files) using the same bucket-A (helper extraction) and bucket-B
+(dispatch table) patterns this ADR established for the D/E sweep.
+The bucket-C "irreducible domain complexity" escape hatch — predicted
+to absorb up to ~20% of refactor targets — stayed at 0 hits, just
+like it did for the D/E audit.</p>
+<p><a href="../0041-complexity-ratchet-to-b/">ADR 0041</a> ratchets the
+<code>--max-absolute</code> ceiling from rank C to rank B
+(<code>xenon --max-absolute B --max-modules C --max-average A</code>) on top
+of this ADR's foundations. The two ADRs co-exist:</p>
+<ul>
+<li><strong>This ADR (0036) remains in effect</strong> for everything except the
+  per-function absolute ceiling — the gate's promotion-to-required
+  status, the bucket A/B/C taxonomy, the duplication / dead-code
+  gates' non-blocking posture, the rationale for keeping the
+  project-wide average at rank A and module average at rank C.</li>
+<li><strong>ADR 0041 layers</strong> a tighter <code>--max-absolute</code> on top after the
+  PR-1…PR-11 sweep demonstrated empirically that the rank-C bucket
+  was uniformly refactorable.</li>
+</ul>
+<p>ADR 0036 is not superseded — it's the ground floor that ADR 0041
+builds on.</p>
 
 
 

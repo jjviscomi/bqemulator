@@ -2948,6 +2948,8 @@
       
         
       
+        
+      
     
     
     
@@ -4241,6 +4243,17 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#update-2026-05-28-ratchet-lineage-e-c-b" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Update (2026-05-28): ratchet lineage E → C → B
+      
+    </span>
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -4377,6 +4390,34 @@
     
   
     0040 SESSION_USER coverage closure: aliases + Storage Read pre-pass
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../0041-complexity-ratchet-to-b/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0041 Cyclomatic-complexity ratchet to rank B + campaign retrospective
   
 
     
@@ -5535,6 +5576,17 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#update-2026-05-28-ratchet-lineage-e-c-b" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Update (2026-05-28): ratchet lineage E → C → B
+      
+    </span>
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -5952,6 +6004,36 @@ the missing whitelist for the one new finding.</p>
 <li>AGENTS.md "Pre-commit gate (mandatory)" — the contract this ADR
   carefully <strong>doesn't</strong> extend yet.</li>
 </ul>
+<h2 id="update-2026-05-28-ratchet-lineage-e-c-b">Update (2026-05-28): ratchet lineage E → C → B<a class="headerlink" href="#update-2026-05-28-ratchet-lineage-e-c-b" title="Permanent link">&para;</a></h2>
+<p>This ADR's "Follow-up promote-to-required PR" section §1 predicted a
+gentle E → D ratchet "if no D-rank function merged in the meantime."
+The actual evolution skipped the D step and went directly to C, then
+later to B, via two follow-up ADRs:</p>
+<ul>
+<li><strong><a href="../0036-complexity-ratchet-to-c/">ADR 0036</a></strong> ratcheted
+  <code>--max-absolute E → C</code> and promoted the gate from non-blocking to
+  required in a single atomic PR. The bucket-A/B/C taxonomy ADR 0036
+  established for refactor classification is the lens every
+  subsequent campaign PR used.</li>
+<li><strong><a href="../0041-complexity-ratchet-to-b/">ADR 0041</a></strong> ratcheted
+  <code>--max-absolute C → B</code> after the PR-1 through PR-11 campaign
+  (PRs <a href="https://github.com/jjviscomi/bqemulator/pull/90">#90</a>
+  through <a href="https://github.com/jjviscomi/bqemulator/pull/102">#102</a>)
+  closed every remaining rank-C function in <code>src/</code> using the same
+  bucket-A (helper extraction) and bucket-B (dispatch table)
+  patterns ADR 0036 documented for the D/E sweep.</li>
+</ul>
+<p>Both ratchet ADRs supersede the threshold portion of this ADR but
+leave the foundational decisions — three independent tools (xenon /
+jscpd / vulture), non-blocking-first introduction, separate
+duplication / dead-code lifecycles — intact.</p>
+<p>The bucket-C "irreducible domain complexity" escape hatch from
+ADR 0036 stayed at <strong>0 hits across 70+ refactors</strong> spanning both
+ratchet campaigns. That empirical signal informs ADR 0041's
+trajectory toward an even tighter ceiling; whether to ratchet
+<code>--max-modules C → B</code> is the next question (currently held — module
+averages aren't the same metric as per-function ceilings; see
+ADR 0041 "Why we keep <code>--max-modules</code> at C").</p>
 
 
 
