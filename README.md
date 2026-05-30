@@ -42,7 +42,7 @@ Three use cases, one binary:
 ## Highlights
 
 - 🟢 **Full REST + gRPC API parity** — Datasets, Tables, Jobs, TableData, Routines, Row Access Policies, Authorized Views, plus Models CRUD metadata. Storage Read API (Arrow and Avro). Storage Write API (all four stream types — `DEFAULT`, `COMMITTED`, `PENDING`, `BUFFERED` — with both proto and Arrow row formats).
-- ⚡ **Real SQL** — GoogleSQL translated to DuckDB SQL via 92 SQLGlot rules + 22 rewriters; covers date/time, string, array, struct, range, geography, JSON, approximate-aggregate, statistical, regex, civil-time, and bit operations.
+- ⚡ **Real SQL** — GoogleSQL translated to DuckDB SQL via 93 SQLGlot rules + 24 rewriters; covers date/time, string, array, struct, range, geography, JSON, approximate-aggregate, statistical, regex, civil-time, and bit operations.
 - 🧠 **Features `goccy/bigquery-emulator` doesn't have** — JavaScript UDFs (embedded V8 via `mini-racer`), procedural scripting (`DECLARE` / `BEGIN…END` / `IF` / `LOOP` / `EXCEPTION` / `BEGIN TRANSACTION`), time travel (`FOR SYSTEM_TIME AS OF`), table snapshots, table clones, materialized views with refresh dispatch, GEOGRAPHY (planar via DuckDB-spatial + S2 helpers), RANGE, INTERVAL, authorized views, row-access policies, `INFORMATION_SCHEMA`.
 - 🔌 **Five-client e2e matrix** — every release is exercised against the official Python, Node.js, Go, and Java BigQuery client libraries plus Google's `bq` CLI in a live Docker container.
 - 🧪 **7-tier test pyramid** — unit + property + integration + conformance + e2e + perf + chaos, plus mutation / fuzz / differential siblings. Combined coverage is gated at ≥90% line + branch.
@@ -246,7 +246,7 @@ The full documentation lives at **[jjviscomi.github.io/bqemulator](https://jjvis
 - [**Guides**](https://jjviscomi.github.io/bqemulator/latest/guides/loading-data/) — loading data, querying, streaming inserts, Storage API, UDFs, scripting, partitioning, time travel, materialized views, row access policies, dbt, Airflow, Spark, the `bq` CLI, observability, and more.
 - [**Reference**](https://jjviscomi.github.io/bqemulator/latest/reference/configuration/) — configuration, CLI, REST coverage, SQL function mapping, compatibility matrix, conformance coverage matrix, out-of-scope catalogue, troubleshooting.
 - [**Architecture**](https://jjviscomi.github.io/bqemulator/latest/architecture/overview/) — hexagonal architecture, storage model, SQL translation, jobs lifecycle, Storage Read/Write API design, scripting, UDFs, versioning, row access, specialized types, observability, testing strategy, conformance tier.
-- [**ADRs**](https://jjviscomi.github.io/bqemulator/latest/adr/0001-use-duckdb/) — 34 Architecture Decision Records documenting every non-obvious design choice.
+- [**ADRs**](https://jjviscomi.github.io/bqemulator/latest/adr/0001-use-duckdb/) — 42 Architecture Decision Records documenting every non-obvious design choice.
 
 ## Examples
 
@@ -278,7 +278,7 @@ deprecated APIs remain for ≥2 MINOR versions or 6 months.
 
 Maturity signals:
 
-- ✅ 34 Architecture Decision Records covering every non-obvious design choice (`docs/adr/0001`–`0034`).
+- ✅ 42 Architecture Decision Records covering every non-obvious design choice (`docs/adr/0001`–`0042`).
 - ✅ ≥90% line + branch coverage gated by CI (`make verify`).
 - ✅ 7 test tiers passing (unit + property + integration + conformance + e2e + perf + chaos).
 - ✅ 5-client e2e matrix (Python · Node.js · Go · Java · `bq` CLI).
@@ -289,7 +289,7 @@ Maturity signals:
 - ✅ PyPI publish via Trusted Publishing (sigstore-attested wheels) — `pip install bqemulator==1.1.1` resolves from [PyPI](https://pypi.org/project/bqemulator/).
 - ✅ GHCR publish with keyless cosign signatures — `docker pull ghcr.io/jjviscomi/bqemulator:1.1.1` resolves and the image is cosign-verifiable.
 
-See [`CHANGELOG.md`](CHANGELOG.md) for the complete v1.0 inventory.
+See [`CHANGELOG.md`](CHANGELOG.md) for the complete release-by-release inventory.
 
 ## Contributing
 
