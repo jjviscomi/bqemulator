@@ -19,20 +19,21 @@
 # Default check timeout per URL.
 timeout = 20
 
-# Don't follow more than 15 redirects (catches infinite-loop CDNs).
-# Bumped from 5 → 10 → 15 to absorb Google Cloud docs' CDN/locale
+# Don't follow more than 20 redirects (catches infinite-loop CDNs).
+# Bumped from 5 → 10 → 15 → 20 to absorb Google Cloud docs' CDN/locale
 # redirect chain (``cloud.google.com → docs.cloud.google.com →
 # locale-prefixed → canonical``) which keeps growing with their
-# CDN topology. The 10-cap held through v1.1.x but PR #100
-# (2026-05-28) hit fresh ``[302] Rejected status code: ... Redirects
-# may have been limited by "max-redirects"`` failures on
-# ``cloud.google.com/bigquery/docs/reference/...`` URLs from
-# ``docs/reference/conformance-coverage-matrix.md``. Same URLs
-# resolve fine in a browser — the hop count from the runner egress
-# region is the variable. 15 absorbs the observed chain with
-# headroom; infinite-loop CDNs cap out much higher (40+) so we
+# CDN topology. PR #101 (2026-05-28) bumped 10 → 15 to clear PR #100's
+# failures; PR #110 (2026-05-30) bumped 15 → 20 after the pre-v1.1.2
+# audit CI hit ``[302] Rejected status code: ... Redirects may have
+# been limited by "max-redirects"`` on two GCP docs URLs
+# (``information-schema-columns``, ``standard-sql/transactions``)
+# referenced from ``docs/reference/conformance-coverage-matrix.md``.
+# Same URLs resolve fine in a browser — the hop count from the runner
+# egress region is the variable. 20 absorbs the latest observed chain
+# with headroom; infinite-loop CDNs cap out much higher (40+) so we
 # still catch the pathological cases.
-max_redirects = 15
+max_redirects = 20
 
 # Retry failed URLs on transient errors. Calibrated against the
 # v1.0.2 release CI cycle (PR #43, 2026-05-23) where lychee hit
