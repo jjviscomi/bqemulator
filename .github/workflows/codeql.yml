@@ -22,7 +22,7 @@ jobs:
       matrix:
         language: [python]
     steps:
-      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
       # Pin ``github/codeql-action`` by commit SHA per the OpenSSF
       # Scorecard alignment rule (AGENTS.md): only first-party
       # ``actions/*`` may use floating major tags; everything else,
