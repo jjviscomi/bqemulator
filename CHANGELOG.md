@@ -23,6 +23,19 @@ new release.
 See [`docs/architecture/contributing/documentation-style-guide.md`](docs/architecture/contributing/documentation-style-guide.md)
 for the full entry-form rules and worked examples.
 
+## [1.1.2] - 2026-05-31
+
+### Changed
+
+- Refactor about sixty internal functions across SQL / scripting / jobs / streaming / catalog / versioning modules below cyclomatic complexity rank C with no observable runtime behaviour change.
+- Tighten the cyclomatic-complexity gate's `--max-absolute` and `--max-modules` thresholds from rank C to rank B ([ADR 0041](docs/adr/0041-complexity-ratchet-to-b.md) + [ADR 0042](docs/adr/0042-module-ceiling-ratchet-to-b.md)).
+- Pin `starlette<1.0` to keep the `httpx`-backed `TestClient` working against the starlette 0.x line.
+- Bump GitHub Actions: `actions/checkout` 4.3.1 → 6.0.2, `actions/cache` 4.3.0 → 5.0.5, `docker/setup-buildx-action` 3.12.0 → 4.1.0, `docker/setup-qemu-action` 3.7.0 → 4.1.0, `crate-ci/typos` 1.46.3 → 1.47.0.
+
+### Fixed
+
+- Emit the un-padded year for `FORMAT_DATE('%Y', d)` on dates before year 1000, matching BigQuery's documented behaviour.
+
 ## [1.1.1] - 2026-05-27
 
 ### Fixed
