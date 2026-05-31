@@ -1,0 +1,8 @@
+# dbt-bigquery 1.9+ vendors a protobuf 6.x-compatible gRPC stub.
+# bqemulator's SQL table-rewriter now collapses ``CREATE SCHEMA
+# proj.ds`` two-part identifiers into ``"proj__ds"`` (instead of
+# the previous malformed ``"proj__ds".""``), so both 1.9 and 1.10
+# are wireable. Keep an upper bound at <1.11 to avoid silently
+# tracking the next major.
+dbt-core>=1.9,<1.11
+dbt-bigquery>=1.9,<1.11
