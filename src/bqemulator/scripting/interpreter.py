@@ -27,7 +27,11 @@ import pyarrow as pa
 import sqlglot
 from sqlglot import exp
 
-from bqemulator.catalog.ddl_sync import sync_created_table, sync_created_view
+from bqemulator.catalog.ddl_sync import (
+    sync_created_table,
+    sync_created_view,
+    sync_dropped_object,
+)
 from bqemulator.domain.errors import (
     DomainError,
     InvalidQueryError,
@@ -674,6 +678,12 @@ class ScriptInterpreter:
         # and apply caller-bound policies on the base tables it
         # references.
         sync_created_view(sql, self._project_id, self._ctx)
+        # Reconcile the catalog after a successful DROP TABLE/VIEW/SCHEMA
+        # so the dropped relation or dataset disappears from tables.get,
+        # tables.list, and INFORMATION_SCHEMA (matching BigQuery). DROP
+        # MATERIALIZED VIEW / DROP SNAPSHOT TABLE route through the
+        # versioning DDL fast path above and are not handled here.
+        sync_dropped_object(sql, self._project_id, self._ctx)
 
     async def _handle_txn_statement(self, op: str) -> None:
         """Apply a BEGIN / COMMIT / ROLLBACK [TRANSACTION] statement.

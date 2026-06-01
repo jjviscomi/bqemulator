@@ -23,6 +23,8 @@ import java.util.List;
 import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 
 /**
  * E2E: Phase 1 REST CRUD + query via the google-cloud-bigquery Java client.
@@ -98,5 +100,22 @@ class RestCrudTest {
                 .toList();
         assertEquals(1, rows.size());
         assertEquals(2L, rows.get(0).get("n").getLongValue());
+    }
+
+    @Test
+    void dropTableViaQueryRemovesFromCatalog() throws Exception {
+        client.create(DatasetInfo.newBuilder(DATASET).setLocation("US").build());
+        TableId tableId = TableId.of(PROJECT, DATASET, TABLE);
+        client.create(TableInfo.of(tableId, StandardTableDefinition.of(
+                Schema.of(Field.newBuilder("id", LegacySQLTypeName.INTEGER).build()))));
+
+        // Visible before the drop.
+        assertNotNull(client.getTable(tableId));
+
+        String sql = String.format("DROP TABLE `%s.%s.%s`", PROJECT, DATASET, TABLE);
+        client.query(QueryJobConfiguration.newBuilder(sql).build());
+
+        // Gone from tables.get — the Java client returns null for a missing table.
+        assertNull(client.getTable(tableId));
     }
 }

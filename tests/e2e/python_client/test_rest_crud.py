@@ -11,6 +11,7 @@ from __future__ import annotations
 from collections.abc import Iterator
 
 from google.api_core.client_options import ClientOptions
+from google.api_core.exceptions import NotFound
 from google.auth.credentials import AnonymousCredentials
 from google.cloud import bigquery
 import pytest
@@ -101,5 +102,40 @@ def test_tabledata_list_pagination(bq_client: bigquery.Client) -> None:
         iterator = bq_client.list_rows(table, max_results=5)
         seen = [row["id"] for row in iterator]
         assert len(seen) == 5
+    finally:
+        bq_client.delete_dataset(ds_id, delete_contents=True, not_found_ok=True)
+
+
+def test_drop_table_via_query_removes_from_catalog(bq_client: bigquery.Client) -> None:
+    """``DROP TABLE`` via jobs.query removes the table from the catalog.
+
+    Real BigQuery makes a dropped table immediately invisible to
+    ``tables.get`` (404) and ``tables.list``. Pins the DROP TABLE
+    catalog-sync fix end-to-end through the Python SDK + REST surface.
+    """
+    ds_id = "e2e_ds_drop"
+    tbl_id = "to_drop"
+    table_ref = f"{bq_client.project}.{ds_id}.{tbl_id}"
+    try:
+        bq_client.create_dataset(
+            bigquery.Dataset(f"{bq_client.project}.{ds_id}"),
+            exists_ok=True,
+        )
+        bq_client.create_table(
+            bigquery.Table(table_ref, schema=[bigquery.SchemaField("id", "INT64")]),
+            exists_ok=True,
+        )
+
+        # Visible before the drop.
+        assert bq_client.get_table(table_ref) is not None
+        assert any(t.table_id == tbl_id for t in bq_client.list_tables(ds_id))
+
+        # Drop via DDL submitted through jobs.query.
+        bq_client.query(f"DROP TABLE `{table_ref}`").result()
+
+        # Gone from tables.get (404) and tables.list, matching BigQuery.
+        with pytest.raises(NotFound):
+            bq_client.get_table(table_ref)
+        assert all(t.table_id != tbl_id for t in bq_client.list_tables(ds_id))
     finally:
         bq_client.delete_dataset(ds_id, delete_contents=True, not_found_ok=True)

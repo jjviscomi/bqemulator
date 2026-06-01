@@ -1,4 +1,9 @@
-"""Tests for the CREATE TABLE → catalog auto-sync helper (ADR 0023 §1.F)."""
+"""Tests for the SQL-DDL → catalog auto-sync helpers (ADR 0023 §1.F).
+
+Covers both the CREATE side (``sync_created_{table,view,schema}``) and
+the DROP side (``sync_dropped_object``) that reconciles the catalog
+after a ``DROP TABLE/VIEW/SCHEMA``.
+"""
 
 from __future__ import annotations
 
@@ -10,16 +15,20 @@ import pytest_asyncio
 
 from bqemulator.api.dependencies import AppContext
 from bqemulator.catalog.ddl_sync import (
+    _detect_catalog_drop,
     _detect_create_schema,
     sync_created_schema,
     sync_created_table,
     sync_created_view,
+    sync_dropped_object,
 )
 from bqemulator.catalog.memory_repository import MemoryCatalogRepository
 from bqemulator.catalog.models import DatasetMeta
 from bqemulator.config import Settings
 from bqemulator.domain.clock import FrozenClock
+from bqemulator.domain.errors import NotFoundError
 from bqemulator.domain.events import EventBus
+from bqemulator.jobs.executor import execute_query_job
 from bqemulator.observability.metrics import MetricsRegistry
 from bqemulator.row_access.policy import RowAccessPolicyManager
 from bqemulator.storage.engine import DuckDBEngine
@@ -527,3 +536,207 @@ class TestHasNotNullConstraint:
         tree = sqlglot.parse_one("CREATE TABLE t (id INT64)", read="bigquery")
         column = next(c for c in tree.this.expressions if isinstance(c, exp.ColumnDef))
         assert _has_not_null_constraint(column) is False
+
+
+class TestDetectCatalogDrop:
+    """``_detect_catalog_drop`` recognises only catalog-tracked DROP forms."""
+
+    @pytest.mark.parametrize(
+        ("sql", "kind"),
+        [
+            ("DROP TABLE `p.ds.t`", "TABLE"),
+            ("DROP TABLE IF EXISTS `ds.t`", "TABLE"),
+            ("DROP VIEW `ds.v`", "VIEW"),
+            ("DROP VIEW IF EXISTS `ds.v`", "VIEW"),
+            ("DROP SCHEMA `ds`", "SCHEMA"),
+            ("DROP SCHEMA IF EXISTS `p.ds` CASCADE", "SCHEMA"),
+        ],
+    )
+    def test_detects_tracked_drops(self, sql: str, kind: str) -> None:
+        drop = _detect_catalog_drop(sql)
+        assert drop is not None
+        assert (drop.args.get("kind") or "").upper() == kind
+
+    def test_cascade_flag_parsed(self) -> None:
+        """``CASCADE`` sets the ``cascade`` arg; bare / RESTRICT leaves it false."""
+        cascade = _detect_catalog_drop("DROP SCHEMA `ds` CASCADE")
+        plain = _detect_catalog_drop("DROP SCHEMA `ds`")
+        assert cascade is not None
+        assert plain is not None
+        assert cascade.args.get("cascade") is True
+        assert plain.args.get("cascade") is False
+
+    @pytest.mark.parametrize(
+        "sql",
+        [
+            "DROP MATERIALIZED VIEW `ds.mv`",  # routed via the versioning DDL manager
+            "DROP SNAPSHOT TABLE `ds.s`",  # parses as Command, not Drop
+            "DROP EXTERNAL TABLE `ds.e`",  # parses as Command, not Drop
+            "DROP FUNCTION `ds.fn`",  # untracked kind
+            "DROP PROCEDURE `ds.proc`",  # untracked kind
+            "SELECT 1",
+            "CREATE TABLE `p.ds.t` (id INT64)",
+            "INSERT INTO `p.ds.t` (id) VALUES (1)",
+            "garbage :: not :: sql",
+        ],
+    )
+    def test_ignores_untracked_or_non_drop(self, sql: str) -> None:
+        assert _detect_catalog_drop(sql) is None
+
+
+class TestSyncDroppedObject:
+    """``sync_dropped_object`` removes catalog metadata after a successful DROP."""
+
+    async def test_drop_table_removes_catalog_entry(self, ctx: AppContext) -> None:
+        """``DROP TABLE`` removes the ``TableMeta`` but keeps the dataset."""
+        ctx.engine.execute('CREATE TABLE "p__ds"."t" (id BIGINT)')
+        sync_created_table("CREATE TABLE `p.ds.t` (id INT64)", "p", ctx)
+        assert ctx.catalog.get_table("p", "ds", "t") is not None
+        sync_dropped_object("DROP TABLE `p.ds.t`", "p", ctx)
+        assert ctx.catalog.get_table("p", "ds", "t") is None
+        assert ctx.catalog.get_dataset("p", "ds") is not None
+
+    async def test_drop_table_if_exists_qualified_name(self, ctx: AppContext) -> None:
+        """A project-qualified ``DROP TABLE IF EXISTS`` resolves and removes the entry."""
+        ctx.engine.execute('CREATE TABLE "p__ds"."t" (id BIGINT)')
+        sync_created_table("CREATE TABLE `p.ds.t` (id INT64)", "p", ctx)
+        sync_dropped_object("DROP TABLE IF EXISTS `p.ds.t`", "p", ctx)
+        assert ctx.catalog.get_table("p", "ds", "t") is None
+
+    async def test_drop_view_removes_catalog_entry(self, ctx: AppContext) -> None:
+        """``DROP VIEW`` removes the view entry and leaves the base table."""
+        ctx.engine.execute('CREATE TABLE "p__ds"."base" (id BIGINT)')
+        sync_created_table("CREATE TABLE `p.ds.base` (id INT64)", "p", ctx)
+        ctx.engine.execute('CREATE VIEW "p__ds"."v" AS SELECT id FROM "p__ds"."base"')
+        sync_created_view("CREATE VIEW `p.ds.v` AS SELECT id FROM `p.ds.base`", "p", ctx)
+        assert ctx.catalog.get_table("p", "ds", "v") is not None
+        sync_dropped_object("DROP VIEW `p.ds.v`", "p", ctx)
+        assert ctx.catalog.get_table("p", "ds", "v") is None
+        assert ctx.catalog.get_table("p", "ds", "base") is not None
+
+    async def test_drop_only_targets_named_relation(self, ctx: AppContext) -> None:
+        """A drop removes only its target; sibling tables survive."""
+        for name in ("keep", "remove"):
+            ctx.engine.execute(f'CREATE TABLE "p__ds"."{name}" (id BIGINT)')
+            sync_created_table(f"CREATE TABLE `p.ds.{name}` (id INT64)", "p", ctx)
+        sync_dropped_object("DROP TABLE `p.ds.remove`", "p", ctx)
+        assert ctx.catalog.get_table("p", "ds", "remove") is None
+        assert ctx.catalog.get_table("p", "ds", "keep") is not None
+
+    async def test_drop_absent_table_is_idempotent(self, ctx: AppContext) -> None:
+        """``not_found_ok`` means dropping an unregistered relation never raises."""
+        sync_dropped_object("DROP TABLE IF EXISTS `p.ds.ghost`", "p", ctx)
+        assert ctx.catalog.get_table("p", "ds", "ghost") is None
+
+    async def test_drop_schema_removes_empty_dataset(self, ctx: AppContext) -> None:
+        """``DROP SCHEMA`` removes an empty dataset from the catalog."""
+        assert ctx.catalog.get_dataset("p", "ds") is not None
+        sync_dropped_object("DROP SCHEMA `ds`", "p", ctx)
+        assert ctx.catalog.get_dataset("p", "ds") is None
+
+    async def test_drop_schema_cascade_removes_dataset_and_tables(
+        self,
+        ctx: AppContext,
+    ) -> None:
+        """``DROP SCHEMA … CASCADE`` cascades the catalog removal to the tables."""
+        ctx.engine.execute('CREATE TABLE "p__ds"."t" (id BIGINT)')
+        sync_created_table("CREATE TABLE `p.ds.t` (id INT64)", "p", ctx)
+        sync_dropped_object("DROP SCHEMA `ds` CASCADE", "p", ctx)
+        assert ctx.catalog.get_dataset("p", "ds") is None
+        assert ctx.catalog.get_table("p", "ds", "t") is None
+
+    async def test_drop_schema_no_cascade_on_nonempty_respects_restrict(
+        self,
+        ctx: AppContext,
+    ) -> None:
+        """A non-empty dataset can't be dropped without CASCADE (RESTRICT default).
+
+        In the real flow DuckDB raises first; the catalog guard enforces
+        the same contract when the helper is exercised in isolation.
+        """
+        ctx.engine.execute('CREATE TABLE "p__ds"."t" (id BIGINT)')
+        sync_created_table("CREATE TABLE `p.ds.t` (id INT64)", "p", ctx)
+        with pytest.raises(NotFoundError):
+            sync_dropped_object("DROP SCHEMA `ds`", "p", ctx)
+        assert ctx.catalog.get_dataset("p", "ds") is not None
+
+    async def test_drop_qualified_schema_resolves_project(self, ctx: AppContext) -> None:
+        """A ``proj.dataset`` schema target resolves to the right dataset."""
+        sync_dropped_object("DROP SCHEMA `p.ds`", "p", ctx)
+        assert ctx.catalog.get_dataset("p", "ds") is None
+
+    async def test_drop_materialized_view_is_skipped(self, ctx: AppContext) -> None:
+        """``DROP MATERIALIZED VIEW`` is left to the versioning DDL manager."""
+        ctx.engine.execute('CREATE TABLE "p__ds"."mv" (id BIGINT)')
+        sync_created_table("CREATE TABLE `p.ds.mv` (id INT64)", "p", ctx)
+        sync_dropped_object("DROP MATERIALIZED VIEW `p.ds.mv`", "p", ctx)
+        assert ctx.catalog.get_table("p", "ds", "mv") is not None
+
+    async def test_drop_snapshot_table_is_skipped(self, ctx: AppContext) -> None:
+        """``DROP SNAPSHOT TABLE`` parses as Command and is left to versioning DDL."""
+        ctx.engine.execute('CREATE TABLE "p__ds"."s" (id BIGINT)')
+        sync_created_table("CREATE TABLE `p.ds.s` (id INT64)", "p", ctx)
+        sync_dropped_object("DROP SNAPSHOT TABLE `p.ds.s`", "p", ctx)
+        assert ctx.catalog.get_table("p", "ds", "s") is not None
+
+    async def test_non_drop_sql_is_noop(self, ctx: AppContext) -> None:
+        """SELECT / CREATE / unparseable input leaves the catalog untouched."""
+        ctx.engine.execute('CREATE TABLE "p__ds"."t" (id BIGINT)')
+        sync_created_table("CREATE TABLE `p.ds.t` (id INT64)", "p", ctx)
+        for sql in ("SELECT 1", "CREATE TABLE `p.ds.x` (id INT64)", "garbage (("):
+            sync_dropped_object(sql, "p", ctx)
+        assert ctx.catalog.get_table("p", "ds", "t") is not None
+
+    async def test_drop_bare_table_without_dataset_is_noop(self, ctx: AppContext) -> None:
+        """A dataset-less ``DROP TABLE t`` resolves no dataset and is a no-op."""
+        ctx.engine.execute('CREATE TABLE "p__ds"."t" (id BIGINT)')
+        sync_created_table("CREATE TABLE `p.ds.t` (id INT64)", "p", ctx)
+        sync_dropped_object("DROP TABLE `t`", "p", ctx)
+        assert ctx.catalog.get_table("p", "ds", "t") is not None
+
+    async def test_drop_overqualified_schema_is_noop(self, ctx: AppContext) -> None:
+        """A three-part ``DROP SCHEMA a.b.c`` resolves no dataset and is a no-op."""
+        sync_dropped_object("DROP SCHEMA `a.b.c`", "p", ctx)
+        assert ctx.catalog.get_dataset("p", "ds") is not None
+
+    async def test_drop_with_unwrappable_target_is_noop(
+        self,
+        ctx: AppContext,
+        monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        """A DROP whose target doesn't unwrap to a table is a defensive no-op."""
+        ctx.engine.execute('CREATE TABLE "p__ds"."t" (id BIGINT)')
+        sync_created_table("CREATE TABLE `p.ds.t` (id INT64)", "p", ctx)
+        monkeypatch.setattr(
+            "bqemulator.catalog.ddl_sync._unwrap_table_target",
+            lambda _target: None,
+        )
+        sync_dropped_object("DROP TABLE `p.ds.t`", "p", ctx)
+        assert ctx.catalog.get_table("p", "ds", "t") is not None
+
+
+class TestDropSyncWiring:
+    """DROP through ``execute_query_job`` reconciles the catalog end-to-end."""
+
+    async def test_single_statement_drop_removes_catalog_entry(
+        self,
+        ctx: AppContext,
+    ) -> None:
+        """A single ``DROP TABLE`` job removes the table from the catalog."""
+        await execute_query_job(
+            "p",
+            "job-create",
+            "CREATE TABLE `p.ds.wired` (id INT64)",
+            None,
+            ctx,
+        )
+        assert ctx.catalog.get_table("p", "ds", "wired") is not None
+        await execute_query_job("p", "job-drop", "DROP TABLE `p.ds.wired`", None, ctx)
+        assert ctx.catalog.get_table("p", "ds", "wired") is None
+        assert ctx.catalog.list_tables("p", "ds") == ()
+
+    async def test_scripted_drop_removes_catalog_entry(self, ctx: AppContext) -> None:
+        """A multi-statement script routes the DROP through the interpreter hook."""
+        script = "CREATE TABLE `p.ds.scripted` (id INT64);\nDROP TABLE `p.ds.scripted`;"
+        await execute_query_job("p", "job-script", script, None, ctx)
+        assert ctx.catalog.get_table("p", "ds", "scripted") is None

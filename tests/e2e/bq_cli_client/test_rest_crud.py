@@ -147,3 +147,28 @@ def test_parameterised_query(bq_runner: BqRunner) -> None:
         assert rows == [{"name": "two"}]
     finally:
         _rm_dataset(bq_runner, ds_id)
+
+
+def test_drop_table_removes_from_catalog(bq_runner: BqRunner) -> None:
+    """``bq query 'DROP TABLE ...'`` removes the table from the catalog."""
+    ds_id = "bq_cli_rest_crud_drop"
+    table_fq = f"{ds_id}.to_drop"
+    try:
+        _mk_dataset(bq_runner, ds_id)
+        bq_runner.run("mk", "--table", table_fq, "id:INTEGER")
+
+        # Visible before the drop.
+        assert bq_runner.run("show", "--format=json", table_fq).succeeded()
+
+        # Drop via DDL through ``bq query``.
+        dropped = bq_runner.run(
+            "query",
+            "--use_legacy_sql=false",
+            f"DROP TABLE `{table_fq}`",
+        )
+        assert dropped.succeeded(), dropped.stderr
+
+        # Gone: ``bq show`` now fails with not-found, matching BigQuery.
+        assert not bq_runner.run("show", "--format=json", table_fq).succeeded()
+    finally:
+        _rm_dataset(bq_runner, ds_id)
