@@ -28,6 +28,7 @@ import sqlglot
 from sqlglot import exp
 
 from bqemulator.catalog.ddl_sync import (
+    sync_created_schema,
     sync_created_table,
     sync_created_view,
     sync_dropped_object,
@@ -668,6 +669,13 @@ class ScriptInterpreter:
         table = await self._run_query(sql)
         if _is_row_producing(sql):
             self._final_table = table
+        # Register plain ``CREATE [OR REPLACE] SCHEMA`` (dataset) outputs
+        # so a dataset created inside a multi-statement script is
+        # catalog-visible (INFORMATION_SCHEMA.SCHEMATA, datasets.list),
+        # matching real BigQuery and the single-statement executor path.
+        # Synced before the table sync so a later ``CREATE TABLE`` in the
+        # same script finds its dataset already registered.
+        sync_created_schema(sql, self._project_id, self._ctx)
         # ADR 0023 §1.F — register plain ``CREATE [OR REPLACE] TABLE``
         # outputs in the catalog so a follow-on snapshot / clone / MV
         # finds the source via ``catalog.get_table``.

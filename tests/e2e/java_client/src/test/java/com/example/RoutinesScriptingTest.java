@@ -3,6 +3,7 @@ package com.example;
 import com.google.cloud.NoCredentials;
 import com.google.cloud.bigquery.BigQuery;
 import com.google.cloud.bigquery.BigQueryOptions;
+import com.google.cloud.bigquery.Dataset;
 import com.google.cloud.bigquery.DatasetId;
 import com.google.cloud.bigquery.DatasetInfo;
 import com.google.cloud.bigquery.FieldValueList;
@@ -20,6 +21,8 @@ import org.junit.jupiter.api.Test;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * E2E: Phase 6 routines + scripting via the google-cloud-bigquery Java client.
@@ -107,6 +110,45 @@ END IF;
                 QueryJobConfiguration.newBuilder(script).setUseLegacySql(false).build());
         FieldValueList row = result.iterateAll().iterator().next();
         assertEquals(18L, row.get("answer").getLongValue());
+    }
+
+    @Test
+    void testScriptedCreateSchemaIsListed() throws Exception {
+        // A single-statement CREATE SCHEMA takes the executor fast path; the
+        // trailing SELECT tips this job into the scripting interpreter, whose
+        // DDL-sync hook must register the dataset so it surfaces via
+        // datasets.list and datasets.get.
+        String scriptedDs = "scripted_created_schema_java_ds";
+        try {
+            client.delete(DatasetId.of(PROJECT, scriptedDs),
+                    BigQuery.DatasetDeleteOption.deleteContents());
+        } catch (Exception ignore) {
+            // absent is fine
+        }
+        try {
+            String script = "CREATE SCHEMA `" + scriptedDs + "`;\nSELECT 1 AS n;";
+            client.query(QueryJobConfiguration.newBuilder(script).setUseLegacySql(false).build());
+
+            boolean found = false;
+            for (Dataset ds : client.listDatasets(PROJECT).iterateAll()) {
+                if (scriptedDs.equals(ds.getDatasetId().getDataset())) {
+                    found = true;
+                    break;
+                }
+            }
+            assertTrue(found,
+                    "dataset " + scriptedDs + " absent from datasets.list after scripted CREATE SCHEMA");
+
+            assertNotNull(client.getDataset(DatasetId.of(PROJECT, scriptedDs)),
+                    "datasets.get returned null for " + scriptedDs);
+        } finally {
+            try {
+                client.delete(DatasetId.of(PROJECT, scriptedDs),
+                        BigQuery.DatasetDeleteOption.deleteContents());
+            } catch (Exception ignore) {
+                // fine
+            }
+        }
     }
 
     private void createRoutine(

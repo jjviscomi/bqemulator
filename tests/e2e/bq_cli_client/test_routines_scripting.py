@@ -121,3 +121,31 @@ def test_javascript_udf(bq_runner: BqRunner) -> None:
         assert out == [{"r": "42"}]
     finally:
         _rm_dataset(bq_runner, ds_id)
+
+
+def test_scripted_create_schema_is_listed(bq_runner: BqRunner) -> None:
+    """A ``CREATE SCHEMA`` inside a multi-statement script registers the dataset.
+
+    A single-statement ``CREATE SCHEMA`` takes the executor fast path; the
+    trailing ``SELECT`` tips this job into the scripting interpreter, whose
+    DDL-sync hook must register the dataset so it surfaces via ``bq ls``.
+    """
+    ds_id = "bq_cli_scripted_created_schema"
+    try:
+        # Guard against a stale dataset left by an interrupted run.
+        _rm_dataset(bq_runner, ds_id)
+
+        created = bq_runner.run(
+            "query",
+            "--use_legacy_sql=false",
+            f"CREATE SCHEMA `{ds_id}`;\nSELECT 1 AS n;",
+        )
+        assert created.succeeded(), created.stderr
+
+        # Project-level listing surfaces the script-created dataset.
+        listed = bq_runner.run("ls", "--format=json")
+        assert listed.succeeded(), listed.stderr
+        dataset_ids = {row["datasetReference"]["datasetId"] for row in listed.json()}
+        assert ds_id in dataset_ids
+    finally:
+        _rm_dataset(bq_runner, ds_id)

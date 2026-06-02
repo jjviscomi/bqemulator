@@ -740,3 +740,56 @@ class TestDropSyncWiring:
         script = "CREATE TABLE `p.ds.scripted` (id INT64);\nDROP TABLE `p.ds.scripted`;"
         await execute_query_job("p", "job-script", script, None, ctx)
         assert ctx.catalog.get_table("p", "ds", "scripted") is None
+
+
+class TestCreateSchemaSyncWiring:
+    """CREATE SCHEMA through ``execute_query_job`` registers the dataset end-to-end."""
+
+    async def test_single_statement_create_schema_registers_dataset(
+        self,
+        ctx: AppContext,
+    ) -> None:
+        """A single ``CREATE SCHEMA`` job registers the dataset via the executor path."""
+        assert ctx.catalog.get_dataset("p", "solo_ds") is None
+        await execute_query_job("p", "job-create-schema", "CREATE SCHEMA solo_ds", None, ctx)
+        assert ctx.catalog.get_dataset("p", "solo_ds") is not None
+
+    async def test_scripted_create_schema_registers_dataset(self, ctx: AppContext) -> None:
+        """A multi-statement script routes ``CREATE SCHEMA`` through the interpreter hook.
+
+        A single-statement ``CREATE SCHEMA`` takes the executor fast path
+        (already synced); a script with two or more statements runs
+        through :class:`ScriptInterpreter`, whose ``_exec_sql`` hook must
+        call ``sync_created_schema`` so a dataset created purely inside
+        the script is catalog-visible (``datasets.list`` /
+        INFORMATION_SCHEMA.SCHEMATA), matching real BigQuery. The trailing
+        ``SELECT`` is what tips the job past the single-statement fast
+        path into the interpreter.
+        """
+        assert ctx.catalog.get_dataset("p", "scripted_ds") is None
+        script = "CREATE SCHEMA scripted_ds;\nSELECT 1 AS n;"
+        await execute_query_job("p", "job-script-schema", script, None, ctx)
+        assert ctx.catalog.get_dataset("p", "scripted_ds") is not None
+
+    async def test_scripted_create_schema_visible_in_information_schema(
+        self,
+        ctx: AppContext,
+    ) -> None:
+        """A schema created in a script is visible to a later SCHEMATA query.
+
+        The interpreter registers the ``CREATE SCHEMA`` dataset, and the
+        same script's INFORMATION_SCHEMA.SCHEMATA query — expanded from
+        the catalog — then surfaces it. The ``SELECT`` is the script's
+        last statement, so its single row is the script result (matching
+        BigQuery).
+        """
+        from bqemulator.scripting.interpreter import run_script
+
+        script = (
+            "CREATE SCHEMA scripted_visible_ds;\n"
+            "SELECT schema_name FROM `region-us.INFORMATION_SCHEMA.SCHEMATA` "
+            "WHERE schema_name = 'scripted_visible_ds' ORDER BY schema_name"
+        )
+        result = await run_script(ctx, "p", script)
+        assert result.final_table is not None
+        assert result.final_table.to_pylist() == [{"schema_name": "scripted_visible_ds"}]

@@ -586,6 +586,35 @@ interpreter. `DROP MATERIALIZED VIEW` and `DROP SNAPSHOT TABLE`
 continue to route through the versioning DDL manager, which already
 reconciles the catalog.
 
+**Amendment (2026-06-01) — `CREATE SCHEMA` catalog sync wired into the
+script interpreter.** The 2026-05-27 amendment added
+`sync_created_schema` but wired it only into the single-statement
+executor path (`_run_query_body`); the script interpreter's `_exec_sql`
+hook called `sync_created_table` / `sync_created_view` (and later
+`sync_dropped_object`) but not `sync_created_schema`. As a result, a
+bare `CREATE SCHEMA` inside a multi-statement script created the DuckDB
+schema but left the dataset unregistered in the catalog, so it stayed
+invisible to `INFORMATION_SCHEMA.SCHEMATA` and `datasets.list` —
+diverging from real BigQuery and from the single-statement path, which
+already registered it. A single `CREATE SCHEMA ds;` routes to the
+executor fast path (`is_scripted` is false for a lone statement), so
+the gap surfaced only once a second statement tipped the job into the
+interpreter. `ScriptInterpreter._exec_sql` now calls
+`sync_created_schema` alongside the other sync helpers, so SQL-created
+datasets are catalog-visible regardless of whether the statement ran
+standalone or inside a script. Pinned by interpreter-wiring unit tests
+(`TestCreateSchemaSyncWiring` in `tests/unit/catalog/test_ddl_sync.py`)
+covering the executor fast path, the script path, and a
+SCHEMATA-visibility composition, plus end-to-end coverage across all
+five conformance clients in their `routines_scripting` suites. A
+recorded conformance fixture was evaluated and deliberately omitted: a
+multi-statement `CREATE SCHEMA` fixture either leaves a dataset in the
+shared session-scoped corpus emulator (perturbing the dataset-listing
+fixtures) or, if it self-cleans with a trailing `DROP SCHEMA`, records
+an empty BigQuery result — BigQuery returns the final statement's
+result, not the last row-producing statement's — so the script-path
+parity is pinned by the unit and e2e tiers instead.
+
 #### Bucket G — RANGE / INTERVAL wire format — Closed
 
 **Status.** Closed. The closure ships three coordinated
