@@ -152,23 +152,34 @@ def test_parameterised_query(bq_runner: BqRunner) -> None:
 def test_drop_table_removes_from_catalog(bq_runner: BqRunner) -> None:
     """``bq query 'DROP TABLE ...'`` removes the table from the catalog."""
     ds_id = "bq_cli_rest_crud_drop"
-    table_fq = f"{ds_id}.to_drop"
+    keep_fq = f"{ds_id}.keep_t"
+    drop_fq = f"{ds_id}.to_drop"
     try:
         _mk_dataset(bq_runner, ds_id)
-        bq_runner.run("mk", "--table", table_fq, "id:INTEGER")
+        bq_runner.run("mk", "--table", keep_fq, "id:INTEGER")
+        bq_runner.run("mk", "--table", drop_fq, "id:INTEGER")
 
         # Visible before the drop.
-        assert bq_runner.run("show", "--format=json", table_fq).succeeded()
+        assert bq_runner.run("show", "--format=json", drop_fq).succeeded()
 
         # Drop via DDL through ``bq query``.
         dropped = bq_runner.run(
             "query",
             "--use_legacy_sql=false",
-            f"DROP TABLE `{table_fq}`",
+            f"DROP TABLE `{drop_fq}`",
         )
         assert dropped.succeeded(), dropped.stderr
 
-        # Gone: ``bq show`` now fails with not-found, matching BigQuery.
-        assert not bq_runner.run("show", "--format=json", table_fq).succeeded()
+        # Gone from tables.get (``bq show`` fails) ...
+        assert not bq_runner.run("show", "--format=json", drop_fq).succeeded()
+
+        # ... and from tables.list: ``to_drop`` is no longer listed while the
+        # sibling ``keep_t`` still is — so the test passes only when catalog
+        # sync removed the entry, not on some unrelated ``bq show`` error.
+        listed = bq_runner.run("ls", "--format=json", ds_id)
+        assert listed.succeeded(), listed.stderr
+        table_ids = {row["tableReference"]["tableId"] for row in listed.json()}
+        assert "to_drop" not in table_ids
+        assert "keep_t" in table_ids
     finally:
         _rm_dataset(bq_runner, ds_id)
