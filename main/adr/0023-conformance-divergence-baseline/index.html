@@ -6130,6 +6130,27 @@ auto-registers a missing dataset rather than skipping, so any
 SQL-created table or view is catalog-visible to INFORMATION_SCHEMA,
 <code>tables.list</code>, and RAP target validation. See ADR 0018's
 "CREATE / DROP ROW ACCESS POLICY via SQL DDL" amendment.</p>
+<p><strong>Amendment (2026-06-01) — catalog sync extended to <code>DROP TABLE/VIEW/SCHEMA</code>.</strong>
+The catalog auto-sync helper (<code>catalog/ddl_sync.py</code>) reconciled only
+the CREATE side. SQL <code>DROP TABLE</code>, <code>DROP VIEW</code>, and <code>DROP SCHEMA</code>
+submitted via <code>jobs.query</code> dropped the physical DuckDB object but left
+the stale <code>TableMeta</code> / <code>DatasetMeta</code> in the catalog cache, so a
+dropped relation or dataset lingered in <code>tables.get</code> (HTTP 200 instead
+of 404), <code>tables.list</code>, and <code>INFORMATION_SCHEMA</code> — diverging from real
+BigQuery, where a dropped object immediately disappears from those
+surfaces (the underlying data is retained for time-travel recovery but
+the object is no longer addressable). The existing DROP fixtures
+masked the gap: they query the base table, recreate over the entry, or
+exercise the not-found error path, so none asserted post-drop catalog
+state. <code>sync_dropped_object</code> now removes the catalog entry after a
+successful drop — <code>DROP TABLE</code> / <code>DROP VIEW</code> call <code>delete_table</code> plus
+the AUTO-snapshot and materialized-view-dependency cleanup, and
+<code>DROP SCHEMA</code> calls <code>delete_dataset</code> honoring <code>CASCADE</code> / <code>RESTRICT</code> —
+mirroring the REST <code>tables.delete</code> / <code>datasets.delete</code> handlers, and
+is wired into both the single-statement executor path and the script
+interpreter. <code>DROP MATERIALIZED VIEW</code> and <code>DROP SNAPSHOT TABLE</code>
+continue to route through the versioning DDL manager, which already
+reconciles the catalog.</p>
 <h4 id="bucket-g-range-interval-wire-format-closed">Bucket G — RANGE / INTERVAL wire format — Closed<a class="headerlink" href="#bucket-g-range-interval-wire-format-closed" title="Permanent link">&para;</a></h4>
 <p><strong>Status.</strong> Closed. The closure ships three coordinated
 fixes:</p>
