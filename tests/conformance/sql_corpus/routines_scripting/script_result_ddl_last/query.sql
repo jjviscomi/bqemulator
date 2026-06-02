@@ -1,0 +1,2 @@
+SELECT 1 AS a;
+CREATE TABLE `${DATASET}.t_after` (id INT64)

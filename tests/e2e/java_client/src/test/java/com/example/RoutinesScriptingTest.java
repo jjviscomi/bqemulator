@@ -109,6 +109,31 @@ END IF;
         assertEquals(18L, row.get("answer").getLongValue());
     }
 
+    @Test
+    void testScriptEndingInDdlReturnsEmpty() throws Exception {
+        // Last-statement-wins: a trailing DDL has no result set, so the prior
+        // SELECT's rows must not leak into the script result.
+        String ds = "script_result_ddl_last_java";
+        try {
+            client.delete(DatasetId.of(PROJECT, ds), BigQuery.DatasetDeleteOption.deleteContents());
+        } catch (Exception ignore) {
+            // absent is fine
+        }
+        client.create(DatasetInfo.newBuilder(ds).setLocation("US").build());
+        try {
+            String script = "SELECT 1 AS a;\nCREATE TABLE `" + PROJECT + "." + ds + ".trailing` (id INT64)";
+            TableResult result = client.query(
+                    QueryJobConfiguration.newBuilder(script).setUseLegacySql(false).build());
+            assertEquals(0L, result.getTotalRows());
+        } finally {
+            try {
+                client.delete(DatasetId.of(PROJECT, ds), BigQuery.DatasetDeleteOption.deleteContents());
+            } catch (Exception ignore) {
+                // fine
+            }
+        }
+    }
+
     private void createRoutine(
             String routineId,
             String type,

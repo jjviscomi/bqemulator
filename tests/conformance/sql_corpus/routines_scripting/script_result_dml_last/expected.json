@@ -1,0 +1,18 @@
+{
+  "fixture_version": 2,
+  "bigquery": {
+    "project": "your-bigquery-project",
+    "job_id": "9034b351-ea96-482c-8f89-01c487b2715b",
+    "location": "US",
+    "total_bytes_processed": 11,
+    "total_bytes_billed": 10485760,
+    "duration_ms": 3652
+  },
+  "schema": [],
+  "rows": [],
+  "row_count": 0,
+  "duration_class": "medium",
+  "job_metadata": {
+    "statement_type": "SCRIPT"
+  }
+}

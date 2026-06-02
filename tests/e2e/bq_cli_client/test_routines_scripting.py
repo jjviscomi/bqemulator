@@ -121,3 +121,24 @@ def test_javascript_udf(bq_runner: BqRunner) -> None:
         assert out == [{"r": "42"}]
     finally:
         _rm_dataset(bq_runner, ds_id)
+
+
+def test_script_ending_in_ddl_returns_empty(bq_runner: BqRunner) -> None:
+    """A multi-statement script ending in DDL returns an empty result.
+
+    Last-statement-wins: a trailing DDL has no result set, so the prior
+    ``SELECT``'s rows must not leak into the script result.
+    """
+    ds_id = "bq_cli_script_result_ddl_last"
+    try:
+        _mk_dataset(bq_runner, ds_id)
+        result = bq_runner.run(
+            "query",
+            "--use_legacy_sql=false",
+            "--format=json",
+            f"SELECT 1 AS a;\nCREATE TABLE `{ds_id}.trailing` (id INT64)",
+        )
+        assert result.succeeded(), result.stderr
+        assert result.json() == []
+    finally:
+        _rm_dataset(bq_runner, ds_id)

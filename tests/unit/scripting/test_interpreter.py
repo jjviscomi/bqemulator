@@ -386,13 +386,13 @@ SELECT a, b;
 
 
 class TestLastStatementWins:
-    """ADR 0023 §1.F — only row-producing statements feed ``final_table``.
+    """ADR 0023 §1.F — the script result is the *last* statement's result.
 
-    BigQuery returns the rows of the *last statement with output*; DDL
-    and DML statements still execute but contribute no rows. The
-    scripting interpreter must match this so multi-statement scripts
-    that end with a SELECT return exactly the SELECT's rows (and
-    nothing from intervening CREATE TABLE / INSERT / DDL statements).
+    BigQuery returns the result set of the script's final statement. A
+    SELECT / WITH / set-op contributes its rows; a DDL / DML / transaction-
+    control statement has no result set, so a script ending in one returns
+    an empty result (``final_table=None``) — even when an earlier statement
+    produced rows. The scripting interpreter must match this.
     """
 
     async def test_create_table_then_select_returns_only_select_rows(
@@ -416,6 +416,57 @@ SELECT id, label FROM `p.ds.t_last_stmt` ORDER BY id;
         # downstream catalog-aware paths (versioning managers,
         # INFORMATION_SCHEMA) find the freshly-created table.
         assert ctx.catalog.get_table("p", "ds", "t_last_stmt") is not None
+
+    async def test_multi_select_returns_last_select(self, ctx: AppContext) -> None:
+        """Two SELECTs: the script result is the *last* one's rows."""
+        result = await run_script(ctx, "p", "SELECT 1 AS a;\nSELECT 2 AS b;")
+        assert result.final_table is not None
+        assert result.final_table.schema.names == ["b"]
+        assert result.final_table.column(0).to_pylist() == [2]
+
+    async def test_select_then_ddl_returns_empty(self, ctx: AppContext) -> None:
+        """A SELECT followed by a trailing DDL yields an empty result.
+
+        Regression: before the last-statement-wins fix the interpreter kept
+        the prior SELECT's rows, but BigQuery returns the *final* statement's
+        result and DDL has none.
+        """
+        script = "SELECT 1 AS a;\nCREATE TABLE `p.ds.t_trailing_ddl` (id INT64);"
+        result = await run_script(ctx, "p", script)
+        assert result.final_table is None
+        # The DDL still executed.
+        assert ctx.catalog.get_table("p", "ds", "t_trailing_ddl") is not None
+
+    async def test_select_then_drop_returns_empty(self, ctx: AppContext) -> None:
+        """A SELECT followed by a trailing DROP yields an empty result."""
+        script = (
+            "CREATE OR REPLACE TABLE `p.ds.t_drop_last` AS SELECT 1 AS id;\n"
+            "SELECT id FROM `p.ds.t_drop_last`;\n"
+            "DROP TABLE `p.ds.t_drop_last`;"
+        )
+        result = await run_script(ctx, "p", script)
+        assert result.final_table is None
+        # The DROP still executed.
+        assert ctx.catalog.get_table("p", "ds", "t_drop_last") is None
+
+    async def test_select_then_dml_returns_empty(self, ctx: AppContext) -> None:
+        """A SELECT followed by a trailing DML yields an empty result."""
+        script = (
+            "CREATE OR REPLACE TABLE `p.ds.t_dml_last` AS SELECT 1 AS id;\n"
+            "SELECT id FROM `p.ds.t_dml_last`;\n"
+            "INSERT INTO `p.ds.t_dml_last` VALUES (2);"
+        )
+        result = await run_script(ctx, "p", script)
+        assert result.final_table is None
+
+    async def test_select_then_transaction_control_returns_empty(
+        self,
+        ctx: AppContext,
+    ) -> None:
+        """A SELECT followed by a trailing COMMIT yields an empty result."""
+        script = "BEGIN TRANSACTION;\nSELECT 1 AS a;\nCOMMIT;"
+        result = await run_script(ctx, "p", script)
+        assert result.final_table is None
 
     async def test_ddl_only_script_returns_no_rows(
         self,
