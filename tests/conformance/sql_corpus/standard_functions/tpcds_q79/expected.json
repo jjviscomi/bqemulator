@@ -1,7 +1,7 @@
 {
   "fixture_version": 2,
   "bigquery": {
-    "project": "perigon-health-nonprod-svc",
+    "project": "your-bigquery-project",
     "job_id": "581f4e2d-ab01-47ae-8487-ead5b2136f3d",
     "location": "US",
     "total_bytes_processed": 919,

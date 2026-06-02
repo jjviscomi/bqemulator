@@ -182,8 +182,7 @@ for the full entry-form rules and worked examples.
   Coverage-matrix regenerated: corpus fixture count grows by 18
   (1141 → 1159); the INFORMATION_SCHEMA category lifts from
   **0 / 6 covered** to **6 / 6 covered** (all green, no XFAILs).
-  Recording cost: ~$0 against ``perigon-health-nonprod-svc`` (18
-  queries × 10 MiB minimum scan).
+  Recording cost: ~$0 (18 queries × 10 MiB minimum scan).
 
 ### Changed
 
