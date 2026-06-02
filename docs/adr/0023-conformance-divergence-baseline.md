@@ -564,6 +564,28 @@ SQL-created table or view is catalog-visible to INFORMATION_SCHEMA,
 `tables.list`, and RAP target validation. See ADR 0018's
 "CREATE / DROP ROW ACCESS POLICY via SQL DDL" amendment.
 
+**Amendment (2026-06-01) — catalog sync extended to `DROP TABLE/VIEW/SCHEMA`.**
+The catalog auto-sync helper (`catalog/ddl_sync.py`) reconciled only
+the CREATE side. SQL `DROP TABLE`, `DROP VIEW`, and `DROP SCHEMA`
+submitted via `jobs.query` dropped the physical DuckDB object but left
+the stale `TableMeta` / `DatasetMeta` in the catalog cache, so a
+dropped relation or dataset lingered in `tables.get` (HTTP 200 instead
+of 404), `tables.list`, and `INFORMATION_SCHEMA` — diverging from real
+BigQuery, where a dropped object immediately disappears from those
+surfaces (the underlying data is retained for time-travel recovery but
+the object is no longer addressable). The existing DROP fixtures
+masked the gap: they query the base table, recreate over the entry, or
+exercise the not-found error path, so none asserted post-drop catalog
+state. `sync_dropped_object` now removes the catalog entry after a
+successful drop — `DROP TABLE` / `DROP VIEW` call `delete_table` plus
+the AUTO-snapshot and materialized-view-dependency cleanup, and
+`DROP SCHEMA` calls `delete_dataset` honoring `CASCADE` / `RESTRICT` —
+mirroring the REST `tables.delete` / `datasets.delete` handlers, and
+is wired into both the single-statement executor path and the script
+interpreter. `DROP MATERIALIZED VIEW` and `DROP SNAPSHOT TABLE`
+continue to route through the versioning DDL manager, which already
+reconciles the catalog.
+
 #### Bucket G — RANGE / INTERVAL wire format — Closed
 
 **Status.** Closed. The closure ships three coordinated

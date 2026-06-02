@@ -17,6 +17,7 @@ from bqemulator.catalog.ddl_sync import (
     sync_created_schema,
     sync_created_table,
     sync_created_view,
+    sync_dropped_object,
 )
 from bqemulator.catalog.etag import generate_etag
 from bqemulator.catalog.models import JobMeta
@@ -508,7 +509,10 @@ async def _run_query_body(
     route through dedicated managers and are not synced here.
     ``CREATE SCHEMA`` is synced first so a table created in a SQL-only
     dataset finds its dataset already registered (``sync_created_table``
-    also auto-registers a missing dataset as a fallback).
+    also auto-registers a missing dataset as a fallback). It then syncs
+    ``DROP TABLE/VIEW/SCHEMA`` by removing the dropped object from the
+    catalog (``sync_dropped_object``) so the relation or dataset
+    disappears from those same surfaces, matching BigQuery.
     """
     if is_scripted:
         interpreter = ScriptInterpreter(ctx, project_id, caller=effective_caller)
@@ -523,6 +527,7 @@ async def _run_query_body(
     sync_created_schema(bq_sql, project_id, ctx)
     sync_created_table(bq_sql, project_id, ctx)
     sync_created_view(bq_sql, project_id, ctx)
+    sync_dropped_object(bq_sql, project_id, ctx)
     return arrow_table
 
 

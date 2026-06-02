@@ -24,6 +24,17 @@ row-access rewriter's ``_expand_view`` branch can recurse and apply
 caller-bound policies on the base table the view reads. Materialized
 views are handled by the versioning DDL manager and are not synced
 here.
+
+Call :func:`sync_dropped_object` after a successful ``DROP TABLE``,
+``DROP VIEW``, or ``DROP SCHEMA`` execution. DuckDB has already
+performed the physical drop by then; this only reconciles the catalog
+cache so a dropped table, view, or dataset immediately disappears from
+``tables.get`` (404), ``tables.list``, and ``INFORMATION_SCHEMA``,
+matching real BigQuery. It mirrors the catalog side of the REST
+``tables.delete`` / ``datasets.delete`` handlers. ``DROP MATERIALIZED
+VIEW`` and ``DROP SNAPSHOT TABLE`` route through the versioning DDL
+manager — which already reconciles the catalog — and are not handled
+here.
 """
 
 from __future__ import annotations
@@ -175,6 +186,104 @@ def sync_created_schema(bq_sql: str, project_id: str, ctx: AppContext) -> None:
     _ensure_dataset(p_id, d_id, ctx)
 
 
+def sync_dropped_object(bq_sql: str, project_id: str, ctx: AppContext) -> None:
+    """Reconcile the catalog after a successful ``DROP TABLE/VIEW/SCHEMA``.
+
+    Call after a successful ``DROP`` execution — the physical DuckDB drop
+    has already run, so this only removes the now-stale catalog metadata,
+    matching real BigQuery where a dropped table, view, or dataset
+    immediately leaves ``tables.get`` (404), ``tables.list``, and
+    ``INFORMATION_SCHEMA``. Mirrors the catalog side of the REST
+    ``tables.delete`` / ``datasets.delete`` handlers.
+
+    No-op (returns early) for non-``DROP`` or unparseable SQL, for
+    ``DROP MATERIALIZED VIEW`` / ``DROP SNAPSHOT TABLE`` (handled by the
+    versioning DDL manager), and for any ``DROP`` kind the catalog does
+    not track. Idempotent: every catalog delete passes
+    ``not_found_ok=True`` so ``DROP … IF EXISTS`` on an absent object —
+    or a re-run — is harmless.
+    """
+    drop = _detect_catalog_drop(bq_sql)
+    if drop is None:
+        return
+    target = _unwrap_table_target(drop.this)
+    if target is None:
+        return
+    if (drop.args.get("kind") or "").upper() == "SCHEMA":
+        _sync_dropped_schema(target, project_id, ctx, cascade=bool(drop.args.get("cascade")))
+    else:
+        _sync_dropped_relation(target, project_id, ctx)
+
+
+def _detect_catalog_drop(bq_sql: str) -> exp.Drop | None:
+    """Return the ``exp.Drop`` for a catalog-tracked ``DROP TABLE/VIEW/SCHEMA``.
+
+    Returns ``None`` for unparseable SQL or any ``DROP`` the catalog
+    does not track: ``DROP SNAPSHOT TABLE`` and ``DROP EXTERNAL TABLE``
+    fall back to :class:`exp.Command` (not :class:`exp.Drop`); ``DROP
+    MATERIALIZED VIEW`` carries ``materialized=True`` and routes through
+    the versioning DDL manager; any other kind (``FUNCTION``,
+    ``PROCEDURE``, …) is left to its own handler.
+    """
+    try:
+        tree = sqlglot.parse_one(bq_sql, read="bigquery")
+    except Exception:  # noqa: BLE001 — not a DROP / unparseable SQL
+        return None
+    if not isinstance(tree, exp.Drop):
+        return None
+    if tree.args.get("materialized"):
+        return None
+    if (tree.args.get("kind") or "").upper() not in {"TABLE", "VIEW", "SCHEMA"}:
+        return None
+    return tree
+
+
+def _sync_dropped_relation(target: exp.Table, project_id: str, ctx: AppContext) -> None:
+    """Remove a dropped ``TABLE``/``VIEW`` from the catalog.
+
+    Mirrors the catalog side of the REST ``tables.delete`` handler:
+    delete the :class:`TableMeta`, drop the relation's ``AUTO`` snapshots
+    (``USER`` snapshots survive — they may be materialised in other
+    datasets), and clear any materialized-view dependency row. No-op when
+    the target lacks a dataset or table part (e.g. a bare ``DROP TABLE
+    t`` with no dataset qualifier).
+    """
+    p_id, d_id, t_id = _split_target(target, project_id)
+    if not d_id or not t_id:
+        return
+    ctx.catalog.delete_table(p_id, d_id, t_id, not_found_ok=True)
+    ctx.snapshots.drop_snapshots_for_table(p_id, d_id, t_id, include_user=False)
+    ctx.catalog.delete_materialized_view(p_id, d_id, t_id, not_found_ok=True)
+
+
+def _sync_dropped_schema(
+    target: exp.Table,
+    project_id: str,
+    ctx: AppContext,
+    *,
+    cascade: bool,
+) -> None:
+    """Remove a dropped dataset from the catalog, honoring ``CASCADE``.
+
+    Mirrors the catalog side of the REST ``datasets.delete`` handler.
+    ``DROP SCHEMA … CASCADE`` (``cascade=True``) cascades the removal to
+    the dataset's tables and routines; the bare / ``RESTRICT`` form
+    leaves the catalog's non-empty guard in place, matching BigQuery's
+    RESTRICT default. No-op when the dataset part cannot be resolved
+    (e.g. an over-qualified ``proj.dataset.extra`` schema target).
+    """
+    resolved = _resolve_dataset_parts(target, project_id)
+    if resolved is None:
+        return
+    p_id, d_id = resolved
+    ctx.catalog.delete_dataset(
+        p_id,
+        d_id,
+        delete_contents=cascade,
+        not_found_ok=True,
+    )
+
+
 def _unwrap_table_target(target: exp.Expression | None) -> exp.Table | None:
     """Unwrap an ``exp.Schema`` shell and return the inner :class:`exp.Table`, or ``None``."""
     if isinstance(target, exp.Schema):
@@ -213,6 +322,20 @@ def _detect_create_schema(bq_sql: str, default_project: str) -> tuple[str, str] 
     target = _unwrap_table_target(tree.this)
     if target is None:
         return None
+    return _resolve_dataset_parts(target, default_project)
+
+
+def _resolve_dataset_parts(
+    target: exp.Table,
+    default_project: str,
+) -> tuple[str, str] | None:
+    """Resolve a schema-only DDL target to ``(project_id, dataset_id)``.
+
+    Handles the dataset-qualified (``proj.ds``) and bare (``ds``) shapes
+    that :func:`_split_table_ref_parts` normalises; returns ``None`` for
+    any other arity. Shared by ``CREATE SCHEMA`` detection and
+    ``DROP SCHEMA`` catalog sync so both resolve the dataset identically.
+    """
     parts = _split_table_ref_parts(target)
     if len(parts) == _PARTS_DATASET_QUALIFIED:
         return parts[0], parts[1]
@@ -547,4 +670,9 @@ def _build_time_partitioning(
     )
 
 
-__all__ = ["sync_created_table", "sync_created_view"]
+__all__ = [
+    "sync_created_schema",
+    "sync_created_table",
+    "sync_created_view",
+    "sync_dropped_object",
+]
