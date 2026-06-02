@@ -494,6 +494,24 @@ SELECT id, label FROM `p.ds.t_last_stmt` ORDER BY id;
         result = await run_script(ctx, "p", script)
         assert result.final_table is None
 
+    async def test_call_refresh_mv_last_returns_empty(self, ctx: AppContext) -> None:
+        """A trailing ``CALL BQ.REFRESH_MATERIALIZED_VIEW`` returns an empty result.
+
+        The builtin refresh CALL dispatches through
+        ``_exec_call_refresh_mv`` (not ``_invoke_procedure``) and produces
+        no result set, so per last-statement-wins it must reset
+        ``_final_table`` rather than leak the prior SELECT's rows.
+        """
+        script = """
+CREATE OR REPLACE TABLE `p.ds.refresh_base` AS SELECT 1 AS x;
+CREATE MATERIALIZED VIEW `p.ds.refresh_mv`
+AS SELECT COUNT(*) AS n FROM `p.ds.refresh_base`;
+SELECT 1 AS a;
+CALL BQ.REFRESH_MATERIALIZED_VIEW('p.ds.refresh_mv');
+"""
+        result = await run_script(ctx, "p", script)
+        assert result.final_table is None
+
     async def test_ddl_only_script_returns_no_rows(
         self,
         ctx: AppContext,

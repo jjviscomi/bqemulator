@@ -508,6 +508,10 @@ class ScriptInterpreter:
             target_table=tbl,
         )
         await execute_versioning_ddl(parsed, self._ctx)
+        # Last-statement-wins: the builtin refresh CALL produces no result
+        # set, so reset ``_final_table`` rather than leak the prior result
+        # (this path bypasses ``_invoke_procedure``'s propagation).
+        self._final_table = None
 
     async def _exec_execute_immediate(self, stmt: ExecuteImmediateStmt) -> None:
         sql_value = await self._eval_expr_scalar(stmt.sql_expr)
