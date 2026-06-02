@@ -115,6 +115,12 @@ DEFAULT_BYTE_CAP = 1 * 1024 * 1024 * 1024  # 1 GiB
 # payload shape is purely additive.
 FIXTURE_VERSION = 2
 
+#: The recorded ``bigquery.project`` field is informational — the runner
+#: never compares it. Emit a neutral placeholder instead of the operator's
+#: real ``--project`` so a private project id can never leak into a
+#: committed fixture.
+FIXTURE_PROJECT_PLACEHOLDER = "your-bigquery-project"
+
 # Duration-class thresholds (informational; not used for comparison).
 DURATION_FAST_MS = 1_000
 DURATION_MEDIUM_MS = 10_000
@@ -421,7 +427,7 @@ def _record_one(  # noqa: PLR0915 — the recorder body is a linear pipeline
                 payload = _build_error_payload(
                     fixture=fixture,
                     exc=exc,
-                    project=project,
+                    project=FIXTURE_PROJECT_PLACEHOLDER,
                     location=client.location or "",
                     dataset_fqdn=dataset_fqdn,
                     wall_ms=wall_ms,
@@ -456,7 +462,7 @@ def _record_one(  # noqa: PLR0915 — the recorder body is a linear pipeline
                     payload: dict[str, Any] = {
                         "fixture_version": FIXTURE_VERSION,
                         "bigquery": {
-                            "project": project,
+                            "project": FIXTURE_PROJECT_PLACEHOLDER,
                             "job_id": job.job_id,
                             "location": job.location or client.location or "",
                             "total_bytes_processed": bytes_processed,
