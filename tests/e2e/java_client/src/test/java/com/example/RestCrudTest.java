@@ -118,4 +118,41 @@ class RestCrudTest {
         // Gone from tables.get — the Java client returns null for a missing table.
         assertNull(client.getTable(tableId));
     }
+
+    @Test
+    void singleDdlQueryReturnsBigQueryResultShape() throws Exception {
+        // CREATE TABLE returns the declared schema with zero rows (not a
+        // status row); CTAS returns the SELECT's schema with zero rows;
+        // DROP TABLE returns a fully empty result. Pinned by the
+        // rest_crud/ddl_result_* conformance corpus recorded from real
+        // BigQuery.
+        client.create(DatasetInfo.newBuilder(DATASET).setLocation("US").build());
+
+        TableResult createResult = client.query(QueryJobConfiguration.newBuilder(
+                String.format("CREATE TABLE `%s.%s.t` (id INT64, name STRING)", PROJECT, DATASET))
+                .setUseLegacySql(false)
+                .build());
+        assertEquals(0L, createResult.getTotalRows());
+        Schema createSchema = createResult.getSchema();
+        assertNotNull(createSchema);
+        assertEquals(2, createSchema.getFields().size());
+        assertEquals("id", createSchema.getFields().get(0).getName());
+        assertEquals(LegacySQLTypeName.INTEGER, createSchema.getFields().get(0).getType());
+        assertEquals("name", createSchema.getFields().get(1).getName());
+        assertEquals(LegacySQLTypeName.STRING, createSchema.getFields().get(1).getType());
+
+        TableResult ctasResult = client.query(QueryJobConfiguration.newBuilder(
+                String.format("CREATE TABLE `%s.%s.t2` AS SELECT 1 AS id, 'x' AS nm", PROJECT, DATASET))
+                .setUseLegacySql(false)
+                .build());
+        assertEquals(0L, ctasResult.getTotalRows());
+
+        TableResult dropResult = client.query(QueryJobConfiguration.newBuilder(
+                String.format("DROP TABLE `%s.%s.t`", PROJECT, DATASET))
+                .setUseLegacySql(false)
+                .build());
+        assertEquals(0L, dropResult.getTotalRows());
+        Schema dropSchema = dropResult.getSchema();
+        assertEquals(0, dropSchema == null ? 0 : dropSchema.getFields().size());
+    }
 }

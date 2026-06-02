@@ -183,3 +183,57 @@ def test_drop_table_removes_from_catalog(bq_runner: BqRunner) -> None:
         assert "keep_t" in table_ids
     finally:
         _rm_dataset(bq_runner, ds_id)
+
+
+def test_single_ddl_query_result_shape(bq_runner: BqRunner) -> None:
+    """Single-statement DDL emits no result rows through ``bq query``.
+
+    The CLI renders a DDL job's (correctly empty) result set as either
+    empty output or an empty JSON array — never a data row (pre-fix a
+    CTAS response carried DuckDB's spurious ``Count`` status row). The
+    exact wire shape is pinned by the ``rest_crud/ddl_result_*``
+    conformance corpus recorded from real BigQuery; this exercises it
+    end-to-end through the CLI.
+    """
+    ds_id = "bq_cli_ddl_result"
+    try:
+        _mk_dataset(bq_runner, ds_id)
+
+        created = bq_runner.run(
+            "query",
+            "--use_legacy_sql=false",
+            "--format=json",
+            f"CREATE TABLE `{ds_id}.t` (id INT64, name STRING)",
+        )
+        assert created.succeeded(), created.stderr
+        assert created.stdout.strip() in {"", "[]"}, created.stdout
+
+        ctas = bq_runner.run(
+            "query",
+            "--use_legacy_sql=false",
+            "--format=json",
+            f"CREATE TABLE `{ds_id}.t2` AS SELECT 1 AS id, 'x' AS nm",
+        )
+        assert ctas.succeeded(), ctas.stderr
+        assert ctas.stdout.strip() in {"", "[]"}, ctas.stdout
+
+        dropped = bq_runner.run(
+            "query",
+            "--use_legacy_sql=false",
+            "--format=json",
+            f"DROP TABLE `{ds_id}.t`",
+        )
+        assert dropped.succeeded(), dropped.stderr
+        assert dropped.stdout.strip() in {"", "[]"}, dropped.stdout
+
+        # The CTAS-created table is real and queryable afterwards.
+        readback = bq_runner.run(
+            "query",
+            "--use_legacy_sql=false",
+            "--format=json",
+            f"SELECT id, nm FROM `{ds_id}.t2` ORDER BY id",
+        )
+        assert readback.succeeded(), readback.stderr
+        assert readback.json() == [{"id": "1", "nm": "x"}]
+    finally:
+        _rm_dataset(bq_runner, ds_id)

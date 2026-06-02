@@ -1,0 +1,2 @@
+CREATE TABLE `${DATASET}.t` (id INT64);
+INSERT INTO `${DATASET}.t` (id) VALUES (1), (2);

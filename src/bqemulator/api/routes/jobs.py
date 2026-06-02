@@ -39,6 +39,7 @@ from bqemulator.domain.errors import (
     ValidationError,
     resource_not_found,
 )
+from bqemulator.jobs.ddl_result import DDL_BQ_WIRE_TYPES as _DDL_BQ_WIRE_TYPES
 from bqemulator.jobs.executor import (
     JOB_RESULTS,
     JOB_SCHEMAS,
@@ -427,9 +428,9 @@ async def _dry_run_response(
         # Surface ddlOperationPerformed on the dry-run preview for DDL
         # statements; the comparator's ``_compare_job_metadata`` reads
         # this key when present on the recorded baseline.
-        from bqemulator.jobs.executor import _ddl_operation_for  # local import to avoid cycle
+        from bqemulator.jobs.ddl_result import ddl_operation_for  # local import to avoid cycle
 
-        ddl_op = _ddl_operation_for(statement_type)
+        ddl_op = ddl_operation_for(statement_type)
         if ddl_op:
             body["ddlOperationPerformed"] = ddl_op
     # ``jobs.query`` dry-run omits the job id; ``jobs.insert`` keeps it.
@@ -612,39 +613,6 @@ def _column_def_to_bq_type(column: Any) -> str:
         # Fall back to the reverse map in storage.type_map.
         return _SQLGLOT_TO_BQ.get(sqlglot_name, sqlglot_name)
     return ""
-
-
-#: SQLGlot DataType name → BigQuery wire-format type name. The keys
-#: are the upper-case names SQLGlot emits when parsing BigQuery DDL
-#: column declarations; values are the BQ REST schema's ``type`` field.
-_DDL_BQ_WIRE_TYPES: dict[str, str] = {
-    "BIGINT": "INTEGER",
-    "INT": "INTEGER",
-    "INT64": "INTEGER",
-    "TEXT": "STRING",
-    "VARCHAR": "STRING",
-    "STRING": "STRING",
-    "DOUBLE": "FLOAT",
-    "FLOAT": "FLOAT",
-    "FLOAT64": "FLOAT",
-    "BOOL": "BOOLEAN",
-    "BOOLEAN": "BOOLEAN",
-    "DATE": "DATE",
-    "TIME": "TIME",
-    "DATETIME": "DATETIME",
-    "TIMESTAMP": "TIMESTAMP",
-    "TIMESTAMPTZ": "TIMESTAMP",
-    "BYTES": "BYTES",
-    "BLOB": "BYTES",
-    "VARBINARY": "BYTES",
-    "DECIMAL": "NUMERIC",
-    "NUMERIC": "NUMERIC",
-    "BIGNUMERIC": "BIGNUMERIC",
-    "JSON": "JSON",
-    "GEOGRAPHY": "GEOGRAPHY",
-    "GEOMETRY": "GEOGRAPHY",
-    "INTERVAL": "INTERVAL",
-}
 
 
 def _destination_table_from_dml(parsed: Any) -> tuple[str | None, str, str] | None:

@@ -107,4 +107,56 @@ describe("bqemulator Phase 1 REST (Node.js)", () => {
       /* ignore */
     }
   });
+
+  it("returns BigQuery's result shape for single-statement DDL", async () => {
+    // CREATE TABLE returns the declared schema with zero rows (not a
+    // status row); CTAS returns the SELECT's schema with zero rows;
+    // DROP TABLE returns a fully empty result. Pinned by the
+    // rest_crud/ddl_result_* conformance corpus recorded from real
+    // BigQuery.
+    const ddlDs = "e2e_node_ddl_result";
+    await client
+      .dataset(ddlDs)
+      .delete({ force: true })
+      .catch(() => {});
+    await client.createDataset(ddlDs, { location: "US" });
+    try {
+      const [createJob] = await client.createQueryJob({
+        query: `CREATE TABLE \`${PROJECT}.${ddlDs}.t\` (id INT64, name STRING)`,
+        location: "US",
+      });
+      const [createRows, , createResp] = await createJob.getQueryResults();
+      assert.equal(createRows.length, 0);
+      const createFields = (createResp.schema && createResp.schema.fields) || [];
+      assert.deepEqual(
+        createFields.map((f) => [f.name, f.type]),
+        [
+          ["id", "INTEGER"],
+          ["name", "STRING"],
+        ],
+      );
+      const [createMeta] = await createJob.getMetadata();
+      assert.equal(createMeta.statistics.query.ddlOperationPerformed, "CREATE");
+
+      const [ctasRows] = await client.query({
+        query: `CREATE TABLE \`${PROJECT}.${ddlDs}.t2\` AS SELECT 1 AS id, 'x' AS nm`,
+        location: "US",
+      });
+      assert.equal(ctasRows.length, 0);
+
+      const [dropJob] = await client.createQueryJob({
+        query: `DROP TABLE \`${PROJECT}.${ddlDs}.t\``,
+        location: "US",
+      });
+      const [dropRows, , dropResp] = await dropJob.getQueryResults();
+      assert.equal(dropRows.length, 0);
+      const dropFields = (dropResp.schema && dropResp.schema.fields) || [];
+      assert.equal(dropFields.length, 0);
+    } finally {
+      await client
+        .dataset(ddlDs)
+        .delete({ force: true })
+        .catch(() => {});
+    }
+  });
 });

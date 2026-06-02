@@ -139,3 +139,43 @@ def test_drop_table_via_query_removes_from_catalog(bq_client: bigquery.Client) -
         assert all(t.table_id != tbl_id for t in bq_client.list_tables(ds_id))
     finally:
         bq_client.delete_dataset(ds_id, delete_contents=True, not_found_ok=True)
+
+
+def test_single_ddl_query_result_shape(bq_client: bigquery.Client) -> None:
+    """A lone DDL statement's job result matches BigQuery's wire shape.
+
+    ``CREATE TABLE`` returns the declared schema with zero rows (not
+    DuckDB's ``Count`` status column); CTAS returns the SELECT's schema
+    with zero rows (no leaked status row); ``DROP TABLE`` returns a
+    fully empty result. ``ddlOperationPerformed`` reflects the actual
+    operation. Pinned by the ``rest_crud/ddl_result_*`` conformance
+    corpus recorded from real BigQuery.
+    """
+    ds_id = "e2e_ddl_result_py"
+    fqdn = f"{bq_client.project}.{ds_id}"
+    try:
+        bq_client.create_dataset(bigquery.Dataset(fqdn), exists_ok=True)
+
+        create_job = bq_client.query(f"CREATE TABLE `{fqdn}.t` (id INT64, name STRING)")
+        create_result = create_job.result()
+        assert list(create_result) == []
+        assert [(f.name, f.field_type) for f in create_result.schema] == [
+            ("id", "INTEGER"),
+            ("name", "STRING"),
+        ]
+        assert create_job.statement_type == "CREATE_TABLE"
+        assert create_job.ddl_operation_performed == "CREATE"
+
+        ctas_job = bq_client.query(f"CREATE TABLE `{fqdn}.t2` AS SELECT 1 AS id, 'x' AS nm")
+        ctas_result = ctas_job.result()
+        assert list(ctas_result) == []
+        assert [f.name for f in ctas_result.schema] == ["id", "nm"]
+        assert ctas_job.statement_type == "CREATE_TABLE_AS_SELECT"
+
+        drop_job = bq_client.query(f"DROP TABLE `{fqdn}.t`")
+        drop_result = drop_job.result()
+        assert list(drop_result) == []
+        assert list(drop_result.schema or []) == []
+        assert drop_job.ddl_operation_performed == "DROP"
+    finally:
+        bq_client.delete_dataset(fqdn, delete_contents=True, not_found_ok=True)

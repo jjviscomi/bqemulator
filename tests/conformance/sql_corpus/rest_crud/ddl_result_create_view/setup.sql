@@ -1,0 +1,1 @@
+CREATE TABLE `${DATASET}.base` (id INT64, name STRING);
