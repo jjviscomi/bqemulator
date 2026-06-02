@@ -468,6 +468,32 @@ SELECT id, label FROM `p.ds.t_last_stmt` ORDER BY id;
         result = await run_script(ctx, "p", script)
         assert result.final_table is None
 
+    async def test_call_proc_ending_in_ddl_returns_empty(self, ctx: AppContext) -> None:
+        """A CALL whose procedure ends in DDL returns an empty result.
+
+        The procedure produces no result set, so per last-statement-wins the
+        CALL (the script's final statement) must reset ``_final_table`` to
+        empty rather than leak the pre-CALL SELECT's rows.
+        """
+        script = (
+            "CREATE PROCEDURE `p.ds.p_only_ddl`()\n"
+            "BEGIN\n"
+            "  CREATE OR REPLACE TABLE `p.ds.from_proc` (id INT64);\n"
+            "END;\n"
+            "SELECT 1 AS a;\n"
+            "CALL `p.ds.p_only_ddl`();"
+        )
+        result = await run_script(ctx, "p", script)
+        assert result.final_table is None
+
+    async def test_execute_immediate_ddl_returns_empty(self, ctx: AppContext) -> None:
+        """A trailing ``EXECUTE IMMEDIATE`` of DDL returns an empty result."""
+        script = (
+            "SELECT 1 AS a;\nEXECUTE IMMEDIATE 'CREATE OR REPLACE TABLE `p.ds.ei_tbl` (id INT64)';"
+        )
+        result = await run_script(ctx, "p", script)
+        assert result.final_table is None
+
     async def test_ddl_only_script_returns_no_rows(
         self,
         ctx: AppContext,

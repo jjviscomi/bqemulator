@@ -681,8 +681,10 @@ class ScriptInterpreter:
         # rows; DDL / DML have no result set, so reset to ``None`` (rendered
         # as an empty 0-column result) — matching BigQuery, which returns the
         # final statement's result, not the last row-producing one. CALL and
-        # EXECUTE IMMEDIATE set ``_final_table`` through their own dispatch
-        # and are unaffected.
+        # EXECUTE IMMEDIATE apply the same rule through their own dispatch
+        # (``_invoke_procedure`` / ``_run_statement_with_params``): the
+        # invoked or dynamic statement's result wins, and resets to empty
+        # when it produces none.
         if _is_row_producing(sql):
             self._final_table = table
         else:
@@ -899,10 +901,13 @@ class ScriptInterpreter:
         combined = script_params + using_values
         try:
             result = self._ctx.engine.execute(duckdb_sql, combined or None)
-            if hasattr(result, "to_arrow_table"):
-                table = result.to_arrow_table()
-                if table.num_rows or table.num_columns:
-                    self._final_table = table
+            # Last-statement-wins: a dynamic SELECT contributes its rows; a
+            # dynamic DDL / DML statement has no result set, so reset to empty
+            # rather than leaking the prior result (or DuckDB's status table).
+            if _is_row_producing(bq_sql) and hasattr(result, "to_arrow_table"):
+                self._final_table = result.to_arrow_table()
+            else:
+                self._final_table = None
         except DomainError:
             raise
         except Exception as exc:
@@ -962,9 +967,11 @@ class ScriptInterpreter:
             nested._frames.declare(param.name, "ANY", value)
         with contextlib.suppress(ReturnSignal):
             await nested.run(routine.definition_body)
-        # Merge the callee's final table into ours.
-        if nested._final_table is not None:
-            self._final_table = nested._final_table
+        # Last-statement-wins: a CALL's result is the procedure's final
+        # result. Propagate it unconditionally so a procedure whose last
+        # statement is DDL / DML (no result set) resets the caller's
+        # ``_final_table`` to empty rather than leaking the pre-CALL result.
+        self._final_table = nested._final_table
         return nested._frames.snapshot_current()
 
     def _resolve_ref(self, ref: str) -> tuple[str, str, str]:
