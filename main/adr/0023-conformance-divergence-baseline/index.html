@@ -6076,7 +6076,12 @@ metrics move from 478 passed + 163 xfailed to <strong>479 passed +
    output wins" semantic. Today's tests didn't exercise the
    subtle case (<code>SELECT …; INSERT …</code> ending in DML), but the
    contract is now explicit rather than depending on DuckDB's
-   <code>Count: int64</code> placeholder happening to look empty.</li>
+   <code>Count: int64</code> placeholder happening to look empty.
+   (Superseded: the 2026-06-02 amendment below records that this
+   "last statement with output" framing was later verified against
+   real BigQuery and found incorrect — BigQuery returns the <em>final</em>
+   statement's result, so a script ending in DDL / DML returns an
+   empty result.)</li>
 </ol>
 <p>Regression coverage:
 <a href="https://github.com/jjviscomi/bqemulator/blob/main/tests/unit/scripting/test_interpreter.py"><code>tests/unit/scripting/test_interpreter.py</code></a>
@@ -6179,6 +6184,32 @@ fixtures) or, if it self-cleans with a trailing <code>DROP SCHEMA</code>, record
 an empty BigQuery result — BigQuery returns the final statement's
 result, not the last row-producing statement's — so the script-path
 parity is pinned by the unit and e2e tiers instead.</p>
+<p><strong>Amendment (2026-06-02) — script result is the <em>last statement's</em>
+result, not the last row-producing one.</strong> Item 4 above adopted a "last
+statement with output wins" rule for <code>_final_table</code> and noted the
+trailing-DML/DDL case was never exercised against real BigQuery. It has
+now been verified, and the assumption was incorrect: BigQuery returns
+the result set of a script's <strong>final</strong> statement. A <code>SELECT</code> / <code>WITH</code> /
+set-op contributes its rows; a DDL / DML / transaction-control statement
+has no result set, so a script ending in one returns an <strong>empty</strong> result
+(<code>schema: []</code>, <code>rows: []</code>, <code>statement_type: SCRIPT</code>) — even when an
+earlier statement produced rows. Recorded from real BigQuery:
+<code>SELECT 1 AS a; SELECT 2 AS b</code> returns the second SELECT's row;
+<code>SELECT 1 AS a; CREATE TABLE …</code> and <code>SELECT 1 AS a; UPDATE …</code> return an
+empty result. <code>ScriptInterpreter._exec_sql</code> now resets <code>_final_table</code> to
+<code>None</code> (rendered as an empty 0-column result) for terminal DDL / DML /
+transaction-control statements, leaving the <code>SELECT</code> path and the <code>CALL</code>
+/ <code>EXECUTE IMMEDIATE</code> result-propagation paths unchanged. No existing
+fixture regressed: every committed multi-statement scripting and
+versioning fixture ends in a <code>SELECT</code> (or <code>CALL</code> → the procedure's
+SELECT), for which the corrected rule yields the identical result.
+Pinned by <code>routines_scripting/script_result_two_selects</code>,
+<code>script_result_ddl_last</code>, and <code>script_result_dml_last</code>, an expanded
+<code>TestLastStatementWins</code> unit class, and e2e coverage across all five
+conformance clients. A separate, pre-existing divergence surfaced while
+recording — a <em>single</em> DDL statement on the executor fast path returns
+DuckDB's <code>Count</code> status column instead of the created object's schema —
+and is tracked as its own follow-up, out of scope here.</p>
 <h4 id="bucket-g-range-interval-wire-format-closed">Bucket G — RANGE / INTERVAL wire format — Closed<a class="headerlink" href="#bucket-g-range-interval-wire-format-closed" title="Permanent link">&para;</a></h4>
 <p><strong>Status.</strong> Closed. The closure ships three coordinated
 fixes:</p>
