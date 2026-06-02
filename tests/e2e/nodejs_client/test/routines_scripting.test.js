@@ -112,6 +112,37 @@ END IF;
     assert.deepEqual(names, ["js_double", "one_to_n", "sql_inc"]);
   });
 
+  it("registers a CREATE SCHEMA created inside a multi-statement script", async () => {
+    // A single-statement CREATE SCHEMA takes the executor fast path; the
+    // trailing SELECT tips this job into the scripting interpreter, whose
+    // DDL-sync hook must register the dataset so it surfaces via
+    // datasets.list and datasets.get.
+    const scriptedDs = "scripted_created_schema_node_ds";
+    // Guard against a stale dataset left by an interrupted run.
+    await client
+      .dataset(scriptedDs)
+      .delete({ force: true })
+      .catch(() => {});
+    try {
+      await client.query(`CREATE SCHEMA \`${scriptedDs}\`;\nSELECT 1 AS n;`);
+
+      const [datasets] = await client.getDatasets();
+      const ids = datasets.map((d) => d.id);
+      assert.ok(
+        ids.includes(scriptedDs),
+        `dataset ${scriptedDs} absent from datasets.list after scripted CREATE SCHEMA`,
+      );
+
+      const [exists] = await client.dataset(scriptedDs).exists();
+      assert.ok(exists, `datasets.get failed for ${scriptedDs}`);
+    } finally {
+      await client
+        .dataset(scriptedDs)
+        .delete({ force: true })
+        .catch(() => {});
+    }
+  });
+
   it("returns an empty result for a script ending in DDL", async () => {
     // Last-statement-wins: a trailing DDL has no result set, so the prior
     // SELECT's rows must not leak into the script result.

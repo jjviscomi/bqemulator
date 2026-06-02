@@ -114,6 +114,56 @@ END IF;
 	}
 }
 
+// TestScriptedCreateSchemaIsListed checks that a CREATE SCHEMA inside a
+// multi-statement script registers the dataset in the catalog so it
+// surfaces via datasets.list and datasets.get. A single-statement
+// CREATE SCHEMA takes the executor fast path; the trailing SELECT tips
+// this job into the scripting interpreter, whose DDL-sync hook must run.
+func TestScriptedCreateSchemaIsListed(t *testing.T) {
+	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
+	defer cancel()
+	client := routines_scriptingClient(ctx, t)
+	defer client.Close()
+
+	dsID := "scripted_created_schema_go_ds"
+	ds := client.Dataset(dsID)
+	// Guard against a stale dataset left by an interrupted run.
+	_ = ds.DeleteWithContents(ctx)
+	defer func() {
+		if err := ds.DeleteWithContents(ctx); err != nil {
+			t.Logf("cleanup: %v", err)
+		}
+	}()
+
+	script := fmt.Sprintf("CREATE SCHEMA `%s`;\nSELECT 1 AS n;", dsID)
+	if _, err := client.Query(script).Read(ctx); err != nil {
+		t.Fatalf("script query: %v", err)
+	}
+
+	found := false
+	it := client.Datasets(ctx)
+	for {
+		d, err := it.Next()
+		if err == iterator.Done {
+			break
+		}
+		if err != nil {
+			t.Fatalf("list datasets: %v", err)
+		}
+		if d.DatasetID == dsID {
+			found = true
+			break
+		}
+	}
+	if !found {
+		t.Fatalf("dataset %q absent from datasets.list after scripted CREATE SCHEMA", dsID)
+	}
+
+	if _, err := ds.Metadata(ctx); err != nil {
+		t.Fatalf("datasets.get %q: %v", dsID, err)
+	}
+}
+
 // TestScriptEndingInDDLReturnsEmpty verifies last-statement-wins: a
 // multi-statement script ending in DDL returns an empty result, not the
 // prior SELECT's rows (BigQuery returns the final statement's result set).
