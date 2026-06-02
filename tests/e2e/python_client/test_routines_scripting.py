@@ -220,3 +220,26 @@ def test_routines_scripting_dml_flow(bq_client: bigquery.Client) -> None:
             delete_contents=True,
             not_found_ok=True,
         )
+
+
+def test_scripted_create_schema_is_listed(bq_client: bigquery.Client) -> None:
+    """A ``CREATE SCHEMA`` inside a multi-statement script registers the dataset.
+
+    A single-statement ``CREATE SCHEMA`` takes the executor fast path;
+    the trailing ``SELECT`` tips this job into the scripting interpreter,
+    whose DDL-sync hook must register the dataset so it surfaces via
+    ``datasets.list`` and ``datasets.get``, matching real BigQuery.
+    """
+    ds_id = "scripted_created_schema_ds"
+    fqdn = f"{bq_client.project}.{ds_id}"
+    try:
+        # Guard against a stale dataset left by an earlier interrupted run.
+        bq_client.delete_dataset(fqdn, delete_contents=True, not_found_ok=True)
+
+        bq_client.query(f"CREATE SCHEMA `{ds_id}`;\nSELECT 1 AS n;").result()
+
+        listed = {ds.dataset_id for ds in bq_client.list_datasets()}
+        assert ds_id in listed
+        assert bq_client.get_dataset(fqdn).dataset_id == ds_id
+    finally:
+        bq_client.delete_dataset(fqdn, delete_contents=True, not_found_ok=True)
