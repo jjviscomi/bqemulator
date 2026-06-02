@@ -6151,6 +6151,34 @@ is wired into both the single-statement executor path and the script
 interpreter. <code>DROP MATERIALIZED VIEW</code> and <code>DROP SNAPSHOT TABLE</code>
 continue to route through the versioning DDL manager, which already
 reconciles the catalog.</p>
+<p><strong>Amendment (2026-06-01) — <code>CREATE SCHEMA</code> catalog sync wired into the
+script interpreter.</strong> The 2026-05-27 amendment added
+<code>sync_created_schema</code> but wired it only into the single-statement
+executor path (<code>_run_query_body</code>); the script interpreter's <code>_exec_sql</code>
+hook called <code>sync_created_table</code> / <code>sync_created_view</code> (and later
+<code>sync_dropped_object</code>) but not <code>sync_created_schema</code>. As a result, a
+bare <code>CREATE SCHEMA</code> inside a multi-statement script created the DuckDB
+schema but left the dataset unregistered in the catalog, so it stayed
+invisible to <code>INFORMATION_SCHEMA.SCHEMATA</code> and <code>datasets.list</code> —
+diverging from real BigQuery and from the single-statement path, which
+already registered it. A single <code>CREATE SCHEMA ds;</code> routes to the
+executor fast path (<code>is_scripted</code> is false for a lone statement), so
+the gap surfaced only once a second statement tipped the job into the
+interpreter. <code>ScriptInterpreter._exec_sql</code> now calls
+<code>sync_created_schema</code> alongside the other sync helpers, so SQL-created
+datasets are catalog-visible regardless of whether the statement ran
+standalone or inside a script. Pinned by interpreter-wiring unit tests
+(<code>TestCreateSchemaSyncWiring</code> in <code>tests/unit/catalog/test_ddl_sync.py</code>)
+covering the executor fast path, the script path, and a
+SCHEMATA-visibility composition, plus end-to-end coverage across all
+five conformance clients in their <code>routines_scripting</code> suites. A
+recorded conformance fixture was evaluated and deliberately omitted: a
+multi-statement <code>CREATE SCHEMA</code> fixture either leaves a dataset in the
+shared session-scoped corpus emulator (perturbing the dataset-listing
+fixtures) or, if it self-cleans with a trailing <code>DROP SCHEMA</code>, records
+an empty BigQuery result — BigQuery returns the final statement's
+result, not the last row-producing statement's — so the script-path
+parity is pinned by the unit and e2e tiers instead.</p>
 <h4 id="bucket-g-range-interval-wire-format-closed">Bucket G — RANGE / INTERVAL wire format — Closed<a class="headerlink" href="#bucket-g-range-interval-wire-format-closed" title="Permanent link">&para;</a></h4>
 <p><strong>Status.</strong> Closed. The closure ships three coordinated
 fixes:</p>
