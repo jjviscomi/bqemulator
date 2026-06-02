@@ -104,9 +104,11 @@ class ScriptResult:
     """Result of running a script.
 
     Attributes:
-        final_table: The arrow table produced by the last executed
-            SELECT in the script (or None if the last statement did not
-            return a result set).
+        final_table: The result set of the script's *last* statement when
+            that statement is row-producing (SELECT / WITH / set-op);
+            ``None`` when the last statement was DDL / DML / transaction
+            control (rendered as an empty result), matching BigQuery's
+            last-statement-wins semantic.
         statements_executed: Count of executed statements, used for the
             job's ``statistics.scriptStatistics.statementCount``.
     """
@@ -506,6 +508,10 @@ class ScriptInterpreter:
             target_table=tbl,
         )
         await execute_versioning_ddl(parsed, self._ctx)
+        # Last-statement-wins: the builtin refresh CALL produces no result
+        # set, so reset ``_final_table`` rather than leak the prior result
+        # (this path bypasses ``_invoke_procedure``'s propagation).
+        self._final_table = None
 
     async def _exec_execute_immediate(self, stmt: ExecuteImmediateStmt) -> None:
         sql_value = await self._eval_expr_scalar(stmt.sql_expr)
@@ -644,6 +650,11 @@ class ScriptInterpreter:
         txn_op = _classify_txn_statement(sql)
         if txn_op is not None:
             await self._handle_txn_statement(txn_op)
+            # Transaction-control statements have no result set; per the
+            # last-statement-wins rule, a script ending here returns an
+            # empty result (BigQuery surfaces the final statement's result,
+            # and only SELECT-like statements have one).
+            self._final_table = None
             return
         # If we're inside a user-level transaction, snapshot each DML
         # target the first time it's modified. On ROLLBACK the snapshots
@@ -661,14 +672,27 @@ class ScriptInterpreter:
             parsed = VersioningDDLRouter(self._project_id).parse(sql)
             if parsed is not None:
                 await execute_versioning_ddl(parsed, self._ctx)
-                # DDL contributes no rows — leave ``_final_table``
-                # untouched so the next SELECT (if any) wins.
+                # Versioning DDL has no result set; reset ``_final_table``
+                # so a script ending here returns an empty result
+                # (last-statement-wins, matching BigQuery).
+                self._final_table = None
                 return
         # Other SQL (SELECT, CREATE VIEW, CREATE TABLE [AS …], DML)
         # flows through the standard pipeline.
         table = await self._run_query(sql)
+        # Last-statement-wins: the script result is the *last* statement's
+        # result set. SELECT / WITH / set-op statements contribute their
+        # rows; DDL / DML have no result set, so reset to ``None`` (rendered
+        # as an empty 0-column result) — matching BigQuery, which returns the
+        # final statement's result, not the last row-producing one. CALL and
+        # EXECUTE IMMEDIATE apply the same rule through their own dispatch
+        # (``_invoke_procedure`` / ``_run_statement_with_params``): the
+        # invoked or dynamic statement's result wins, and resets to empty
+        # when it produces none.
         if _is_row_producing(sql):
             self._final_table = table
+        else:
+            self._final_table = None
         # Register plain ``CREATE [OR REPLACE] SCHEMA`` (dataset) outputs
         # so a dataset created inside a multi-statement script is
         # catalog-visible (INFORMATION_SCHEMA.SCHEMATA, datasets.list),
@@ -881,10 +905,13 @@ class ScriptInterpreter:
         combined = script_params + using_values
         try:
             result = self._ctx.engine.execute(duckdb_sql, combined or None)
-            if hasattr(result, "to_arrow_table"):
-                table = result.to_arrow_table()
-                if table.num_rows or table.num_columns:
-                    self._final_table = table
+            # Last-statement-wins: a dynamic SELECT contributes its rows; a
+            # dynamic DDL / DML statement has no result set, so reset to empty
+            # rather than leaking the prior result (or DuckDB's status table).
+            if _is_row_producing(bq_sql) and hasattr(result, "to_arrow_table"):
+                self._final_table = result.to_arrow_table()
+            else:
+                self._final_table = None
         except DomainError:
             raise
         except Exception as exc:
@@ -944,9 +971,11 @@ class ScriptInterpreter:
             nested._frames.declare(param.name, "ANY", value)
         with contextlib.suppress(ReturnSignal):
             await nested.run(routine.definition_body)
-        # Merge the callee's final table into ours.
-        if nested._final_table is not None:
-            self._final_table = nested._final_table
+        # Last-statement-wins: a CALL's result is the procedure's final
+        # result. Propagate it unconditionally so a procedure whose last
+        # statement is DDL / DML (no result set) resets the caller's
+        # ``_final_table`` to empty rather than leaking the pre-CALL result.
+        self._final_table = nested._final_table
         return nested._frames.snapshot_current()
 
     def _resolve_ref(self, ref: str) -> tuple[str, str, str]:
@@ -1168,11 +1197,12 @@ def _dml_targets(bq_sql: str, project_id: str) -> list[str]:
 def _is_row_producing(bq_sql: str) -> bool:
     """Return True if ``bq_sql`` is a row-producing statement.
 
-    BigQuery's "last statement with output wins" rule (ADR 0023 §1.F)
-    distinguishes SELECT / WITH / set-op statements (which contribute
-    rows to the script's final result) from DDL / DML (which execute
-    but emit no rows). Unparseable statements default to ``False`` so
-    a malformed DDL never accidentally populates the final result.
+    Used by the script's last-statement-wins rule (ADR 0023 §1.F):
+    SELECT / WITH / set-op statements contribute their rows to the
+    script's final result; DDL / DML execute but have no result set, so
+    a script ending in one returns an empty result. Unparseable
+    statements default to ``False`` so a malformed statement never
+    accidentally populates the final result.
     """
     try:
         tree = sqlglot.parse_one(bq_sql, read="bigquery")

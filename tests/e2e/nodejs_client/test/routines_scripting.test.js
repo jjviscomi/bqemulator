@@ -142,4 +142,25 @@ END IF;
         .catch(() => {});
     }
   });
+
+  it("returns an empty result for a script ending in DDL", async () => {
+    // Last-statement-wins: a trailing DDL has no result set, so the prior
+    // SELECT's rows must not leak into the script result.
+    const ds = "script_result_ddl_last_node";
+    await client
+      .dataset(ds)
+      .delete({ force: true })
+      .catch(() => {});
+    await client.createDataset(ds, { location: "US" });
+    try {
+      const script = `SELECT 1 AS a;\nCREATE TABLE \`${PROJECT}.${ds}.trailing\` (id INT64)`;
+      const [rows] = await client.query(script);
+      assert.equal(rows.length, 0);
+    } finally {
+      await client
+        .dataset(ds)
+        .delete({ force: true })
+        .catch(() => {});
+    }
+  });
 });

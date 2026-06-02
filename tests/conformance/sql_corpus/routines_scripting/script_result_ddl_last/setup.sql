@@ -1,0 +1,1 @@
+CREATE TABLE `${DATASET}.seed` (x INT64);

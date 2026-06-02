@@ -506,6 +506,11 @@ metrics move from 478 passed + 163 xfailed to **479 passed +
    subtle case (``SELECT …; INSERT …`` ending in DML), but the
    contract is now explicit rather than depending on DuckDB's
    ``Count: int64`` placeholder happening to look empty.
+   (Superseded: the 2026-06-02 amendment below records that this
+   "last statement with output" framing was later verified against
+   real BigQuery and found incorrect — BigQuery returns the *final*
+   statement's result, so a script ending in DDL / DML returns an
+   empty result.)
 
 Regression coverage:
 [`tests/unit/scripting/test_interpreter.py`](https://github.com/jjviscomi/bqemulator/blob/main/tests/unit/scripting/test_interpreter.py)
@@ -614,6 +619,33 @@ fixtures) or, if it self-cleans with a trailing `DROP SCHEMA`, records
 an empty BigQuery result — BigQuery returns the final statement's
 result, not the last row-producing statement's — so the script-path
 parity is pinned by the unit and e2e tiers instead.
+
+**Amendment (2026-06-02) — script result is the *last statement's*
+result, not the last row-producing one.** Item 4 above adopted a "last
+statement with output wins" rule for `_final_table` and noted the
+trailing-DML/DDL case was never exercised against real BigQuery. It has
+now been verified, and the assumption was incorrect: BigQuery returns
+the result set of a script's **final** statement. A `SELECT` / `WITH` /
+set-op contributes its rows; a DDL / DML / transaction-control statement
+has no result set, so a script ending in one returns an **empty** result
+(`schema: []`, `rows: []`, `statement_type: SCRIPT`) — even when an
+earlier statement produced rows. Recorded from real BigQuery:
+`SELECT 1 AS a; SELECT 2 AS b` returns the second SELECT's row;
+`SELECT 1 AS a; CREATE TABLE …` and `SELECT 1 AS a; UPDATE …` return an
+empty result. `ScriptInterpreter._exec_sql` now resets `_final_table` to
+`None` (rendered as an empty 0-column result) for terminal DDL / DML /
+transaction-control statements, leaving the `SELECT` path and the `CALL`
+/ `EXECUTE IMMEDIATE` result-propagation paths unchanged. No existing
+fixture regressed: every committed multi-statement scripting and
+versioning fixture ends in a `SELECT` (or `CALL` → the procedure's
+SELECT), for which the corrected rule yields the identical result.
+Pinned by `routines_scripting/script_result_two_selects`,
+`script_result_ddl_last`, and `script_result_dml_last`, an expanded
+`TestLastStatementWins` unit class, and e2e coverage across all five
+conformance clients. A separate, pre-existing divergence surfaced while
+recording — a *single* DDL statement on the executor fast path returns
+DuckDB's `Count` status column instead of the created object's schema —
+and is tracked as its own follow-up, out of scope here.
 
 #### Bucket G — RANGE / INTERVAL wire format — Closed
 

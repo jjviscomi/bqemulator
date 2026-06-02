@@ -243,3 +243,27 @@ def test_scripted_create_schema_is_listed(bq_client: bigquery.Client) -> None:
         assert bq_client.get_dataset(fqdn).dataset_id == ds_id
     finally:
         bq_client.delete_dataset(fqdn, delete_contents=True, not_found_ok=True)
+
+
+def test_script_ending_in_ddl_returns_empty(bq_client: bigquery.Client) -> None:
+    """A multi-statement script ending in DDL returns an empty result.
+
+    BigQuery returns the *last* statement's result; a trailing DDL has no
+    result set, so the prior ``SELECT``'s rows must not leak into the
+    script result (last-statement-wins).
+    """
+    ds_id = "script_result_ddl_last_py"
+    try:
+        bq_client.create_dataset(
+            bigquery.Dataset(f"{bq_client.project}.{ds_id}"),
+            exists_ok=True,
+        )
+        script = f"SELECT 1 AS a;\nCREATE TABLE `{bq_client.project}.{ds_id}.trailing` (id INT64)"
+        rows = list(bq_client.query(script).result())
+        assert rows == []
+    finally:
+        bq_client.delete_dataset(
+            f"{bq_client.project}.{ds_id}",
+            delete_contents=True,
+            not_found_ok=True,
+        )

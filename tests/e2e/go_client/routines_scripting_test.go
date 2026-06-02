@@ -163,3 +163,35 @@ func TestScriptedCreateSchemaIsListed(t *testing.T) {
 		t.Fatalf("datasets.get %q: %v", dsID, err)
 	}
 }
+
+// TestScriptEndingInDDLReturnsEmpty verifies last-statement-wins: a
+// multi-statement script ending in DDL returns an empty result, not the
+// prior SELECT's rows (BigQuery returns the final statement's result set).
+func TestScriptEndingInDDLReturnsEmpty(t *testing.T) {
+	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
+	defer cancel()
+	client := routines_scriptingClient(ctx, t)
+	defer client.Close()
+
+	dsID := "script_result_ddl_last_go"
+	ds := client.Dataset(dsID)
+	_ = ds.DeleteWithContents(ctx)
+	if err := ds.Create(ctx, &bigquery.DatasetMetadata{Location: "US"}); err != nil {
+		t.Fatalf("create dataset: %v", err)
+	}
+	defer func() {
+		if err := ds.DeleteWithContents(ctx); err != nil {
+			t.Logf("cleanup: %v", err)
+		}
+	}()
+
+	script := fmt.Sprintf("SELECT 1 AS a;\nCREATE TABLE `%s.%s.trailing` (id INT64)", client.Project(), dsID)
+	it, err := client.Query(script).Read(ctx)
+	if err != nil {
+		t.Fatalf("script query: %v", err)
+	}
+	var row []bigquery.Value
+	if err := it.Next(&row); err != iterator.Done {
+		t.Fatalf("expected empty result (iterator.Done), got row=%v err=%v", row, err)
+	}
+}
