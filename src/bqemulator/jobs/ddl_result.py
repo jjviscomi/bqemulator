@@ -298,29 +298,39 @@ def _field_from_data_type(name: str, data_type: exp.DataType) -> dict[str, Any] 
     """
     type_name = data_type.this.name.upper() if data_type.this is not None else ""
     if type_name == "ARRAY":
-        inner = data_type.expressions[0] if data_type.expressions else None
-        if not isinstance(inner, exp.DataType):
-            return None
-        element = _field_from_data_type(name, inner)
-        if element is None or element["mode"] == "REPEATED":
-            # BigQuery forbids ARRAY<ARRAY<…>>; refuse rather than guess.
-            return None
-        element["mode"] = "REPEATED"
-        return element
+        return _repeated_field(name, data_type)
     if type_name == "STRUCT":
-        nested: list[dict[str, Any]] = []
-        for sub in data_type.expressions or []:
-            if not isinstance(sub, exp.ColumnDef):
-                return None
-            sub_entry = _field_from_column_def(sub)
-            if sub_entry is None:
-                return None
-            nested.append(sub_entry)
-        return {"name": name, "type": "RECORD", "mode": "NULLABLE", "fields": nested}
+        return _record_field(name, data_type)
     wire_type = DDL_BQ_WIRE_TYPES.get(type_name)
     if wire_type is None:
         return None
     return {"name": name, "type": wire_type, "mode": "NULLABLE"}
+
+
+def _repeated_field(name: str, data_type: exp.DataType) -> dict[str, Any] | None:
+    """Render an ``ARRAY<T>`` declared type as its REPEATED element field."""
+    inner = data_type.expressions[0] if data_type.expressions else None
+    if not isinstance(inner, exp.DataType):
+        return None
+    element = _field_from_data_type(name, inner)
+    if element is None or element["mode"] == "REPEATED":
+        # BigQuery forbids ARRAY<ARRAY<…>>; refuse rather than guess.
+        return None
+    element["mode"] = "REPEATED"
+    return element
+
+
+def _record_field(name: str, data_type: exp.DataType) -> dict[str, Any] | None:
+    """Render a ``STRUCT<…>`` declared type as a RECORD field with nested fields."""
+    nested: list[dict[str, Any]] = []
+    for sub in data_type.expressions or []:
+        if not isinstance(sub, exp.ColumnDef):
+            return None
+        sub_entry = _field_from_column_def(sub)
+        if sub_entry is None:
+            return None
+        nested.append(sub_entry)
+    return {"name": name, "type": "RECORD", "mode": "NULLABLE", "fields": nested}
 
 
 def _has_not_null_constraint(column: exp.ColumnDef) -> bool:
