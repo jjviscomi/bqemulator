@@ -1,0 +1,1 @@
+CREATE TABLE `${DATASET}.t` AS SELECT 1 AS id, 'x' AS name UNION ALL SELECT 2, 'y'

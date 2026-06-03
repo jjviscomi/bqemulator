@@ -1,0 +1,1 @@
+DROP TABLE IF EXISTS `${DATASET}.missing_t`

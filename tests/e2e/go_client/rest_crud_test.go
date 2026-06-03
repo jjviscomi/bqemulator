@@ -157,3 +157,77 @@ func TestRestCrudDropTableRemovesFromCatalog(t *testing.T) {
 		}
 	}
 }
+
+// TestRestCrudSingleDDLQueryResultShape verifies the job result of a lone
+// DDL statement: CREATE TABLE returns the declared schema with zero rows
+// (not DuckDB's Count status column), CTAS returns the SELECT's schema
+// with zero rows (no leaked status row), and DROP TABLE returns a fully
+// empty result — matching the rest_crud/ddl_result_* conformance corpus
+// recorded from real BigQuery.
+func TestRestCrudSingleDDLQueryResultShape(t *testing.T) {
+	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
+	defer cancel()
+	client := bqClient(ctx, t)
+	defer client.Close()
+
+	datasetID := "e2e_go_ddl_result"
+	ds := client.Dataset(datasetID)
+	_ = ds.DeleteWithContents(ctx)
+	if err := ds.Create(ctx, &bigquery.DatasetMetadata{Location: "US"}); err != nil {
+		t.Fatalf("create dataset: %v", err)
+	}
+	defer func() {
+		if err := ds.DeleteWithContents(ctx); err != nil {
+			t.Logf("cleanup delete: %v", err)
+		}
+	}()
+
+	// CREATE TABLE: declared schema, zero rows.
+	createIt, err := client.Query(fmt.Sprintf(
+		"CREATE TABLE `%s.%s.t` (id INT64, name STRING)", project(), datasetID,
+	)).Read(ctx)
+	if err != nil {
+		t.Fatalf("create table query: %v", err)
+	}
+	var row []bigquery.Value
+	if err := createIt.Next(&row); err != iterator.Done {
+		t.Fatalf("expected zero rows from CREATE TABLE, got row=%v err=%v", row, err)
+	}
+	if got := len(createIt.Schema); got != 2 {
+		t.Fatalf("expected 2 schema fields from CREATE TABLE, got %d", got)
+	}
+	if createIt.Schema[0].Name != "id" || createIt.Schema[0].Type != bigquery.IntegerFieldType {
+		t.Fatalf("unexpected first field: %+v", createIt.Schema[0])
+	}
+	if createIt.Schema[1].Name != "name" || createIt.Schema[1].Type != bigquery.StringFieldType {
+		t.Fatalf("unexpected second field: %+v", createIt.Schema[1])
+	}
+
+	// CTAS: the SELECT's schema, zero rows (no leaked status row).
+	ctasIt, err := client.Query(fmt.Sprintf(
+		"CREATE TABLE `%s.%s.t2` AS SELECT 1 AS id, 'x' AS nm", project(), datasetID,
+	)).Read(ctx)
+	if err != nil {
+		t.Fatalf("ctas query: %v", err)
+	}
+	if err := ctasIt.Next(&row); err != iterator.Done {
+		t.Fatalf("expected zero rows from CTAS, got row=%v err=%v", row, err)
+	}
+	if got := len(ctasIt.Schema); got != 2 {
+		t.Fatalf("expected 2 schema fields from CTAS, got %d", got)
+	}
+
+	// DROP TABLE: fully empty result.
+	dropIt, err := client.Query(fmt.Sprintf(
+		"DROP TABLE `%s.%s.t`", project(), datasetID,
+	)).Read(ctx)
+	if err != nil {
+		t.Fatalf("drop query: %v", err)
+	}
+	if err := dropIt.Next(&row); err != iterator.Done {
+		t.Fatalf("expected zero rows from DROP TABLE, got row=%v err=%v", row, err)
+	}
+	if got := len(dropIt.Schema); got != 0 {
+		t.Fatalf("expected empty schema from DROP TABLE, got %d fields", got)
+	}
+}

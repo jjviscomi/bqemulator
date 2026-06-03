@@ -1,0 +1,1 @@
+CREATE VIEW `${DATASET}.v` AS SELECT id, name FROM `${DATASET}.base`

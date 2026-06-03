@@ -647,6 +647,51 @@ recording — a *single* DDL statement on the executor fast path returns
 DuckDB's `Count` status column instead of the created object's schema —
 and is tracked as its own follow-up, out of scope here.
 
+**Amendment (2026-06-02) — single-statement DDL job results follow a
+per-statement-type contract.** The follow-up above is closed. The
+executor's single-statement fast path previously stored DuckDB's raw
+status output for DDL — a 1-column `Count` (most DDL) or `Success`
+(drops) table, with CTAS and `TRUNCATE` even leaking a status *row*.
+Sixteen fixtures recorded from real BigQuery
+(`rest_crud/ddl_result_*`) pin the actual contract:
+
+1. **`CREATE TABLE` / CTAS / `CREATE VIEW`** return a zero-row result
+   whose schema is the *statement's analyzed output schema*: the
+   declared column list when present — including the `IF NOT EXISTS`
+   skip case, which reports the statement's columns even though the
+   pre-existing table's differ — otherwise the created object's
+   columns (CTAS / view SELECT bodies). `NOT NULL` columns surface as
+   `REQUIRED`, `ARRAY<T>` as `REPEATED` element fields, and
+   `STRUCT<…>` as `RECORD` with nested `fields`.
+2. **`ALTER TABLE`, `CREATE SCHEMA`, `DROP TABLE/VIEW/SCHEMA`** return
+   a fully empty result (`schema: []`, `rows: []`).
+3. **`TRUNCATE TABLE`** is DML on the wire: empty result,
+   `numDmlAffectedRows` carrying the removed-row count, and **no**
+   `ddlOperationPerformed`.
+4. **`ddlOperationPerformed` reflects what actually happened**, not
+   the statement's verb: `CREATE` for a fresh target (even under
+   `OR REPLACE` / `IF NOT EXISTS`), `REPLACE` when `OR REPLACE`
+   replaced an existing object, `SKIP` when `IF NOT EXISTS` found an
+   existing object or `DROP … IF EXISTS` found nothing, else
+   `DROP` / `ALTER`.
+
+`bqemulator.jobs.ddl_result` owns the contract: the executor resolves
+the DDL operation against pre-mutation catalog existence *before*
+running the statement, then `_finalize_statement_result` replaces the
+DuckDB status table with the recorded shape (declared-column-list
+mapping first, post-sync catalog introspection as the fallback) and
+overrides the stored response schema. Two narrow boundaries fall back
+to catalog introspection because real-BigQuery recordings do not cover
+them: an `IF NOT EXISTS` skip on a CTAS / `CREATE VIEW` (no declared
+list to report, so the existing object's columns surface), and declared
+columns whose type the static DDL map cannot resolve. A single
+`CREATE FUNCTION` / `CREATE PROCEDURE` statement still routes through
+the scripting interpreter and reports `statementType: SCRIPT` — that
+labeling divergence is independent of the result-shape contract and
+remains open. Pinned by the sixteen `rest_crud/ddl_result_*` fixtures,
+the `tests/unit/jobs/test_ddl_result.py` unit suite, and e2e coverage
+across all five conformance clients.
+
 #### Bucket G — RANGE / INTERVAL wire format — Closed
 
 **Status.** Closed. The closure ships three coordinated

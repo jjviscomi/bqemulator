@@ -34,6 +34,11 @@ from bqemulator.jobs.avro_reader import (
     is_decimal_logical_avro,
     read_avro_to_arrow,
 )
+from bqemulator.jobs.ddl_result import (
+    ddl_operation_for,
+    ddl_result_schema_fields,
+    resolve_ddl_operation,
+)
 from bqemulator.jobs.error_mapper import translate_runtime_error
 from bqemulator.jobs.orc_reader import read_orc_to_arrow
 from bqemulator.observability.logging_ import get_logger
@@ -343,6 +348,14 @@ async def execute_query_job(
     # MATERIALIZED_VIEW). BigQuery treats these as read-only.
     _reject_dml_on_immutable(project_id, bq_sql, ctx)
 
+    # Resolve ``ddlOperationPerformed`` BEFORE the statement runs:
+    # CREATE vs REPLACE vs SKIP depends on whether the target existed
+    # pre-mutation (pinned by ``rest_crud/ddl_result_*``). Scripts
+    # report ``statementType=SCRIPT`` with no DDL operation.
+    ddl_operation = (
+        None if is_scripted else resolve_ddl_operation(bq_sql, statement_type, project_id, ctx)
+    )
+
     effective_caller = caller or CallerIdentity(
         principal="user:anonymous@bqemulator.local",
         is_authenticated=False,
@@ -360,15 +373,26 @@ async def execute_query_job(
     # propagate TableDataChanged so dependent MVs flip stale.
     await _capture_dml_snapshots(project_id, bq_sql, ctx)
 
-    arrow_table, num_dml_affected_rows = _finalize_dml_result(arrow_table, statement_type)
+    arrow_table, num_dml_affected_rows, ddl_schema_fields = _finalize_statement_result(
+        arrow_table,
+        statement_type,
+        bq_sql=bq_sql,
+        project_id=project_id,
+        ctx=ctx,
+    )
     JOB_RESULTS[job_id] = arrow_table
-    JOB_SCHEMAS[job_id] = build_response_schema(arrow_table.schema)
+    JOB_SCHEMAS[job_id] = (
+        ddl_schema_fields
+        if ddl_schema_fields is not None
+        else build_response_schema(arrow_table.schema)
+    )
     ctx.metrics.sql_translation_total.labels(outcome="ok").inc()
 
     statistics = _build_query_statistics(
         total_rows=arrow_table.num_rows,
         statement_type=statement_type,
         num_dml_affected_rows=num_dml_affected_rows,
+        ddl_operation=ddl_operation,
     )
     if is_scripted:
         statistics["scriptStatistics"] = {
@@ -531,20 +555,39 @@ async def _run_query_body(
     return arrow_table
 
 
-def _finalize_dml_result(
+def _finalize_statement_result(
     arrow_table: pa.Table,
     statement_type: str,
-) -> tuple[pa.Table, int | None]:
-    """Trim DuckDB's DML ``Count`` column and surface the affected-rows count.
+    *,
+    bq_sql: str,
+    project_id: str,
+    ctx: AppContext,
+) -> tuple[pa.Table, int | None, list[dict[str, Any]] | None]:
+    """Shape the stored result to BigQuery's per-statement-type contract.
 
-    DML statements return a 1-column ``Count`` table from DuckDB; real
-    BigQuery returns a 0-column schema + 0 rows + a
-    ``numDmlAffectedRows`` statistic. The caller writes both the
-    trimmed Arrow table and the row-count into the response body.
+    DuckDB returns a 1-column status table (``Count`` for DML / most
+    DDL, ``Success`` for drops) from non-SELECT statements; real
+    BigQuery never exposes those. Recorded behaviour (the
+    ``rest_crud/ddl_result_*`` corpus):
+
+    * DML and ``TRUNCATE TABLE`` → empty result + the affected-row
+      count surfaced as ``numDmlAffectedRows``.
+    * ``CREATE TABLE`` / CTAS / ``CREATE VIEW`` → zero rows with the
+      statement's analyzed schema (third tuple element; overrides the
+      Arrow-derived response schema).
+    * ``ALTER TABLE``, ``CREATE SCHEMA``, ``DROP TABLE/VIEW/SCHEMA`` →
+      fully empty result.
+
+    Anything else — SELECTs and multi-statement scripts (whose result
+    the interpreter already shaped) — passes through unchanged.
     """
-    if statement_type not in _DML_STATEMENTS:
-        return arrow_table, None
-    return _EMPTY_ARROW, _extract_dml_affected_rows(arrow_table)
+    if statement_type in _COUNT_TRIMMED_STATEMENTS:
+        return _EMPTY_ARROW, _extract_dml_affected_rows(arrow_table), None
+    if statement_type in _EMPTY_RESULT_DDL_STATEMENTS:
+        return _EMPTY_ARROW, None, None
+    if statement_type in _OBJECT_SCHEMA_DDL_STATEMENTS:
+        return _EMPTY_ARROW, None, ddl_result_schema_fields(bq_sql, project_id, ctx)
+    return arrow_table, None, None
 
 
 #: Dataset id under which bqemulator advertises anonymous-result tables.
@@ -610,6 +653,7 @@ def _build_query_statistics(
     total_rows: int,
     statement_type: str,
     num_dml_affected_rows: int | None,
+    ddl_operation: str | None = None,
 ) -> dict[str, Any]:
     """Construct the canonical ``statistics`` dict for a query job.
 
@@ -617,9 +661,12 @@ def _build_query_statistics(
     cache, so real BigQuery's `False`-by-default is what every fresh
     query returns). ``statementType`` is omitted when the classifier
     returned ``""`` (unparseable). ``numDmlAffectedRows`` is included
-    only for DML statements. ``ddlOperationPerformed`` is set for the
-    DDL statement types catalogued in
-    :data:`_DDL_OPERATION_BY_STATEMENT`.
+    only for DML statements. ``ddlOperationPerformed`` carries the
+    caller-resolved operation when ``ddl_operation`` is given (the
+    main query path resolves CREATE / REPLACE / SKIP / DROP against
+    pre-execution target existence); otherwise it falls back to the
+    static per-statement-type mapping in
+    :data:`bqemulator.jobs.ddl_result.DDL_OPERATION_BY_STATEMENT`.
 
     The shape mirrors BigQuery's REST `Job.statistics.query` field;
     the conformance comparator at
@@ -633,7 +680,7 @@ def _build_query_statistics(
     }
     if statement_type:
         query_stats["statementType"] = statement_type
-        ddl_op = _ddl_operation_for(statement_type)
+        ddl_op = ddl_operation if ddl_operation is not None else ddl_operation_for(statement_type)
         if ddl_op:
             query_stats["ddlOperationPerformed"] = ddl_op
     if num_dml_affected_rows is not None:
@@ -1660,26 +1707,28 @@ def _is_dml(tree: Any) -> bool:
 # "no classification possible" and the recorder/runner won't write the
 # field. Maintained in lock-step with
 # ``docs/reference/api-configuration-coverage-matrix.md`` §7.
-_DDL_OPERATION_BY_STATEMENT = {
-    "CREATE_TABLE": "CREATE",
-    "CREATE_TABLE_AS_SELECT": "CREATE",
-    "CREATE_VIEW": "CREATE",
-    "CREATE_FUNCTION": "CREATE",
-    "CREATE_PROCEDURE": "CREATE",
-    "CREATE_SCHEMA": "CREATE",
-    "CREATE_SNAPSHOT_TABLE": "CREATE",
-    "DROP_TABLE": "DROP",
-    "DROP_VIEW": "DROP",
-    "DROP_FUNCTION": "DROP",
-    "DROP_PROCEDURE": "DROP",
-    "DROP_SCHEMA": "DROP",
-    "DROP_SNAPSHOT_TABLE": "DROP",
-    "ALTER_TABLE": "ALTER",
-    "TRUNCATE_TABLE": "TRUNCATE",
-    "CREATE_ROW_ACCESS_POLICY": "CREATE",
-    "DROP_ROW_ACCESS_POLICY": "DROP",
-}
 _DML_STATEMENTS = frozenset({"INSERT", "UPDATE", "DELETE", "MERGE"})
+
+#: Statements whose DuckDB result is a ``Count`` status column that
+#: BigQuery surfaces as ``numDmlAffectedRows`` over an empty result
+#: set. ``TRUNCATE TABLE`` is DML on the wire — it reports the removed
+#: row count and **no** ``ddlOperationPerformed`` (pinned by
+#: ``rest_crud/ddl_result_truncate_table``).
+_COUNT_TRIMMED_STATEMENTS = _DML_STATEMENTS | {"TRUNCATE_TABLE"}
+
+#: DDL whose job result is fully empty — no schema, no rows (pinned by
+#: ``rest_crud/ddl_result_{alter_table_add_column,create_schema,
+#: drop_table,drop_view,drop_schema}``).
+_EMPTY_RESULT_DDL_STATEMENTS = frozenset(
+    {"ALTER_TABLE", "CREATE_SCHEMA", "DROP_TABLE", "DROP_VIEW", "DROP_SCHEMA"},
+)
+
+#: DDL whose job result carries the created object's schema with zero
+#: rows (pinned by ``rest_crud/ddl_result_create_{table,table_as_select,
+#: view}`` and the not-null / complex-types / if-not-exists variants).
+_OBJECT_SCHEMA_DDL_STATEMENTS = frozenset(
+    {"CREATE_TABLE", "CREATE_TABLE_AS_SELECT", "CREATE_VIEW"},
+)
 
 
 # ``kind`` value → statement-type for CREATE / DROP node dispatch. The
@@ -1822,15 +1871,6 @@ def _classify_parsed_tree(tree: Any) -> str:
     return ""
 
 
-def _ddl_operation_for(statement_type: str) -> str:
-    """Return the ``ddlOperationPerformed`` value for a DDL statement type.
-
-    Returns ``""`` for non-DDL statements so the caller skips writing
-    the field.
-    """
-    return _DDL_OPERATION_BY_STATEMENT.get(statement_type, "")
-
-
 def _extract_dml_affected_rows(arrow_table: pa.Table) -> int:
     """Read the ``Count`` column DuckDB returns from a DML statement.
 
@@ -1850,10 +1890,12 @@ def _extract_dml_affected_rows(arrow_table: pa.Table) -> int:
         return 0
 
 
-# Empty Arrow table — used as the canonical "no result set" sentinel
-# for DML statements. Real BigQuery returns a 0-column schema + 0 rows
-# on INSERT / UPDATE / DELETE / MERGE; DuckDB returns a 1-column
-# ``Count`` table that the runner trims here.
+# Empty Arrow table — the canonical "no result set" sentinel for DML
+# and DDL statements. Real BigQuery returns a 0-column schema + 0 rows
+# on INSERT / UPDATE / DELETE / MERGE / TRUNCATE and on every DDL form
+# (CREATE TABLE/VIEW additionally report the created object's schema
+# via the response-schema override); DuckDB returns a 1-column
+# ``Count`` / ``Success`` status table that the finalizer trims here.
 _EMPTY_ARROW = pa.table({})
 
 

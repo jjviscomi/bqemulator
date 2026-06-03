@@ -232,6 +232,18 @@ DDL = SurfaceCategory(
             detect=_re(r"\bcreate\s+(?:or\s+replace\s+)?table\b[^;]*?\bclone\b"),
         ),
         SurfaceItem(
+            id="ddl.create_schema",
+            name="CREATE SCHEMA",
+            bq_docs="https://cloud.google.com/bigquery/docs/reference/standard-sql/data-definition-language#create_schema_statement",
+            detect=_re(r"\bcreate\s+schema\b"),
+        ),
+        SurfaceItem(
+            id="ddl.drop_schema",
+            name="DROP SCHEMA",
+            bq_docs="https://cloud.google.com/bigquery/docs/reference/standard-sql/data-definition-language#drop_schema_statement",
+            detect=_re(r"\bdrop\s+schema\b"),
+        ),
+        SurfaceItem(
             id="ddl.drop_table",
             name="DROP TABLE",
             bq_docs="https://cloud.google.com/bigquery/docs/reference/standard-sql/data-definition-language#drop_table_statement",
