@@ -36,7 +36,8 @@ on:
       - "Makefile"
       # Run on every workflow / dependabot example change too, so the
       # ``Quality gates`` job emits a status on PRs that only touch
-      # ``.github/workflows/*`` or ``docs/examples/**``. Without these
+      # ``.github/workflows/*``, ``.github/dependabot.yml``, or
+      # ``docs/**``. Without these
       # patterns the required-check is "missing" rather than green for
       # those PRs and even ``gh pr merge --admin`` can't bypass it
       # (GitHub treats a never-reported required-check as unresolvable).
@@ -44,6 +45,7 @@ on:
       # workflow- or dependabot-only PR — cheap relative to the
       # never-merge blocker the prior filter caused.
       - ".github/workflows/**"
+      - ".github/dependabot.yml"
       - "docs/**"
       - "CHANGELOG.md"
       - "README.md"
@@ -59,7 +61,8 @@ on:
       - "Makefile"
       # Run on every workflow / dependabot example change too, so the
       # ``Quality gates`` job emits a status on PRs that only touch
-      # ``.github/workflows/*`` or ``docs/examples/**``. Without these
+      # ``.github/workflows/*``, ``.github/dependabot.yml``, or
+      # ``docs/**``. Without these
       # patterns the required-check is "missing" rather than green for
       # those PRs and even ``gh pr merge --admin`` can't bypass it
       # (GitHub treats a never-reported required-check as unresolvable).
@@ -67,6 +70,7 @@ on:
       # workflow- or dependabot-only PR — cheap relative to the
       # never-merge blocker the prior filter caused.
       - ".github/workflows/**"
+      - ".github/dependabot.yml"
       - "docs/**"
       - "CHANGELOG.md"
       - "README.md"
