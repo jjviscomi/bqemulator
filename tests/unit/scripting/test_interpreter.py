@@ -1,7 +1,7 @@
 """Unit tests for the scripting interpreter.
 
 These tests use an in-memory DuckDB engine + MemoryCatalogRepository
-so they exercise the full SQL pipeline withresult_val spinning up the REST
+so they exercise the full SQL pipeline without spinning up the REST
 server.
 """
 
@@ -82,7 +82,7 @@ class TestDeclareSet:
         assert result.final_table is not None
         assert result.final_table.column(0).to_pylist() == [42]
 
-    async def test_declare_withresult_val_default(self, ctx: AppContext) -> None:
+    async def test_declare_without_default(self, ctx: AppContext) -> None:
         result = await run_script(ctx, "p", "DECLARE x INT64; SELECT x;")
         assert result.final_table is not None
 
@@ -271,13 +271,13 @@ SELECT result_val;
         assert result.final_table.column(0).to_pylist() == ["caught"]
 
     async def test_raise_bare_propagates(self, ctx: AppContext) -> None:
-        # Withresult_val a handler, RAISE should escape the script.
+        # Without a handler, RAISE should escape the script.
         with pytest.raises(InvalidQueryError):
             await run_script(ctx, "p", "RAISE;")
 
 
 class TestReturnInProcedure:
-    """RETURN result_valside a procedure becomes a script-level early exit."""
+    """RETURN outside a procedure becomes a script-level early exit."""
 
     async def test_return_halts_script(self, ctx: AppContext) -> None:
         script = """
