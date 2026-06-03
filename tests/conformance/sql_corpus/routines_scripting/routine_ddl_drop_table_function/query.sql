@@ -1,0 +1,1 @@
+DROP TABLE FUNCTION `${DATASET}.one_row`

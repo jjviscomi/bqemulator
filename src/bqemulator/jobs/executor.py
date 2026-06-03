@@ -41,6 +41,12 @@ from bqemulator.jobs.ddl_result import (
 )
 from bqemulator.jobs.error_mapper import translate_runtime_error
 from bqemulator.jobs.orc_reader import read_orc_to_arrow
+from bqemulator.jobs.routine_ddl import (
+    classify_create_routine,
+    detect_drop_routine,
+    resolve_create_routine_operation,
+    run_drop_routine,
+)
 from bqemulator.observability.logging_ import get_logger
 from bqemulator.row_access.identity import CallerIdentity
 from bqemulator.scripting.ast import SqlStmt
@@ -331,8 +337,23 @@ async def execute_query_job(
     # single-SQL path. Best-effort: unparseable input returns ``""``
     # and the field is omitted.
     statement_type = "SCRIPT" if is_scripted else classify_statement_type(bq_sql)
+    ddl_operation: str | None = None
 
-    if not is_scripted:
+    if is_scripted:
+        # A single CREATE FUNCTION / CREATE TABLE FUNCTION routes through
+        # the scripting interpreter (which registers the routine) but
+        # BigQuery reports it as ``CREATE_FUNCTION`` / ``CREATE_TABLE_FUNCTION``,
+        # not ``SCRIPT`` (pinned by ``routines_scripting/routine_ddl_*``).
+        # CREATE PROCEDURE stays ``SCRIPT`` — that matches real BigQuery,
+        # so ``classify_create_routine`` returns ``""`` for it. The
+        # operation is resolved here, before the interpreter registers
+        # the routine, so ``OR REPLACE`` over an existing routine reports
+        # ``REPLACE``.
+        routine_statement_type = classify_create_routine(script)
+        if routine_statement_type:
+            statement_type = routine_statement_type
+            ddl_operation = resolve_create_routine_operation(script, project_id, ctx)
+    else:
         early_exit = await _run_query_fast_paths(
             project_id=project_id,
             job_id=job_id,
@@ -350,11 +371,10 @@ async def execute_query_job(
 
     # Resolve ``ddlOperationPerformed`` BEFORE the statement runs:
     # CREATE vs REPLACE vs SKIP depends on whether the target existed
-    # pre-mutation (pinned by ``rest_crud/ddl_result_*``). Scripts
-    # report ``statementType=SCRIPT`` with no DDL operation.
-    ddl_operation = (
-        None if is_scripted else resolve_ddl_operation(bq_sql, statement_type, project_id, ctx)
-    )
+    # pre-mutation (pinned by ``rest_crud/ddl_result_*``). The scripted
+    # routine case was already resolved above.
+    if not is_scripted:
+        ddl_operation = resolve_ddl_operation(bq_sql, statement_type, project_id, ctx)
 
     effective_caller = caller or CallerIdentity(
         principal="user:anonymous@bqemulator.local",
@@ -447,8 +467,17 @@ async def _run_query_fast_paths(
     dispatch these per-statement inside :class:`ScriptInterpreter`
     (ADR 0023 §1.F) so the matching regexes don't greedy-match across
     statement boundaries. Returns ``None`` when ``bq_sql`` is neither a
-    RAP DDL nor a versioning DDL.
+    RAP DDL, a versioning DDL, nor a routine drop.
     """
+    routine_drop = await _maybe_run_routine_drop(
+        project_id=project_id,
+        job_id=job_id,
+        bq_sql=bq_sql,
+        now=now,
+        ctx=ctx,
+    )
+    if routine_drop is not None:
+        return routine_drop
     rap_result = _maybe_run_row_access_ddl(project_id, bq_sql, ctx)
     if rap_result is not None:
         # ``classify_statement_type`` recognises both the CREATE and DROP
@@ -487,12 +516,16 @@ def _build_ddl_job_meta(
     arrow_table: pa.Table,
     now: Any,
     ctx: AppContext,
+    ddl_operation: str | None = None,
 ) -> JobMeta:
     """Record the DDL-fast-path result and return the closing :class:`JobMeta`.
 
-    Both the RAP-DDL and versioning-DDL branches end with the same
-    shape — register an empty result, bump the SQL-translation metric,
-    and return a ``DONE`` job meta with a zero-row statistics block.
+    The RAP-DDL, versioning-DDL, and routine-drop branches end with the
+    same shape — register an empty result, bump the SQL-translation
+    metric, and return a ``DONE`` job meta with a zero-row statistics
+    block. ``ddl_operation`` overrides the static per-type mapping when
+    the caller resolved it dynamically (e.g. a routine drop reporting
+    ``SKIP`` for ``IF EXISTS`` over a missing target).
     """
     JOB_RESULTS[job_id] = arrow_table
     JOB_SCHEMAS[job_id] = build_response_schema(arrow_table.schema)
@@ -507,11 +540,46 @@ def _build_ddl_job_meta(
             total_rows=0,
             statement_type=statement_type,
             num_dml_affected_rows=None,
+            ddl_operation=ddl_operation,
         ),
         creation_time=now,
         start_time=now,
         end_time=ctx.clock.now(),
         etag=generate_etag(project_id, job_id, str(now)),
+    )
+
+
+async def _maybe_run_routine_drop(
+    *,
+    project_id: str,
+    job_id: str,
+    bq_sql: str,
+    now: Any,
+    ctx: AppContext,
+) -> JobMeta | None:
+    """Execute a single ``DROP {FUNCTION|PROCEDURE|TABLE FUNCTION}``, or return ``None``.
+
+    Routine drops have no DuckDB counterpart — a procedure is not a
+    DuckDB object and a UDF macro drop must mirror the registry
+    bookkeeping — so the normal path would hand DuckDB SQL it rejects.
+    This intercepts the drop, runs it against the catalog + UDF registry,
+    and reports the BigQuery ``statementType`` (``DROP_FUNCTION`` /
+    ``DROP_PROCEDURE`` / ``DROP_TABLE_FUNCTION``) with ``DROP`` / ``SKIP``.
+    Returns ``None`` for every non-routine statement.
+    """
+    ref = detect_drop_routine(bq_sql, project_id)
+    if ref is None:
+        return None
+    operation = await run_drop_routine(ref, ctx)
+    return _build_ddl_job_meta(
+        project_id=project_id,
+        job_id=job_id,
+        bq_sql=bq_sql,
+        statement_type=ref.statement_type,
+        arrow_table=_EMPTY_ARROW,
+        now=now,
+        ctx=ctx,
+        ddl_operation=operation,
     )
 
 

@@ -7,6 +7,9 @@ import com.google.cloud.bigquery.Dataset;
 import com.google.cloud.bigquery.DatasetId;
 import com.google.cloud.bigquery.DatasetInfo;
 import com.google.cloud.bigquery.FieldValueList;
+import com.google.cloud.bigquery.Job;
+import com.google.cloud.bigquery.JobInfo;
+import com.google.cloud.bigquery.JobStatistics.QueryStatistics;
 import com.google.cloud.bigquery.QueryJobConfiguration;
 import com.google.cloud.bigquery.RoutineArgument;
 import com.google.cloud.bigquery.RoutineId;
@@ -193,5 +196,55 @@ END IF;
             builder.setReturnType(returnType);
         }
         client.create(builder.build());
+    }
+
+    @Test
+    void singleRoutineDdlReportsStatementType() throws Exception {
+        // CREATE FUNCTION / CREATE TABLE FUNCTION report CREATE_FUNCTION /
+        // CREATE_TABLE_FUNCTION (not SCRIPT); CREATE PROCEDURE reports SCRIPT
+        // (BigQuery classifies a procedure definition as a script). DROP
+        // routines execute against the live container (the legacy path handed
+        // DuckDB SQL it rejected). Pinned by routines_scripting/routine_ddl_*.
+        String ds = "routine_ddl_java_ds";
+        try {
+            client.delete(DatasetId.of(PROJECT, ds), BigQuery.DatasetDeleteOption.deleteContents());
+        } catch (Exception ignore) {
+            // absent is fine
+        }
+        client.create(DatasetInfo.newBuilder(ds).setLocation("US").build());
+        try {
+            assertEquals("CREATE_FUNCTION", routineStatementType(
+                    String.format("CREATE FUNCTION `%s.%s.add_one`(x INT64) RETURNS INT64 AS (x + 1)",
+                            PROJECT, ds)));
+            assertEquals("CREATE_TABLE_FUNCTION", routineStatementType(
+                    String.format("CREATE TABLE FUNCTION `%s.%s.one_row`(n INT64) AS SELECT n AS x",
+                            PROJECT, ds)));
+            assertEquals("SCRIPT", routineStatementType(
+                    String.format("CREATE PROCEDURE `%s.%s.noop`() BEGIN SELECT 1 AS one; END",
+                            PROJECT, ds)));
+            assertEquals("DROP_FUNCTION", routineStatementType(
+                    String.format("DROP FUNCTION `%s.%s.add_one`", PROJECT, ds)));
+            assertEquals("DROP_PROCEDURE", routineStatementType(
+                    String.format("DROP PROCEDURE `%s.%s.noop`", PROJECT, ds)));
+            assertEquals("DROP_TABLE_FUNCTION", routineStatementType(
+                    String.format("DROP TABLE FUNCTION `%s.%s.one_row`", PROJECT, ds)));
+        } finally {
+            try {
+                client.delete(DatasetId.of(PROJECT, ds),
+                        BigQuery.DatasetDeleteOption.deleteContents());
+            } catch (Exception ignore) {
+                // fine
+            }
+        }
+    }
+
+    private String routineStatementType(String sql) throws Exception {
+        QueryJobConfiguration cfg = QueryJobConfiguration.newBuilder(sql)
+                .setUseLegacySql(false)
+                .build();
+        Job job = client.create(JobInfo.of(cfg)).waitFor();
+        assertNotNull(job, "job for: " + sql);
+        QueryStatistics stats = job.getStatistics();
+        return stats.getStatementType() == null ? null : stats.getStatementType().toString();
     }
 }

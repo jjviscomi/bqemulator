@@ -163,4 +163,53 @@ END IF;
         .catch(() => {});
     }
   });
+
+  it("reports statementType for single routine DDL and drops routines", async () => {
+    // CREATE FUNCTION / CREATE TABLE FUNCTION report CREATE_FUNCTION /
+    // CREATE_TABLE_FUNCTION (not SCRIPT); CREATE PROCEDURE reports SCRIPT
+    // (BigQuery classifies a procedure definition as a script). DROP
+    // routines execute against the live container (the legacy path handed
+    // DuckDB SQL it rejected). Pinned by routines_scripting/routine_ddl_*.
+    const ds = "e2e_node_routine_ddl";
+    await client
+      .dataset(ds)
+      .delete({ force: true })
+      .catch(() => {});
+    await client.createDataset(ds, { location: "US" });
+
+    const runDDL = async (sql) => {
+      const [job] = await client.createQueryJob({ query: sql, location: "US" });
+      await job.getQueryResults();
+      const [meta] = await job.getMetadata();
+      return meta.statistics.query.statementType;
+    };
+
+    try {
+      assert.equal(
+        await runDDL(
+          `CREATE FUNCTION \`${PROJECT}.${ds}.add_one\`(x INT64) RETURNS INT64 AS (x + 1)`,
+        ),
+        "CREATE_FUNCTION",
+      );
+      assert.equal(
+        await runDDL(`CREATE TABLE FUNCTION \`${PROJECT}.${ds}.one_row\`(n INT64) AS SELECT n AS x`),
+        "CREATE_TABLE_FUNCTION",
+      );
+      assert.equal(
+        await runDDL(`CREATE PROCEDURE \`${PROJECT}.${ds}.noop\`() BEGIN SELECT 1 AS one; END`),
+        "SCRIPT",
+      );
+      assert.equal(await runDDL(`DROP FUNCTION \`${PROJECT}.${ds}.add_one\``), "DROP_FUNCTION");
+      assert.equal(await runDDL(`DROP PROCEDURE \`${PROJECT}.${ds}.noop\``), "DROP_PROCEDURE");
+      assert.equal(
+        await runDDL(`DROP TABLE FUNCTION \`${PROJECT}.${ds}.one_row\``),
+        "DROP_TABLE_FUNCTION",
+      );
+    } finally {
+      await client
+        .dataset(ds)
+        .delete({ force: true })
+        .catch(() => {});
+    }
+  });
 });

@@ -170,3 +170,48 @@ def test_script_ending_in_ddl_returns_empty(bq_runner: BqRunner) -> None:
         assert result.json() == []
     finally:
         _rm_dataset(bq_runner, ds_id)
+
+
+def test_routine_ddl_create_and_drop_round_trip(bq_runner: BqRunner) -> None:
+    """Single CREATE/DROP routine DDL works end-to-end through ``bq query``.
+
+    The key behavioural fix: a single DROP FUNCTION / DROP PROCEDURE /
+    DROP TABLE FUNCTION no longer fails (the legacy path handed DuckDB
+    SQL it rejected). Each statement emits an empty result set. Exact
+    statementType is pinned by the routines_scripting/routine_ddl_*
+    conformance corpus.
+    """
+    ds_id = "bq_cli_routine_ddl"
+    try:
+        _mk_dataset(bq_runner, ds_id)
+
+        for sql in (
+            f"CREATE FUNCTION `{ds_id}.add_one`(x INT64) RETURNS INT64 AS (x + 1)",
+            f"CREATE TABLE FUNCTION `{ds_id}.one_row`(n INT64) AS SELECT n AS x",
+            f"CREATE PROCEDURE `{ds_id}.noop`() BEGIN SELECT 1 AS one; END",
+        ):
+            res = bq_runner.run("query", "--use_legacy_sql=false", "--format=json", sql)
+            assert res.succeeded(), res.stderr
+            assert res.stdout.strip() in {"", "[]"}, res.stdout
+
+        # The created UDF is usable.
+        used = bq_runner.run(
+            "query",
+            "--use_legacy_sql=false",
+            "--format=json",
+            f"SELECT `{ds_id}.add_one`(41) AS r",
+        )
+        assert used.succeeded(), used.stderr
+        assert used.json() == [{"r": "42"}]
+
+        # DROP routines succeed (previously raised in DuckDB).
+        for sql in (
+            f"DROP FUNCTION `{ds_id}.add_one`",
+            f"DROP PROCEDURE `{ds_id}.noop`",
+            f"DROP TABLE FUNCTION `{ds_id}.one_row`",
+        ):
+            res = bq_runner.run("query", "--use_legacy_sql=false", "--format=json", sql)
+            assert res.succeeded(), res.stderr
+            assert res.stdout.strip() in {"", "[]"}, res.stdout
+    finally:
+        _rm_dataset(bq_runner, ds_id)
