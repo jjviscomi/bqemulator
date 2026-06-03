@@ -175,11 +175,9 @@ def test_script_ending_in_ddl_returns_empty(bq_runner: BqRunner) -> None:
 def test_routine_ddl_create_and_drop_round_trip(bq_runner: BqRunner) -> None:
     """Single CREATE/DROP routine DDL works end-to-end through ``bq query``.
 
-    The key behavioural fix: a single DROP FUNCTION / DROP PROCEDURE /
-    DROP TABLE FUNCTION no longer fails (the legacy path handed DuckDB
-    SQL it rejected). Each statement emits an empty result set. Exact
-    statementType is pinned by the routines_scripting/routine_ddl_*
-    conformance corpus.
+    A single CREATE / DROP FUNCTION / PROCEDURE / TABLE FUNCTION
+    succeeds and emits an empty result set. Exact statementType is
+    pinned by the routines_scripting/routine_ddl_* conformance corpus.
     """
     ds_id = "bq_cli_routine_ddl"
     try:
@@ -204,7 +202,7 @@ def test_routine_ddl_create_and_drop_round_trip(bq_runner: BqRunner) -> None:
         assert used.succeeded(), used.stderr
         assert used.json() == [{"r": "42"}]
 
-        # DROP routines succeed (previously raised in DuckDB).
+        # DROP routines execute against the catalog + UDF registry.
         for sql in (
             f"DROP FUNCTION `{ds_id}.add_one`",
             f"DROP PROCEDURE `{ds_id}.noop`",

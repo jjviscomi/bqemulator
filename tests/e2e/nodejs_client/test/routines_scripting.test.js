@@ -168,8 +168,8 @@ END IF;
     // CREATE FUNCTION / CREATE TABLE FUNCTION report CREATE_FUNCTION /
     // CREATE_TABLE_FUNCTION (not SCRIPT); CREATE PROCEDURE reports SCRIPT
     // (BigQuery classifies a procedure definition as a script). DROP
-    // routines execute against the live container (the legacy path handed
-    // DuckDB SQL it rejected). Pinned by routines_scripting/routine_ddl_*.
+    // routines execute against the live container. Pinned by
+    // routines_scripting/routine_ddl_*.
     const ds = "e2e_node_routine_ddl";
     await client
       .dataset(ds)

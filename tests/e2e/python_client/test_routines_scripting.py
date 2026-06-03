@@ -276,8 +276,7 @@ def test_single_routine_ddl_statement_type(bq_client: bigquery.Client) -> None:
     CREATE_TABLE_FUNCTION (not SCRIPT); CREATE PROCEDURE reports SCRIPT
     (BigQuery classifies a procedure definition as a script); and
     DROP FUNCTION / PROCEDURE / TABLE FUNCTION execute against the live
-    container (the legacy path handed DuckDB SQL it rejected) and report
-    the matching DROP_* type. Pinned by the
+    container and report the matching DROP_* type. Pinned by the
     routines_scripting/routine_ddl_* conformance corpus.
     """
     ds_id = "e2e_routine_ddl_py"
@@ -301,7 +300,7 @@ def test_single_routine_ddl_statement_type(bq_client: bigquery.Client) -> None:
         used = list(bq_client.query(f"SELECT `{fqdn}.add_one`(41) AS r").result())
         assert used[0]["r"] == 42
 
-        # DROP routines execute (no DuckDB syntax/macro failure) and classify.
+        # DROP routines execute against the catalog + UDF registry and classify.
         drop_fn = bq_client.query(f"DROP FUNCTION `{fqdn}.add_one`")
         drop_fn.result()
         assert drop_fn.statement_type == "DROP_FUNCTION"

@@ -265,7 +265,7 @@ class TestExecuteQueryJobRoutineDDL:
         assert ctx.catalog.get_routine("p", "ds", "f") is None
 
     async def test_drop_procedure_executes(self, ctx: AppContext) -> None:
-        """DROP PROCEDURE no longer raises (DuckDB has no such statement)."""
+        """DROP PROCEDURE executes via the catalog (DuckDB has no such statement)."""
         await _run(ctx, "j7a", "CREATE PROCEDURE `p.ds.pr`() BEGIN END")
         stats = await _run(ctx, "j7b", "DROP PROCEDURE `p.ds.pr`")
         assert stats["statementType"] == "DROP_PROCEDURE"

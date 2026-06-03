@@ -203,8 +203,8 @@ END IF;
         // CREATE FUNCTION / CREATE TABLE FUNCTION report CREATE_FUNCTION /
         // CREATE_TABLE_FUNCTION (not SCRIPT); CREATE PROCEDURE reports SCRIPT
         // (BigQuery classifies a procedure definition as a script). DROP
-        // routines execute against the live container (the legacy path handed
-        // DuckDB SQL it rejected). Pinned by routines_scripting/routine_ddl_*.
+        // routines execute against the live container. Pinned by
+        // routines_scripting/routine_ddl_*.
         String ds = "routine_ddl_java_ds";
         try {
             client.delete(DatasetId.of(PROJECT, ds), BigQuery.DatasetDeleteOption.deleteContents());

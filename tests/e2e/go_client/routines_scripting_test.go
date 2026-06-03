@@ -198,10 +198,10 @@ func TestScriptEndingInDDLReturnsEmpty(t *testing.T) {
 
 // TestRoutinesScriptingSingleRoutineDDLStatementType verifies that a
 // single routine DDL statement reports BigQuery's statementType, and that
-// DROP routine statements execute against the live container (the legacy
-// path handed DuckDB SQL it rejected). CREATE PROCEDURE reports SCRIPT —
-// BigQuery classifies a procedure definition as a script. Pinned by the
-// routines_scripting/routine_ddl_* conformance corpus.
+// DROP routine statements execute against the live container. CREATE
+// PROCEDURE reports SCRIPT — BigQuery classifies a procedure definition
+// as a script. Pinned by the routines_scripting/routine_ddl_*
+// conformance corpus.
 func TestRoutinesScriptingSingleRoutineDDLStatementType(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
 	defer cancel()
