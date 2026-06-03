@@ -50,7 +50,7 @@ jobs:
         # and Dependabot can track upgrades. ``@master`` would silently
         # follow the moving branch and could introduce surprise
         # behaviour or supply-chain risk.
-        uses: crate-ci/typos@f8a58b6b53f2279f71eb605f03a4ae4d10608f45 # v1.47.0
+        uses: crate-ci/typos@44e2070e6017f834bf069503acb35ca0ca0b75f2 # v1.47.1
 
   unit:
     name: Unit + property tests (py${{ matrix.python }} · ${{ matrix.os }})
