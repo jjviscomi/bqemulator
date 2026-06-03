@@ -79,16 +79,6 @@ CVE-2026-45409
 # sweep that bumps idna / requests.
 PYSEC-2026-89
 
-# pyjwt 2.12.1 — PYSEC-2025-183. PyJWT is a direct dep (floor-pinned
-# at 2.12.0 to close the older CVE-2026-32597 JWT validation bypass)
-# but the emulator does NOT use the JWT codepath at runtime — the
-# import lands in the dep graph via ``google-auth`` / ``firebase_admin``
-# and friends. The advisory rolled into the pip-audit DB after the
-# P3.d follow-up (2026-05-20) baseline was checked clean. No upstream
-# fix version is available; tracked for the same dependency-refresh
-# sweep that bumps idna / requests / markdown.
-PYSEC-2025-183
-
 # starlette 0.52.1 — PYSEC-2026-161 (fix in 1.0.1). The starlette
 # version is gated by fastapi's compatibility range; the next
 # fastapi minor (>0.118) will pull starlette 1.0.1 transitively.
