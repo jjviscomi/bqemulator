@@ -206,9 +206,13 @@ def _split_routine_table(table: exp.Table, default_project: str) -> tuple[str, s
 def _parts_to_ref(parts: list[str], default_project: str) -> tuple[str, str, str] | None:
     """Map identifier parts to ``(project, dataset, routine)``; ``None`` if not 2/3 parts.
 
-    A single-part name resolves to a session TEMP routine, which is not a
-    persistent catalog object — returning ``None`` leaves the caller's
-    default classification (``SCRIPT``) in place.
+    A single-part name denotes a session TEMP routine, not a persistent
+    catalog object, so it does not resolve to a catalog reference here.
+    ``None`` means "not a resolvable persistent routine reference"; each
+    caller handles it locally — :func:`resolve_create_routine_operation`
+    falls back to ``CREATE`` (the operation is reported without a
+    catalog-existence lookup), and :func:`detect_drop_routine` returns
+    ``None`` so the executor takes its normal, non-routine-drop path.
     """
     if len(parts) == _REF_FULLY_QUALIFIED:
         return parts[0], parts[1], parts[2]
