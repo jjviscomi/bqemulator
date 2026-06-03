@@ -6290,6 +6290,34 @@ CREATE-routine registration. Pinned by the nine
 <code>routines_scripting/routine_ddl_*</code> fixtures, the
 <code>tests/unit/jobs/test_routine_ddl.py</code> unit suite, and e2e coverage
 across all five conformance clients.</p>
+<p><strong>Amendment (2026-06-03) — <code>DROP SCHEMA</code> on a non-empty dataset rejects
+with <code>resourceInUse</code>.</strong> Recorded from real BigQuery
+(<code>rest_crud/ddl_drop_schema_non_empty_restrict</code>,
+<code>ddl_drop_schema_cascade</code>): a bare / <code>RESTRICT</code> <code>DROP SCHEMA</code> on a
+dataset that still contains tables or routines is rejected with reason
+<code>resourceInUse</code> (HTTP 400, message <code>Dataset &lt;project&gt;:&lt;dataset&gt; is
+still in use</code>); only <code>DROP SCHEMA … CASCADE</code> removes the contents. The
+catalog already honored RESTRICT (the dataset survived), but the error
+surfaced was DuckDB's raw <code>Dependency Error: Cannot drop entry
+"&lt;project&gt;__&lt;dataset&gt;" …</code> — wrong shape and, worse, leaking the
+internal <code>project__dataset</code> schema name. A new pre-execution guard
+(<code>catalog.ddl_sync.assert_drop_schema_allowed</code>, called before the
+statement reaches DuckDB from <strong>both</strong> execution paths — the
+single-statement executor and <code>ScriptInterpreter._exec_sql</code>, so a
+<code>DROP SCHEMA</code> inside a multi-statement script gets the same parity)
+raises the new <code>ResourceInUseError</code> (<code>resourceInUse</code> / 400) when the
+catalog — the authoritative source for emptiness, since a table can
+exist in the catalog without a physical DuckDB row — shows the dataset
+still has tables or routines. <code>CASCADE</code> and empty-dataset drops are
+unaffected.
+The conformance recorder was also hardened: <code>_build_error_payload</code> now
+scrubs the billing project from the human-readable <code>message_sample</code>
+(the <code>message_pattern</code> already wildcards the dataset+project token), so
+a real project id can never reach version control. Pinned by the two
+<code>rest_crud/ddl_drop_schema_*</code> fixtures, the
+<code>TestAssertDropSchemaAllowed</code> unit class,
+<code>tests/unit/scripts/test_record_conformance_scrub.py</code>, and e2e coverage
+across all five conformance clients.</p>
 <h4 id="bucket-g-range-interval-wire-format-closed">Bucket G — RANGE / INTERVAL wire format — Closed<a class="headerlink" href="#bucket-g-range-interval-wire-format-closed" title="Permanent link">&para;</a></h4>
 <p><strong>Status.</strong> Closed. The closure ships three coordinated
 fixes:</p>
