@@ -236,3 +236,31 @@ def test_single_ddl_query_result_shape(bq_runner: BqRunner) -> None:
         assert readback.json() == [{"id": "1", "nm": "x"}]
     finally:
         _rm_dataset(bq_runner, ds_id)
+
+
+def test_drop_schema_non_empty_requires_cascade(bq_runner: BqRunner) -> None:
+    """``bq query DROP SCHEMA`` on a non-empty dataset fails; CASCADE drops it.
+
+    Real BigQuery rejects a bare / RESTRICT DROP SCHEMA on a dataset that
+    still contains tables (reason ``resourceInUse``); only CASCADE removes
+    the contents. Pinned by the ``rest_crud/ddl_drop_schema_*``
+    conformance fixtures.
+    """
+    ds_id = "bq_cli_drop_schema_restrict"
+    try:
+        _mk_dataset(bq_runner, ds_id)
+        bq_runner.run("mk", "--table", f"{ds_id}.t", "id:INTEGER")
+
+        # Bare DROP SCHEMA on the non-empty dataset fails.
+        bare = bq_runner.run("query", "--use_legacy_sql=false", f"DROP SCHEMA `{ds_id}`")
+        assert not bare.succeeded(), bare.stdout
+        assert "still in use" in (bare.stderr + bare.stdout)
+        # The dataset survived.
+        assert bq_runner.run("show", "--format=json", ds_id).succeeded()
+
+        # CASCADE drops the dataset and its contents.
+        cascade = bq_runner.run("query", "--use_legacy_sql=false", f"DROP SCHEMA `{ds_id}` CASCADE")
+        assert cascade.succeeded(), cascade.stderr
+        assert not bq_runner.run("show", "--format=json", ds_id).succeeded()
+    finally:
+        _rm_dataset(bq_runner, ds_id)

@@ -215,6 +215,43 @@ def sync_dropped_object(bq_sql: str, project_id: str, ctx: AppContext) -> None:
         _sync_dropped_relation(target, project_id, ctx)
 
 
+def assert_drop_schema_allowed(bq_sql: str, project_id: str, ctx: AppContext) -> None:
+    """Reject a bare / ``RESTRICT`` ``DROP SCHEMA`` on a non-empty dataset.
+
+    Real BigQuery rejects ``DROP SCHEMA`` on a dataset that still
+    contains tables or routines with reason ``resourceInUse``
+    (HTTP 400, ``Dataset <project>:<dataset> is still in use``); only
+    ``DROP SCHEMA … CASCADE`` removes the contents. This runs as a
+    pre-execution guard so the BigQuery-shaped error surfaces before
+    DuckDB's own dependency error (which leaks the internal
+    ``project__dataset`` schema name). The catalog is authoritative for
+    emptiness — a table can exist in the catalog without a physical
+    DuckDB row (e.g. created via ``tables.insert``).
+
+    No-op for ``CASCADE``, any non-``DROP SCHEMA`` statement, a missing
+    dataset (``IF EXISTS`` no-ops; a bare drop 404s downstream), or an
+    unresolvable target.
+    """
+    drop = _detect_catalog_drop(bq_sql)
+    if drop is None or (drop.args.get("kind") or "").upper() != "SCHEMA":
+        return
+    if drop.args.get("cascade"):
+        return
+    target = _unwrap_table_target(drop.this)
+    if target is None:
+        return
+    resolved = _resolve_dataset_parts(target, project_id)
+    if resolved is None:
+        return
+    p_id, d_id = resolved
+    if ctx.catalog.get_dataset(p_id, d_id) is None:
+        return
+    if ctx.catalog.list_tables(p_id, d_id) or ctx.catalog.list_routines(p_id, d_id):
+        from bqemulator.domain.errors import ResourceInUseError
+
+        raise ResourceInUseError(f"Dataset {p_id}:{d_id} is still in use")
+
+
 def _detect_catalog_drop(bq_sql: str) -> exp.Drop | None:
     """Return the ``exp.Drop`` for a catalog-tracked ``DROP TABLE/VIEW/SCHEMA``.
 

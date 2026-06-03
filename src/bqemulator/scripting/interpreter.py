@@ -28,6 +28,7 @@ import sqlglot
 from sqlglot import exp
 
 from bqemulator.catalog.ddl_sync import (
+    assert_drop_schema_allowed,
     sync_created_schema,
     sync_created_table,
     sync_created_view,
@@ -677,6 +678,11 @@ class ScriptInterpreter:
                 # (last-statement-wins, matching BigQuery).
                 self._final_table = None
                 return
+        # Reject a bare / RESTRICT DROP SCHEMA on a non-empty dataset with
+        # BigQuery's ``resourceInUse`` error before DuckDB runs — same guard
+        # the single-statement executor path applies, so scripted drops get
+        # the same parity (and don't leak DuckDB's internal schema name).
+        assert_drop_schema_allowed(sql, self._project_id, self._ctx)
         # Other SQL (SELECT, CREATE VIEW, CREATE TABLE [AS …], DML)
         # flows through the standard pipeline.
         table = await self._run_query(sql)

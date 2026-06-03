@@ -231,3 +231,62 @@ func TestRestCrudSingleDDLQueryResultShape(t *testing.T) {
 		t.Fatalf("expected empty schema from DROP TABLE, got %d fields", got)
 	}
 }
+
+// TestRestCrudDropSchemaNonEmptyRequiresCascade verifies that a bare DROP
+// SCHEMA on a non-empty dataset is rejected (reason resourceInUse) and the
+// dataset survives, while DROP SCHEMA ... CASCADE drops it. Pinned by the
+// rest_crud/ddl_drop_schema_* conformance corpus recorded from real BigQuery.
+func TestRestCrudDropSchemaNonEmptyRequiresCascade(t *testing.T) {
+	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
+	defer cancel()
+	client := bqClient(ctx, t)
+	defer client.Close()
+
+	datasetID := "e2e_go_drop_schema_restrict"
+	ds := client.Dataset(datasetID)
+	_ = ds.DeleteWithContents(ctx)
+	if err := ds.Create(ctx, &bigquery.DatasetMetadata{Location: "US"}); err != nil {
+		t.Fatalf("create dataset: %v", err)
+	}
+	defer func() {
+		if err := ds.DeleteWithContents(ctx); err != nil {
+			t.Logf("cleanup: %v", err)
+		}
+	}()
+	if err := ds.Table("t").Create(ctx, &bigquery.TableMetadata{
+		Schema: bigquery.Schema{{Name: "id", Type: bigquery.IntegerFieldType}},
+	}); err != nil {
+		t.Fatalf("create table: %v", err)
+	}
+
+	// Bare DROP SCHEMA on the non-empty dataset must fail (at Run or in
+	// the job's terminal status).
+	failed := false
+	if job, err := client.Query(fmt.Sprintf("DROP SCHEMA `%s.%s`", project(), datasetID)).Run(ctx); err != nil {
+		failed = true
+	} else if status, werr := job.Wait(ctx); werr != nil || status.Err() != nil {
+		failed = true
+	}
+	if !failed {
+		t.Fatalf("expected bare DROP SCHEMA on a non-empty dataset to fail")
+	}
+	if _, err := ds.Metadata(ctx); err != nil {
+		t.Fatalf("dataset should survive a rejected drop: %v", err)
+	}
+
+	// CASCADE drops the dataset and its contents.
+	job, err := client.Query(fmt.Sprintf("DROP SCHEMA `%s.%s` CASCADE", project(), datasetID)).Run(ctx)
+	if err != nil {
+		t.Fatalf("cascade run: %v", err)
+	}
+	status, err := job.Wait(ctx)
+	if err != nil {
+		t.Fatalf("cascade wait: %v", err)
+	}
+	if err := status.Err(); err != nil {
+		t.Fatalf("cascade job failed: %v", err)
+	}
+	if _, err := ds.Metadata(ctx); err == nil {
+		t.Fatalf("dataset should be gone after CASCADE")
+	}
+}

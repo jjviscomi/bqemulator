@@ -2,7 +2,9 @@ package com.example;
 
 import com.google.cloud.NoCredentials;
 import com.google.cloud.bigquery.BigQuery;
+import com.google.cloud.bigquery.BigQueryException;
 import com.google.cloud.bigquery.BigQueryOptions;
+import com.google.cloud.bigquery.DatasetId;
 import com.google.cloud.bigquery.DatasetInfo;
 import com.google.cloud.bigquery.Field;
 import com.google.cloud.bigquery.FieldValueList;
@@ -25,6 +27,8 @@ import java.util.Map;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * E2E: Phase 1 REST CRUD + query via the google-cloud-bigquery Java client.
@@ -154,5 +158,34 @@ class RestCrudTest {
         assertEquals(0L, dropResult.getTotalRows());
         Schema dropSchema = dropResult.getSchema();
         assertEquals(0, dropSchema == null ? 0 : dropSchema.getFields().size());
+    }
+
+    @Test
+    void dropSchemaNonEmptyRequiresCascade() throws Exception {
+        // Real BigQuery rejects a bare / RESTRICT DROP SCHEMA on a dataset
+        // that still contains tables (reason resourceInUse); only CASCADE
+        // removes the contents. Pinned by the rest_crud/ddl_drop_schema_*
+        // conformance corpus.
+        client.create(DatasetInfo.newBuilder(DATASET).setLocation("US").build());
+        TableId tableId = TableId.of(PROJECT, DATASET, "t");
+        client.create(TableInfo.of(tableId, StandardTableDefinition.of(
+                Schema.of(Field.newBuilder("id", LegacySQLTypeName.INTEGER).build()))));
+
+        // Bare DROP SCHEMA on the non-empty dataset is rejected.
+        BigQueryException ex = assertThrows(BigQueryException.class, () ->
+                client.query(QueryJobConfiguration.newBuilder(
+                        String.format("DROP SCHEMA `%s.%s`", PROJECT, DATASET))
+                        .setUseLegacySql(false)
+                        .build()));
+        assertTrue(ex.getMessage().contains("still in use"), ex.getMessage());
+        // The dataset survived the rejected drop.
+        assertNotNull(client.getDataset(DatasetId.of(PROJECT, DATASET)));
+
+        // CASCADE drops the dataset and its contents.
+        client.query(QueryJobConfiguration.newBuilder(
+                String.format("DROP SCHEMA `%s.%s` CASCADE", PROJECT, DATASET))
+                .setUseLegacySql(false)
+                .build());
+        assertNull(client.getDataset(DatasetId.of(PROJECT, DATASET)));
     }
 }

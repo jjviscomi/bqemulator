@@ -179,3 +179,38 @@ def test_single_ddl_query_result_shape(bq_client: bigquery.Client) -> None:
         assert drop_job.ddl_operation_performed == "DROP"
     finally:
         bq_client.delete_dataset(fqdn, delete_contents=True, not_found_ok=True)
+
+
+def test_drop_schema_non_empty_requires_cascade(bq_client: bigquery.Client) -> None:
+    """DROP SCHEMA on a non-empty dataset errors; CASCADE drops it.
+
+    Real BigQuery rejects a bare / RESTRICT DROP SCHEMA on a dataset that
+    still contains tables with reason ``resourceInUse``; only
+    ``DROP SCHEMA … CASCADE`` removes the contents. Pinned by the
+    ``rest_crud/ddl_drop_schema_non_empty_restrict`` and
+    ``ddl_drop_schema_cascade`` conformance fixtures.
+    """
+    from google.api_core.exceptions import GoogleAPICallError
+
+    ds_id = "e2e_drop_schema_restrict_py"
+    fqdn = f"{bq_client.project}.{ds_id}"
+    try:
+        bq_client.create_dataset(bigquery.Dataset(fqdn), exists_ok=True)
+        bq_client.create_table(
+            bigquery.Table(f"{fqdn}.t", schema=[bigquery.SchemaField("id", "INT64")]),
+            exists_ok=True,
+        )
+
+        # Bare DROP SCHEMA on the non-empty dataset is rejected.
+        with pytest.raises(GoogleAPICallError) as excinfo:
+            bq_client.query(f"DROP SCHEMA `{fqdn}`").result()
+        assert "still in use" in str(excinfo.value)
+        # The dataset survived the rejected drop.
+        assert bq_client.get_dataset(fqdn) is not None
+
+        # CASCADE drops the dataset and its contents.
+        bq_client.query(f"DROP SCHEMA `{fqdn}` CASCADE").result()
+        with pytest.raises(NotFound):
+            bq_client.get_dataset(fqdn)
+    finally:
+        bq_client.delete_dataset(fqdn, delete_contents=True, not_found_ok=True)

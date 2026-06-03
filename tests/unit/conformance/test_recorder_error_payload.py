@@ -185,6 +185,7 @@ class TestBuildErrorPayload:
             fixture=_FakeFixture(),
             exc=exc,
             project="proj-1",
+            actual_project="proj-1",
             location="US",
             dataset_fqdn="proj-1.bqemu_run42_t",
             wall_ms=42,
@@ -219,6 +220,7 @@ class TestBuildErrorPayload:
             fixture=_FakeFixture(),
             exc=exc,
             project="proj-1",
+            actual_project="proj-1",
             location="US",
             dataset_fqdn="proj-1.bqemu_run42_t",
             wall_ms=10,
@@ -247,6 +249,7 @@ class TestBuildErrorPayload:
             fixture=_FakeFixture(),
             exc=bq_exc,
             project="proj-bq",
+            actual_project="proj-bq",
             location="US",
             dataset_fqdn="proj-bq.bqemu_run42_t",
             wall_ms=10,
@@ -261,3 +264,39 @@ class TestBuildErrorPayload:
             "message": "Not found: Table proj-emu:bqemu_emu_xyz.tbl",
         }
         assert compare_error(payload["error"], emu_actual).ok
+
+    def test_message_sample_scrubs_the_billing_project(self, recorder) -> None:
+        """The real billing project never reaches the recorded envelope.
+
+        BigQuery embeds the project in some error messages (e.g.
+        ``Dataset <project>:<dataset> is still in use``). The
+        human-readable ``message_sample`` must carry the
+        ``your-bigquery-project`` placeholder, never the real id; the
+        ``message_pattern`` already wildcards the dataset+project token.
+        """
+        exc = self._fake_exc(
+            message="Dataset secret-proj-9:bqemu_run42_ds is still in use",
+            reason="resourceInUse",
+            location=None,
+            http_status=400,
+        )
+
+        class _FakeFixture:
+            id = "rest_crud/ddl_drop_schema_non_empty_restrict"
+
+        payload = recorder._build_error_payload(
+            fixture=_FakeFixture(),
+            exc=exc,
+            project=recorder.FIXTURE_PROJECT_PLACEHOLDER,
+            actual_project="secret-proj-9",
+            location="US",
+            dataset_fqdn="secret-proj-9.bqemu_run42_ds",
+            wall_ms=10,
+        )
+        error = payload["error"]
+        assert "secret-proj-9" not in error["message_sample"]
+        assert "secret-proj-9" not in error["message_pattern"]
+        assert recorder.FIXTURE_PROJECT_PLACEHOLDER in error["message_sample"]
+        assert error["reason"] == "resourceInUse"
+        assert error["http_status"] == 400
+        assert payload["bigquery"]["project"] == recorder.FIXTURE_PROJECT_PLACEHOLDER
