@@ -66,15 +66,13 @@ Scenario coverage enumerated in the
 ## Tier 5 — Conformance (`tests/conformance/`)
 
 Replays recorded baselines against the emulator with row-for-row,
-type-aware tolerance. The corpus ships **1215 active fixtures** —
-**1141 SQL + 48 HTTP + 26 gRPC** (plus 18 INFORMATION_SCHEMA
-fixture stubs currently unrecorded; the same surfaces are
-exercised by Tier 3 integration tests). 13 documented XFAILs are
+type-aware tolerance. The corpus ships **1276 active fixtures** —
+**1202 SQL + 48 HTTP + 26 gRPC**. 12 documented XFAILs are
 pinned as permanent design-decision divergences in
 [`tests/conformance/divergences.py`](https://github.com/jjviscomi/bqemulator/blob/main/tests/conformance/divergences.py).
 
-The corpus includes full TPC-H (22/22 queries) and a 59-of-99
-TPC-DS subset. The remaining 40 TPC-DS queries are tracked in
+The corpus includes full TPC-H (22/22 queries) and a 70-of-99
+TPC-DS subset. The remaining 29 TPC-DS queries are tracked in
 [tpcds-expansion-plan.md](contributing/tpcds-expansion-plan.md),
 which lists the missing queries (numerical order, with complexity
 hints), the per-query authoring recipe, BigQuery adaptation
@@ -152,7 +150,7 @@ on permuted data (e.g., a ``LIMIT N`` shortcut that picks the
 first row in DuckDB's storage order, which happens to match
 BigQuery's storage order on the recorded dataset).
 
-The tier exercises ~77 of the ~1141 SQL fixtures; the remaining
+The tier exercises ~77 of the ~1202 SQL fixtures; the remaining
 fixtures are skipped because their queries use BigQuery-documented
 order-sensitive contracts (``ORDER BY``, ``LIMIT``, ``ARRAY_AGG``
 / ``STRING_AGG`` / window functions without explicit OVER ORDER

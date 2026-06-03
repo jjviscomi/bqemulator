@@ -113,8 +113,6 @@ table is maintained here (it has no authoritative generator).
 
 | Surface | Where it's tested today | Why not in conformance |
 |---|---|---|
-| **JS UDFs** (`CREATE TEMP FUNCTION... LANGUAGE js`) | Unit, integration (`tests/integration/test_udf*.py`) | Gated on `[udf-js]` extra (`mini-racer`); deterministic enough to record but no fixtures yet authored. |
-| **TVFs** (table-valued functions) | Unit, integration | No fixtures authored yet. |
 | **Storage Read API** (gRPC `BigQueryRead`) | Integration, E2E (`test_storage_read_*`) | Non-SQL surface; conformance is the SQL tier. |
 | **Storage Write API** (gRPC `BigQueryWrite`, 4 stream types) | Integration, E2E (`test_storage_write_*`) | Non-SQL surface. |
 | **Load jobs** (CSV/NDJSON/Parquet → table) | Integration, E2E | Non-SQL surface; not deterministic across CSV/JSON parser variations. |
@@ -127,7 +125,6 @@ table is maintained here (it has no authoritative generator).
 | **MV refresh** | Integration, chaos | Multi-step + time-dependent. |
 | **BEGIN/COMMIT/ROLLBACK transactions** | Integration | Few fixtures authored; multi-statement edge cases. |
 | **Session variables (`SET...`)** | Integration | Session state — non-replayable. |
-| **`CREATE PROCEDURE`** | Integration | Larger scripting surface; underrepresented in corpus. |
 | **`dryRun` validation** | Integration | `statistics.query.totalBytesProcessed` always returns `"0"` (a "validation passed" marker, not a cost estimate — the emulator has no byte-billing model; see [out-of-scope.md#slot-and-byte-billing-simulation](out-of-scope.md#slot-and-byte-billing-simulation)). |
 | **Job lifecycle** (cancel, list, get) | Integration, E2E | Non-SQL HTTP endpoints. |
 | **Query result pagination** | Integration, E2E | Non-SQL HTTP endpoint. |

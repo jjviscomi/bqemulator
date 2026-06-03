@@ -213,9 +213,9 @@ payload.
 | Job `statistics.totalBytesBilled` | ❌ No | 🟡 | Same |
 | Job `statistics.cacheHit` | ❌ No | 🟡 | Real-BQ `false` (default) vs `true` (cache hit); emulator always `false` |
 | Job `statistics.totalSlotMs` | ❌ No | 🟢 | Real-BQ value; emulator should be 0 |
-| Job `statistics.query.statementType` | ❌ No | 🔴 | SELECT / INSERT / UPDATE / DELETE / MERGE / CREATE_TABLE /... — clients dispatch on this |
-| Job `statistics.query.numDmlAffectedRows` | ❌ No | 🔴 | UPDATE / DELETE / MERGE return count; critical for client correctness |
-| Job `statistics.query.ddlOperationPerformed` | ❌ No | 🔴 | CREATE / DROP / ALTER / TRUNCATE — clients dispatch on this |
+| Job `statistics.query.statementType` | ✅ Yes | n/a | Diffed key-by-key via the recorded `job_metadata` block (`ddl_result_*`, `routine_ddl_*` fixtures); clients dispatch on this |
+| Job `statistics.query.numDmlAffectedRows` | ✅ Yes | n/a | Diffed via the recorded `job_metadata` block (TRUNCATE / DML `ddl_result_*` fixtures); critical for client correctness |
+| Job `statistics.query.ddlOperationPerformed` | ✅ Yes | n/a | Diffed via the recorded `job_metadata` block (`ddl_result_*` fixtures); CREATE / DROP / ALTER — clients dispatch on this |
 | Job `statistics.query.referencedTables` | ❌ No | 🟡 | Lineage |
 | Job `statistics.query.schema` | ❌ No (the result schema only is diffed) | 🟡 | Pre-execution schema (dry-run uses this) |
 | Job `statistics.query.queryPlan` | ❌ No | 🟢 | Per-stage timing |
