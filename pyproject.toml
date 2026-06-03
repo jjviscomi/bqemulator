@@ -113,13 +113,14 @@ dependencies = [
     # pip-audit on 2026-05-17. cryptography 46.0.5 → 46.0.7 closes
     # CVE-2026-34073 + CVE-2026-39892 (X.509 / PKCS-7 parsing). pyasn1
     # 0.6.2 → 0.6.3 closes CVE-2026-30922 (BER-encoding edge case).
-    # PyJWT 2.11.0 → 2.12.0 closes CVE-2026-32597 (JWT validation
-    # bypass). Each is transitive via ``google-cloud-bigquery-storage``
-    # → ``google-auth``; floor-pinning here makes the fix mandatory
-    # for any bqemulator install.
+    # PyJWT closes CVE-2026-32597 (JWT validation bypass) at 2.12.0
+    # and PYSEC-2025-183 at 2.13.0, so the floor pins 2.13.0. Each is
+    # transitive via ``google-cloud-bigquery-storage`` → ``google-auth``;
+    # floor-pinning here makes the fix mandatory for any bqemulator
+    # install.
     "cryptography>=46.0.7",
     "pyasn1>=0.6.3",
-    "pyjwt>=2.12.0",
+    "pyjwt>=2.13.0",
     # Floor pin to dodge CVE-2026-25645 in requests 2.32.5
     # (credential-leak on redirect). 2.33.0 is the fixed version.
     # ``requests`` is a transitive of ``google-cloud-bigquery`` and
