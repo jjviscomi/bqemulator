@@ -34,6 +34,7 @@ from bqemulator.domain.errors import (
     NotFoundError,
     OutOfRangeError,
     PermissionDeniedError,
+    ResourceInUseError,
     ResourceRef,
     UnsupportedFeatureError,
     ValidationError,
@@ -76,6 +77,7 @@ _SQL_EXECUTION_DOMAIN_ERRORS = (
     PermissionDeniedError,
     InvalidQueryError,
     OutOfRangeError,
+    ResourceInUseError,
 )
 
 
@@ -135,7 +137,8 @@ def _domain_error_to_error_result(
     | AlreadyExistsError
     | PermissionDeniedError
     | InvalidQueryError
-    | OutOfRangeError,
+    | OutOfRangeError
+    | ResourceInUseError,
 ) -> dict[str, Any]:
     """Build a BigQuery-shape ``ErrorProto`` dict from a :class:`DomainError`.
 

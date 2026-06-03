@@ -14,6 +14,7 @@ from typing import TYPE_CHECKING, Any
 import pyarrow as pa
 
 from bqemulator.catalog.ddl_sync import (
+    assert_drop_schema_allowed,
     sync_created_schema,
     sync_created_table,
     sync_created_view,
@@ -369,12 +370,10 @@ async def execute_query_job(
     # MATERIALIZED_VIEW). BigQuery treats these as read-only.
     _reject_dml_on_immutable(project_id, bq_sql, ctx)
 
-    # Resolve ``ddlOperationPerformed`` BEFORE the statement runs:
-    # CREATE vs REPLACE vs SKIP depends on whether the target existed
-    # pre-mutation (pinned by ``rest_crud/ddl_result_*``). The scripted
-    # routine case was already resolved above.
+    # Single-statement pre-execution guard + ``ddlOperationPerformed``
+    # resolution (the scripted routine case was already resolved above).
     if not is_scripted:
-        ddl_operation = resolve_ddl_operation(bq_sql, statement_type, project_id, ctx)
+        ddl_operation = _guard_and_resolve_single_ddl(bq_sql, statement_type, project_id, ctx)
 
     effective_caller = caller or CallerIdentity(
         principal="user:anonymous@bqemulator.local",
@@ -432,6 +431,27 @@ async def execute_query_job(
         end_time=ctx.clock.now(),
         etag=generate_etag(project_id, job_id, str(now)),
     )
+
+
+def _guard_and_resolve_single_ddl(
+    bq_sql: str,
+    statement_type: str,
+    project_id: str,
+    ctx: AppContext,
+) -> str | None:
+    """Pre-execution guard + ``ddlOperationPerformed`` for a single SQL statement.
+
+    Runs BEFORE the statement reaches DuckDB. Rejects a bare / RESTRICT
+    ``DROP SCHEMA`` on a non-empty dataset with BigQuery's
+    ``resourceInUse`` error (DuckDB's own dependency error leaks the
+    internal ``project__dataset`` schema name; CASCADE is unaffected),
+    then resolves ``ddlOperationPerformed`` against pre-mutation target
+    existence (CREATE / REPLACE / SKIP / DROP). Pinned by
+    ``rest_crud/ddl_drop_schema_non_empty_restrict`` and the
+    ``rest_crud/ddl_result_*`` corpus.
+    """
+    assert_drop_schema_allowed(bq_sql, project_id, ctx)
+    return resolve_ddl_operation(bq_sql, statement_type, project_id, ctx)
 
 
 def _parse_script_or_raise(bq_sql: str) -> Any:

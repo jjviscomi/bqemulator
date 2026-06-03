@@ -17,6 +17,7 @@ from bqemulator.api.dependencies import AppContext
 from bqemulator.catalog.ddl_sync import (
     _detect_catalog_drop,
     _detect_create_schema,
+    assert_drop_schema_allowed,
     sync_created_schema,
     sync_created_table,
     sync_created_view,
@@ -26,7 +27,7 @@ from bqemulator.catalog.memory_repository import MemoryCatalogRepository
 from bqemulator.catalog.models import DatasetMeta
 from bqemulator.config import Settings
 from bqemulator.domain.clock import FrozenClock
-from bqemulator.domain.errors import NotFoundError
+from bqemulator.domain.errors import NotFoundError, ResourceInUseError
 from bqemulator.domain.events import EventBus
 from bqemulator.jobs.executor import execute_query_job
 from bqemulator.observability.metrics import MetricsRegistry
@@ -793,3 +794,71 @@ class TestCreateSchemaSyncWiring:
         result = await run_script(ctx, "p", script)
         assert result.final_table is not None
         assert result.final_table.to_pylist() == [{"schema_name": "scripted_visible_ds"}]
+
+
+class TestAssertDropSchemaAllowed:
+    """RESTRICT guard: bare DROP SCHEMA on a non-empty dataset is rejected.
+
+    Real BigQuery returns ``resourceInUse`` (HTTP 400) unless the caller
+    uses ``DROP SCHEMA … CASCADE``. Pinned end-to-end by
+    ``rest_crud/ddl_drop_schema_non_empty_restrict`` and
+    ``ddl_drop_schema_cascade``.
+    """
+
+    async def test_non_empty_bare_drop_raises(self, ctx: AppContext) -> None:
+        await execute_query_job("p", "c", "CREATE TABLE `p.ds.t` (id INT64)", None, ctx)
+        with pytest.raises(ResourceInUseError) as excinfo:
+            assert_drop_schema_allowed("DROP SCHEMA `p.ds`", "p", ctx)
+        # BigQuery-shaped message; no internal ``p__ds`` schema name leaked.
+        assert excinfo.value.message == "Dataset p:ds is still in use"
+        assert excinfo.value.bq_reason == "resourceInUse"
+        assert excinfo.value.http_status == 400
+
+    async def test_non_empty_due_to_routine_raises(self, ctx: AppContext) -> None:
+        await execute_query_job(
+            "p",
+            "cf",
+            "CREATE FUNCTION `p.ds.f`(x INT64) RETURNS INT64 AS (x + 1)",
+            None,
+            ctx,
+        )
+        with pytest.raises(ResourceInUseError):
+            assert_drop_schema_allowed("DROP SCHEMA `p.ds`", "p", ctx)
+
+    async def test_cascade_on_non_empty_is_allowed(self, ctx: AppContext) -> None:
+        await execute_query_job("p", "c", "CREATE TABLE `p.ds.t` (id INT64)", None, ctx)
+        # CASCADE: no raise — the drop proceeds and cascades the contents.
+        assert_drop_schema_allowed("DROP SCHEMA `p.ds` CASCADE", "p", ctx)
+
+    async def test_empty_dataset_bare_drop_is_allowed(self, ctx: AppContext) -> None:
+        assert_drop_schema_allowed("DROP SCHEMA `p.ds`", "p", ctx)
+
+    async def test_missing_dataset_is_noop(self, ctx: AppContext) -> None:
+        # IF EXISTS no-ops; a bare drop of a missing dataset 404s downstream.
+        assert_drop_schema_allowed("DROP SCHEMA `p.absent`", "p", ctx)
+        assert_drop_schema_allowed("DROP SCHEMA IF EXISTS `p.absent`", "p", ctx)
+
+    async def test_non_schema_drop_is_noop(self, ctx: AppContext) -> None:
+        await execute_query_job("p", "c", "CREATE TABLE `p.ds.t` (id INT64)", None, ctx)
+        # DROP TABLE / non-DROP statements are not the guard's concern.
+        assert_drop_schema_allowed("DROP TABLE `p.ds.t`", "p", ctx)
+        assert_drop_schema_allowed("SELECT 1", "p", ctx)
+
+    async def test_end_to_end_non_empty_drop_surfaces_resource_in_use(
+        self,
+        ctx: AppContext,
+    ) -> None:
+        """``execute_query_job`` raises ResourceInUseError; the dataset survives."""
+        await execute_query_job("p", "c", "CREATE TABLE `p.ds.t` (id INT64)", None, ctx)
+        with pytest.raises(ResourceInUseError):
+            await execute_query_job("p", "d", "DROP SCHEMA `p.ds`", None, ctx)
+        assert ctx.catalog.get_dataset("p", "ds") is not None
+        assert ctx.catalog.get_table("p", "ds", "t") is not None
+
+    async def test_end_to_end_cascade_drops_dataset_and_contents(
+        self,
+        ctx: AppContext,
+    ) -> None:
+        await execute_query_job("p", "c", "CREATE TABLE `p.ds.t` (id INT64)", None, ctx)
+        await execute_query_job("p", "d", "DROP SCHEMA `p.ds` CASCADE", None, ctx)
+        assert ctx.catalog.get_dataset("p", "ds") is None

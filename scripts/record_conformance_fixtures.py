@@ -428,6 +428,7 @@ def _record_one(  # noqa: PLR0915 — the recorder body is a linear pipeline
                     fixture=fixture,
                     exc=exc,
                     project=FIXTURE_PROJECT_PLACEHOLDER,
+                    actual_project=project,
                     location=client.location or "",
                     dataset_fqdn=dataset_fqdn,
                     wall_ms=wall_ms,
@@ -524,6 +525,7 @@ def _build_error_payload(
     fixture: Fixture,  # noqa: ARG001 — part of the signature so callers can keep the same kwargs
     exc: Any,
     project: str,
+    actual_project: str,
     location: str,
     dataset_fqdn: str | None,
     wall_ms: int,
@@ -564,6 +566,12 @@ def _build_error_payload(
 
     job_id = _extract_job_id(exc)
 
+    # Scrub the billing project from the human-readable sample so a real
+    # project id never lands in version control (the message_pattern
+    # already wildcards the dataset+project token; the sample keeps the
+    # ephemeral dataset name for audit but must not leak the project).
+    message_sample = message.replace(actual_project, FIXTURE_PROJECT_PLACEHOLDER)
+
     return {
         "fixture_version": FIXTURE_VERSION,
         "bigquery": {
@@ -579,7 +587,7 @@ def _build_error_payload(
             "location": location_field,
             "http_status": http_status,
             "message_pattern": _build_message_pattern(message, dataset_fqdn),
-            "message_sample": message,
+            "message_sample": message_sample,
         },
         "duration_class": _duration_class(wall_ms),
     }

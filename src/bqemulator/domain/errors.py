@@ -153,6 +153,20 @@ class PermissionDeniedError(DomainError):
     grpc_status_name = "PERMISSION_DENIED"
 
 
+class ResourceInUseError(DomainError):
+    """A resource cannot be modified because dependents still reference it.
+
+    BigQuery returns ``resourceInUse`` (HTTP 400) for a bare /
+    ``RESTRICT`` ``DROP SCHEMA`` on a dataset that still contains tables
+    or routines — the caller must use ``DROP SCHEMA … CASCADE`` to drop
+    the dataset and its contents.
+    """
+
+    http_status = 400
+    bq_reason = "resourceInUse"
+    grpc_status_name = "FAILED_PRECONDITION"
+
+
 class QuotaExceededError(DomainError):
     """A configurable emulator quota was exceeded (e.g. max concurrent jobs)."""
 

@@ -159,4 +159,46 @@ describe("bqemulator Phase 1 REST (Node.js)", () => {
         .catch(() => {});
     }
   });
+
+  it("rejects DROP SCHEMA on a non-empty dataset unless CASCADE", async () => {
+    // Real BigQuery rejects a bare / RESTRICT DROP SCHEMA on a dataset
+    // that still contains tables (reason resourceInUse); only CASCADE
+    // removes the contents. Pinned by rest_crud/ddl_drop_schema_*. The
+    // error surfaces on the job's status.errorResult (the Node client's
+    // high-level query() helper reads rows and does not throw on it).
+    const ds = "e2e_node_drop_schema_restrict";
+    await client
+      .dataset(ds)
+      .delete({ force: true })
+      .catch(() => {});
+    const [dataset] = await client.createDataset(ds, { location: "US" });
+    await dataset.createTable("t", { schema: [{ name: "id", type: "INT64" }] });
+    try {
+      // Bare DROP SCHEMA on the non-empty dataset fails (the job ends
+      // with a resourceInUse errorResult, surfaced as a rejection at
+      // job creation / completion), and the dataset survives.
+      await assert.rejects(
+        client
+          .createQueryJob({ query: `DROP SCHEMA \`${PROJECT}.${ds}\``, location: "US" })
+          .then(([job]) => job.promise()),
+        /still in use/,
+      );
+      const [exists] = await client.dataset(ds).exists();
+      assert.equal(exists, true);
+
+      // CASCADE drops the dataset and its contents.
+      const [cascadeJob] = await client.createQueryJob({
+        query: `DROP SCHEMA \`${PROJECT}.${ds}\` CASCADE`,
+        location: "US",
+      });
+      await cascadeJob.promise();
+      const [stillExists] = await client.dataset(ds).exists();
+      assert.equal(stillExists, false);
+    } finally {
+      await client
+        .dataset(ds)
+        .delete({ force: true })
+        .catch(() => {});
+    }
+  });
 });
