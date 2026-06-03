@@ -64,7 +64,7 @@ dependencies = [
     # both to <1.81 to stay consistent with that ``grpcio``. ``grpcio`` itself is
     # left uncapped so the core tracks the latest runtime. Lift once those
     # example locks move ``grpcio`` to >=1.81.
-    "grpcio-tools>=1.60,<1.81",
+    "grpcio-tools>=1.60,<1.82",
     "grpcio-health-checking>=1.60,<1.81",
     "protobuf>=4.25",
     "googleapis-common-protos>=1.62",
