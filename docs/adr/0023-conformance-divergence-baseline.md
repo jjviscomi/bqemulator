@@ -740,12 +740,15 @@ catalog already honored RESTRICT (the dataset survived), but the error
 surfaced was DuckDB's raw `Dependency Error: Cannot drop entry
 "<project>__<dataset>" …` — wrong shape and, worse, leaking the
 internal `project__dataset` schema name. A new pre-execution guard
-(`catalog.ddl_sync.assert_drop_schema_allowed`, called from the
-executor before the statement reaches DuckDB) raises the new
-`ResourceInUseError` (`resourceInUse` / 400) when the catalog — the
-authoritative source for emptiness, since a table can exist in the
-catalog without a physical DuckDB row — shows the dataset still has
-tables or routines. `CASCADE` and empty-dataset drops are unaffected.
+(`catalog.ddl_sync.assert_drop_schema_allowed`, called before the
+statement reaches DuckDB from **both** execution paths — the
+single-statement executor and `ScriptInterpreter._exec_sql`, so a
+`DROP SCHEMA` inside a multi-statement script gets the same parity)
+raises the new `ResourceInUseError` (`resourceInUse` / 400) when the
+catalog — the authoritative source for emptiness, since a table can
+exist in the catalog without a physical DuckDB row — shows the dataset
+still has tables or routines. `CASCADE` and empty-dataset drops are
+unaffected.
 The conformance recorder was also hardened: `_build_error_payload` now
 scrubs the billing project from the human-readable `message_sample`
 (the `message_pattern` already wildcards the dataset+project token), so

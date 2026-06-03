@@ -862,3 +862,25 @@ class TestAssertDropSchemaAllowed:
         await execute_query_job("p", "c", "CREATE TABLE `p.ds.t` (id INT64)", None, ctx)
         await execute_query_job("p", "d", "DROP SCHEMA `p.ds` CASCADE", None, ctx)
         assert ctx.catalog.get_dataset("p", "ds") is None
+
+    async def test_scripted_non_empty_drop_surfaces_resource_in_use(
+        self,
+        ctx: AppContext,
+    ) -> None:
+        """A DROP SCHEMA inside a multi-statement script gets the same guard.
+
+        The scripting interpreter bypasses the executor's single-statement
+        path, so the guard also runs in ``ScriptInterpreter._exec_sql``;
+        otherwise a scripted non-empty drop hits DuckDB and leaks its
+        internal ``project__dataset`` schema name.
+        """
+        await execute_query_job("p", "c", "CREATE TABLE `p.ds.t` (id INT64)", None, ctx)
+        with pytest.raises(ResourceInUseError) as excinfo:
+            await execute_query_job("p", "s", "SELECT 1 AS a;\nDROP SCHEMA `p.ds`", None, ctx)
+        assert excinfo.value.message == "Dataset p:ds is still in use"
+        assert ctx.catalog.get_dataset("p", "ds") is not None
+
+    async def test_scripted_cascade_drops_dataset(self, ctx: AppContext) -> None:
+        await execute_query_job("p", "c", "CREATE TABLE `p.ds.t` (id INT64)", None, ctx)
+        await execute_query_job("p", "s", "SELECT 1 AS a;\nDROP SCHEMA `p.ds` CASCADE", None, ctx)
+        assert ctx.catalog.get_dataset("p", "ds") is None
