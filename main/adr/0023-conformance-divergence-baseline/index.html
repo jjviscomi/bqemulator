@@ -6250,9 +6250,45 @@ list to report, so the existing object's columns surface), and declared
 columns whose type the static DDL map cannot resolve. A single
 <code>CREATE FUNCTION</code> / <code>CREATE PROCEDURE</code> statement still routes through
 the scripting interpreter and reports <code>statementType: SCRIPT</code> — that
-labeling divergence is independent of the result-shape contract and
-remains open. Pinned by the sixteen <code>rest_crud/ddl_result_*</code> fixtures,
-the <code>tests/unit/jobs/test_ddl_result.py</code> unit suite, and e2e coverage
+labeling concern is addressed by the routine-DDL amendment below.
+Pinned by the sixteen <code>rest_crud/ddl_result_*</code> fixtures, the
+<code>tests/unit/jobs/test_ddl_result.py</code> unit suite, and e2e coverage
+across all five conformance clients.</p>
+<p><strong>Amendment (2026-06-03) — single routine-DDL <code>statementType</code> +
+DROP-routine execution.</strong> The routine-labeling follow-up above is
+closed, and recording corrected one of its premises. Nine fixtures
+recorded from real BigQuery (<code>routines_scripting/routine_ddl_*</code>) pin
+the contract:</p>
+<ol>
+<li><strong><code>CREATE FUNCTION</code></strong> (scalar SQL or JS) →
+   <code>statementType: CREATE_FUNCTION</code>, <code>ddlOperationPerformed</code>
+   <code>CREATE</code> / <code>REPLACE</code>.</li>
+<li><strong><code>CREATE TABLE FUNCTION</code></strong> (TVF) → <code>CREATE_TABLE_FUNCTION</code> / same.</li>
+<li><strong><code>CREATE PROCEDURE</code></strong> → <code>statementType: SCRIPT</code> with <strong>no</strong>
+   <code>ddlOperationPerformed</code>. BigQuery classifies a procedure definition
+   as a script, not a DDL — so the emulator's pre-existing <code>SCRIPT</code>
+   output for it was already correct, and the fix deliberately leaves
+   it untouched (reclassifying would have <em>introduced</em> a divergence).</li>
+<li><strong><code>DROP FUNCTION</code> / <code>DROP PROCEDURE</code> / <code>DROP TABLE FUNCTION</code></strong> →
+   <code>DROP_FUNCTION</code> / <code>DROP_PROCEDURE</code> / <code>DROP_TABLE_FUNCTION</code>,
+   <code>ddlOperationPerformed</code> <code>DROP</code> (or <code>SKIP</code> when <code>IF EXISTS</code> finds
+   nothing).</li>
+</ol>
+<p>The CREATE forms routed through the scripting interpreter and were
+reported as <code>SCRIPT</code>; <code>bqemulator.jobs.routine_ddl.classify_create_routine</code>
+now refines a single <code>CreateFunctionStmt</code> to <code>CREATE_FUNCTION</code> /
+<code>CREATE_TABLE_FUNCTION</code> (resolving <code>CREATE</code> vs <code>REPLACE</code> against
+pre-execution catalog existence), while <code>CreateProcedureStmt</code> stays
+<code>SCRIPT</code>. The DROP forms have no DuckDB counterpart — a procedure is
+not a DuckDB object and <code>DROP TABLE FUNCTION</code> is not even in sqlglot's
+grammar, so the legacy path handed DuckDB SQL it rejected
+(<code>syntax error at "PROCEDURE"</code> / <code>Macro … does not exist</code>). A new
+executor fast path (<code>_maybe_run_routine_drop</code>) intercepts them and runs
+the drop against the catalog + UDF registry
+(<code>udf_registry.deregister</code> + <code>catalog.delete_routine</code>), mirroring the
+CREATE-routine registration. Pinned by the nine
+<code>routines_scripting/routine_ddl_*</code> fixtures, the
+<code>tests/unit/jobs/test_routine_ddl.py</code> unit suite, and e2e coverage
 across all five conformance clients.</p>
 <h4 id="bucket-g-range-interval-wire-format-closed">Bucket G — RANGE / INTERVAL wire format — Closed<a class="headerlink" href="#bucket-g-range-interval-wire-format-closed" title="Permanent link">&para;</a></h4>
 <p><strong>Status.</strong> Closed. The closure ships three coordinated
