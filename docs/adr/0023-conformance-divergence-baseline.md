@@ -687,9 +687,46 @@ list to report, so the existing object's columns surface), and declared
 columns whose type the static DDL map cannot resolve. A single
 `CREATE FUNCTION` / `CREATE PROCEDURE` statement still routes through
 the scripting interpreter and reports `statementType: SCRIPT` — that
-labeling divergence is independent of the result-shape contract and
-remains open. Pinned by the sixteen `rest_crud/ddl_result_*` fixtures,
-the `tests/unit/jobs/test_ddl_result.py` unit suite, and e2e coverage
+labeling concern is addressed by the routine-DDL amendment below.
+Pinned by the sixteen `rest_crud/ddl_result_*` fixtures, the
+`tests/unit/jobs/test_ddl_result.py` unit suite, and e2e coverage
+across all five conformance clients.
+
+**Amendment (2026-06-03) — single routine-DDL `statementType` +
+DROP-routine execution.** The routine-labeling follow-up above is
+closed, and recording corrected one of its premises. Nine fixtures
+recorded from real BigQuery (`routines_scripting/routine_ddl_*`) pin
+the contract:
+
+1. **`CREATE FUNCTION`** (scalar SQL or JS) →
+   `statementType: CREATE_FUNCTION`, `ddlOperationPerformed`
+   `CREATE` / `REPLACE`.
+2. **`CREATE TABLE FUNCTION`** (TVF) → `CREATE_TABLE_FUNCTION` / same.
+3. **`CREATE PROCEDURE`** → `statementType: SCRIPT` with **no**
+   `ddlOperationPerformed`. BigQuery classifies a procedure definition
+   as a script, not a DDL — so the emulator's pre-existing `SCRIPT`
+   output for it was already correct, and the fix deliberately leaves
+   it untouched (reclassifying would have *introduced* a divergence).
+4. **`DROP FUNCTION` / `DROP PROCEDURE` / `DROP TABLE FUNCTION`** →
+   `DROP_FUNCTION` / `DROP_PROCEDURE` / `DROP_TABLE_FUNCTION`,
+   `ddlOperationPerformed` `DROP` (or `SKIP` when `IF EXISTS` finds
+   nothing).
+
+The CREATE forms routed through the scripting interpreter and were
+reported as `SCRIPT`; `bqemulator.jobs.routine_ddl.classify_create_routine`
+now refines a single `CreateFunctionStmt` to `CREATE_FUNCTION` /
+`CREATE_TABLE_FUNCTION` (resolving `CREATE` vs `REPLACE` against
+pre-execution catalog existence), while `CreateProcedureStmt` stays
+`SCRIPT`. The DROP forms have no DuckDB counterpart — a procedure is
+not a DuckDB object and `DROP TABLE FUNCTION` is not even in sqlglot's
+grammar, so the legacy path handed DuckDB SQL it rejected
+(`syntax error at "PROCEDURE"` / `Macro … does not exist`). A new
+executor fast path (`_maybe_run_routine_drop`) intercepts them and runs
+the drop against the catalog + UDF registry
+(`udf_registry.deregister` + `catalog.delete_routine`), mirroring the
+CREATE-routine registration. Pinned by the nine
+`routines_scripting/routine_ddl_*` fixtures, the
+`tests/unit/jobs/test_routine_ddl.py` unit suite, and e2e coverage
 across all five conformance clients.
 
 #### Bucket G — RANGE / INTERVAL wire format — Closed

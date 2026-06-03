@@ -195,3 +195,62 @@ func TestScriptEndingInDDLReturnsEmpty(t *testing.T) {
 		t.Fatalf("expected empty result (iterator.Done), got row=%v err=%v", row, err)
 	}
 }
+
+// TestRoutinesScriptingSingleRoutineDDLStatementType verifies that a
+// single routine DDL statement reports BigQuery's statementType, and that
+// DROP routine statements execute against the live container. CREATE
+// PROCEDURE reports SCRIPT — BigQuery classifies a procedure definition
+// as a script. Pinned by the routines_scripting/routine_ddl_*
+// conformance corpus.
+func TestRoutinesScriptingSingleRoutineDDLStatementType(t *testing.T) {
+	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
+	defer cancel()
+	client := routines_scriptingClient(ctx, t)
+	defer client.Close()
+
+	dsID := "routine_ddl_go"
+	ds := client.Dataset(dsID)
+	_ = ds.DeleteWithContents(ctx)
+	if err := ds.Create(ctx, &bigquery.DatasetMetadata{Location: "US"}); err != nil {
+		t.Fatalf("create dataset: %v", err)
+	}
+	defer func() {
+		if err := ds.DeleteWithContents(ctx); err != nil {
+			t.Logf("cleanup: %v", err)
+		}
+	}()
+
+	runDDL := func(sql string) string {
+		job, err := client.Query(sql).Run(ctx)
+		if err != nil {
+			t.Fatalf("run %q: %v", sql, err)
+		}
+		status, err := job.Wait(ctx)
+		if err != nil {
+			t.Fatalf("wait %q: %v", sql, err)
+		}
+		if err := status.Err(); err != nil {
+			t.Fatalf("job %q failed: %v", sql, err)
+		}
+		qs, ok := status.Statistics.Details.(*bigquery.QueryStatistics)
+		if !ok {
+			t.Fatalf("no QueryStatistics for %q", sql)
+		}
+		return qs.StatementType
+	}
+
+	proj := client.Project()
+	cases := []struct{ sql, want string }{
+		{fmt.Sprintf("CREATE FUNCTION `%s.%s.add_one`(x INT64) RETURNS INT64 AS (x + 1)", proj, dsID), "CREATE_FUNCTION"},
+		{fmt.Sprintf("CREATE TABLE FUNCTION `%s.%s.one_row`(n INT64) AS SELECT n AS x", proj, dsID), "CREATE_TABLE_FUNCTION"},
+		{fmt.Sprintf("CREATE PROCEDURE `%s.%s.noop`() BEGIN SELECT 1 AS one; END", proj, dsID), "SCRIPT"},
+		{fmt.Sprintf("DROP FUNCTION `%s.%s.add_one`", proj, dsID), "DROP_FUNCTION"},
+		{fmt.Sprintf("DROP PROCEDURE `%s.%s.noop`", proj, dsID), "DROP_PROCEDURE"},
+		{fmt.Sprintf("DROP TABLE FUNCTION `%s.%s.one_row`", proj, dsID), "DROP_TABLE_FUNCTION"},
+	}
+	for _, c := range cases {
+		if got := runDDL(c.sql); got != c.want {
+			t.Fatalf("statementType for %q = %q, want %q", c.sql, got, c.want)
+		}
+	}
+}

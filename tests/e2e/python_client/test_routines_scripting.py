@@ -267,3 +267,50 @@ def test_script_ending_in_ddl_returns_empty(bq_client: bigquery.Client) -> None:
             delete_contents=True,
             not_found_ok=True,
         )
+
+
+def test_single_routine_ddl_statement_type(bq_client: bigquery.Client) -> None:
+    """Single routine DDL reports BigQuery's statementType end-to-end.
+
+    CREATE FUNCTION / CREATE TABLE FUNCTION report CREATE_FUNCTION /
+    CREATE_TABLE_FUNCTION (not SCRIPT); CREATE PROCEDURE reports SCRIPT
+    (BigQuery classifies a procedure definition as a script); and
+    DROP FUNCTION / PROCEDURE / TABLE FUNCTION execute against the live
+    container and report the matching DROP_* type. Pinned by the
+    routines_scripting/routine_ddl_* conformance corpus.
+    """
+    ds_id = "e2e_routine_ddl_py"
+    fqdn = f"{bq_client.project}.{ds_id}"
+    try:
+        bq_client.create_dataset(bigquery.Dataset(fqdn), exists_ok=True)
+
+        fn = bq_client.query(f"CREATE FUNCTION `{fqdn}.add_one`(x INT64) RETURNS INT64 AS (x + 1)")
+        fn.result()
+        assert fn.statement_type == "CREATE_FUNCTION"
+
+        tvf = bq_client.query(f"CREATE TABLE FUNCTION `{fqdn}.one_row`(n INT64) AS SELECT n AS x")
+        tvf.result()
+        assert tvf.statement_type == "CREATE_TABLE_FUNCTION"
+
+        proc = bq_client.query(f"CREATE PROCEDURE `{fqdn}.noop`() BEGIN SELECT 1 AS one; END")
+        proc.result()
+        assert proc.statement_type == "SCRIPT"
+
+        # The created UDF is usable through the live container.
+        used = list(bq_client.query(f"SELECT `{fqdn}.add_one`(41) AS r").result())
+        assert used[0]["r"] == 42
+
+        # DROP routines execute against the catalog + UDF registry and classify.
+        drop_fn = bq_client.query(f"DROP FUNCTION `{fqdn}.add_one`")
+        drop_fn.result()
+        assert drop_fn.statement_type == "DROP_FUNCTION"
+
+        drop_proc = bq_client.query(f"DROP PROCEDURE `{fqdn}.noop`")
+        drop_proc.result()
+        assert drop_proc.statement_type == "DROP_PROCEDURE"
+
+        drop_tvf = bq_client.query(f"DROP TABLE FUNCTION `{fqdn}.one_row`")
+        drop_tvf.result()
+        assert drop_tvf.statement_type == "DROP_TABLE_FUNCTION"
+    finally:
+        bq_client.delete_dataset(fqdn, delete_contents=True, not_found_ok=True)

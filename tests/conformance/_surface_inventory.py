@@ -310,6 +310,24 @@ DDL = SurfaceCategory(
             detect=_re(r"\bcreate\s+(?:or\s+replace\s+)?procedure\b"),
         ),
         SurfaceItem(
+            id="ddl.drop_function",
+            name="DROP FUNCTION",
+            bq_docs="https://cloud.google.com/bigquery/docs/reference/standard-sql/data-definition-language#drop_function_statement",
+            detect=_re(r"\bdrop\s+function\b"),
+        ),
+        SurfaceItem(
+            id="ddl.drop_table_function",
+            name="DROP TABLE FUNCTION",
+            bq_docs="https://cloud.google.com/bigquery/docs/reference/standard-sql/data-definition-language#drop_table_function_statement",
+            detect=_re(r"\bdrop\s+table\s+function\b"),
+        ),
+        SurfaceItem(
+            id="ddl.drop_procedure",
+            name="DROP PROCEDURE",
+            bq_docs="https://cloud.google.com/bigquery/docs/reference/standard-sql/data-definition-language#drop_procedure_statement",
+            detect=_re(r"\bdrop\s+procedure\b"),
+        ),
+        SurfaceItem(
             id="ddl.create_row_access_policy",
             name="CREATE ROW ACCESS POLICY (REST)",
             bq_docs="https://cloud.google.com/bigquery/docs/reference/rest/v2/rowAccessPolicies/insert",

@@ -1,0 +1,1 @@
+CREATE FUNCTION `${DATASET}.js_double`(x FLOAT64) RETURNS FLOAT64 LANGUAGE js AS 'return x * 2;'

@@ -1,0 +1,1 @@
+DROP FUNCTION `${DATASET}.add_one`
