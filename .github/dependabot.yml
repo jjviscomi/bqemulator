@@ -38,6 +38,17 @@ updates:
         update-types: ["version-update:semver-major"]
       - dependency-name: "apache-airflow-providers-google"
         update-types: ["version-update:semver-major"]
+      # Starlette 1.0 switched ``starlette.testclient`` from ``httpx``
+      # to ``httpx2`` (``import httpx2 as httpx``), which FastAPI's
+      # ``TestClient`` re-exports — so adopting 1.x breaks the entire
+      # unit + property test tier until ``httpx2`` ships and FastAPI is
+      # on a 1.x-compatible line. The deliberate ``starlette<1.0``
+      # ceiling in pyproject.toml holds the line; the related
+      # PYSEC-2026-161 advisory is tracked in .pip-audit-ignore for a
+      # coordinated FastAPI + Starlette + httpx2 refresh. Suppress the
+      # major bump until that lands.
+      - dependency-name: "starlette"
+        update-types: ["version-update:semver-major"]
     commit-message:
       prefix: "chore(deps)"
 
