@@ -6210,6 +6210,50 @@ conformance clients. A separate, pre-existing divergence surfaced while
 recording — a <em>single</em> DDL statement on the executor fast path returns
 DuckDB's <code>Count</code> status column instead of the created object's schema —
 and is tracked as its own follow-up, out of scope here.</p>
+<p><strong>Amendment (2026-06-02) — single-statement DDL job results follow a
+per-statement-type contract.</strong> The follow-up above is closed. The
+executor's single-statement fast path previously stored DuckDB's raw
+status output for DDL — a 1-column <code>Count</code> (most DDL) or <code>Success</code>
+(drops) table, with CTAS and <code>TRUNCATE</code> even leaking a status <em>row</em>.
+Sixteen fixtures recorded from real BigQuery
+(<code>rest_crud/ddl_result_*</code>) pin the actual contract:</p>
+<ol>
+<li><strong><code>CREATE TABLE</code> / CTAS / <code>CREATE VIEW</code></strong> return a zero-row result
+   whose schema is the <em>statement's analyzed output schema</em>: the
+   declared column list when present — including the <code>IF NOT EXISTS</code>
+   skip case, which reports the statement's columns even though the
+   pre-existing table's differ — otherwise the created object's
+   columns (CTAS / view SELECT bodies). <code>NOT NULL</code> columns surface as
+   <code>REQUIRED</code>, <code>ARRAY&lt;T&gt;</code> as <code>REPEATED</code> element fields, and
+   <code>STRUCT&lt;…&gt;</code> as <code>RECORD</code> with nested <code>fields</code>.</li>
+<li><strong><code>ALTER TABLE</code>, <code>CREATE SCHEMA</code>, <code>DROP TABLE/VIEW/SCHEMA</code></strong> return
+   a fully empty result (<code>schema: []</code>, <code>rows: []</code>).</li>
+<li><strong><code>TRUNCATE TABLE</code></strong> is DML on the wire: empty result,
+   <code>numDmlAffectedRows</code> carrying the removed-row count, and <strong>no</strong>
+   <code>ddlOperationPerformed</code>.</li>
+<li><strong><code>ddlOperationPerformed</code> reflects what actually happened</strong>, not
+   the statement's verb: <code>CREATE</code> for a fresh target (even under
+   <code>OR REPLACE</code> / <code>IF NOT EXISTS</code>), <code>REPLACE</code> when <code>OR REPLACE</code>
+   replaced an existing object, <code>SKIP</code> when <code>IF NOT EXISTS</code> found an
+   existing object or <code>DROP … IF EXISTS</code> found nothing, else
+   <code>DROP</code> / <code>ALTER</code>.</li>
+</ol>
+<p><code>bqemulator.jobs.ddl_result</code> owns the contract: the executor resolves
+the DDL operation against pre-mutation catalog existence <em>before</em>
+running the statement, then <code>_finalize_statement_result</code> replaces the
+DuckDB status table with the recorded shape (declared-column-list
+mapping first, post-sync catalog introspection as the fallback) and
+overrides the stored response schema. Two narrow boundaries fall back
+to catalog introspection because real-BigQuery recordings do not cover
+them: an <code>IF NOT EXISTS</code> skip on a CTAS / <code>CREATE VIEW</code> (no declared
+list to report, so the existing object's columns surface), and declared
+columns whose type the static DDL map cannot resolve. A single
+<code>CREATE FUNCTION</code> / <code>CREATE PROCEDURE</code> statement still routes through
+the scripting interpreter and reports <code>statementType: SCRIPT</code> — that
+labeling divergence is independent of the result-shape contract and
+remains open. Pinned by the sixteen <code>rest_crud/ddl_result_*</code> fixtures,
+the <code>tests/unit/jobs/test_ddl_result.py</code> unit suite, and e2e coverage
+across all five conformance clients.</p>
 <h4 id="bucket-g-range-interval-wire-format-closed">Bucket G — RANGE / INTERVAL wire format — Closed<a class="headerlink" href="#bucket-g-range-interval-wire-format-closed" title="Permanent link">&para;</a></h4>
 <p><strong>Status.</strong> Closed. The closure ships three coordinated
 fixes:</p>
