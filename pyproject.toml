@@ -65,7 +65,7 @@ dependencies = [
     # left uncapped so the core tracks the latest runtime. Lift once those
     # example locks move ``grpcio`` to >=1.81.
     "grpcio-tools>=1.60,<1.81",
-    "grpcio-health-checking>=1.60,<1.81",
+    "grpcio-health-checking>=1.60,<1.82",
     "protobuf>=4.25",
     "googleapis-common-protos>=1.62",
     # Storage Read/Write API servicer uses proto-plus types from this package.
