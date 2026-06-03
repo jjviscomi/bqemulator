@@ -189,11 +189,10 @@ def test_single_ddl_query_result_shape(bq_runner: BqRunner) -> None:
     """Single-statement DDL emits no result rows through ``bq query``.
 
     The CLI renders a DDL job's (correctly empty) result set as either
-    empty output or an empty JSON array — never a data row (pre-fix a
-    CTAS response carried DuckDB's spurious ``Count`` status row). The
-    exact wire shape is pinned by the ``rest_crud/ddl_result_*``
-    conformance corpus recorded from real BigQuery; this exercises it
-    end-to-end through the CLI.
+    empty output or an empty JSON array — never a data row. The exact
+    wire shape is pinned by the ``rest_crud/ddl_result_*`` conformance
+    corpus recorded from real BigQuery; this exercises it end-to-end
+    through the CLI.
     """
     ds_id = "bq_cli_ddl_result"
     try:
