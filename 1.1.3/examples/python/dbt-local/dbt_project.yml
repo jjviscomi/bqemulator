@@ -1,0 +1,28 @@
+name: bqemulator_dbt_local
+version: "1.0.0"
+config-version: 2
+
+profile: bqemulator_dbt_local
+
+model-paths: ["models"]
+seed-paths: ["seeds"]
+macro-paths: ["macros"]
+test-paths: ["tests"]
+
+target-path: "target"
+clean-targets:
+  - "target"
+  - "dbt_packages"
+
+seeds:
+  bqemulator_dbt_local:
+    +schema: raw
+
+models:
+  bqemulator_dbt_local:
+    staging:
+      +schema: staging
+      +materialized: view
+    marts:
+      +schema: marts
+      +materialized: table

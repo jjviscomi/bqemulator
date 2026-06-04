@@ -1,0 +1,6460 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="Local emulator for Google BigQuery">
+      
+      
+      
+        <link rel="canonical" href="https://jjviscomi.github.io/bqemulator/1.1.3/reference/api-configuration-coverage-matrix/">
+      
+      
+        <link rel="prev" href="../conformance-coverage-matrix/">
+      
+      
+        <link rel="next" href="../sql-function-mapping/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.6">
+    
+    
+      
+        <title>API configuration coverage matrix - bqemulator</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/stylesheets/main.484c7ddc.min.css">
+      
+        
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/_mkdocstrings.css">
+    
+    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#api-configuration-coverage-matrix" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+      <div data-md-color-scheme="default" data-md-component="outdated" hidden>
+        
+      </div>
+    
+    
+      
+
+<header class="md-header" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="../.." title="bqemulator" class="md-header__button md-logo" aria-label="bqemulator" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            bqemulator
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              API configuration coverage matrix
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: light)" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a4 4 0 0 0-4 4 4 4 0 0 0 4 4 4 4 0 0 0 4-4 4 4 0 0 0-4-4m0 10a6 6 0 0 1-6-6 6 6 0 0 1 6-6 6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: dark)" data-md-color-scheme="slate" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 18c-.89 0-1.74-.2-2.5-.55C11.56 16.5 13 14.42 13 12s-1.44-4.5-3.5-5.45C10.26 6.2 11.11 6 12 6a6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+          <a href="javascript:void(0)" class="md-search__icon md-icon" title="Share" aria-label="Share" data-clipboard data-clipboard-text="" data-md-component="search-share" tabindex="-1">
+            
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9a3 3 0 0 0-3 3 3 3 0 0 0 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.15c-.05.21-.08.43-.08.66 0 1.61 1.31 2.91 2.92 2.91s2.92-1.3 2.92-2.91A2.92 2.92 0 0 0 18 16.08"/></svg>
+          </a>
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+        <div class="md-search__suggest" data-md-component="search-suggest"></div>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/jjviscomi/bqemulator" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M173.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6m-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3m44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9M252.8 8C114.1 8 8 113.3 8 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C436.2 457.8 504 362.9 504 252 504 113.3 391.5 8 252.8 8M105.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1m-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7m32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1m-11.4-14.7c-1.6 1-1.6 3.6 0 5.9s4.3 3.3 5.6 2.3c1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2"/></svg>
+  </div>
+  <div class="md-source__repository">
+    jjviscomi/bqemulator
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+            
+<nav class="md-tabs" aria-label="Tabs" data-md-component="tabs">
+  <div class="md-grid">
+    <ul class="md-tabs__list">
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../.." class="md-tabs__link">
+        
+  
+  
+    
+  
+  Home
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../getting-started/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Getting started
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../quickstart/python/" class="md-tabs__link">
+          
+  
+  
+    
+  
+  Quickstart
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../guides/loading-data/" class="md-tabs__link">
+          
+  
+  
+    
+  
+  Guides
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+    
+  
+  
+    
+    
+      <li class="md-tabs__item md-tabs__item--active">
+        <a href="../compatibility-matrix/" class="md-tabs__link">
+          
+  
+  
+    
+  
+  Reference
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../architecture/overview/" class="md-tabs__link">
+          
+  
+  
+    
+  
+  Architecture
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../adr/0001-use-duckdb/" class="md-tabs__link">
+          
+  
+  
+    
+  
+  ADRs
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../rfcs/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  RFCs
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../examples/" class="md-tabs__link">
+          
+  
+  
+    
+  
+  Examples
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../api/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  API reference
+
+      </a>
+    </li>
+  
+
+      
+    </ul>
+  </div>
+</nav>
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+  
+
+
+<nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../.." title="bqemulator" class="md-nav__button md-logo" aria-label="bqemulator" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    bqemulator
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/jjviscomi/bqemulator" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M173.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6m-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3m44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9M252.8 8C114.1 8 8 113.3 8 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C436.2 457.8 504 362.9 504 252 504 113.3 391.5 8 252.8 8M105.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1m-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7m32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1m-11.4-14.7c-1.6 1-1.6 3.6 0 5.9s4.3 3.3 5.6 2.3c1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2"/></svg>
+  </div>
+  <div class="md-source__repository">
+    jjviscomi/bqemulator
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../.." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Home
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../getting-started/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Getting started
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Quickstart
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Quickstart
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../quickstart/python/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Python
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../quickstart/nodejs/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Node.js
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../quickstart/go/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Go
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../quickstart/java/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Java
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../quickstart/pytest/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    pytest
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../quickstart/docker-compose/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    docker-compose
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../quickstart/testcontainers/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Testcontainers
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Guides
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Guides
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../guides/loading-data/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Loading data
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../guides/loading-from-local-files/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Loading from local files
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../guides/querying/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Querying
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../guides/query-parameters/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Query parameters
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../guides/streaming-inserts/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Streaming inserts
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../guides/storage-api/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Storage API
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../guides/routines-udfs/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Routines and UDFs
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../guides/scripting/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Scripting
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../guides/partitioning-clustering/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Partitioning and clustering
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../guides/time-travel/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Time travel and snapshots
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../guides/materialized-views/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Materialized views
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../guides/row-access-policies/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Row access policies
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../guides/authorized-views/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Authorized views
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../guides/information-schema/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    INFORMATION_SCHEMA views
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../guides/geography-spatial/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    GEOGRAPHY and spatial
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../guides/range-types/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    RANGE types
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../guides/interval-arithmetic/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    INTERVAL arithmetic
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../guides/import-from-real-project/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Import from a real project
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../guides/admin-endpoints/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Admin endpoints
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../guides/backup-restore/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Backup and restore
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../guides/conformance-corpus/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Conformance corpus
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../guides/ci-cd-patterns/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    CI/CD patterns
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../guides/dbt-integration/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    dbt integration
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../guides/airflow-integration/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Airflow integration
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../guides/spark-integration/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Spark integration
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../guides/using-bq-cli/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Using the bq CLI
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../guides/observability/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Observability
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+        
+        
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Reference
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_5">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Reference
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../compatibility-matrix/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Compatibility matrix
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../conformance-coverage-matrix/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Conformance coverage matrix
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    API configuration coverage matrix
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    API configuration coverage matrix
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#methodology" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Methodology
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#1-queryjobconfig-options" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. QueryJobConfig options
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#2-execution-paths-synchronous-vs-asynchronous" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. Execution paths (synchronous vs asynchronous)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#3-job-type-matrix-non-query" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. Job-type matrix (non-query)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#4-rest-api-metadata-endpoints" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4. REST API metadata endpoints
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#5-storage-read-api-grpc" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5. Storage Read API (gRPC)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#6-storage-write-api-grpc" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6. Storage Write API (gRPC)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#7-response-object-fields-not-yet-verified" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        7. Response object — fields not yet verified
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#8-how-to-use-this-matrix" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        8. How to use this matrix
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#references" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        References
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../sql-function-mapping/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    SQL function mapping
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api-coverage/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    API coverage
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../configuration/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Configuration
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../cli/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    CLI
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../out-of-scope/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Out of scope
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../gap-analysis/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Gap analysis
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../troubleshooting/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Troubleshooting
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_6" >
+        
+          
+          <label class="md-nav__link" for="__nav_6" id="__nav_6_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Architecture
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_6_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_6">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Architecture
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../architecture/overview/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Overview
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../architecture/storage-model/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Storage model
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../architecture/sql-translation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    SQL translation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../architecture/jobs-lifecycle/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Jobs lifecycle
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../architecture/storage-read-api/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Storage Read API
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../architecture/storage-write-api/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Storage Write API
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../architecture/scripting/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Scripting
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../architecture/udfs/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    UDFs
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../architecture/versioning-and-snapshots/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Versioning and snapshots
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../architecture/row-access-policies/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Row access policies
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../architecture/specialized-types/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Specialized types
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../architecture/admin-and-import-export/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Admin and import/export
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../architecture/observability/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Observability
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../architecture/testing-strategy/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Testing strategy
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../architecture/conformance-tier/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Conformance tier
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_6_16" >
+        
+          
+          <label class="md-nav__link" for="__nav_6_16" id="__nav_6_16_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Contributing
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_6_16_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_6_16">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Contributing
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../architecture/contributing/dev-environment/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Dev environment
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../architecture/contributing/documentation-style-guide/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Documentation style guide
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../architecture/contributing/release-process/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Release process
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../architecture/contributing/adding-sql-functions/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Adding SQL functions
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../architecture/contributing/adding-udf-runtimes/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Adding UDF runtimes
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../architecture/contributing/adding-conformance-cases/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Adding conformance cases
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../architecture/contributing/tpcds-expansion-plan/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    TPC-DS expansion plan
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../architecture/contributing/debugging/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Debugging
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_7" >
+        
+          
+          <label class="md-nav__link" for="__nav_7" id="__nav_7_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADRs
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_7_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_7">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    ADRs
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../adr/0001-use-duckdb/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0001 Use DuckDB
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../adr/0002-python-over-go-rust/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0002 Python over Go/Rust
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../adr/0003-sqlglot-for-translation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0003 SQLGlot for translation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../adr/0004-hexagonal-architecture/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0004 Hexagonal architecture
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../adr/0005-fastapi-grpcaio-single-process/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0005 FastAPI + grpc.aio single process
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../adr/0006-catalog-in-reserved-schema/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0006 Catalog in DuckDB reserved schema
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../adr/0007-pytest-fixture-as-dx/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0007 pytest fixture as DX
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../adr/0008-snapshot-storage-read-api/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0008 Snapshot Storage Read API
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../adr/0009-snapshot-layer-time-travel/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0009 Snapshot-layer time travel
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../adr/0010-py-mini-racer-for-js-udfs/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0010 mini-racer for JS UDFs
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../adr/0011-tree-walking-scripting-interpreter/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0011 Tree-walking scripting interpreter
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../adr/0012-bqml-out-of-scope/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0012 BigQuery ML out of scope
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../adr/0013-write-api-strategies/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0013 Storage Write API strategies
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../adr/0014-udf-materialization-strategy/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0014 UDF materialization strategy
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../adr/0015-scripting-execution-model/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0015 Scripting execution model
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../adr/0016-snapshot-time-semantics/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0016 Snapshot time semantics
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../adr/0017-materialized-view-refresh/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0017 Materialized-view refresh
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../adr/0018-caller-identity-and-row-access-enforcement/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0018 Caller identity + row-access enforcement
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../adr/0019-specialized-types/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0019 Specialized types (GEOGRAPHY / RANGE / INTERVAL)
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../adr/0020-admin-import-export/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0020 Admin endpoints + import/export + backup format
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../adr/0021-chaos-tier-design-contract/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0021 Chaos-tier design contract
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../adr/0022-conformance-corpus-design/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0022 Conformance corpus design
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../adr/0023-conformance-divergence-baseline/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0023 Conformance divergence baseline
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../adr/0024-hll-count-support-strategy/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0024 HLL_COUNT support strategy
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../adr/0025-perf-tier-design-contract/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0025 Perf-tier design contract
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../adr/0026-mutation-tier-design-contract/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0026 Mutation-tier design contract
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../adr/0027-load-extract-avro-orc/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0027 Load/Extract Avro+ORC
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../adr/0028-differential-tier-design-contract/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0028 Differential-tier design contract
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../adr/0029-upload-host-endpoints/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0029 Upload host endpoints
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../adr/0030-storage-read-avro-format/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0030 Storage Read Avro output format
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../adr/0031-fuzz-tier-design-contract/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0031 Fuzz-tier design contract
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../adr/0032-bq-cli-conformance-client/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0032 bq CLI as a fifth conformance client
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../adr/0033-storage-read-arrow-ipc-bare-message-contract/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0033 Storage Read Arrow IPC bare-message contract
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../adr/0034-scio-beam-emulator-routing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0034 Scio + Beam BigQueryIO routing against bqemulator
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../adr/0035-code-quality-gates/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0035 Non-blocking code-quality gates (complexity / duplication / dead code)
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../adr/0036-complexity-ratchet-to-c/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0036 Cyclomatic-complexity ratchet to rank C + promote-to-required gate
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../adr/0037-openssf-scorecard/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0037 OpenSSF Scorecard adoption + badge
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../adr/0038-session-user/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0038 SESSION_USER() pre-translator substitution
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../adr/0039-artifact-attestations/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0039 SLSA Build Provenance on GitHub Release assets
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../adr/0040-session-user-coverage-closure/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0040 SESSION_USER coverage closure: aliases + Storage Read pre-pass
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../adr/0041-complexity-ratchet-to-b/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0041 Cyclomatic-complexity ratchet to rank B + campaign retrospective
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../adr/0042-module-ceiling-ratchet-to-b/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0042 Per-module-average ratchet to rank B (no-refactor follow-on)
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../rfcs/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    RFCs
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+          
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_9" >
+        
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="../../examples/" class="md-nav__link ">
+              
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Examples
+  
+
+    
+  </span>
+  
+  
+
+            </a>
+            
+              
+              <label class="md-nav__link " for="__nav_9" id="__nav_9_label" tabindex="0">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_9_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_9">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Examples
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../examples/bq-cli-quickstart/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    bq CLI quickstart
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../examples/local-file-load/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Local file load
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+      
+        
+          
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_9_4" >
+        
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="../../examples/python/pytest-integration/" class="md-nav__link ">
+              
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Python
+  
+
+    
+  </span>
+  
+  
+
+            </a>
+            
+              
+              <label class="md-nav__link " for="__nav_9_4" id="__nav_9_4_label" tabindex="0">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_9_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_9_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Python
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../examples/python/dbt-local/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    dbt local
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../examples/python/airflow-dag-test/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Airflow DAG test
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../examples/python/pyspark-bigquery/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    PySpark + BigQuery
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+      
+        
+          
+        
+      
+        
+      
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_9_5" >
+        
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="../../examples/nodejs/nestjs-app/" class="md-nav__link ">
+              
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Node.js
+  
+
+    
+  </span>
+  
+  
+
+            </a>
+            
+              
+              <label class="md-nav__link " for="__nav_9_5" id="__nav_9_5_label" tabindex="0">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_9_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_9_5">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Node.js
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../examples/nodejs/cloud-run-local/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Cloud Run local
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+      
+        
+          
+        
+      
+        
+      
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_9_6" >
+        
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="../../examples/go/beam-pipeline/" class="md-nav__link ">
+              
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Go
+  
+
+    
+  </span>
+  
+  
+
+            </a>
+            
+              
+              <label class="md-nav__link " for="__nav_9_6" id="__nav_9_6_label" tabindex="0">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_9_6_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_9_6">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Go
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../examples/go/dataflow-local/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Dataflow local
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+      
+        
+          
+        
+      
+        
+      
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_9_7" >
+        
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="../../examples/java/spring-boot/" class="md-nav__link ">
+              
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Java/Scala
+  
+
+    
+  </span>
+  
+  
+
+            </a>
+            
+              
+              <label class="md-nav__link " for="__nav_9_7" id="__nav_9_7_label" tabindex="0">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_9_7_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_9_7">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Java/Scala
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../examples/java/scio/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Scio
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+      
+        
+          
+        
+      
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_9_8" >
+        
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="../../examples/docker-compose/full-stack/" class="md-nav__link ">
+              
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Compose
+  
+
+    
+  </span>
+  
+  
+
+            </a>
+            
+          </div>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_9_8_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_9_8">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Compose
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+      
+        
+          
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_9_9" >
+        
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="../../examples/ci-recipes/github-actions/" class="md-nav__link ">
+              
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    CI recipes
+  
+
+    
+  </span>
+  
+  
+
+            </a>
+            
+              
+              <label class="md-nav__link " for="__nav_9_9" id="__nav_9_9_label" tabindex="0">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_9_9_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_9_9">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    CI recipes
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../examples/ci-recipes/gitlab-ci/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    GitLab CI
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../examples/ci-recipes/circleci/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    CircleCI
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    API reference
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#methodology" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Methodology
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#1-queryjobconfig-options" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. QueryJobConfig options
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#2-execution-paths-synchronous-vs-asynchronous" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. Execution paths (synchronous vs asynchronous)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#3-job-type-matrix-non-query" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. Job-type matrix (non-query)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#4-rest-api-metadata-endpoints" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4. REST API metadata endpoints
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#5-storage-read-api-grpc" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5. Storage Read API (gRPC)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#6-storage-write-api-grpc" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6. Storage Write API (gRPC)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#7-response-object-fields-not-yet-verified" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        7. Response object — fields not yet verified
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#8-how-to-use-this-matrix" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        8. How to use this matrix
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#references" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        References
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+    <a href="https://github.com/jjviscomi/bqemulator/edit/main/docs/reference/api-configuration-coverage-matrix.md" title="Edit this page" class="md-content__button md-icon" rel="edit">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M10 20H6V4h7v5h5v3.1l2-2V8l-6-6H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h4zm10.2-7c.1 0 .3.1.4.2l1.3 1.3c.2.2.2.6 0 .8l-1 1-2.1-2.1 1-1c.1-.1.2-.2.4-.2m0 3.9L14.1 23H12v-2.1l6.1-6.1z"/></svg>
+    </a>
+  
+  
+    
+      
+    
+    <a href="https://github.com/jjviscomi/bqemulator/raw/main/docs/reference/api-configuration-coverage-matrix.md" title="View source of this page" class="md-content__button md-icon">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M17 18c.56 0 1 .44 1 1s-.44 1-1 1-1-.44-1-1 .44-1 1-1m0-3c-2.73 0-5.06 1.66-6 4 .94 2.34 3.27 4 6 4s5.06-1.66 6-4c-.94-2.34-3.27-4-6-4m0 6.5a2.5 2.5 0 0 1-2.5-2.5 2.5 2.5 0 0 1 2.5-2.5 2.5 2.5 0 0 1 2.5 2.5 2.5 2.5 0 0 1-2.5 2.5M9.27 20H6V4h7v5h5v4.07c.7.08 1.36.25 2 .49V8l-6-6H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h4.5a8.2 8.2 0 0 1-1.23-2"/></svg>
+    </a>
+  
+
+
+<h1 id="api-configuration-coverage-matrix">API configuration coverage matrix<a class="headerlink" href="#api-configuration-coverage-matrix" title="Permanent link">&para;</a></h1>
+<blockquote>
+<p>Sibling to the <a href="../conformance-coverage-matrix/">conformance coverage matrix</a>
+which tracks the <em>SQL surface</em> — this file tracks the <strong>API
+request configuration surface</strong>. The conformance corpus runs
+essentially the same client codepath for every SQL fixture (default
+<code>QueryJobConfig</code>, varying only the SQL and the optional
+<code>parameters.json</code> payload); this matrix enumerates the API
+configurations differentiated by their own fixtures and ranks them
+by user impact.</p>
+</blockquote>
+<h2 id="methodology">Methodology<a class="headerlink" href="#methodology" title="Permanent link">&para;</a></h2>
+<p>Every distinct <strong>configuration knob</strong> a BigQuery REST or gRPC client
+can flip is an item in this matrix. The matrix classifies each by:</p>
+<ul>
+<li><strong>Fixture depth</strong> — number of conformance fixtures that exercise
+  this configuration with that exact value (<code>🔴 Uncovered</code> = 0, <code>🟡
+  Sampled</code> = 1, <code>🟢 Covered</code> = 2–5, <code>🟢🟢 Deep</code> = 6+).</li>
+<li><strong>Severity</strong> — likelihood the emulator's default path diverges
+  from real BigQuery when this knob is flipped. <code>🔴</code> = high
+  (different parser, different dispatch); <code>🟡</code> = medium (different
+  shape on the wire); <code>🟢</code> = low (passthrough, response-only).</li>
+<li><strong>Recording cost</strong> — how many fixtures need to land to give the
+  knob meaningful coverage (a single literal <code>SELECT 1</code> with the
+  knob flipped is "low"; a full setup + side-effect verification is
+  "high").</li>
+</ul>
+<p>The configuration surface is partitioned into three tiers ordered
+by user impact and recording cost. Tier 1 covers ship-blocking
+configurations (DML statement-type dispatch, write/create
+dispositions, default-dataset qualification, query-parameter
+modes); Tier 2 covers configurations exercised by enterprise
+workloads (schema evolution, partitioning/clustering on
+destination, byte-budget caps); Tier 3 covers surfaces deliberately
+deferred (CDC writes, gRPC-level codec selection,
+legacy-SQL-coupled flags).</p>
+<p>Methodology mirrors the SQL surface matrix's three-tier
+classification so the prioritisation language is consistent across
+both audits.</p>
+<h2 id="1-queryjobconfig-options">1. <code>QueryJobConfig</code> options<a class="headerlink" href="#1-queryjobconfig-options" title="Permanent link">&para;</a></h2>
+<blockquote>
+<p>Counts in the Coverage column reflect conformance-corpus fixtures
+under <code>tests/conformance/sql_corpus/api_configuration/</code>;
+integration-tier coverage is called out in the Notes column.
+Severity reflects the divergence risk class regardless of current
+coverage (a fixture passing today doesn't change the inherent
+divergence risk).</p>
+</blockquote>
+<table>
+<thead>
+<tr>
+<th>Knob</th>
+<th>Wire field</th>
+<th>Default</th>
+<th>Coverage</th>
+<th>Severity</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Standard SQL (default)</td>
+<td><code>useLegacySql=false</code></td>
+<td>implicit</td>
+<td>🟢🟢 Deep (every conformance fixture)</td>
+<td>n/a</td>
+<td>Every existing fixture</td>
+</tr>
+<tr>
+<td>Legacy SQL</td>
+<td><code>useLegacySql=true</code></td>
+<td>—</td>
+<td>🟡 Sampled (1 fixture, XFAIL)</td>
+<td>🔴</td>
+<td>Different parser entirely — DuckDB doesn't speak legacy SQL. Pinned out-of-scope (<code>out-of-scope.md#legacy-sql-uselegacysqltrue</code>); emulator returns <code>400 InvalidQueryError</code> for any legacy job.</td>
+</tr>
+<tr>
+<td>Query cache enabled (default)</td>
+<td><code>useQueryCache=true</code></td>
+<td>implicit</td>
+<td>🟢🟢 Deep</td>
+<td>n/a</td>
+<td>Implicit on every fixture; emulator has no cache so this is essentially a no-op</td>
+</tr>
+<tr>
+<td>Query cache disabled</td>
+<td><code>useQueryCache=false</code></td>
+<td>—</td>
+<td>🟢 Covered (3 fixtures)</td>
+<td>🟡</td>
+<td><code>use_query_cache_disabled</code> + <code>cache_disabled_with_count_distinct</code> + <code>cache_disabled_with_join</code> — all PASS. <code>cacheHit=False</code> surfaces on every job statistics response.</td>
+</tr>
+<tr>
+<td>Dry-run</td>
+<td><code>dryRun=true</code></td>
+<td>—</td>
+<td>🟢 Covered (5 fixtures, all PASS)</td>
+<td>🔴</td>
+<td><code>dry_run_select</code> / <code>dry_run_aggregate</code> / <code>dry_run_create_table</code> / <code>dry_run_insert</code> / <code>dry_run_invalid_function</code> PASS via <code>_destructive_dry_run_schema</code> schema-reconstruction and the <code>_rewrite_for_dry_run</code> helper that transforms <code>error.location="query"</code> → <code>"q"</code> and recovers the original identifier case from the BQ SQL.</td>
+</tr>
+<tr>
+<td>Priority — INTERACTIVE (default)</td>
+<td><code>priority=INTERACTIVE</code></td>
+<td>implicit</td>
+<td>🟢🟢 Deep</td>
+<td>n/a</td>
+<td>Implicit</td>
+</tr>
+<tr>
+<td>Priority — BATCH</td>
+<td><code>priority=BATCH</code></td>
+<td>—</td>
+<td>🟢 Covered (3 fixtures)</td>
+<td>🟢</td>
+<td><code>priority_batch</code> + <code>priority_batch_with_join</code> + <code>priority_batch_dml</code> — all PASS. Emulator runs BATCH jobs immediately.</td>
+</tr>
+<tr>
+<td>Write disposition — WRITE_EMPTY (default)</td>
+<td><code>writeDisposition=WRITE_EMPTY</code></td>
+<td>implicit</td>
+<td>🟢 Covered (integration-tier)</td>
+<td>🟡</td>
+<td>Integration-tier (<code>test_cross_phase_workflow</code> + 2 others); not in conformance corpus</td>
+</tr>
+<tr>
+<td>Write disposition — WRITE_TRUNCATE</td>
+<td><code>writeDisposition=WRITE_TRUNCATE</code></td>
+<td>—</td>
+<td>🟢 Covered (4 fixtures)</td>
+<td>🔴</td>
+<td><code>write_truncate_schema_matching</code> / <code>_schema_divergent</code> / <code>_partitioned_destination</code> / <code>_clustered_destination</code> — all PASS. Response carries SELECT projection (BQ truncate-then-write semantic).</td>
+</tr>
+<tr>
+<td>Write disposition — WRITE_APPEND</td>
+<td><code>writeDisposition=WRITE_APPEND</code></td>
+<td>—</td>
+<td>🟢 Covered (4 fixtures)</td>
+<td>🔴</td>
+<td><code>write_append_schema_matching</code> / <code>_schema_divergent</code> / <code>_partitioned_destination</code> / <code>_clustered_destination</code> — all PASS via <code>_apply_write_append</code> post-processing.</td>
+</tr>
+<tr>
+<td>Create disposition — CREATE_IF_NEEDED (default)</td>
+<td><code>createDisposition=CREATE_IF_NEEDED</code></td>
+<td>implicit</td>
+<td>🟢 Covered</td>
+<td>n/a</td>
+<td></td>
+</tr>
+<tr>
+<td>Create disposition — CREATE_NEVER</td>
+<td><code>createDisposition=CREATE_NEVER</code></td>
+<td>—</td>
+<td>🟢 Covered (3 fixtures, all error envelopes)</td>
+<td>🟡</td>
+<td><code>create_never_missing_destination</code> / <code>_with_truncate</code> / <code>_with_append</code> — all PASS. <code>_check_create_disposition</code> raises <code>Not found: Table &lt;p&gt;:&lt;d&gt;.&lt;t&gt;</code>.</td>
+</tr>
+<tr>
+<td>Destination table</td>
+<td><code>destinationTable</code></td>
+<td>—</td>
+<td>🟢🟢 Deep (11+ fixtures: WRITE × 8 + CREATE_NEVER × 3 + DML pilot)</td>
+<td>🔴</td>
+<td>CTAS-like behaviour. Statistics report <code>numDmlAffectedRows</code>.</td>
+</tr>
+<tr>
+<td>Default dataset</td>
+<td><code>defaultDataset</code></td>
+<td>—</td>
+<td>🟢 Covered (3 fixtures)</td>
+<td>🔴</td>
+<td><code>default_dataset_select_table</code> / <code>_insert_unqualified</code> / <code>_join_partial_qualification</code> — all PASS via the <code>qualify_unqualified_tables</code> pre-translator.</td>
+</tr>
+<tr>
+<td>Maximum bytes billed</td>
+<td><code>maximumBytesBilled</code></td>
+<td>—</td>
+<td>🟢 Covered (2 fixtures, both PASS)</td>
+<td>🟡</td>
+<td><code>max_bytes_billed_within_cap</code> + <code>max_bytes_billed_exceeded</code> PASS. Real BQ's cost-estimate on synthetic queries is 0 bytes — neither budget trips a real billing check, so the fixture pair pins the wire-shape parity (BQ + emulator both succeed). Real cost-estimate enforcement is documented out-of-scope (<code>slot-and-byte-billing-simulation</code>).</td>
+</tr>
+<tr>
+<td>Labels</td>
+<td><code>labels</code></td>
+<td>—</td>
+<td>🟢 Covered (3 fixtures)</td>
+<td>🟢</td>
+<td><code>labels_metadata_echo</code> + <code>labels_multiple_keys</code> + <code>labels_unicode_values</code> — all PASS. Pure metadata echo on <code>job.configuration.labels</code>.</td>
+</tr>
+<tr>
+<td>Job timeout (ms)</td>
+<td><code>jobTimeoutMs</code></td>
+<td>—</td>
+<td>🟢 Covered (2 fixtures, both PASS)</td>
+<td>🟡</td>
+<td><code>job_timeout_within_budget</code> + <code>job_timeout_exceeded</code> PASS. Synthetic queries complete inside the budget on both BQ and emulator — wire-shape parity. Real timeout-enforcement on slow queries is documented out-of-scope (no v1.0 use case).</td>
+</tr>
+<tr>
+<td>Connection properties — <code>session_id</code></td>
+<td><code>connectionProperties</code></td>
+<td>—</td>
+<td>🟢 Covered (3 fixtures)</td>
+<td>🔴</td>
+<td><code>session_temp_table_visible</code> + <code>session_declared_var_shared</code> PASS via <code>create_session=True</code> + multi-statement script; <code>session_invalid_session_id</code> PASSes via <code>_validate_session_id</code> + in-process catalog.</td>
+</tr>
+<tr>
+<td>Schema update — ALLOW_FIELD_ADDITION</td>
+<td><code>schemaUpdateOptions</code></td>
+<td>—</td>
+<td>🟢 Covered (2 fixtures, 0 PASS + 2 XFAIL)</td>
+<td>🔴</td>
+<td><code>schema_update_addition_with_append</code> + <code>schema_update_addition_with_truncate</code> recorded against real BQ. Pinned against <code>out-of-scope.md#schemaupdateoptions-evolution-and-disposition-compatibility</code> — emulator does not yet evolve destination schema on WRITE_APPEND, nor enforce the WRITE_TRUNCATE disposition rule.</td>
+</tr>
+<tr>
+<td>Schema update — ALLOW_FIELD_RELAXATION</td>
+<td><code>schemaUpdateOptions</code></td>
+<td>—</td>
+<td>🟢 Covered (2 fixtures, 1 PASS + 1 XFAIL)</td>
+<td>🔴</td>
+<td><code>schema_update_relaxation_required_to_nullable</code> (XFAIL) + <code>schema_update_relaxation_rejected_without_option</code> (PASS) recorded against real BQ. Same out-of-scope pin as ADDITION.</td>
+</tr>
+<tr>
+<td>Destination table partitioning (TIME_PARTITIONING)</td>
+<td><code>timePartitioning</code></td>
+<td>—</td>
+<td>🟢 Covered (partitioning_clustering conformance + write_<em><em>partitioned_destination + 2 dest_time_partitioning</em></em> fixtures, both XFAIL)</td>
+<td>n/a</td>
+<td>Standalone job-config exercise: <code>dest_time_partitioning_basic</code> (XFAIL: storage-order divergence) + <code>_invalid_field</code> (XFAIL: field-existence not validated). Pinned against <code>out-of-scope.md#clusteringfields-timepartitioning-on-destination</code>.</td>
+</tr>
+<tr>
+<td>Destination table clustering</td>
+<td><code>clusteringFields</code></td>
+<td>—</td>
+<td>🟢 Covered (2 dest_clustering_fields_* fixtures, both XFAIL)</td>
+<td>🟡</td>
+<td>Standalone job-config exercise: <code>dest_clustering_fields_basic</code> (XFAIL: storage-order divergence) + <code>_invalid_column</code> (XFAIL: column-existence not validated). Same pin as TIME_PARTITIONING.</td>
+</tr>
+<tr>
+<td>Range partitioning</td>
+<td><code>rangePartitioning</code></td>
+<td>—</td>
+<td>🟡 Sampled (1 integration test)</td>
+<td>🟡</td>
+<td></td>
+</tr>
+<tr>
+<td>Parameter mode — NAMED (default)</td>
+<td><code>parameterMode=NAMED</code></td>
+<td>implicit when params present</td>
+<td>🟢🟢 Deep (15 fixtures + DML deeper)</td>
+<td>n/a</td>
+<td></td>
+</tr>
+<tr>
+<td>Parameter mode — POSITIONAL</td>
+<td><code>parameterMode=POSITIONAL</code></td>
+<td>—</td>
+<td>🟢 Covered (5 fixtures)</td>
+<td>🟡</td>
+<td><code>positional_parameter_int64</code> + <code>positional_array_int64</code> + <code>positional_struct_basic</code> + <code>positional_null_bound_string</code> + <code>positional_multi_param</code> — all PASS.</td>
+</tr>
+<tr>
+<td>Script options — <code>statement_timeout_ms</code></td>
+<td><code>scriptOptions</code></td>
+<td>—</td>
+<td>🔴 Uncovered</td>
+<td>🟡</td>
+<td>Routines exercise scripts; option flags untested.</td>
+</tr>
+<tr>
+<td>Script options — <code>statement_byte_budget</code></td>
+<td><code>scriptOptions</code></td>
+<td>—</td>
+<td>🔴 Uncovered</td>
+<td>🟡</td>
+<td>Same.</td>
+</tr>
+<tr>
+<td>Continuous query</td>
+<td><code>continuous=true</code></td>
+<td>—</td>
+<td>🔴 Uncovered</td>
+<td>🟢</td>
+<td>Out-of-scope per <a href="../out-of-scope/">out-of-scope.md</a>.</td>
+</tr>
+<tr>
+<td>Allow large results (legacy only)</td>
+<td><code>allowLargeResults=true</code></td>
+<td>—</td>
+<td>🔴 Uncovered</td>
+<td>🟢</td>
+<td>Coupled to <code>useLegacySql=true</code>.</td>
+</tr>
+<tr>
+<td>Flatten results (legacy only)</td>
+<td><code>flattenResults=true</code></td>
+<td>—</td>
+<td>🔴 Uncovered</td>
+<td>🟢</td>
+<td>Same.</td>
+</tr>
+<tr>
+<td>Table definitions (federated)</td>
+<td><code>tableDefinitions</code></td>
+<td>—</td>
+<td>🟡 Sampled (1 external_tables test)</td>
+<td>🟢</td>
+<td></td>
+</tr>
+<tr>
+<td><code>create_session</code></td>
+<td><code>createSession=true</code></td>
+<td>—</td>
+<td>🟡 Sampled (2 fixtures use it)</td>
+<td>🟡</td>
+<td>BigQuery mints a transient session token returned via <code>statistics.sessionInfo.sessionId</code>. The emulator's <code>_SESSION_CATALOG</code> mints a fresh URL-safe token; surfacing it through the response shape uses <code>_maybe_mint_session</code> + <code>_attach_session_info</code>.</td>
+</tr>
+</tbody>
+</table>
+<p><strong><code>QueryJobConfig</code> summary:</strong> <strong>8 of 31</strong> configurations are 🔴
+Uncovered. Of the 8, <strong>0 are 🔴 high-severity</strong> — every Tier 1 +
+Tier 2 cell ships fixtures; the remainder is the Tier 3 list
+(scriptOptions, continuous, legacy-only allowLargeResults /
+flattenResults).</p>
+<h2 id="2-execution-paths-synchronous-vs-asynchronous">2. Execution paths (synchronous vs asynchronous)<a class="headerlink" href="#2-execution-paths-synchronous-vs-asynchronous" title="Permanent link">&para;</a></h2>
+<table>
+<thead>
+<tr>
+<th>Path</th>
+<th>Wire shape</th>
+<th>Coverage</th>
+<th>Severity</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Synchronous <code>jobs.query</code> (small results)</td>
+<td><code>POST /queries</code></td>
+<td>🟢🟢 Deep (default for <code>client.query()</code> with small N)</td>
+<td>n/a</td>
+<td>Used implicitly by virtually every conformance fixture</td>
+</tr>
+<tr>
+<td>Asynchronous <code>jobs.insert</code> + poll + <code>jobs.getQueryResults</code></td>
+<td><code>POST /jobs</code>, <code>GET /jobs/{id}</code>, <code>GET /queries/{id}</code></td>
+<td>🟡 Sampled (a few integration tests)</td>
+<td>🔴</td>
+<td>The Python client takes this path when results are large or async submission is requested. Polling cadence + state transitions are real-BQ-specific.</td>
+</tr>
+<tr>
+<td><code>jobs.getQueryResults</code> with pagination (<code>maxResults</code>, <code>pageToken</code>)</td>
+<td><code>GET /queries/{id}?maxResults=…&amp;pageToken=…</code></td>
+<td>🔴 Uncovered</td>
+<td>🔴</td>
+<td>The shape and opacity of <code>pageToken</code> matters — clients trust it as opaque, but the emulator may diverge.</td>
+</tr>
+<tr>
+<td><code>tabledata.list</code> with pagination</td>
+<td><code>GET /tabledata?maxResults=…&amp;pageToken=…&amp;startIndex=…&amp;selectedFields=…</code></td>
+<td>🟡 Sampled (a few integration tests)</td>
+<td>🔴</td>
+<td><code>startIndex</code> is server-side; <code>pageToken</code> is server-side. Projection (<code>selectedFields</code>) matters for client-library performance assumptions.</td>
+</tr>
+<tr>
+<td><code>jobs.cancel</code> mid-execution</td>
+<td><code>POST /jobs/{id}/cancel</code></td>
+<td>🔴 Uncovered</td>
+<td>🟡</td>
+<td>Need a long-running fixture (script with sleep, perhaps)</td>
+</tr>
+<tr>
+<td><code>jobs.delete</code></td>
+<td><code>DELETE /jobs/{id}</code></td>
+<td>🔴 Uncovered</td>
+<td>🟢</td>
+<td>Metadata-only</td>
+</tr>
+<tr>
+<td><code>jobs.list</code> (filtering, projection, pagination)</td>
+<td><code>GET /jobs?stateFilter=…&amp;allUsers=…&amp;minCreationTime=…&amp;projection=…&amp;pageToken=…</code></td>
+<td>🔴 Uncovered</td>
+<td>🔴</td>
+<td>Critical for clients that walk job history</td>
+</tr>
+<tr>
+<td><code>jobs.get</code> (status polling)</td>
+<td><code>GET /jobs/{id}</code></td>
+<td>🟡 Sampled</td>
+<td>🟡</td>
+<td>Used implicitly by <code>client.query().result()</code>; state machine validation absent</td>
+</tr>
+</tbody>
+</table>
+<h2 id="3-job-type-matrix-non-query">3. Job-type matrix (non-query)<a class="headerlink" href="#3-job-type-matrix-non-query" title="Permanent link">&para;</a></h2>
+<table>
+<thead>
+<tr>
+<th>Job type</th>
+<th>Coverage</th>
+<th>Severity</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Query</td>
+<td>🟢🟢 Deep (878 conformance fixtures)</td>
+<td>n/a</td>
+<td>The canonical case</td>
+</tr>
+<tr>
+<td>Load (CSV)</td>
+<td>🟡 Sampled (integration)</td>
+<td>🔴</td>
+<td>Format options: <code>fieldDelimiter</code>, <code>nullMarker</code>, <code>skipLeadingRows</code>, <code>allowQuotedNewlines</code>, <code>allowJaggedRows</code>, <code>encoding</code>, <code>quote</code>, <code>preserveAsciiControlCharacters</code>, <code>referenceFileSchemaUri</code>, <code>decimalTargetTypes</code></td>
+</tr>
+<tr>
+<td>Load (JSON)</td>
+<td>🟡 Sampled (integration)</td>
+<td>🔴</td>
+<td>Format options: <code>autodetect</code>, <code>ignoreUnknownValues</code>, <code>maxBadRecords</code>, <code>jsonExtension</code></td>
+</tr>
+<tr>
+<td>Load (Avro)</td>
+<td>🟡 Sampled (integration)</td>
+<td>🟡</td>
+<td>Format options: <code>useAvroLogicalTypes</code></td>
+</tr>
+<tr>
+<td>Load (Parquet)</td>
+<td>🟡 Sampled (integration)</td>
+<td>🟡</td>
+<td>Format options: <code>enableListInference</code>, <code>enumAsString</code></td>
+</tr>
+<tr>
+<td>Load (ORC)</td>
+<td>🟡 Sampled (integration)</td>
+<td>🟡</td>
+<td></td>
+</tr>
+<tr>
+<td>Load (Firestore export)</td>
+<td>🔴 Uncovered</td>
+<td>🟢</td>
+<td>Out-of-scope per <a href="../out-of-scope/">out-of-scope.md</a></td>
+</tr>
+<tr>
+<td>Extract (CSV / JSON / Avro / Parquet)</td>
+<td>🟡 Sampled (integration)</td>
+<td>🟡</td>
+<td>Format options: <code>compression</code> (NONE/GZIP/DEFLATE/SNAPPY/ZSTD), <code>fieldDelimiter</code>, <code>printHeader</code>, <code>destinationUriFileCounts</code> (output), <code>useAvroLogicalTypes</code></td>
+</tr>
+<tr>
+<td>Copy (single source)</td>
+<td>🟡 Sampled (integration)</td>
+<td>🟡</td>
+<td><code>writeDisposition</code>, <code>createDisposition</code></td>
+</tr>
+<tr>
+<td>Copy (multi-source)</td>
+<td>🔴 Uncovered</td>
+<td>🟢</td>
+<td></td>
+</tr>
+<tr>
+<td>Copy (snapshot — operationType=SNAPSHOT)</td>
+<td>🟢 Covered</td>
+<td>n/a</td>
+<td></td>
+</tr>
+<tr>
+<td>Copy (clone — operationType=CLONE)</td>
+<td>🟢 Covered</td>
+<td>n/a</td>
+<td></td>
+</tr>
+<tr>
+<td>Copy (restore — operationType=RESTORE)</td>
+<td>🔴 Uncovered</td>
+<td>🟡</td>
+<td>Used for time-travel restore</td>
+</tr>
+<tr>
+<td>Streaming insert (insertAll)</td>
+<td>🟡 Sampled</td>
+<td>🔴</td>
+<td>Options: <code>insertId</code> dedup, <code>templateSuffix</code> routing, <code>skipInvalidRows</code>, <code>ignoreUnknownValues</code></td>
+</tr>
+</tbody>
+</table>
+<h2 id="4-rest-api-metadata-endpoints">4. REST API metadata endpoints<a class="headerlink" href="#4-rest-api-metadata-endpoints" title="Permanent link">&para;</a></h2>
+<table>
+<thead>
+<tr>
+<th>Endpoint</th>
+<th>Coverage</th>
+<th>Severity</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>datasets.insert</code></td>
+<td>🟢🟢 Deep</td>
+<td>n/a</td>
+<td></td>
+</tr>
+<tr>
+<td><code>datasets.get</code></td>
+<td>🟢🟢 Deep</td>
+<td>n/a</td>
+<td></td>
+</tr>
+<tr>
+<td><code>datasets.update</code> / <code>datasets.patch</code></td>
+<td>🟡 Sampled</td>
+<td>🟡</td>
+<td><code>description</code>, <code>defaultTableExpirationMs</code>, <code>defaultPartitionExpirationMs</code>, <code>labels</code>, <code>access</code> (table-level + dataset-level)</td>
+</tr>
+<tr>
+<td><code>datasets.list</code> (with filter, all, pageToken)</td>
+<td>🔴 Uncovered</td>
+<td>🟡</td>
+<td></td>
+</tr>
+<tr>
+<td><code>datasets.delete</code> (with deleteContents)</td>
+<td>🟢 Covered</td>
+<td>n/a</td>
+<td></td>
+</tr>
+<tr>
+<td><code>tables.insert</code></td>
+<td>🟢🟢 Deep</td>
+<td>n/a</td>
+<td></td>
+</tr>
+<tr>
+<td><code>tables.get</code></td>
+<td>🟢🟢 Deep</td>
+<td>n/a</td>
+<td></td>
+</tr>
+<tr>
+<td><code>tables.update</code> / <code>tables.patch</code></td>
+<td>🟡 Sampled</td>
+<td>🔴</td>
+<td><code>description</code>, <code>expirationTime</code>, <code>friendlyName</code>, <code>labels</code>, <code>schema</code> (column add / column relax / column drop), <code>timePartitioning</code>, <code>rangePartitioning</code>, <code>clustering</code>, <code>materializedView.refreshIntervalMs</code>, <code>tableConstraints</code>, <code>view.query</code>, <code>view.useLegacySql</code>, <code>view.userDefinedFunctionResources</code>, <code>requirePartitionFilter</code></td>
+</tr>
+<tr>
+<td><code>tables.list</code> (with pageToken)</td>
+<td>🔴 Uncovered</td>
+<td>🟡</td>
+<td></td>
+</tr>
+<tr>
+<td><code>tables.delete</code></td>
+<td>🟢 Covered</td>
+<td>n/a</td>
+<td></td>
+</tr>
+<tr>
+<td><code>tabledata.insertAll</code></td>
+<td>🟢 Covered</td>
+<td>n/a</td>
+<td></td>
+</tr>
+<tr>
+<td><code>routines.*</code></td>
+<td>🟢 Covered</td>
+<td>n/a</td>
+<td></td>
+</tr>
+<tr>
+<td><code>models.*</code></td>
+<td>n/a — out of scope per ADR 0012</td>
+<td>n/a</td>
+<td></td>
+</tr>
+<tr>
+<td><code>rowAccessPolicies.*</code></td>
+<td>🟢 Covered</td>
+<td>n/a</td>
+<td></td>
+</tr>
+<tr>
+<td><code>projects.list</code></td>
+<td>🔴 Uncovered</td>
+<td>🟢</td>
+<td>Trivial; mostly used for ADC discovery</td>
+</tr>
+</tbody>
+</table>
+<h2 id="5-storage-read-api-grpc">5. Storage Read API (gRPC)<a class="headerlink" href="#5-storage-read-api-grpc" title="Permanent link">&para;</a></h2>
+<p>Every practical cell is ✅ Covered; the two compression cells echo
+the request option back to the client (the actual codec
+implementation is documented out-of-scope per ADR 0008).</p>
+<table>
+<thead>
+<tr>
+<th>Option</th>
+<th>Coverage</th>
+<th>Severity</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>dataFormat=ARROW</code></td>
+<td>🟢🟢 Deep (1 perf benchmark + 6 integration tests + 8 gRPC corpus fixtures)</td>
+<td>n/a</td>
+<td></td>
+</tr>
+<tr>
+<td><code>dataFormat=AVRO</code></td>
+<td>🔴 Uncovered</td>
+<td>🟢</td>
+<td>Out-of-scope per ADR 0008 / the compatibility matrix</td>
+</tr>
+<tr>
+<td><code>maxStreamCount</code> (&gt;1)</td>
+<td>✅ Covered (<code>sr_create_session_multi_stream</code>)</td>
+<td>n/a</td>
+<td>Emulator caps streams by table size, matching real BQ</td>
+</tr>
+<tr>
+<td><code>preferredMinStreamCount</code></td>
+<td>✅ Covered (<code>sr_preferred_min_stream_count</code>)</td>
+<td>n/a</td>
+<td>Hint only — emulator echoes the request shape</td>
+</tr>
+<tr>
+<td><code>selectedFields</code> projection</td>
+<td>🟢🟢 Deep (<code>sr_column_projection</code>)</td>
+<td>n/a</td>
+<td></td>
+</tr>
+<tr>
+<td><code>rowRestriction</code> (filter)</td>
+<td>✅ Covered (<code>sr_row_filter_simple</code>, <code>sr_row_filter_with_in</code>)</td>
+<td>n/a</td>
+<td></td>
+</tr>
+<tr>
+<td><code>arrowSerializationOptions.bufferCompression</code></td>
+<td>✅ Covered shape (<code>sr_arrow_compression_lz4_frame</code>, <code>sr_arrow_compression_zstd</code>)</td>
+<td>🟢</td>
+<td>Request option is echoed back; codec implementation deferred</td>
+</tr>
+<tr>
+<td><code>responseCompressionCodec</code></td>
+<td>🔴 Uncovered</td>
+<td>🟢</td>
+<td>gRPC-level codec; deferred</td>
+</tr>
+<tr>
+<td>Snapshot read (table snapshot ID)</td>
+<td>🟡 Sampled</td>
+<td>🟡</td>
+<td></td>
+</tr>
+<tr>
+<td><code>SplitReadStream</code></td>
+<td>✅ Covered (<code>sr_split_read_stream</code>)</td>
+<td>n/a</td>
+<td>Hint per BQ docs; emulator implements wire shape</td>
+</tr>
+<tr>
+<td>Empty-table session</td>
+<td>✅ Covered (<code>sr_empty_table</code>)</td>
+<td>n/a</td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<h2 id="6-storage-write-api-grpc">6. Storage Write API (gRPC)<a class="headerlink" href="#6-storage-write-api-grpc" title="Permanent link">&para;</a></h2>
+<p>Every practical cell is ✅ Covered. The two CDC cells remain
+pinned as out-of-scope per ADR 0013 (CDC writes require schema
+metadata the emulator's catalog doesn't yet model).</p>
+<table>
+<thead>
+<tr>
+<th>Option</th>
+<th>Coverage</th>
+<th>Severity</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Stream type DEFAULT</td>
+<td>🟢🟢 Deep (<code>sw_get_write_stream_default</code>)</td>
+<td>n/a</td>
+<td></td>
+</tr>
+<tr>
+<td>Stream type COMMITTED</td>
+<td>🟢🟢 Deep (<code>sw_create_committed_stream</code>, <code>sw_get_write_stream_after_create</code>)</td>
+<td>n/a</td>
+<td></td>
+</tr>
+<tr>
+<td>Stream type PENDING + BatchCommit</td>
+<td>🟢🟢 Deep (<code>sw_create_pending_stream</code>, <code>sw_finalize_pending_no_appends</code>, <code>sw_batch_commit_finalized_pending</code>)</td>
+<td>n/a</td>
+<td></td>
+</tr>
+<tr>
+<td>Stream type BUFFERED + FlushRows</td>
+<td>🟢🟢 Deep (<code>sw_create_buffered_stream</code>, <code>sw_flush_rows_buffered_zero</code>)</td>
+<td>n/a</td>
+<td></td>
+</tr>
+<tr>
+<td>Payload — Arrow IPC</td>
+<td>🟢 Covered (integration suite)</td>
+<td>n/a</td>
+<td></td>
+</tr>
+<tr>
+<td>Payload — dynamic protobuf</td>
+<td>🟢 Covered (integration suite)</td>
+<td>n/a</td>
+<td></td>
+</tr>
+<tr>
+<td>Error envelope: stream not found</td>
+<td>✅ Covered (<code>sw_finalize_default_invalid_argument</code>)</td>
+<td>n/a</td>
+<td>"Requested entity was not found" wording matches real BQ</td>
+</tr>
+<tr>
+<td>Error envelope: malformed stream id</td>
+<td>✅ Covered (<code>sw_get_write_stream_not_found</code>)</td>
+<td>n/a</td>
+<td>INVALID_ARGUMENT for non-canonical stream ids</td>
+</tr>
+<tr>
+<td>Error envelope: empty-buffered FlushRows</td>
+<td>✅ Covered (<code>sw_flush_rows_buffered_zero</code>)</td>
+<td>n/a</td>
+<td>OUT_OF_RANGE "Offset N is beyond the end of the stream"</td>
+</tr>
+<tr>
+<td>CDC: <code>_CHANGE_TYPE</code> column (UPSERT / DELETE)</td>
+<td>🔴 Uncovered</td>
+<td>🔴</td>
+<td>Out-of-scope per ADR 0013</td>
+</tr>
+<tr>
+<td>CDC: <code>_CHANGE_SEQUENCE_NUMBER</code></td>
+<td>🔴 Uncovered</td>
+<td>🔴</td>
+<td>Ditto</td>
+</tr>
+<tr>
+<td>Schema evolution on append</td>
+<td>🔴 Uncovered</td>
+<td>🟡</td>
+<td>Adding columns mid-stream</td>
+</tr>
+<tr>
+<td>Trace ID propagation</td>
+<td>🔴 Uncovered</td>
+<td>🟢</td>
+<td></td>
+</tr>
+<tr>
+<td>Connection retry / re-attach</td>
+<td>🟢 Covered (chaos tier)</td>
+<td>n/a</td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<h2 id="7-response-object-fields-not-yet-verified">7. Response object — fields not yet verified<a class="headerlink" href="#7-response-object-fields-not-yet-verified" title="Permanent link">&para;</a></h2>
+<p>This is the other half of the configuration-coverage picture. Even
+when a configuration is exercised by a fixture, only <code>schema</code> +
+<code>rows</code> are diffed. Real-BQ clients consume far more of the response
+payload.</p>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Currently compared?</th>
+<th>Severity</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>schema[].name</code></td>
+<td>✅ Yes</td>
+<td>n/a</td>
+<td>Exact equality</td>
+</tr>
+<tr>
+<td><code>schema[].type</code></td>
+<td>✅ Yes</td>
+<td>n/a</td>
+<td>Normalised aliases</td>
+</tr>
+<tr>
+<td><code>schema[].mode</code></td>
+<td>✅ Yes</td>
+<td>n/a</td>
+<td>Normalised NULLABLE default</td>
+</tr>
+<tr>
+<td><code>schema[].fields</code> (nested)</td>
+<td>✅ Yes (recursive)</td>
+<td>n/a</td>
+<td></td>
+</tr>
+<tr>
+<td><code>schema[].description</code></td>
+<td>❌ No</td>
+<td>🟡</td>
+<td>Used by docs-generators + dbt</td>
+</tr>
+<tr>
+<td><code>schema[].policyTags</code></td>
+<td>❌ No</td>
+<td>🔴</td>
+<td>Column-level access control; cannot land if absent</td>
+</tr>
+<tr>
+<td><code>schema[].defaultValueExpression</code></td>
+<td>❌ No</td>
+<td>🟡</td>
+<td>DEFAULT column values</td>
+</tr>
+<tr>
+<td><code>schema[].collation</code></td>
+<td>❌ No</td>
+<td>🟡</td>
+<td>ICU collation specifier</td>
+</tr>
+<tr>
+<td><code>schema[].roundingMode</code></td>
+<td>❌ No</td>
+<td>🟡</td>
+<td>ROUND_HALF_AWAY_FROM_ZERO / ROUND_HALF_EVEN</td>
+</tr>
+<tr>
+<td><code>schema[].maxLength</code> / <code>.precision</code> / <code>.scale</code></td>
+<td>❌ No</td>
+<td>🟡</td>
+<td>STRING(N) / NUMERIC(P,S) — sized variants</td>
+</tr>
+<tr>
+<td><code>rows[*]</code> cell values</td>
+<td>✅ Yes</td>
+<td>n/a</td>
+<td>Type-aware tolerance per ADR 0022</td>
+</tr>
+<tr>
+<td>Job <code>state</code></td>
+<td>❌ No</td>
+<td>🟡</td>
+<td>PENDING / RUNNING / DONE</td>
+</tr>
+<tr>
+<td>Job <code>errorResult</code> shape</td>
+<td>✅ Yes for error fixtures</td>
+<td>n/a</td>
+<td></td>
+</tr>
+<tr>
+<td>Job <code>errors[]</code> (warnings)</td>
+<td>❌ No</td>
+<td>🟡</td>
+<td>Non-fatal warnings list</td>
+</tr>
+<tr>
+<td>Job <code>statistics.creationTime</code> / <code>.startTime</code> / <code>.endTime</code></td>
+<td>❌ No</td>
+<td>🟢</td>
+<td>Timing — too noisy to compare</td>
+</tr>
+<tr>
+<td>Job <code>statistics.totalBytesProcessed</code></td>
+<td>❌ No</td>
+<td>🟡</td>
+<td>Real-BQ value; emulator often 0</td>
+</tr>
+<tr>
+<td>Job <code>statistics.totalBytesBilled</code></td>
+<td>❌ No</td>
+<td>🟡</td>
+<td>Same</td>
+</tr>
+<tr>
+<td>Job <code>statistics.cacheHit</code></td>
+<td>❌ No</td>
+<td>🟡</td>
+<td>Real-BQ <code>false</code> (default) vs <code>true</code> (cache hit); emulator always <code>false</code></td>
+</tr>
+<tr>
+<td>Job <code>statistics.totalSlotMs</code></td>
+<td>❌ No</td>
+<td>🟢</td>
+<td>Real-BQ value; emulator should be 0</td>
+</tr>
+<tr>
+<td>Job <code>statistics.query.statementType</code></td>
+<td>✅ Yes</td>
+<td>n/a</td>
+<td>Diffed key-by-key via the recorded <code>job_metadata</code> block; clients dispatch on this</td>
+</tr>
+<tr>
+<td>Job <code>statistics.query.numDmlAffectedRows</code></td>
+<td>✅ Yes</td>
+<td>n/a</td>
+<td>Diffed via the recorded <code>job_metadata</code> block (DML / TRUNCATE fixtures); critical for client correctness</td>
+</tr>
+<tr>
+<td>Job <code>statistics.query.ddlOperationPerformed</code></td>
+<td>✅ Yes</td>
+<td>n/a</td>
+<td>Diffed via the recorded <code>job_metadata</code> block (DDL fixtures); CREATE / DROP / ALTER — clients dispatch on this</td>
+</tr>
+<tr>
+<td>Job <code>statistics.query.referencedTables</code></td>
+<td>❌ No</td>
+<td>🟡</td>
+<td>Lineage</td>
+</tr>
+<tr>
+<td>Job <code>statistics.query.schema</code></td>
+<td>❌ No (the result schema only is diffed)</td>
+<td>🟡</td>
+<td>Pre-execution schema (dry-run uses this)</td>
+</tr>
+<tr>
+<td>Job <code>statistics.query.queryPlan</code></td>
+<td>❌ No</td>
+<td>🟢</td>
+<td>Per-stage timing</td>
+</tr>
+<tr>
+<td>Job <code>statistics.query.timeline</code></td>
+<td>❌ No</td>
+<td>🟢</td>
+<td>Per-second progress</td>
+</tr>
+<tr>
+<td><code>configuration.labels</code> (echo of request labels)</td>
+<td>❌ No</td>
+<td>🟢</td>
+<td></td>
+</tr>
+<tr>
+<td><code>configuration.query.useLegacySql</code> (echo)</td>
+<td>❌ No</td>
+<td>🟢</td>
+<td></td>
+</tr>
+<tr>
+<td><code>configuration.dryRun</code> (echo)</td>
+<td>❌ No</td>
+<td>🟢</td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<h2 id="8-how-to-use-this-matrix">8. How to use this matrix<a class="headerlink" href="#8-how-to-use-this-matrix" title="Permanent link">&para;</a></h2>
+<p>When authoring a new fixture, the recorder picks the highest-impact
+🔴 Uncovered row and either:</p>
+<ol>
+<li>Adds a <code>job_config.json</code> to an existing fixture's sibling
+   directory (e.g. <code>arith_add</code> → <code>arith_add_with_labels</code> with the
+   same SQL + a labels job config), OR</li>
+<li>Creates a new fixture with a representative SQL + a
+   <code>job_config.json</code> (e.g. <code>dml_update_with_truncate</code>).</li>
+</ol>
+<p>The runner picks up the job config automatically — the conformance
+framework wires it through.</p>
+<p>When extending the <strong>response equivalence</strong>, the recorder writes the
+new field into <code>expected.json</code> under the optional <code>job_metadata</code>
+block; the runner diffs only the keys that are present. This keeps
+existing fixtures valid (none of them write <code>job_metadata</code>, so they
+skip the new comparisons), and lets a single fixture declare which
+response fields are interesting to its scenario.</p>
+<h2 id="references">References<a class="headerlink" href="#references" title="Permanent link">&para;</a></h2>
+<ul>
+<li><a href="../../adr/0022-conformance-corpus-design/">ADR 0022</a> — corpus
+  design contract (extended by this audit)</li>
+<li><a href="../../adr/0023-conformance-divergence-baseline/">ADR 0023</a> — the
+  divergence framework</li>
+<li><a href="../../adr/0025-perf-tier-design-contract/">ADR 0025</a> — perf-tier
+  contract (sibling shape)</li>
+<li><a href="../conformance-coverage-matrix/">Conformance coverage matrix</a> —
+  SQL surface coverage (this doc's sibling)</li>
+</ul>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+  <script>var tabs=__md_get("__tabs");if(Array.isArray(tabs))e:for(var set of document.querySelectorAll(".tabbed-set")){var labels=set.querySelector(".tabbed-labels");for(var tab of tabs)for(var label of labels.getElementsByTagName("label"))if(label.innerText.trim()===tab){var input=document.getElementById(label.htmlFor);input.checked=!0;continue e}}</script>
+
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+    <div class="md-copyright__highlight">
+      Apache 2.0
+    </div>
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["content.action.edit", "content.action.view", "content.code.copy", "content.code.annotate", "content.tabs.link", "navigation.indexes", "navigation.instant", "navigation.sections", "navigation.tabs", "navigation.top", "navigation.tracking", "search.highlight", "search.share", "search.suggest", "toc.follow"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": {"default": "latest", "provider": "mike"}}</script>
+    
+    
+      <script src="../../assets/javascripts/bundle.79ae519e.min.js"></script>
+      
+    
+  </body>
+</html>
