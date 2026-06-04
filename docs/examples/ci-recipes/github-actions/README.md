@@ -38,5 +38,5 @@ make test
 Copy `workflow.yml` into your `.github/workflows/` directory and edit:
 
 - `BQEMU_IMAGE` env var — pin to the version you want (e.g.
-  `ghcr.io/jjviscomi/bqemulator:1.1.2`).
+  `ghcr.io/jjviscomi/bqemulator:1.1.3`).
 - The `test:` step — replace with your project's test command.
