@@ -5448,16 +5448,6 @@ table is maintained here (it has no authoritative generator).</p>
 </thead>
 <tbody>
 <tr>
-<td><strong>JS UDFs</strong> (<code>CREATE TEMP FUNCTION... LANGUAGE js</code>)</td>
-<td>Unit, integration (<code>tests/integration/test_udf*.py</code>)</td>
-<td>Gated on <code>[udf-js]</code> extra (<code>mini-racer</code>); deterministic enough to record but no fixtures yet authored.</td>
-</tr>
-<tr>
-<td><strong>TVFs</strong> (table-valued functions)</td>
-<td>Unit, integration</td>
-<td>No fixtures authored yet.</td>
-</tr>
-<tr>
 <td><strong>Storage Read API</strong> (gRPC <code>BigQueryRead</code>)</td>
 <td>Integration, E2E (<code>test_storage_read_*</code>)</td>
 <td>Non-SQL surface; conformance is the SQL tier.</td>
@@ -5516,11 +5506,6 @@ table is maintained here (it has no authoritative generator).</p>
 <td><strong>Session variables (<code>SET...</code>)</strong></td>
 <td>Integration</td>
 <td>Session state — non-replayable.</td>
-</tr>
-<tr>
-<td><strong><code>CREATE PROCEDURE</code></strong></td>
-<td>Integration</td>
-<td>Larger scripting surface; underrepresented in corpus.</td>
 </tr>
 <tr>
 <td><strong><code>dryRun</code> validation</strong></td>

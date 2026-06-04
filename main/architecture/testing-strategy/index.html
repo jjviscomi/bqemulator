@@ -5567,14 +5567,12 @@ the full scenario set against it.</p>
 <a href="https://github.com/jjviscomi/bqemulator/blob/main/CHANGELOG.md">CHANGELOG</a>.</p>
 <h2 id="tier-5-conformance-testsconformance">Tier 5 — Conformance (<code>tests/conformance/</code>)<a class="headerlink" href="#tier-5-conformance-testsconformance" title="Permanent link">&para;</a></h2>
 <p>Replays recorded baselines against the emulator with row-for-row,
-type-aware tolerance. The corpus ships <strong>1215 active fixtures</strong> —
-<strong>1141 SQL + 48 HTTP + 26 gRPC</strong> (plus 18 INFORMATION_SCHEMA
-fixture stubs currently unrecorded; the same surfaces are
-exercised by Tier 3 integration tests). 13 documented XFAILs are
+type-aware tolerance. The corpus ships <strong>1276 active fixtures</strong> —
+<strong>1202 SQL + 48 HTTP + 26 gRPC</strong>. 12 documented XFAILs are
 pinned as permanent design-decision divergences in
 <a href="https://github.com/jjviscomi/bqemulator/blob/main/tests/conformance/divergences.py"><code>tests/conformance/divergences.py</code></a>.</p>
-<p>The corpus includes full TPC-H (22/22 queries) and a 59-of-99
-TPC-DS subset. The remaining 40 TPC-DS queries are tracked in
+<p>The corpus includes full TPC-H (22/22 queries) and a 70-of-99
+TPC-DS subset. The remaining 29 TPC-DS queries are tracked in
 <a href="../contributing/tpcds-expansion-plan/">tpcds-expansion-plan.md</a>,
 which lists the missing queries (numerical order, with complexity
 hints), the per-query authoring recipe, BigQuery adaptation
@@ -5672,7 +5670,7 @@ accidentally happens to be correct on the recorded data and wrong
 on permuted data (e.g., a <code>LIMIT N</code> shortcut that picks the
 first row in DuckDB's storage order, which happens to match
 BigQuery's storage order on the recorded dataset).</p>
-<p>The tier exercises ~77 of the ~1141 SQL fixtures; the remaining
+<p>The tier exercises ~77 of the ~1202 SQL fixtures; the remaining
 fixtures are skipped because their queries use BigQuery-documented
 order-sensitive contracts (<code>ORDER BY</code>, <code>LIMIT</code>, <code>ARRAY_AGG</code>
 / <code>STRING_AGG</code> / window functions without explicit OVER ORDER

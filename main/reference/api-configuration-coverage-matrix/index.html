@@ -6300,21 +6300,21 @@ payload.</p>
 </tr>
 <tr>
 <td>Job <code>statistics.query.statementType</code></td>
-<td>❌ No</td>
-<td>🔴</td>
-<td>SELECT / INSERT / UPDATE / DELETE / MERGE / CREATE_TABLE /... — clients dispatch on this</td>
+<td>✅ Yes</td>
+<td>n/a</td>
+<td>Diffed key-by-key via the recorded <code>job_metadata</code> block; clients dispatch on this</td>
 </tr>
 <tr>
 <td>Job <code>statistics.query.numDmlAffectedRows</code></td>
-<td>❌ No</td>
-<td>🔴</td>
-<td>UPDATE / DELETE / MERGE return count; critical for client correctness</td>
+<td>✅ Yes</td>
+<td>n/a</td>
+<td>Diffed via the recorded <code>job_metadata</code> block (DML / TRUNCATE fixtures); critical for client correctness</td>
 </tr>
 <tr>
 <td>Job <code>statistics.query.ddlOperationPerformed</code></td>
-<td>❌ No</td>
-<td>🔴</td>
-<td>CREATE / DROP / ALTER / TRUNCATE — clients dispatch on this</td>
+<td>✅ Yes</td>
+<td>n/a</td>
+<td>Diffed via the recorded <code>job_metadata</code> block (DDL fixtures); CREATE / DROP / ALTER — clients dispatch on this</td>
 </tr>
 <tr>
 <td>Job <code>statistics.query.referencedTables</code></td>

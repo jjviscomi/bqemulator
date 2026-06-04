@@ -80,7 +80,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#tpc-ds-expansion-plan-closing-the-40-query-gap" class="md-skip">
+        <a href="#tpc-ds-expansion-plan-closing-the-29-query-gap" class="md-skip">
           Skip to content
         </a>
       
@@ -5389,12 +5389,12 @@
   
 
 
-<h1 id="tpc-ds-expansion-plan-closing-the-40-query-gap">TPC-DS expansion plan — closing the 40-query gap<a class="headerlink" href="#tpc-ds-expansion-plan-closing-the-40-query-gap" title="Permanent link">&para;</a></h1>
-<p>The conformance corpus today carries <strong>59 of 99</strong> TPC-DS queries (and
+<h1 id="tpc-ds-expansion-plan-closing-the-29-query-gap">TPC-DS expansion plan — closing the 29-query gap<a class="headerlink" href="#tpc-ds-expansion-plan-closing-the-29-query-gap" title="Permanent link">&para;</a></h1>
+<p>The conformance corpus today carries <strong>70 of 99</strong> TPC-DS queries (and
 22/22 TPC-H). This document tracks the planned expansion to <strong>99/99</strong>
 and lives in the repo so the work survives session boundaries.</p>
 <h2 id="whats-missing">What's missing<a class="headerlink" href="#whats-missing" title="Permanent link">&para;</a></h2>
-<p>40 queries, enumerated below in numerical order with a one-line
+<p>29 queries, enumerated below in numerical order with a one-line
 <strong>complexity hint</strong> (table count + key SQL feature). "Easier" rows are
 roughly 2-4 tables and a single GROUP BY or window function; "harder"
 rows are 5+ tables, multi-CTE chains, or ROLLUP/GROUPING SETS.</p>
@@ -5422,235 +5422,169 @@ rows are 5+ tables, multi-CTE chains, or ROLLUP/GROUPING SETS.</p>
 </tr>
 <tr>
 <td>3</td>
-<td>q12</td>
-<td>3 tables: web_sales, item, date_dim. Window SUM OVER PARTITION BY i_class.</td>
-<td>easier</td>
-</tr>
-<tr>
-<td>4</td>
 <td>q13</td>
 <td>4 tables: store_sales, store, customer_demographics, household_demographics + date_dim. Three OR'd customer-segment filters + DECIMAL aggregates.</td>
 <td>medium</td>
 </tr>
 <tr>
-<td>5</td>
+<td>4</td>
 <td>q19</td>
 <td>5 tables: date_dim, store_sales, item, customer, customer_address, store. Manager-rank by brand-category-state. ORDER BY i_brand_id, item, store; LIMIT 100.</td>
 <td>medium</td>
 </tr>
 <tr>
-<td>6</td>
-<td>q20</td>
-<td>3 tables: catalog_sales, item, date_dim. Item revenue ratio over class. Window SUM OVER.</td>
-<td>easier</td>
-</tr>
-<tr>
-<td>7</td>
+<td>5</td>
 <td>q25</td>
 <td>5 tables: store_sales, store_returns, catalog_sales, store, item, date_dim ×3 (sold + returned + reseller). Customer return ratio.</td>
 <td>hard</td>
 </tr>
 <tr>
-<td>8</td>
+<td>6</td>
 <td>q26</td>
 <td>4 tables: catalog_sales, customer_demographics, date_dim, item, promotion. Gender + marital + ed-status filter; promotion ID predicates.</td>
 <td>medium</td>
 </tr>
 <tr>
-<td>9</td>
+<td>7</td>
 <td>q30</td>
 <td>6 tables: web_returns, date_dim, customer_address, customer + customer-state ranking. Top-100 customers per state via CTE.</td>
 <td>hard</td>
 </tr>
 <tr>
-<td>10</td>
+<td>8</td>
 <td>q32</td>
 <td>3 tables: catalog_sales, item, date_dim. SUM(cs_ext_discount_amt) &gt; 1.3 × AVG(...) correlated subquery.</td>
 <td>medium</td>
 </tr>
 <tr>
-<td>11</td>
+<td>9</td>
 <td>q33</td>
 <td>8 tables (3 channels × 3 dimension tables): store/web/catalog_sales × item × date_dim × customer_address. UNION ALL across 3 channels with GMT-zone filter.</td>
 <td>hard</td>
 </tr>
 <tr>
-<td>12</td>
-<td>q37</td>
-<td>3 tables: item, inventory, date_dim, catalog_sales. Item-on-promotion + min-inventory filter.</td>
-<td>easier</td>
-</tr>
-<tr>
-<td>13</td>
+<td>10</td>
 <td>q40</td>
 <td>3 tables: catalog_sales, catalog_returns, date_dim, item, warehouse. Returns net-sales by warehouse + item, date-range PIVOT.</td>
 <td>medium</td>
 </tr>
 <tr>
-<td>14</td>
-<td>q45</td>
-<td>4 tables: web_sales, customer, customer_address, date_dim, item. Zip-prefix filter + city aggregation.</td>
-<td>easier</td>
-</tr>
-<tr>
-<td>15</td>
+<td>11</td>
 <td>q46</td>
 <td>6 tables: store_sales, customer_demographics, household_demographics, customer, customer_address, store, date_dim. Multi-segment customer filter.</td>
 <td>medium</td>
 </tr>
 <tr>
-<td>16</td>
+<td>12</td>
 <td>q54</td>
 <td>8 tables: catalog_sales + web_sales + customer + c_address + store + item + date_dim. Customer-ROI per item class. Multi-CTE.</td>
 <td>hard</td>
 </tr>
 <tr>
-<td>17</td>
-<td>q57</td>
-<td>3 tables: call_center, item, date_dim, catalog_sales. Avg-sales window over call-center / month.</td>
-<td>easier</td>
-</tr>
-<tr>
-<td>18</td>
+<td>13</td>
 <td>q58</td>
 <td>3 tables: store_sales / web_sales / catalog_sales × item × date_dim. Item-rank by week sales across 3 channels. UNION ALL + window.</td>
 <td>medium</td>
 </tr>
 <tr>
-<td>19</td>
+<td>14</td>
 <td>q59</td>
 <td>3 tables: store_sales, date_dim, store. Week-over-week sales ratio. Self-join on week_seq.</td>
 <td>medium</td>
 </tr>
 <tr>
-<td>20</td>
+<td>15</td>
 <td>q60</td>
 <td>8 tables: store/web/catalog_sales × item × date_dim × customer_address. Sales channel UNION ALL + GROUPING SETS-like ROLLUP-by-item.</td>
 <td>hard</td>
 </tr>
 <tr>
-<td>21</td>
+<td>16</td>
 <td>q61</td>
 <td>8 tables: store_sales + promotion + date_dim + customer + customer_address + item + store. Promotion-driven sales ratio (with-promotion / no-promotion).</td>
 <td>medium</td>
 </tr>
 <tr>
-<td>22</td>
+<td>17</td>
 <td>q62</td>
 <td>5 tables: web_sales, warehouse, ship_mode, web_site, date_dim. Shipping-mode aggregates with NULLs for un-shipped.</td>
 <td>medium</td>
 </tr>
 <tr>
-<td>23</td>
-<td>q65</td>
-<td>4 tables: store, item, store_sales, date_dim. DENSE_RANK over store-item revenue.</td>
-<td>easier</td>
-</tr>
-<tr>
-<td>24</td>
+<td>18</td>
 <td>q68</td>
 <td>6 tables: store_sales, date_dim, store, household_demographics, customer_address, customer. Customer-store visit counts.</td>
 <td>medium</td>
 </tr>
 <tr>
-<td>25</td>
+<td>19</td>
 <td>q69</td>
 <td>5 tables: customer, customer_address, customer_demographics, store_sales/web_sales/catalog_sales (EXISTS to one, NOT EXISTS to other two).</td>
 <td>hard</td>
 </tr>
 <tr>
-<td>26</td>
+<td>20</td>
 <td>q71</td>
 <td>6 tables: web_sales / catalog_sales / store_sales × item × time_dim × date_dim × promotion. By-hour sales rank across 3 channels.</td>
 <td>medium</td>
 </tr>
 <tr>
-<td>27</td>
+<td>21</td>
 <td>q74</td>
 <td>6 tables: customer, store_sales, web_sales, date_dim. Year-over-year ratio. Multi-CTE (year1 / year2 per channel).</td>
 <td>medium</td>
 </tr>
 <tr>
-<td>28</td>
+<td>22</td>
 <td>q76</td>
 <td>3 tables (one of: store/web/catalog_sales) × item × date_dim. NULL with missing-value statistics by channel. UNION ALL.</td>
 <td>medium</td>
 </tr>
 <tr>
-<td>29</td>
+<td>23</td>
 <td>q78</td>
 <td>3 tables: store_sales/web_sales/catalog_sales paired with returns. Sales-vs-returns ratio per customer per year.</td>
 <td>medium</td>
 </tr>
 <tr>
-<td>30</td>
-<td>q79</td>
-<td>4 tables: store_sales, date_dim, store, household_demographics. Aggregates by date + customer (clean rendering for the day's grand-total).</td>
-<td>easier</td>
-</tr>
-<tr>
-<td>31</td>
+<td>24</td>
 <td>q80</td>
 <td>8 tables: store_sales / web_sales / catalog_sales each + their returns + date_dim + item + promotion. Returns ratio UNION ALL across 3 channels with ROLLUP.</td>
 <td>hard</td>
 </tr>
 <tr>
-<td>32</td>
-<td>q81</td>
-<td>4 tables: store_returns, customer, customer_address, date_dim. Top-100 customers by return-amt with address fragments.</td>
-<td>easier</td>
-</tr>
-<tr>
-<td>33</td>
-<td>q82</td>
-<td>5 tables: item, inventory, date_dim, store_sales. Item dependency on store sales over date-range.</td>
-<td>easier</td>
-</tr>
-<tr>
-<td>34</td>
+<td>25</td>
 <td>q89</td>
 <td>4 tables: item, store_sales, date_dim, store. Year-over-year monthly trend with AVG window.</td>
 <td>medium</td>
 </tr>
 <tr>
-<td>35</td>
+<td>26</td>
 <td>q91</td>
 <td>5 tables: call_center, catalog_returns, date_dim, customer, customer_address, customer_demographics, household_demographics. Call-center returns by manager.</td>
 <td>hard</td>
 </tr>
 <tr>
-<td>36</td>
+<td>27</td>
 <td>q92</td>
 <td>4 tables: web_sales, item, date_dim. SUM(ws_ext_discount_amt) &gt; 1.3 × AVG correlated subquery.</td>
 <td>medium</td>
 </tr>
 <tr>
-<td>37</td>
-<td>q93</td>
-<td>3 tables: store_sales, store_returns, reason. UPDATE-style net-amount per customer with reason filter.</td>
-<td>easier</td>
-</tr>
-<tr>
-<td>38</td>
+<td>28</td>
 <td>q94</td>
 <td>4 tables: web_sales, web_returns, date_dim, customer_address, web_site. State-filtered returns ratio.</td>
 <td>medium</td>
 </tr>
 <tr>
-<td>39</td>
+<td>29</td>
 <td>q95</td>
 <td>5 tables: web_sales, web_returns, date_dim, customer_address, web_site. Adds late-shipped filter on top of q94's shape.</td>
 <td>medium</td>
 </tr>
-<tr>
-<td>40</td>
-<td>q98</td>
-<td>3 tables: store_sales, item, date_dim. ROLLUP over item-class with retail-price ratio.</td>
-<td>easier</td>
-</tr>
 </tbody>
 </table>
-<p>Counts: 11 easier, 20 medium, 9 hard.</p>
+<p>Counts: 20 medium, 9 hard.</p>
 <p><strong>Recommended execution order:</strong> ascending complexity within family,
 so the easiest fixtures land first, prove the toolchain, and the hard
 ones benefit from the seed-data patterns the easier ones establish.</p>
@@ -5729,7 +5663,7 @@ adaptations:</p>
 </tr>
 </tbody>
 </table>
-<p>The 59 existing fixtures collectively exercise every adaptation
+<p>The 70 existing fixtures collectively exercise every adaptation
 pattern. When in doubt, grep the existing corpus for the same
 function / construct.</p>
 <h3 id="seed-data-sizing">Seed-data sizing<a class="headerlink" href="#seed-data-sizing" title="Permanent link">&para;</a></h3>
@@ -5739,7 +5673,7 @@ emulator's corpus deliberately uses <strong>minimal seeded data</strong> (a few
 rows per dimension; a few rows per fact) so:</p>
 <ul>
 <li>Each recording job scans &lt; 1 MiB (well under the cap).</li>
-<li>The total cost of recording all 40 fixtures is ~<span class="arithmatex">\(0.001 (TPC-DS SF=1
+<li>The total cost of recording all 29 fixtures is ~<span class="arithmatex">\(0.001 (TPC-DS SF=1
   scan cost would be ~\)</span>5).</li>
 <li>The recorded result rows fit in a hand-readable <code>expected.json</code>
   (typically 5-30 rows).</li>
@@ -5786,8 +5720,8 @@ filters something).</p>
 <td><code>Makefile</code> <code>record-conformance</code> target</td>
 </tr>
 <tr>
-<td>Expected total scan for all 40 fixtures</td>
-<td>&lt; 40 MiB</td>
+<td>Expected total scan for all 29 fixtures</td>
+<td>&lt; 29 MiB</td>
 <td>seeded-data sizing rule</td>
 </tr>
 <tr>
@@ -5840,9 +5774,9 @@ of magnitude below the cap.</p>
 <h2 id="open-questions-resolve-before-starting-bulk-recording">Open questions (resolve before starting bulk recording)<a class="headerlink" href="#open-questions-resolve-before-starting-bulk-recording" title="Permanent link">&para;</a></h2>
 <ol>
 <li>
-<p><strong>Should any of the 40 queries be excluded from the corpus?</strong>
-   The existing 59 are unanimously inclusion-worthy; the 40 missing
-   are similarly mainstream. <strong>Recommendation</strong>: include all 40.</p>
+<p><strong>Should any of the 29 queries be excluded from the corpus?</strong>
+   The existing 70 are unanimously inclusion-worthy; the 29 missing
+   are similarly mainstream. <strong>Recommendation</strong>: include all 29.</p>
 </li>
 <li>
 <p><strong>Cost approval.</strong> The total recording cost is ~$0.01 against

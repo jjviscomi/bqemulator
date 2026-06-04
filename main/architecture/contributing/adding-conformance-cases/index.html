@@ -2846,6 +2846,39 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#querysql" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        query.sql
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#setupsql-optional" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        setup.sql (optional)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#expectedjson" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        expected.json
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#runner" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -5191,6 +5224,39 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#querysql" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        query.sql
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#setupsql-optional" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        setup.sql (optional)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#expectedjson" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        expected.json
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#runner" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -5246,36 +5312,72 @@
 
 
 <h1 id="adding-conformance-cases">Adding conformance cases<a class="headerlink" href="#adding-conformance-cases" title="Permanent link">&para;</a></h1>
-<p>Conformance tests live at <code>tests/conformance/sql_corpus/</code>. Each case is
-one <code>.sql</code> file plus a JSON snapshot of the expected result.</p>
+<p>Conformance tests live under <code>tests/conformance/sql_corpus/</code>. Each case
+is a <strong>directory</strong> holding the query, optional setup, and a recorded
+snapshot of the result from real BigQuery. The
+<a href="../../conformance-tier/">conformance-tier reference</a> is the canonical
+description of the harness; this guide is the practical "how to add one"
+path.</p>
 <h2 id="structure">Structure<a class="headerlink" href="#structure" title="Permanent link">&para;</a></h2>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>tests/conformance/sql_corpus/
-</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>  safe_divide.sql
-</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>  safe_divide.snapshot.json
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>  &lt;surface&gt;/                 # surface area, e.g. rest_crud, routines_scripting
+</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>    &lt;fixture&gt;/               # descriptive snake_case name, e.g. safe_divide_zero_divisor
+</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>      query.sql              # the query under test (required)
+</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>      setup.sql              # DDL/DML to stage data (optional)
+</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>      expected.json          # recorded BigQuery result (required; generated)
 </span></code></pre></div>
-<p>The <code>.sql</code> file contains the query with a header comment:</p>
-<div class="language-sql highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="c1">-- Fixture: none | tpch_sf0_01 | custom_&lt;name&gt;</span>
-</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="c1">-- Description: SAFE_DIVIDE returns NULL for zero divisor.</span>
-</span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="k">SELECT</span><span class="w"> </span><span class="n">SAFE_DIVIDE</span><span class="p">(</span><span class="mi">10</span><span class="p">.</span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">zero_case</span><span class="p">,</span>
-</span><span id="__span-1-4"><a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="w">       </span><span class="n">SAFE_DIVIDE</span><span class="p">(</span><span class="mi">10</span><span class="p">.</span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="mi">4</span><span class="p">)</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">normal_case</span><span class="p">;</span>
+<p>Group the fixture under the <code>&lt;surface&gt;</code> directory that already holds
+related cases.</p>
+<h2 id="querysql"><code>query.sql</code><a class="headerlink" href="#querysql" title="Permanent link">&para;</a></h2>
+<p>The single query under test — no header comment. Reference the per-test
+dataset through the <code>${DATASET}</code> placeholder, which the harness
+substitutes at run time (<code>_corpus.py</code>):</p>
+<div class="language-sql highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="k">SELECT</span><span class="w"> </span><span class="n">SAFE_DIVIDE</span><span class="p">(</span><span class="mi">10</span><span class="p">.</span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">zero_case</span><span class="p">,</span>
+</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="w">       </span><span class="n">SAFE_DIVIDE</span><span class="p">(</span><span class="mi">10</span><span class="p">.</span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="mi">4</span><span class="p">)</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">normal_case</span>
 </span></code></pre></div>
-<p>The <code>.snapshot.json</code> is produced by running the query against real
-BigQuery; commit only the JSON once verified:</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>scripts/record_conformance_fixtures.py<span class="w"> </span>safe_divide<span class="w"> </span><span class="se">\</span>
-</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="w">    </span>--bq-project<span class="w"> </span>my-test-project
+<p>A fixture that needs tables references them under <code>${DATASET}</code>:</p>
+<div class="language-sql highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="k">SELECT</span><span class="w"> </span><span class="n">id</span><span class="p">,</span><span class="w"> </span><span class="n">val</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="o">`</span><span class="err">${</span><span class="n">DATASET</span><span class="err">}</span><span class="p">.</span><span class="n">t</span><span class="o">`</span><span class="w"> </span><span class="k">ORDER</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="n">id</span>
 </span></code></pre></div>
-<p>The script writes <code>safe_divide.snapshot.json</code> containing the query
-result and the BigQuery job schema.</p>
+<h2 id="setupsql-optional"><code>setup.sql</code> (optional)<a class="headerlink" href="#setupsql-optional" title="Permanent link">&para;</a></h2>
+<p>If the query needs tables or routines, stage them in <code>setup.sql</code>. The
+runner creates a fresh per-test dataset, runs <code>setup.sql</code>, runs
+<code>query.sql</code>, then drops the dataset. Literal-only fixtures omit
+<code>setup.sql</code> and skip dataset creation.</p>
+<div class="language-sql highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="k">CREATE</span><span class="w"> </span><span class="k">TABLE</span><span class="w"> </span><span class="o">`</span><span class="err">${</span><span class="n">DATASET</span><span class="err">}</span><span class="p">.</span><span class="n">t</span><span class="o">`</span><span class="w"> </span><span class="p">(</span><span class="n">id</span><span class="w"> </span><span class="n">INT64</span><span class="p">,</span><span class="w"> </span><span class="n">val</span><span class="w"> </span><span class="n">STRING</span><span class="p">);</span>
+</span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a><span class="k">INSERT</span><span class="w"> </span><span class="k">INTO</span><span class="w"> </span><span class="o">`</span><span class="err">${</span><span class="n">DATASET</span><span class="err">}</span><span class="p">.</span><span class="n">t</span><span class="o">`</span><span class="w"> </span><span class="k">VALUES</span><span class="w"> </span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;a&#39;</span><span class="p">),</span><span class="w"> </span><span class="p">(</span><span class="mi">2</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;b&#39;</span><span class="p">);</span>
+</span></code></pre></div>
+<h2 id="expectedjson"><code>expected.json</code><a class="headerlink" href="#expectedjson" title="Permanent link">&para;</a></h2>
+<p>The recorded baseline — the query result plus the BigQuery job's schema
+and metadata. It is <strong>generated, not hand-written</strong>: record it against a
+real BigQuery project, then commit the JSON.</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>python<span class="w"> </span>scripts/record_conformance_fixtures.py<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a><span class="w">    </span>--project<span class="w"> </span>&lt;your-bigquery-project&gt;<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-4-3"><a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a><span class="w">    </span>--filter<span class="w"> </span>&lt;surface&gt;/&lt;fixture&gt;
+</span></code></pre></div>
+<p><code>--project</code> (required) bills the recording jobs; <code>--filter</code> is a
+substring match that limits recording to the matching
+<code>&lt;surface&gt;/&lt;fixture&gt;</code> ids; <code>--force</code> overwrites an existing
+<code>expected.json</code>. The recorder enforces a byte-scan cap and refuses to
+overwrite without <code>--force</code>. The file shape (<code>fixture_version</code>,
+<code>bigquery</code>, <code>schema</code>, <code>rows</code>, <code>row_count</code>, <code>duration_class</code>, with a
+separate version-2 shape for error fixtures) is documented in the
+<a href="../../conformance-tier/">conformance-tier reference</a>.</p>
 <h2 id="runner">Runner<a class="headerlink" href="#runner" title="Permanent link">&para;</a></h2>
-<p><code>tests/conformance/runner.py</code> iterates over every <code>.sql</code> file,
-executes it against the emulator, and diffs the result against the
-snapshot row-for-row with type-aware tolerance (floats within 1e-9,
-timestamps within ±1 µs).</p>
+<p><code>tests/conformance/test_corpus.py</code> discovers every fixture directory at
+import time and parametrises one pytest test per fixture. It runs
+<code>query.sql</code> against the emulator and diffs the result against
+<code>expected.json</code> with the type-aware tolerance in <code>_comparison.py</code>
+(ADR 0022 §3): <code>FLOAT64</code> via <code>math.isclose(rel_tol=1e-12, abs_tol=1e-15)</code>
+and <code>TIMESTAMP</code> / <code>DATETIME</code> / <code>TIME</code> within ±1 µs. The full tolerance
+table is in the <a href="../../conformance-tier/">conformance-tier reference</a>.</p>
+<p>Replay the tier locally with:</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a>make<span class="w"> </span>test-conformance
+</span></code></pre></div>
 <h2 id="expectations">Expectations<a class="headerlink" href="#expectations" title="Permanent link">&para;</a></h2>
 <ul>
-<li><strong>One query per file.</strong> Keeps diff failures scoped.</li>
-<li><strong>Deterministic fixture data.</strong> Use TPC-H SF0.01 or a custom fixture
-  loaded via <code>scripts/load_fixture_&lt;name&gt;.py</code>.</li>
+<li><strong>One query per fixture.</strong> Keeps diff failures scoped to one surface.</li>
+<li><strong>Deterministic data.</strong> Stage rows in <code>setup.sql</code>; avoid time- or
+  environment-dependent values.</li>
 <li><strong>No absolute timestamps</strong> unless the query pins them via literals
   (<code>TIMESTAMP '2024-04-15 00:00:00 UTC'</code>).</li>
 </ul>

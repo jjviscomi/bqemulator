@@ -5354,9 +5354,8 @@ operator-facing guide see <a href="../../guides/conformance-corpus/">conformance
    <code>workflow_dispatch</code> invocation against a specific branch (typical
    use case: verifying a recording-session PR before opening it).</li>
 </ol>
-<p>The corpus currently ships <strong>1141 active SQL fixtures + 48 HTTP +
-26 gRPC = 1215 active fixtures</strong> (plus 18 INFORMATION_SCHEMA
-stubs awaiting operator-side recording). 13 fixtures are pinned
+<p>The corpus currently ships <strong>1202 active SQL fixtures + 48 HTTP +
+26 gRPC = 1276 active fixtures</strong>. 12 fixtures are pinned
 XFAIL in <code>tests/conformance/divergences.py</code> as permanent
 design-decision divergences. The pass-rate gate is <strong>100%
 non-divergent</strong> — every fixture must either pass or be in the
@@ -5475,9 +5474,9 @@ field's presence:</p>
   exact match; <code>message</code> regex-matched against
   <code>message_pattern</code> via <code>re.search</code> with DOTALL).</li>
 </ul>
-<p>The 644 pre-existing v1 fixtures stay backward-compatible because
-they lack an <code>error</code> field. Only newly-recorded fixtures get
-<code>fixture_version</code> 2.</p>
+<p>Version-1 (success / row) fixtures stay backward-compatible because
+they lack an <code>error</code> field; error fixtures carry <code>fixture_version</code>
+2.</p>
 <p>The <code>bigquery.*</code> block is metadata only — the runner reads it solely
 for diagnostic messages. The comparison is driven by <code>schema</code> and
 <code>rows</code>. The recorder always writes both; hand-editing either is a
