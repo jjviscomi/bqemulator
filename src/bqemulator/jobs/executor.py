@@ -1614,8 +1614,8 @@ _CSV_ONLY_OPTIONS: frozenset[str] = frozenset({"header", "field_delimiter"})
 
 _EXPORT_DATA_RE = re.compile(r"^\s*EXPORT\s+DATA\b", re.IGNORECASE)
 
-_AVRO_EXPORT_EXTENSION_MSG = (
-    "Export to AVRO requires DuckDB's ``avro`` extension. Re-enable "
+_AVRO_EXTENSION_MSG = (
+    "Writing AVRO requires DuckDB's ``avro`` extension. Re-enable "
     "BQEMU_ENABLE_FORMAT_EXTENSIONS or run the emulator with network "
     "access to extensions.duckdb.org."
 )
@@ -1733,7 +1733,7 @@ def _copy_relation_to_file(
             ctx.engine.execute(copy_sql)
         except Exception as exc:
             if _is_missing_extension_error(exc, "avro"):
-                raise UnsupportedFeatureError(_AVRO_EXPORT_EXTENSION_MSG) from exc
+                raise UnsupportedFeatureError(_AVRO_EXTENSION_MSG) from exc
             raise
     else:
         ctx.engine.execute(copy_sql)
@@ -1974,6 +1974,34 @@ def parse_export_data(bq_sql: str) -> _ExportRequest | None:
     return _ExportRequest(options=options, select_sql=inner.sql(dialect="bigquery"))
 
 
+def _plan_export_shards(
+    uri: str,
+    *,
+    wildcards: int,
+    offsets: list[tuple[int, int]],
+    overwrite: bool,
+    ctx: AppContext,
+) -> list[tuple[int, int, str, str]]:
+    """Resolve + validate every shard destination before any file is written.
+
+    Returns ``(offset, length, path_uri, resolved_path)`` per shard. When
+    ``overwrite`` is false, raises if any destination already exists — checked
+    across all shards up front so a collision on a later shard cannot leave a
+    partially-written export behind.
+    """
+    plan: list[tuple[int, int, str, str]] = []
+    for index, (offset, length) in enumerate(offsets):
+        path_uri = uri.replace("*", f"{index:012d}") if wildcards else uri
+        resolved = _resolve_uri(path_uri, ctx)
+        _validate_local_path(resolved)
+        if not overwrite and Path(resolved).exists():
+            raise InvalidQueryError(
+                f"Destination already exists and overwrite is false: {path_uri}",
+            )
+        plan.append((offset, length, path_uri, resolved))
+    return plan
+
+
 def write_export(
     arrow_table: pa.Table,
     options: _ExportOptions,
@@ -2010,15 +2038,19 @@ def write_export(
     else:
         shard_count = max(1, min(num_rows, ceil(nbytes / threshold)))
 
+    # Preflight every destination (resolve + validate + overwrite check) before
+    # writing any file, so an overwrite=false collision on a later shard cannot
+    # leave a partial export behind.
+    plan = _plan_export_shards(
+        uri,
+        wildcards=wildcards,
+        offsets=_shard_offsets(num_rows, shard_count),
+        overwrite=options.overwrite,
+        ctx=ctx,
+    )
+
     written: list[str] = []
-    for index, (offset, length) in enumerate(_shard_offsets(num_rows, shard_count)):
-        path_uri = uri.replace("*", f"{index:012d}") if wildcards else uri
-        resolved = _resolve_uri(path_uri, ctx)
-        _validate_local_path(resolved)
-        if not options.overwrite and Path(resolved).exists():
-            raise InvalidQueryError(
-                f"Destination already exists and overwrite is false: {path_uri}",
-            )
+    for offset, length, path_uri, resolved in plan:
         _ensure_parent_dir(resolved)
         shard = arrow_table.slice(offset, length)
         view_name = f"_bqemu_export_{uuid4().hex}"

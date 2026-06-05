@@ -418,6 +418,25 @@ class TestSharding:
                     ctx,
                 )
 
+    async def test_overwrite_false_preflights_all_shards(self, tmp_path: Path) -> None:
+        """overwrite=false errors before writing any file when a later shard exists."""
+        async with _export_ctx(_settings(tmp_path, export_shard_threshold_bytes=64)) as ctx:
+            ctx.engine.execute('CREATE TABLE "p__ds"."nums" AS SELECT range AS n FROM range(100)')
+            # Pre-create the second shard so the preflight collides on it.
+            _resolved(ctx, "bkt").mkdir(parents=True, exist_ok=True)
+            _resolved(ctx, "bkt", "n_000000000001.parquet").write_bytes(b"stale")
+            with pytest.raises(InvalidQueryError, match="already exists"):
+                await execute_query_job(
+                    "p",
+                    "j-preflight",
+                    "EXPORT DATA OPTIONS(uri='gs://bkt/n_*.parquet', format='PARQUET') "
+                    "AS SELECT n FROM `p.ds.nums` ORDER BY n",
+                    None,
+                    ctx,
+                )
+            # No partial export: the first shard must not have been written.
+            assert not _resolved(ctx, "bkt", "n_000000000000.parquet").exists()
+
 
 class TestScriptedExport:
     """``EXPORT DATA`` inside a multi-statement script (the interpreter path)."""
