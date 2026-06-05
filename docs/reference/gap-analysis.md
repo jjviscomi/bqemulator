@@ -116,7 +116,7 @@ table is maintained here (it has no authoritative generator).
 | **Storage Read API** (gRPC `BigQueryRead`) | Integration, E2E (`test_storage_read_*`) | Non-SQL surface; conformance is the SQL tier. |
 | **Storage Write API** (gRPC `BigQueryWrite`, 4 stream types) | Integration, E2E (`test_storage_write_*`) | Non-SQL surface. |
 | **Load jobs** (CSV/NDJSON/Parquet → table) | Integration, E2E | Non-SQL surface; not deterministic across CSV/JSON parser variations. |
-| **Extract jobs** (table → CSV/JSON/Parquet) | Integration, E2E | Same — non-SQL surface. |
+| **Extract jobs** (table → CSV/JSON/Parquet) | Integration, E2E | Same — non-SQL surface. The SQL-native [`EXPORT DATA`](../guides/exporting-data.md) statement, by contrast, *is* conformance-tested (`export_data/*`). |
 | **Copy jobs** (INSERT INTO target SELECT FROM source) | Integration | Could be added; haven't been. |
 | **`tabledata.insertAll`** (streaming inserts) | Integration, E2E | Non-SQL HTTP endpoint. |
 | **Row-access-policy enforcement** | Integration (`tests/integration/test_row_access_*`) | RAP creation is `INSERT INTO INFORMATION_SCHEMA` style metadata — doesn't have a clean conformance shape against real BQ without an org-level setup. |

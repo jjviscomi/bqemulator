@@ -564,6 +564,33 @@ See [ADR 0027](../adr/0027-load-extract-avro-orc.md) for the
 load/extract format-coverage contract. ORC **load** is supported
 via the optional `[orc]` extra; only ORC write is excluded.
 
+The GoogleSQL [`EXPORT DATA`](../guides/exporting-data.md) statement
+shares this destination format set: `format = 'ORC'` is rejected as an
+invalid `format` OPTIONS value (matching BigQuery), not modelled as a
+separate unsupported feature.
+
+### `EXPORT DATA WITH CONNECTION` (external sinks)
+
+**Status**: Excluded permanently.
+
+The GoogleSQL `EXPORT DATA OPTIONS(...) AS SELECT` statement is
+[supported](../guides/exporting-data.md) for Cloud Storage destinations
+(`gs://`, resolved under `BQEMU_GCS_LOCAL_ROOT`). Its `WITH CONNECTION`
+variant — which exports to external systems (Amazon S3, Azure Blob
+Storage, Pub/Sub reverse-ETL) through a `CONNECTION` resource — is
+**not** supported, and is rejected with a clear
+`UnsupportedFeatureError`.
+
+*Rationale*: the emulator's charter is BigQuery and its Cloud Storage
+integration. External sinks are separate services that real BigQuery
+reaches through connection resources — each a distinct integration well
+outside the SQL-semantics surface the emulator targets. See
+[ADR 0043](../adr/0043-export-data-statement.md) and
+[RFC 0001](../rfcs/0001-export-data-statement.md).
+
+**Workaround**: export to Cloud Storage and move the files to the
+external sink with the provider's own tooling.
+
 ### INFORMATION_SCHEMA.JOBS* family
 
 **Status**: Excluded permanently.
@@ -622,8 +649,9 @@ BigQuery doesn't include.
 The emulator's existing ``BQEMU_GCS_LOCAL_ROOT`` shim
 ([ADR 0027](../adr/0027-load-extract-avro-orc.md)) is a *filesystem
 resolver* for ``gs://`` URIs that appear in LOAD / EXTRACT
-``sourceUris`` — it maps ``gs://bucket/path`` to a local filesystem
-path, so a test that pre-stages files on disk can load them. It is
+``sourceUris`` and ``EXPORT DATA`` destination URIs — it maps
+``gs://bucket/path`` to a local filesystem path, so a test can
+pre-stage files for a load or read an exported file back. It is
 not a GCS API emulator. Anything that needs the actual GCS JSON API
 (Beam's ``BigQueryIO.Write`` BATCH_LOADS staging step, the Java SDK's
 ``Storage.objects.insert``, signed URLs, multipart uploads) must

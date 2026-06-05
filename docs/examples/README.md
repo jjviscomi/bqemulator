@@ -16,6 +16,7 @@ not drift.
 | Path | What it demonstrates | Known caveats |
 |---|---|---|
 | [`python/pytest-integration/`](python/pytest-integration/README.md) | Flask app + pytest fixture (`bqemu_client`) | — |
+| [`python/export-to-gcs/`](python/export-to-gcs/README.md) | `EXPORT DATA OPTIONS(...) AS SELECT` → CSV in Cloud Storage, read back off the `BQEMU_GCS_LOCAL_ROOT` mount | — |
 | [`python/dbt-local/`](python/dbt-local/README.md) | `dbt build` against emulator (seed + model + tests) | — |
 | [`python/airflow-dag-test/`](python/airflow-dag-test/README.md) | `BigQueryInsertJobOperator` DAG via `dag.test()` | Monkey-patches `google.auth.default` to return `AnonymousCredentials` so the BQ hook skips JWT grant |
 | [`python/pyspark-bigquery/`](python/pyspark-bigquery/README.md) | PySpark `DataFrame` from Storage Read (Arrow) | — (v1.0.0's IPC-format workaround was removed in v1.0.1 — [#15](https://github.com/jjviscomi/bqemulator/issues/15) / [ADR 0033](../adr/0033-storage-read-arrow-ipc-bare-message-contract.md)) |

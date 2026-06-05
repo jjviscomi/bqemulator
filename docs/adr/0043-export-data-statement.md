@@ -170,6 +170,27 @@ New validation branches in the export path produce BigQuery-shaped
 `InvalidQueryError` / `UnsupportedFeatureError`; the existing `error_mapper`
 chain is preserved for the inner SELECT's execution errors.
 
+## Unresolved questions
+
+These are accepted, documented limitations rather than blockers: the
+recorded conformance corpus is green without them, and none changes the
+externally observable contract for the formats the corpus exercises.
+
+- **AVRO `compression` is validated but not forwarded.** The value is
+  checked against the per-format allow-list (`DEFLATE` / `SNAPPY` /
+  `NONE`), but `_build_copy_clause` emits no codec option for
+  `FORMAT AVRO` because DuckDB's `avro` `COPY` writer exposes none. AVRO
+  output is written uncompressed regardless of the requested codec. CSV,
+  JSON, and PARQUET compression *are* forwarded to DuckDB and applied.
+  Closing this needs either an upstream DuckDB `avro` codec option or a
+  post-write re-encode step.
+- **`use_avro_logical_types` is validated but not applied.** It is
+  accepted on AVRO exports (and rejected on other formats), but does not
+  yet influence the written Avro schema.
+
+Both are surfaced to users in the
+[exporting data guide](../guides/exporting-data.md#limitations).
+
 ## Alternatives considered
 
 - **Parallel export writer** (not reusing extract) — rejected: duplicates the

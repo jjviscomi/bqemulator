@@ -123,6 +123,7 @@ nav:
   - Guides:
       - Loading data: guides/loading-data.md
       - Loading from local files: guides/loading-from-local-files.md
+      - Exporting data: guides/exporting-data.md
       - Querying: guides/querying.md
       - Query parameters: guides/query-parameters.md
       - Streaming inserts: guides/streaming-inserts.md
@@ -237,6 +238,7 @@ nav:
       - Local file load: examples/local-file-load/README.md
       - Python:
           - pytest integration: examples/python/pytest-integration/README.md
+          - Export to GCS: examples/python/export-to-gcs/README.md
           - dbt local: examples/python/dbt-local/README.md
           - Airflow DAG test: examples/python/airflow-dag-test/README.md
           - PySpark + BigQuery: examples/python/pyspark-bigquery/README.md
