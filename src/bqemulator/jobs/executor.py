@@ -1764,23 +1764,42 @@ def _shard_offsets(num_rows: int, shard_count: int) -> list[tuple[int, int]]:
 
 
 def _opt_literal_str(node: Any) -> str:
-    """Return the string payload of a SQLGlot option value node."""
+    """Return the payload of a SQLGlot string-literal option value.
+
+    EXPORT DATA string options (``uri`` / ``format`` / ``compression`` /
+    ``field_delimiter``) must be string literals. A non-string node — numeric
+    literal, ``NULL``, bare identifier — is rejected rather than silently
+    coerced (e.g. ``uri=1`` must not become the string ``"1"``).
+    """
     from sqlglot import exp
 
-    if isinstance(node, exp.Literal):
+    if isinstance(node, exp.Literal) and node.is_string:
         return str(node.this)
-    return str(node)
+    raise InvalidQueryError(
+        f"EXPORT DATA option value must be a string literal, got: {node}",
+    )
 
 
 def _opt_literal_bool(node: Any) -> bool:
-    """Return the boolean payload of a SQLGlot option value node."""
+    """Return the payload of a SQLGlot boolean option value.
+
+    EXPORT DATA boolean options (``overwrite`` / ``header`` /
+    ``use_avro_logical_types``) accept only a boolean literal (or the bare
+    strings ``'true'`` / ``'false'``). Anything else — numeric, ``NULL`` — is
+    rejected rather than silently coerced (e.g. ``overwrite=NULL`` must not
+    read as truthy).
+    """
     from sqlglot import exp
 
     if isinstance(node, exp.Boolean):
         return bool(node.this)
     if isinstance(node, exp.Literal):
-        return str(node.this).strip().lower() == "true"
-    return bool(node)
+        text = str(node.this).strip().lower()
+        if text in ("true", "false"):
+            return text == "true"
+    raise InvalidQueryError(
+        f"EXPORT DATA boolean option must be true or false, got: {node}",
+    )
 
 
 def _resolve_field_delimiter(raw: str) -> str:

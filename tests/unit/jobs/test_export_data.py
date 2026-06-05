@@ -573,15 +573,34 @@ class TestHelperBranches:
         with pytest.raises(RuntimeError, match="disk full"):
             _copy_relation_to_file("SELECT 1", "/tmp/x.avro", "AVRO", _FakeGenericCtx())  # type: ignore[arg-type]
 
-    def test_opt_literal_str_non_literal_fallback(self) -> None:
-        """A non-literal option value falls back to its rendered text."""
-        assert _opt_literal_str(exp.Var(this="abc")) == "abc"
+    def test_opt_literal_str_rejects_non_string(self) -> None:
+        """A non-string option node is rejected rather than silently coerced."""
+        with pytest.raises(InvalidQueryError):
+            _opt_literal_str(exp.Var(this="abc"))
+        with pytest.raises(InvalidQueryError):
+            _opt_literal_str(exp.Literal(this="1", is_string=False))
 
     def test_opt_literal_bool_variants(self) -> None:
-        """String 'true' and non-boolean nodes both coerce sensibly."""
+        """Boolean literals coerce; numeric / NULL option values are rejected."""
+        assert _opt_literal_bool(exp.Boolean(this=True)) is True
         assert _opt_literal_bool(exp.Literal(this="true", is_string=True)) is True
         assert _opt_literal_bool(exp.Literal(this="false", is_string=True)) is False
-        assert _opt_literal_bool(exp.Null()) is True  # non-bool, non-literal fallback
+        with pytest.raises(InvalidQueryError):
+            _opt_literal_bool(exp.Null())
+        with pytest.raises(InvalidQueryError):
+            _opt_literal_bool(exp.Literal(this="1", is_string=False))
+
+    def test_non_string_uri_rejected(self) -> None:
+        """A numeric uri value is rejected, not coerced to the string '1'."""
+        with pytest.raises(InvalidQueryError):
+            parse_export_data("EXPORT DATA OPTIONS(uri=1) AS SELECT 1 AS a")
+
+    def test_non_bool_overwrite_rejected(self) -> None:
+        """overwrite=NULL is rejected, not silently treated as truthy."""
+        with pytest.raises(InvalidQueryError):
+            parse_export_data(
+                "EXPORT DATA OPTIONS(uri='gs://b/o.csv', overwrite=NULL) AS SELECT 1 AS a",
+            )
 
     @pytest.mark.parametrize("bad", ["ab", "'", '"', "\\"])
     def test_field_delimiter_invalid(self, bad: str) -> None:

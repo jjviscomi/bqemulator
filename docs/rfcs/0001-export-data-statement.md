@@ -120,7 +120,7 @@ AS query_statement
 | `compression` | STRING | all | `NONE` | CSV/JSON: `GZIP`/`NONE`. AVRO: `DEFLATE`/`SNAPPY`/`NONE` (not `GZIP`). PARQUET: `SNAPPY`/`GZIP`/`ZSTD`/`NONE`. |
 | `overwrite` | BOOL | all | `false` | When `false` and any target file exists → error. |
 | `header` | BOOL | CSV | `true` | Emit a header row. |
-| `field_delimiter` | BOOL→STRING | CSV | `,` | Column delimiter; `\t`/`tab` accepted for tab. |
+| `field_delimiter` | STRING | CSV | `,` | Column delimiter; `\t`/`tab` accepted for tab. |
 | `use_avro_logical_types` | BOOL | AVRO | (see *Unresolved questions*) | Map types to Avro logical types. |
 
 Unknown options and format/option mismatches (e.g. `header` on `PARQUET`) are
