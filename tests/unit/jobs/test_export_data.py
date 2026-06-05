@@ -32,10 +32,14 @@ from bqemulator.jobs.executor import (
     _build_copy_clause,
     _copy_relation_to_file,
     _extract_export_options,
+    _normalize_compression,
     _normalize_export_format,
     _opt_literal_bool,
     _opt_literal_str,
+    _parse_export_properties,
+    _resolve_export_compression,
     _resolve_field_delimiter,
+    _validate_export_option_scope,
     classify_statement_type,
     execute_extract_job,
     execute_query_job,
@@ -528,6 +532,36 @@ class TestHelperBranches:
         """An unrecognised format in the clause builder is rejected."""
         with pytest.raises(InvalidQueryError, match="Unknown destination format"):
             _build_copy_clause("BOGUS", header=True, field_delimiter=None, compression=None)
+
+    def test_normalize_compression_variants(self) -> None:
+        """A codec lower-cases for DuckDB; ``NONE`` and unset both collapse to ``None``."""
+        assert _normalize_compression("GZIP") == "gzip"
+        assert _normalize_compression("none") is None
+        assert _normalize_compression(None) is None
+
+    def test_validate_option_scope_csv_only_on_non_csv(self) -> None:
+        """A CSV-only option supplied for a non-CSV format is rejected."""
+        with pytest.raises(InvalidQueryError, match="only valid for FORMAT CSV"):
+            _validate_export_option_scope({"field_delimiter": object()}, "PARQUET")
+
+    def test_resolve_export_compression_paths(self) -> None:
+        """Absent compression is ``None``; a codec outside the format allow-list errors."""
+        assert _resolve_export_compression({}, "CSV") is None
+        with pytest.raises(InvalidQueryError, match="is not valid for FORMAT CSV"):
+            _resolve_export_compression(
+                {"compression": exp.Literal.string("SNAPPY")},
+                "CSV",
+            )
+
+    def test_parse_export_properties_unknown_option(self) -> None:
+        """An unrecognised OPTIONS key is rejected by the property splitter."""
+        props = exp.Properties(
+            expressions=[
+                exp.Property(this=exp.Var(this="bogus"), value=exp.Literal.string("x")),
+            ],
+        )
+        with pytest.raises(InvalidQueryError, match="Unknown EXPORT DATA option: bogus"):
+            _parse_export_properties(props)
 
     def test_copy_relation_avro_extension_missing(self) -> None:
         """A missing ``avro`` extension surfaces as UnsupportedFeatureError."""

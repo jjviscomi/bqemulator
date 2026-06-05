@@ -303,6 +303,34 @@ def build_response_schema(arrow_schema: pa.Schema) -> list[dict[str, Any]]:
     return entries
 
 
+def _resolve_scripted_routine_type(
+    script: Any,
+    statement_type: str,
+    project_id: str,
+    ctx: AppContext,
+) -> tuple[str, str | None]:
+    """Resolve ``(statementType, ddlOperationPerformed)`` for a scripted routine DDL.
+
+    A single CREATE FUNCTION / CREATE TABLE FUNCTION routes through the
+    scripting interpreter (which registers the routine) but BigQuery reports
+    it as ``CREATE_FUNCTION`` / ``CREATE_TABLE_FUNCTION``, not ``SCRIPT``
+    (pinned by ``routines_scripting/routine_ddl_*``). CREATE PROCEDURE stays
+    ``SCRIPT`` — that matches real BigQuery, so ``classify_create_routine``
+    returns ``""`` for it. The operation is resolved before the interpreter
+    registers the routine, so ``OR REPLACE`` over an existing routine reports
+    ``REPLACE``. A non-routine script returns ``statement_type`` unchanged
+    with no DDL operation.
+    """
+    routine_statement_type = classify_create_routine(script)
+    if routine_statement_type:
+        return routine_statement_type, resolve_create_routine_operation(
+            script,
+            project_id,
+            ctx,
+        )
+    return statement_type, None
+
+
 async def execute_query_job(
     project_id: str,
     job_id: str,
@@ -344,19 +372,12 @@ async def execute_query_job(
     ddl_operation: str | None = None
 
     if is_scripted:
-        # A single CREATE FUNCTION / CREATE TABLE FUNCTION routes through
-        # the scripting interpreter (which registers the routine) but
-        # BigQuery reports it as ``CREATE_FUNCTION`` / ``CREATE_TABLE_FUNCTION``,
-        # not ``SCRIPT`` (pinned by ``routines_scripting/routine_ddl_*``).
-        # CREATE PROCEDURE stays ``SCRIPT`` — that matches real BigQuery,
-        # so ``classify_create_routine`` returns ``""`` for it. The
-        # operation is resolved here, before the interpreter registers
-        # the routine, so ``OR REPLACE`` over an existing routine reports
-        # ``REPLACE``.
-        routine_statement_type = classify_create_routine(script)
-        if routine_statement_type:
-            statement_type = routine_statement_type
-            ddl_operation = resolve_create_routine_operation(script, project_id, ctx)
+        statement_type, ddl_operation = _resolve_scripted_routine_type(
+            script,
+            statement_type,
+            project_id,
+            ctx,
+        )
     elif statement_type == "EXPORT_DATA":
         # EXPORT DATA runs the inner SELECT through the standard query
         # pipeline (so row-access / MV / wildcard rewrites all apply) and
@@ -1626,6 +1647,23 @@ class _ExportOutcome:
     uris: list[str]
 
 
+# DuckDB ``COPY ... (FORMAT <x>)`` names for the formats whose only optional
+# clause is ``COMPRESSION``. CSV (header + delimiter) and AVRO (no codec
+# option) are handled separately in :func:`_build_copy_clause`.
+_SIMPLE_COPY_FORMATS: dict[str, str] = {
+    "NEWLINE_DELIMITED_JSON": "JSON",
+    "JSON": "JSON",
+    "PARQUET": "PARQUET",
+}
+
+
+def _normalize_compression(compression: str | None) -> str | None:
+    """Lower-case a compression codec for DuckDB, or ``None`` for ``NONE``/unset."""
+    if compression and compression.upper() != "NONE":
+        return compression.lower()
+    return None
+
+
 def _build_copy_clause(
     fmt: str,
     *,
@@ -1642,7 +1680,7 @@ def _build_copy_clause(
     not expose a codec option (see ADR 0043 unresolved questions).
     """
     fmt = fmt.upper()
-    comp = compression.lower() if compression and compression.upper() != "NONE" else None
+    comp = _normalize_compression(compression)
     if fmt == "CSV":
         parts = ["FORMAT CSV", "HEADER" if header else "HEADER false"]
         if field_delimiter is not None:
@@ -1650,19 +1688,15 @@ def _build_copy_clause(
         if comp:
             parts.append(f"COMPRESSION {comp}")
         return ", ".join(parts)
-    if fmt in ("NEWLINE_DELIMITED_JSON", "JSON"):
-        parts = ["FORMAT JSON"]
-        if comp:
-            parts.append(f"COMPRESSION {comp}")
-        return ", ".join(parts)
-    if fmt == "PARQUET":
-        parts = ["FORMAT PARQUET"]
-        if comp:
-            parts.append(f"COMPRESSION {comp}")
-        return ", ".join(parts)
     if fmt == "AVRO":
         return "FORMAT AVRO"
-    raise InvalidQueryError(f"Unknown destination format: {fmt}")
+    duckdb_fmt = _SIMPLE_COPY_FORMATS.get(fmt)
+    if duckdb_fmt is None:
+        raise InvalidQueryError(f"Unknown destination format: {fmt}")
+    parts = [f"FORMAT {duckdb_fmt}"]
+    if comp:
+        parts.append(f"COMPRESSION {comp}")
+    return ", ".join(parts)
 
 
 def _copy_relation_to_file(
@@ -1782,13 +1816,13 @@ def _normalize_export_format(raw: str) -> str:
     return "NEWLINE_DELIMITED_JSON" if fmt == "JSON" else fmt
 
 
-def _extract_export_options(properties: Any) -> _ExportOptions:
-    """Parse and validate the ``OPTIONS(...)`` of an ``EXPORT DATA`` statement.
+def _parse_export_properties(properties: Any) -> tuple[str | None, dict[str, Any]]:
+    """Split an ``EXPORT DATA`` ``Properties`` node into ``(format_raw, values)``.
 
-    ``properties`` is the SQLGlot ``Properties`` node. ``format`` arrives as
-    a dedicated ``FileFormatProperty``; every other option is a generic
-    ``Property`` keyed by name. Unknown options, format/option mismatches,
-    and invalid compression values are rejected with a clear error.
+    ``format`` may arrive as a dedicated ``FileFormatProperty`` or as a
+    generic ``format``-keyed ``Property``; every other option is collected
+    into ``values`` by its lower-cased name. Unknown option names are
+    rejected with a clear error.
     """
     from sqlglot import exp
 
@@ -1807,15 +1841,15 @@ def _extract_export_options(properties: Any) -> _ExportOptions:
         if key not in _KNOWN_EXPORT_OPTIONS:
             raise InvalidQueryError(f"Unknown EXPORT DATA option: {key}")
         values[key] = prop.args.get("value")
+    return fmt_raw, values
 
-    fmt = _normalize_export_format(fmt_raw) if fmt_raw is not None else "CSV"
 
-    if "uri" not in values:
-        raise InvalidQueryError("Option 'uri' is missing or empty.")
-    uri = _opt_literal_str(values["uri"])
-    if not uri:
-        raise InvalidQueryError("Option 'uri' is missing or empty.")
+def _validate_export_option_scope(values: dict[str, Any], fmt: str) -> None:
+    """Reject format-scoped options applied to the wrong ``format``.
 
+    ``header`` / ``field_delimiter`` are valid only for CSV;
+    ``use_avro_logical_types`` only for AVRO.
+    """
     for csv_only in _CSV_ONLY_OPTIONS:
         if csv_only in values and fmt != "CSV":
             raise InvalidQueryError(
@@ -1826,15 +1860,44 @@ def _extract_export_options(properties: Any) -> _ExportOptions:
             "EXPORT DATA option 'use_avro_logical_types' is only valid for FORMAT AVRO.",
         )
 
-    compression: str | None = None
-    if "compression" in values:
-        compression = _opt_literal_str(values["compression"]).upper()
-        allowed = _COMPRESSION_BY_FORMAT.get(fmt, frozenset())
-        if compression not in allowed:
-            raise InvalidQueryError(
-                f"EXPORT DATA compression '{compression}' is not valid for "
-                f"FORMAT {fmt}; allowed: {', '.join(sorted(allowed))}.",
-            )
+
+def _resolve_export_compression(values: dict[str, Any], fmt: str) -> str | None:
+    """Return the validated, upper-cased ``compression`` codec for ``fmt``, or ``None``.
+
+    The codec must be one of the format's allowed values
+    (:data:`_COMPRESSION_BY_FORMAT`); an unsupported codec is rejected.
+    """
+    if "compression" not in values:
+        return None
+    compression = _opt_literal_str(values["compression"]).upper()
+    allowed = _COMPRESSION_BY_FORMAT.get(fmt, frozenset())
+    if compression not in allowed:
+        raise InvalidQueryError(
+            f"EXPORT DATA compression '{compression}' is not valid for "
+            f"FORMAT {fmt}; allowed: {', '.join(sorted(allowed))}.",
+        )
+    return compression
+
+
+def _extract_export_options(properties: Any) -> _ExportOptions:
+    """Parse and validate the ``OPTIONS(...)`` of an ``EXPORT DATA`` statement.
+
+    ``properties`` is the SQLGlot ``Properties`` node. Property splitting,
+    format-scope validation, and compression validation are delegated to
+    helpers; this function resolves the remaining CSV / overwrite scalars
+    and assembles the :class:`_ExportOptions`.
+    """
+    fmt_raw, values = _parse_export_properties(properties)
+    fmt = _normalize_export_format(fmt_raw) if fmt_raw is not None else "CSV"
+
+    if "uri" not in values:
+        raise InvalidQueryError("Option 'uri' is missing or empty.")
+    uri = _opt_literal_str(values["uri"])
+    if not uri:
+        raise InvalidQueryError("Option 'uri' is missing or empty.")
+
+    _validate_export_option_scope(values, fmt)
+    compression = _resolve_export_compression(values, fmt)
 
     header = _opt_literal_bool(values["header"]) if "header" in values else True
     field_delimiter = (
