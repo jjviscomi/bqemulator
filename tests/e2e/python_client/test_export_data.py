@@ -53,7 +53,10 @@ def test_export_data_to_csv_against_live_container(
     ds_id = "export_csv_ds"
     dataset = bigquery.Dataset(f"{bq_client.project}.{ds_id}")
     dataset.location = "US"
-    bq_client.create_dataset(dataset, exists_ok=True)
+    # Start from a clean slate so reruns against a persistent emulator don't
+    # append to a stale table and break the exact-CSV assertions.
+    bq_client.delete_dataset(ds_id, delete_contents=True, not_found_ok=True)
+    bq_client.create_dataset(dataset)
 
     try:
         table = bq_client.create_table(
@@ -64,7 +67,6 @@ def test_export_data_to_csv_against_live_container(
                     bigquery.SchemaField("name", "STRING"),
                 ],
             ),
-            exists_ok=True,
         )
         errors = bq_client.insert_rows_json(
             table,

@@ -36,6 +36,9 @@ def test_export_data_to_csv(
     project = bq_runner.project_id
     src = f"`{project}.{ds_id}.src`"
 
+    # Best-effort cleanup so reruns against a persistent emulator aren't
+    # blocked by a dataset left behind by a crashed prior run.
+    bq_runner.run("rm", "-r", "-f", "-d", ds_id)
     mk = bq_runner.run("mk", "--dataset", "--location=US", ds_id)
     assert mk.succeeded(), mk.stderr
     try:

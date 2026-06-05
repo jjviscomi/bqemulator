@@ -1601,6 +1601,9 @@ _KNOWN_EXPORT_OPTIONS: frozenset[str] = frozenset(
         "overwrite",
         "header",
         "field_delimiter",
+        # Accepted and AVRO-scope-validated for BigQuery parity, but not applied
+        # to the written Avro schema — DuckDB's ``avro`` COPY writer exposes no
+        # logical-types option (see ADR 0043 "Unresolved questions").
         "use_avro_logical_types",
     },
 )
@@ -1742,12 +1745,13 @@ def _ensure_parent_dir(path: str) -> None:
 
 
 def _shard_offsets(num_rows: int, shard_count: int) -> list[tuple[int, int]]:
-    """Split ``num_rows`` into ``shard_count`` contiguous ``(offset, length)`` ranges.
+    """Split ``num_rows`` into exactly ``shard_count`` ``(offset, length)`` ranges.
 
     Rows are distributed as evenly as possible, earlier shards taking the
-    remainder. ``num_rows == 0`` yields a single empty range so a wildcard
-    export of an empty result still writes one (header-only) file, matching
-    BigQuery.
+    remainder. The result always has ``shard_count`` entries; when
+    ``num_rows == 0`` every entry is zero-length. Callers pass
+    ``shard_count == 1`` for an empty result, so a wildcard export of an empty
+    result still writes a single (header-only) file, matching BigQuery.
     """
     base, remainder = divmod(num_rows, shard_count)
     offsets: list[tuple[int, int]] = []
@@ -2050,7 +2054,11 @@ async def _execute_export_data_job(
         is_scripted=False,
         effective_caller=effective_caller,
     )
-    outcome = write_export(arrow_table, request.options, ctx)
+    # write_export registers/unregisters an Arrow view on the shared DuckDB
+    # connection and runs COPY; serialise it under the engine write lock, like
+    # every other register/unregister + DML site (e.g. tabledata insert).
+    async with ctx.engine.write_lock():
+        outcome = write_export(arrow_table, request.options, ctx)
     JOB_RESULTS[job_id] = _EMPTY_ARROW
     JOB_SCHEMAS[job_id] = []
     ctx.metrics.sql_translation_total.labels(outcome="ok").inc()

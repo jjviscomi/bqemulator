@@ -2,7 +2,7 @@
 # ``bqemulator`` itself is provided by the repo's editable install
 # (``pip install -e ".[dev,all]"``) in CI, so it is not pinned here.
 #
-# google-cloud-bigquery 3.20 is CVE-clean per OSV; the cap stays at <4.0
-# (3.x is the current major). Matches the floor used by the other Python
-# examples to avoid forcing user upgrades.
+# google-cloud-bigquery 3.20 is CVE-clean per OSV; the cap stays at <4.0 to
+# match the floor used by the other Python examples and avoid forcing user
+# upgrades.
 google-cloud-bigquery>=3.20,<4.0

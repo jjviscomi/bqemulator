@@ -688,7 +688,11 @@ class ScriptInterpreter:
         export_request = parse_export_data(sql)
         if export_request is not None:
             exported = await self._run_query(export_request.select_sql)
-            write_export(exported, export_request.options, self._ctx)
+            # Serialise the register/unregister + COPY on the shared DuckDB
+            # connection under the engine write lock (parity with every other
+            # register/unregister site).
+            async with self._ctx.engine.write_lock():
+                write_export(exported, export_request.options, self._ctx)
             self._final_table = None
             return
         # Reject a bare / RESTRICT DROP SCHEMA on a non-empty dataset with

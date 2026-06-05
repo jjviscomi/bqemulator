@@ -42,7 +42,13 @@ describe("bqemulator EXPORT DATA → CSV (Node.js)", () => {
   let client;
   before(async () => {
     client = makeClient();
-    await client.createDataset(DATASET, { location: "US" }).catch(() => {});
+    // Reset any dataset left by a crashed prior run so reruns are deterministic.
+    try {
+      await client.dataset(DATASET).delete({ force: true });
+    } catch (_) {
+      /* ignore */
+    }
+    await client.createDataset(DATASET, { location: "US" });
   });
   after(async () => {
     try {
@@ -59,7 +65,7 @@ describe("bqemulator EXPORT DATA → CSV (Node.js)", () => {
     }
 
     await client.query(
-      `CREATE TABLE IF NOT EXISTS \`${PROJECT}.${DATASET}.src\` (id INT64, name STRING)`,
+      `CREATE TABLE \`${PROJECT}.${DATASET}.src\` (id INT64, name STRING)`,
     );
     await client.query(
       `INSERT INTO \`${PROJECT}.${DATASET}.src\` (id, name) ` +
