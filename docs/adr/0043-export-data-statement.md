@@ -36,22 +36,34 @@ that work:
 
 ## Decisions
 
-### 1. Intercept `exp.Export` in the shared single-statement path, before translation
+### 1. Detect `exp.Export` at classification time; run the inner SELECT through the standard pipeline
 
 `EXPORT DATA` is a **`QUERY` job** — `JobType` stays
-`Literal["QUERY", "LOAD", "EXTRACT", "COPY"]`. Detection and handling live in
-`_run_single_sql` (`src/bqemulator/jobs/executor.py`), the one function that
-translates and executes a single statement for both standalone query jobs
-(`execute_query_job`) and scripted statements (the scripting interpreter's
-`_exec_sql` → `_run_query`, per [ADR 0015](0015-scripting-execution-model.md)).
+`Literal["QUERY", "LOAD", "EXTRACT", "COPY"]`. `classify_statement_type` /
+`_classify_parsed_tree` (`src/bqemulator/jobs/executor.py`) gain an `exp.Export`
+→ `"EXPORT_DATA"` branch, and two thin entry points share one core:
 
-Interception happens **before** `SQLTranslator.translate()` because SQLGlot
-discards the `OPTIONS` on the DuckDB transpile; the AST (`exp.Export`) still
-carries them. This is preferred over (a) extending the substring-based
-`_UNSUPPORTED_KEYWORDS` reject (cannot execute, only reject) and (b) a new REST
-job type (would miss the scripted case and misclassify a query-job statement).
-`classify_statement_type` / `_classify_parsed_tree` gain an `exp.Export` →
-`"EXPORT_DATA"` branch.
+- **Standalone job:** `execute_query_job` sees `statement_type == "EXPORT_DATA"`
+  and delegates to `_execute_export_data_job`.
+- **Scripted statement:** the scripting interpreter's `_exec_sql`
+  ([ADR 0015](0015-scripting-execution-model.md)) detects and handles it inline.
+
+Both call the shared `parse_export_data` (which lifts the OPTIONS + inner query
+out of the `exp.Export` AST) and `write_export`. Crucially, the **inner SELECT
+is run through the normal single-statement pipeline** — `_run_query_body` for
+jobs, the interpreter's `_run_query` for scripts — so row-access policies,
+materialized-view refresh, wildcard-table expansion, and every other rewrite
+apply to the exported query exactly as they would to a bare `SELECT`; only then
+is the materialised result written.
+
+Detection works off the parsed AST because SQLGlot **discards the `OPTIONS`** when
+transpiling `EXPORT DATA` to DuckDB while the `exp.Export` node still carries
+them. This is preferred over (a) extending the substring-based
+`_UNSUPPORTED_KEYWORDS` reject (could only reject, not execute), (b) intercepting
+inside `_run_single_sql` (the scripting path has its own `_run_query`, and
+threading the export row/file counts back out for statistics is awkward), and
+(c) a new REST job type (`EXPORT DATA` is a query-job SQL statement that must
+also work in scripts).
 
 ### 2. Reuse the extract writer via a shared `_copy_relation_to_file` helper
 
@@ -98,11 +110,12 @@ parity reason as the extract job (BigQuery does not export ORC).
 
 ### 5. `EXPORT_DATA` result + statistics, pinned by recording
 
-`_finalize_statement_result` and `_build_query_statistics` gain an `EXPORT_DATA`
-branch returning zero result rows and `statistics.query.statementType =
-"EXPORT_DATA"`. The exact statistics field set and error envelopes are taken
-from conformance fixtures recorded against real BigQuery — not hand-authored —
-and fed back into this branch.
+`_execute_export_data_job` stores a zero-row result and builds the job
+statistics via `_build_query_statistics(statement_type="EXPORT_DATA")`, which
+emits `statistics.query.statementType = "EXPORT_DATA"`. The exact additional
+statistics fields and the error envelopes are taken from conformance fixtures
+recorded against real BigQuery — not hand-authored — and folded in during
+Phase 2.
 
 ## Consequences
 

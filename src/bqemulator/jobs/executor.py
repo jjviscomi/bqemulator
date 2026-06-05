@@ -8,8 +8,11 @@ from __future__ import annotations
 
 from collections.abc import Callable
 from dataclasses import dataclass
+from math import ceil
+from pathlib import Path
 import re
 from typing import TYPE_CHECKING, Any
+from uuid import uuid4
 
 import pyarrow as pa
 
@@ -354,6 +357,20 @@ async def execute_query_job(
         if routine_statement_type:
             statement_type = routine_statement_type
             ddl_operation = resolve_create_routine_operation(script, project_id, ctx)
+    elif statement_type == "EXPORT_DATA":
+        # EXPORT DATA runs the inner SELECT through the standard query
+        # pipeline (so row-access / MV / wildcard rewrites all apply) and
+        # then writes the result to Cloud Storage. It returns its own
+        # closing JobMeta, short-circuiting the SELECT/DML/DDL flow below.
+        return await _execute_export_data_job(
+            project_id=project_id,
+            job_id=job_id,
+            bq_sql=bq_sql,
+            query_params=query_params,
+            now=now,
+            ctx=ctx,
+            caller=caller,
+        )
     else:
         early_exit = await _run_query_fast_paths(
             project_id=project_id,
@@ -1140,42 +1157,12 @@ async def execute_extract_job(
     _validate_local_path(dest_path)
     select_sql = f"SELECT * FROM {src_ref}"
 
-    # DuckDB's COPY TO needs the path as a literal; we've already whitelisted
-    # it via ``_validate_local_path`` to ensure no quotes or shell escapes
-    # can smuggle into the literal.
-    if dest_format == "CSV":
-        ctx.engine.execute(
-            f"COPY ({select_sql}) TO '{dest_path}' (FORMAT CSV, HEADER)",
-        )
-    elif dest_format == "PARQUET":
-        ctx.engine.execute(
-            f"COPY ({select_sql}) TO '{dest_path}' (FORMAT PARQUET)",
-        )
-    elif dest_format in ("NEWLINE_DELIMITED_JSON", "JSON"):
-        ctx.engine.execute(
-            f"COPY ({select_sql}) TO '{dest_path}' (FORMAT JSON)",
-        )
-    elif dest_format == "AVRO":
-        # G1: DuckDB's ``avro`` extension supports ``COPY ... TO ...
-        # (FORMAT AVRO)`` natively. The extension is loaded best-effort
-        # at engine boot; if absent COPY raises a ``COPY ... FORMAT
-        # 'avro' not supported`` error which we surface back to the
-        # client as an UnsupportedFeatureError. Other failures (e.g.
-        # path validation, write-time schema issues) bubble unchanged.
-        try:
-            ctx.engine.execute(
-                f"COPY ({select_sql}) TO '{dest_path}' (FORMAT AVRO)",
-            )
-        except Exception as exc:
-            if _is_missing_extension_error(exc, "avro"):
-                raise UnsupportedFeatureError(
-                    "Extract to AVRO requires DuckDB's ``avro`` extension. "
-                    "Re-enable BQEMU_ENABLE_FORMAT_EXTENSIONS or run the "
-                    "emulator with network access to extensions.duckdb.org.",
-                ) from exc
-            raise
-    else:
+    if dest_format not in _EXPORT_FORMATS:
         raise InvalidQueryError(f"Unknown destination format: {dest_format}")
+    # Shared COPY writer (also used by the EXPORT DATA statement). Extract
+    # always emits a CSV header and applies no compression or custom
+    # delimiter, preserving the prior behaviour.
+    _copy_relation_to_file(select_sql, dest_path, dest_format, ctx)
 
     return JobMeta(
         project_id=project_id,
@@ -1546,6 +1533,460 @@ def _validate_local_path(path: str) -> None:
     for bad in forbidden:
         if bad in path:
             raise InvalidQueryError(f"Invalid character {bad!r} in file path")
+
+
+# ---------------------------------------------------------------------------
+# EXPORT DATA statement — RFC 0001 / ADR 0043
+# ---------------------------------------------------------------------------
+
+#: Canonical destination formats shared by the extract job and the
+#: EXPORT DATA statement. ``JSON`` is accepted as an alias for
+#: ``NEWLINE_DELIMITED_JSON``. ``ORC`` is intentionally absent — BigQuery
+#: does not export ORC (parity; see ``out-of-scope.md``).
+_EXPORT_FORMATS: frozenset[str] = frozenset(
+    {"CSV", "NEWLINE_DELIMITED_JSON", "JSON", "PARQUET", "AVRO"},
+)
+
+#: Valid ``compression`` values per canonical format (upper-cased).
+_COMPRESSION_BY_FORMAT: dict[str, frozenset[str]] = {
+    "CSV": frozenset({"GZIP", "NONE"}),
+    "NEWLINE_DELIMITED_JSON": frozenset({"GZIP", "NONE"}),
+    "PARQUET": frozenset({"SNAPPY", "GZIP", "ZSTD", "NONE"}),
+    "AVRO": frozenset({"DEFLATE", "SNAPPY", "NONE"}),
+}
+
+#: OPTIONS keys the EXPORT DATA statement accepts (besides ``format``,
+#: which SQLGlot surfaces as a dedicated ``FileFormatProperty``).
+_KNOWN_EXPORT_OPTIONS: frozenset[str] = frozenset(
+    {
+        "uri",
+        "format",
+        "compression",
+        "overwrite",
+        "header",
+        "field_delimiter",
+        "use_avro_logical_types",
+    },
+)
+
+#: CSV-only OPTIONS — rejected on any other format for parity with
+#: BigQuery's option/format validation.
+_CSV_ONLY_OPTIONS: frozenset[str] = frozenset({"header", "field_delimiter"})
+
+_EXPORT_DATA_RE = re.compile(r"^\s*EXPORT\s+DATA\b", re.IGNORECASE)
+
+_AVRO_EXPORT_EXTENSION_MSG = (
+    "Export to AVRO requires DuckDB's ``avro`` extension. Re-enable "
+    "BQEMU_ENABLE_FORMAT_EXTENSIONS or run the emulator with network "
+    "access to extensions.duckdb.org."
+)
+
+
+@dataclass(frozen=True)
+class _ExportOptions:
+    """Validated, normalised ``EXPORT DATA`` OPTIONS for one statement."""
+
+    uri: str
+    format: str  # canonical: CSV | NEWLINE_DELIMITED_JSON | PARQUET | AVRO
+    compression: str | None  # upper-cased, or None
+    overwrite: bool
+    header: bool  # CSV only
+    field_delimiter: str | None  # CSV only, resolved single char
+
+
+@dataclass(frozen=True)
+class _ExportRequest:
+    """A parsed ``EXPORT DATA`` statement: its OPTIONS plus the inner query."""
+
+    options: _ExportOptions
+    select_sql: str
+
+
+@dataclass(frozen=True)
+class _ExportOutcome:
+    """The result of writing an export: row count and the files written."""
+
+    rows: int
+    file_count: int
+    uris: list[str]
+
+
+def _build_copy_clause(
+    fmt: str,
+    *,
+    header: bool,
+    field_delimiter: str | None,
+    compression: str | None,
+) -> str:
+    """Render the DuckDB ``COPY ... (<clause>)`` option list for ``fmt``.
+
+    ``fmt`` is a canonical export format; ``NEWLINE_DELIMITED_JSON`` and
+    ``JSON`` both map to DuckDB's ``FORMAT JSON``. CSV honours ``header``
+    and ``field_delimiter``; CSV / JSON / PARQUET honour ``compression``.
+    AVRO compression is not forwarded — DuckDB's ``avro`` COPY writer does
+    not expose a codec option (see ADR 0043 unresolved questions).
+    """
+    fmt = fmt.upper()
+    comp = compression.lower() if compression and compression.upper() != "NONE" else None
+    if fmt == "CSV":
+        parts = ["FORMAT CSV", "HEADER" if header else "HEADER false"]
+        if field_delimiter is not None:
+            parts.append(f"DELIMITER '{field_delimiter}'")
+        if comp:
+            parts.append(f"COMPRESSION {comp}")
+        return ", ".join(parts)
+    if fmt in ("NEWLINE_DELIMITED_JSON", "JSON"):
+        parts = ["FORMAT JSON"]
+        if comp:
+            parts.append(f"COMPRESSION {comp}")
+        return ", ".join(parts)
+    if fmt == "PARQUET":
+        parts = ["FORMAT PARQUET"]
+        if comp:
+            parts.append(f"COMPRESSION {comp}")
+        return ", ".join(parts)
+    if fmt == "AVRO":
+        return "FORMAT AVRO"
+    raise InvalidQueryError(f"Unknown destination format: {fmt}")
+
+
+def _copy_relation_to_file(
+    relation_sql: str,
+    dest_path: str,
+    fmt: str,
+    ctx: AppContext,
+    *,
+    header: bool = True,
+    field_delimiter: str | None = None,
+    compression: str | None = None,
+) -> None:
+    """Write a DuckDB relation to ``dest_path`` via ``COPY ... TO``.
+
+    Shared by the extract job (``relation_sql`` = ``SELECT * FROM <table>``)
+    and the EXPORT DATA statement (``relation_sql`` = ``SELECT * FROM
+    <registered Arrow view>``). The path is already whitelisted by
+    :func:`_validate_local_path`, so it is safe to embed as a literal. An
+    AVRO write whose extension is unavailable is surfaced as
+    :class:`UnsupportedFeatureError`; other failures bubble unchanged.
+    """
+    clause = _build_copy_clause(
+        fmt,
+        header=header,
+        field_delimiter=field_delimiter,
+        compression=compression,
+    )
+    copy_sql = f"COPY ({relation_sql}) TO '{dest_path}' ({clause})"
+    if fmt.upper() == "AVRO":
+        try:
+            ctx.engine.execute(copy_sql)
+        except Exception as exc:
+            if _is_missing_extension_error(exc, "avro"):
+                raise UnsupportedFeatureError(_AVRO_EXPORT_EXTENSION_MSG) from exc
+            raise
+    else:
+        ctx.engine.execute(copy_sql)
+
+
+def _ensure_parent_dir(path: str) -> None:
+    """Create the parent directory of ``path`` if it does not yet exist."""
+    Path(path).parent.mkdir(parents=True, exist_ok=True)
+
+
+def _shard_offsets(num_rows: int, shard_count: int) -> list[tuple[int, int]]:
+    """Split ``num_rows`` into ``shard_count`` contiguous ``(offset, length)`` ranges.
+
+    Rows are distributed as evenly as possible, earlier shards taking the
+    remainder. ``num_rows == 0`` yields a single empty range so a wildcard
+    export of an empty result still writes one (header-only) file, matching
+    BigQuery.
+    """
+    base, remainder = divmod(num_rows, shard_count)
+    offsets: list[tuple[int, int]] = []
+    start = 0
+    for i in range(shard_count):
+        length = base + (1 if i < remainder else 0)
+        offsets.append((start, length))
+        start += length
+    return offsets
+
+
+def _opt_literal_str(node: Any) -> str:
+    """Return the string payload of a SQLGlot option value node."""
+    from sqlglot import exp
+
+    if isinstance(node, exp.Literal):
+        return str(node.this)
+    return str(node)
+
+
+def _opt_literal_bool(node: Any) -> bool:
+    """Return the boolean payload of a SQLGlot option value node."""
+    from sqlglot import exp
+
+    if isinstance(node, exp.Boolean):
+        return bool(node.this)
+    if isinstance(node, exp.Literal):
+        return str(node.this).strip().lower() == "true"
+    return bool(node)
+
+
+def _resolve_field_delimiter(raw: str) -> str:
+    r"""Normalise and validate a CSV ``field_delimiter`` to a single safe char.
+
+    ``tab`` / ``\t`` resolve to a literal tab (matching BigQuery). The
+    result must be exactly one character and must not contain bytes that
+    could break out of the DuckDB ``DELIMITER '...'`` literal.
+    """
+    if raw in ("\\t", "tab", "TAB", "\t"):
+        return "\t"
+    if len(raw) != 1:
+        raise InvalidQueryError(
+            "EXPORT DATA field_delimiter must be a single character (or 'tab').",
+        )
+    if raw in ("'", '"', "\\", "\n", "\r", "\0", "`"):
+        raise InvalidQueryError(f"Invalid character {raw!r} in field_delimiter")
+    return raw
+
+
+def _normalize_export_format(raw: str) -> str:
+    """Upper-case a format and reject ORC / unknown values with parity wording."""
+    fmt = raw.strip().upper()
+    if fmt == "ORC":
+        raise UnsupportedFeatureError(
+            "EXPORT DATA to ORC is not supported; BigQuery does not export "
+            "ORC. Use PARQUET, AVRO, CSV, or NEWLINE_DELIMITED_JSON.",
+        )
+    if fmt not in _EXPORT_FORMATS:
+        raise InvalidQueryError(f"Unsupported EXPORT DATA format: {raw}")
+    return "NEWLINE_DELIMITED_JSON" if fmt == "JSON" else fmt
+
+
+def _extract_export_options(properties: Any) -> _ExportOptions:
+    """Parse and validate the ``OPTIONS(...)`` of an ``EXPORT DATA`` statement.
+
+    ``properties`` is the SQLGlot ``Properties`` node. ``format`` arrives as
+    a dedicated ``FileFormatProperty``; every other option is a generic
+    ``Property`` keyed by name. Unknown options, format/option mismatches,
+    and invalid compression values are rejected with a clear error.
+    """
+    from sqlglot import exp
+
+    if properties is None:
+        raise InvalidQueryError("EXPORT DATA requires an OPTIONS(...) list.")
+    fmt_raw: str | None = None
+    values: dict[str, Any] = {}
+    for prop in properties.expressions:
+        if isinstance(prop, exp.FileFormatProperty):
+            fmt_raw = _opt_literal_str(prop.this)
+            continue
+        key = (prop.this.name if hasattr(prop.this, "name") else str(prop.this)).lower()
+        if key == "format":
+            fmt_raw = _opt_literal_str(prop.args.get("value"))
+            continue
+        if key not in _KNOWN_EXPORT_OPTIONS:
+            raise InvalidQueryError(f"Unknown EXPORT DATA option: {key}")
+        values[key] = prop.args.get("value")
+
+    fmt = _normalize_export_format(fmt_raw) if fmt_raw is not None else "CSV"
+
+    if "uri" not in values:
+        raise InvalidQueryError("EXPORT DATA requires a 'uri' option.")
+    uri = _opt_literal_str(values["uri"])
+    if not uri:
+        raise InvalidQueryError("EXPORT DATA 'uri' option must be a non-empty string.")
+
+    for csv_only in _CSV_ONLY_OPTIONS:
+        if csv_only in values and fmt != "CSV":
+            raise InvalidQueryError(
+                f"EXPORT DATA option '{csv_only}' is only valid for FORMAT CSV.",
+            )
+    if "use_avro_logical_types" in values and fmt != "AVRO":
+        raise InvalidQueryError(
+            "EXPORT DATA option 'use_avro_logical_types' is only valid for FORMAT AVRO.",
+        )
+
+    compression: str | None = None
+    if "compression" in values:
+        compression = _opt_literal_str(values["compression"]).upper()
+        allowed = _COMPRESSION_BY_FORMAT.get(fmt, frozenset())
+        if compression not in allowed:
+            raise InvalidQueryError(
+                f"EXPORT DATA compression '{compression}' is not valid for "
+                f"FORMAT {fmt}; allowed: {', '.join(sorted(allowed))}.",
+            )
+
+    header = _opt_literal_bool(values["header"]) if "header" in values else True
+    field_delimiter = (
+        _resolve_field_delimiter(_opt_literal_str(values["field_delimiter"]))
+        if "field_delimiter" in values
+        else None
+    )
+    overwrite = _opt_literal_bool(values["overwrite"]) if "overwrite" in values else False
+
+    return _ExportOptions(
+        uri=uri,
+        format=fmt,
+        compression=compression,
+        overwrite=overwrite,
+        header=header,
+        field_delimiter=field_delimiter,
+    )
+
+
+def parse_export_data(bq_sql: str) -> _ExportRequest | None:
+    """Parse ``bq_sql`` as an ``EXPORT DATA`` statement, or return ``None``.
+
+    Returns ``None`` for any statement that is not ``EXPORT DATA`` (a cheap
+    regex gate runs before the full SQLGlot parse). Raises
+    :class:`UnsupportedFeatureError` for ``EXPORT DATA WITH CONNECTION``
+    (external sinks are out of scope) and :class:`InvalidQueryError` for a
+    malformed statement or invalid OPTIONS.
+    """
+    if not _EXPORT_DATA_RE.match(bq_sql):
+        return None
+    import sqlglot
+    from sqlglot import exp
+
+    try:
+        tree = sqlglot.parse_one(bq_sql, read="bigquery")
+    except Exception:  # noqa: BLE001 — non-EXPORT or unparseable: defer to the normal path
+        return None
+    if not isinstance(tree, exp.Export):  # pragma: no cover — regex gate already matched
+        return None
+    if tree.args.get("connection"):
+        raise UnsupportedFeatureError(
+            "EXPORT DATA WITH CONNECTION is not supported; bqemulator exports "
+            "to Cloud Storage only.",
+        )
+    # SQLGlot sets ``this`` to ``False`` (not ``None``) when ``AS query`` is
+    # absent, so guard on the node type rather than ``is None``.
+    inner = tree.args.get("this")
+    if not isinstance(inner, exp.Expression):
+        raise InvalidQueryError("EXPORT DATA requires an 'AS query_statement'.")
+    options = _extract_export_options(tree.args.get("options"))
+    return _ExportRequest(options=options, select_sql=inner.sql(dialect="bigquery"))
+
+
+def write_export(
+    arrow_table: pa.Table,
+    options: _ExportOptions,
+    ctx: AppContext,
+) -> _ExportOutcome:
+    """Write an already-materialised result to Cloud Storage per ``options``.
+
+    Resolves the destination through the ``gs://`` filesystem shim, applies
+    size-based wildcard sharding (``ceil(table.nbytes / threshold)`` files,
+    named with BigQuery's 12-digit zero-padded counter), and writes each
+    shard via :func:`_copy_relation_to_file`. A wildcard-free URI writes a
+    single file and errors if the result exceeds the shard threshold,
+    mirroring BigQuery's "use a wildcard for >1 GB" rule.
+    """
+    uri = options.uri
+    wildcards = uri.count("*")
+    if wildcards > 1:
+        raise InvalidQueryError(
+            "EXPORT DATA uri may contain at most one '*' wildcard.",
+        )
+    threshold = ctx.settings.export_shard_threshold_bytes
+    num_rows = arrow_table.num_rows
+    nbytes = arrow_table.nbytes
+
+    if wildcards == 0:
+        if num_rows > 0 and nbytes > threshold:
+            raise InvalidQueryError(
+                "Exported data exceeds the single-file size limit; use a uri "
+                "with a single '*' wildcard to shard the output across files.",
+            )
+        shard_count = 1
+    elif num_rows == 0:
+        shard_count = 1
+    else:
+        shard_count = max(1, min(num_rows, ceil(nbytes / threshold)))
+
+    written: list[str] = []
+    for index, (offset, length) in enumerate(_shard_offsets(num_rows, shard_count)):
+        path_uri = uri.replace("*", f"{index:012d}") if wildcards else uri
+        resolved = _resolve_uri(path_uri, ctx)
+        _validate_local_path(resolved)
+        if not options.overwrite and Path(resolved).exists():
+            raise InvalidQueryError(
+                f"Destination already exists and overwrite is false: {path_uri}",
+            )
+        _ensure_parent_dir(resolved)
+        shard = arrow_table.slice(offset, length)
+        view_name = f"_bqemu_export_{uuid4().hex}"
+        ctx.engine.connection.register(view_name, shard)
+        try:
+            _copy_relation_to_file(
+                f'SELECT * FROM "{view_name}"',
+                resolved,
+                options.format,
+                ctx,
+                header=options.header,
+                field_delimiter=options.field_delimiter,
+                compression=options.compression,
+            )
+        finally:
+            ctx.engine.connection.unregister(view_name)
+        written.append(path_uri)
+
+    return _ExportOutcome(rows=num_rows, file_count=len(written), uris=written)
+
+
+async def _execute_export_data_job(
+    *,
+    project_id: str,
+    job_id: str,
+    bq_sql: str,
+    query_params: list[dict[str, Any]] | None,
+    now: Any,
+    ctx: AppContext,
+    caller: CallerIdentity | None,
+) -> JobMeta:
+    """Run an ``EXPORT DATA`` statement as a QUERY job and write its result.
+
+    The inner SELECT flows through the standard single-statement pipeline
+    (:func:`_run_query_body`) so row-access policies, materialized-view
+    refresh, and the other rewrites all apply, then the materialised result
+    is written to Cloud Storage. The job reports ``statementType =
+    EXPORT_DATA`` with zero result rows.
+    """
+    request = parse_export_data(bq_sql)
+    if request is None:  # pragma: no cover — classifier already guaranteed EXPORT_DATA
+        raise InvalidQueryError("Malformed EXPORT DATA statement.")
+    effective_caller = caller or CallerIdentity(
+        principal="user:anonymous@bqemulator.local",
+        is_authenticated=False,
+    )
+    arrow_table = await _run_query_body(
+        project_id=project_id,
+        bq_sql=request.select_sql,
+        query_params=query_params,
+        ctx=ctx,
+        is_scripted=False,
+        effective_caller=effective_caller,
+    )
+    write_export(arrow_table, request.options, ctx)
+    JOB_RESULTS[job_id] = _EMPTY_ARROW
+    JOB_SCHEMAS[job_id] = []
+    ctx.metrics.sql_translation_total.labels(outcome="ok").inc()
+    statistics = _build_query_statistics(
+        total_rows=0,
+        statement_type="EXPORT_DATA",
+        num_dml_affected_rows=None,
+    )
+    return JobMeta(
+        project_id=project_id,
+        job_id=job_id,
+        job_type="QUERY",
+        state="DONE",
+        configuration=_build_query_configuration(bq_sql, project_id, job_id),
+        statistics=statistics,
+        creation_time=now,
+        start_time=now,
+        end_time=ctx.clock.now(),
+        etag=generate_etag(project_id, job_id, str(now)),
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -1944,6 +2385,8 @@ def _classify_parsed_tree(tree: Any) -> str:
     """
     from sqlglot import exp
 
+    if isinstance(tree, exp.Export):
+        return "EXPORT_DATA"
     dml = _classify_dml(tree, exp)
     if dml:
         return dml
@@ -2154,4 +2597,6 @@ __all__ = [
     "execute_extract_job",
     "execute_load_job",
     "execute_query_job",
+    "parse_export_data",
+    "write_export",
 ]

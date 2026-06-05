@@ -153,27 +153,29 @@ approximation (see *Drawbacks*).
 ### Execution model
 
 `EXPORT DATA` is a **`QUERY` job** — `JobType` stays
-`Literal["QUERY", "LOAD", "EXTRACT", "COPY"]`; no new job type. It is intercepted
-in the shared single-statement path `_run_single_sql`
-(`src/bqemulator/jobs/executor.py`), which serves both standalone query jobs
-(`execute_query_job`) and scripted statements (the scripting interpreter's
-`_exec_sql` → `_run_query`). Before translation:
+`Literal["QUERY", "LOAD", "EXTRACT", "COPY"]`; no new job type.
+`classify_statement_type` / `_classify_parsed_tree` classify `exp.Export` as
+`"EXPORT_DATA"`, and two thin entry points share one core: `execute_query_job`
+routes a standalone statement to `_execute_export_data_job`, and the scripting
+interpreter's `_exec_sql` handles a scripted statement inline. Both call the
+shared `parse_export_data` + `write_export`:
 
-1. Detect `exp.Export` on the parsed tree; reject `WITH CONNECTION`.
-2. Extract and validate OPTIONS from the AST (`tree.args['options']`).
-3. Translate the **inner SELECT** (`tree.args['this']`) through the *existing*
-   `SQLTranslator.translate()` → `rewrite_table_refs` → `bind_parameters`
-   pipeline, so every BigQuery→DuckDB rule, qualified-name rewrite, and query
-   parameter applies to the SELECT unchanged.
-4. Materialize once (`ctx.engine.fetch_arrow`), shard, and write each shard via a
-   shared writer helper refactored out of `execute_extract_job` (the format →
-   DuckDB `COPY (…) TO '…' (FORMAT …)` dispatch, including the `avro`-extension
-   error handling). `execute_extract_job` adopts the same helper.
+1. `parse_export_data` parses the statement, rejects `WITH CONNECTION`, and lifts
+   the OPTIONS + inner query out of the `exp.Export` AST (which still carries the
+   OPTIONS that SQLGlot drops on a DuckDB transpile).
+2. The **inner SELECT** runs through the *normal* single-statement pipeline
+   (`_run_query_body` for jobs, the interpreter's `_run_query` for scripts), so
+   every BigQuery→DuckDB rule, row-access policy, MV refresh, wildcard-table
+   expansion, qualified-name rewrite, and query parameter applies to the exported
+   query exactly as to a bare `SELECT`.
+3. `write_export` materialises the result once (`ctx.engine.fetch_arrow`), shards
+   it, and writes each shard via a writer helper refactored out of
+   `execute_extract_job` (the format → DuckDB `COPY (…) TO '…' (FORMAT …)`
+   dispatch, including the `avro`-extension error handling). `execute_extract_job`
+   adopts the same helper.
 
-`classify_statement_type` / `_classify_parsed_tree` gain an `exp.Export` →
-`"EXPORT_DATA"` branch; `_finalize_statement_result` and
-`_build_query_statistics` gain an `EXPORT_DATA` branch that returns zero result
-rows plus export statistics.
+The job stores a zero-row result and reports `statementType = EXPORT_DATA`
+(via `_build_query_statistics`).
 
 ### Result and statistics
 
