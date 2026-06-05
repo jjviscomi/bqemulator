@@ -105,17 +105,32 @@ threshold, mirroring BigQuery's "use a wildcard" requirement.
 `EXPORT DATA WITH CONNECTION` (Amazon S3 / Azure Blob / Pub/Sub reverse-ETL) is
 rejected with a clear `UnsupportedFeatureError`. The emulator's charter is
 BigQuery and its Cloud Storage integration; external sinks are separate services
-real BigQuery treats as out-of-band. `ORC` export is rejected for the same
-parity reason as the extract job (BigQuery does not export ORC).
+real BigQuery treats as out-of-band.
+
+`ORC` export is **not** modelled as an unsupported feature. BigQuery does not
+export ORC, but the conformance recording
+(`sql_corpus/export_data/export_orc_rejected`) shows it rejects `format='ORC'`
+exactly the way it rejects any unrecognised value — as an invalid `format`
+OPTIONS value: `InvalidQueryError` (`invalidQuery`, HTTP 400,
+`location = "query"`), with the message `'ORC' is not a valid value; failed to
+set 'format' in EXPORT DATA OPTIONS`. ORC therefore carries no special case in
+`_normalize_export_format`; it falls through the same path as `format='XML'`.
 
 ### 5. `EXPORT_DATA` result + statistics, pinned by recording
 
 `_execute_export_data_job` stores a zero-row result and builds the job
-statistics via `_build_query_statistics(statement_type="EXPORT_DATA")`, which
-emits `statistics.query.statementType = "EXPORT_DATA"`. The exact additional
-statistics fields and the error envelopes are taken from conformance fixtures
-recorded against real BigQuery — not hand-authored — and folded in during
-Phase 2.
+statistics via `_build_query_statistics(statement_type="EXPORT_DATA",
+export_statistics=(file_count, row_count))`. The recorded job resource
+(`http_corpus/jobs/export_csv_query_job`) pins the field set, so the emulator
+emits `statistics.query.statementType = "EXPORT_DATA"` plus
+`exportDataStatistics = {fileCount, rowCount}` (int64-strings, sourced from the
+`_ExportOutcome`'s written-file and exported-row counts) and the sibling
+`totalPartitionsProcessed` / `transferredBytes` fields BigQuery reports for an
+export job. The `<*>`-recorded query fields (`queryPlan`, `timeline`,
+`totalBytesBilled`, …) are intentionally left unset — the conformance
+comparator treats a wildcard leaf as "absent or present". The error envelopes
+(`invalidQuery` / HTTP 400 for an invalid `format` value and for a missing or
+empty `uri`) are likewise taken from recorded fixtures, not hand-authored.
 
 ## Consequences
 

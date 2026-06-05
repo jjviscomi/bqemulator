@@ -173,8 +173,14 @@ class TestClassifyAndParse:
             )
 
     def test_orc_rejected(self) -> None:
-        """ORC export is rejected for parity with BigQuery."""
-        with pytest.raises(UnsupportedFeatureError, match="ORC"):
+        """ORC is rejected as an invalid ``format`` value, matching BigQuery.
+
+        BigQuery does not export ORC, but it rejects ``format='ORC'`` the
+        same way as any unrecognised value — ``invalidQuery`` / HTTP 400, not
+        a 501 unsupported-feature error. The exact message + ``location`` are
+        pinned by the ``export_orc_rejected`` conformance baseline.
+        """
+        with pytest.raises(InvalidQueryError, match="'ORC' is not a valid value"):
             parse_export_data(
                 "EXPORT DATA OPTIONS(uri='gs://b/*.orc', format='ORC') AS SELECT 1 AS a",
             )
@@ -219,8 +225,16 @@ class TestExportEndToEnd:
                 None,
                 ctx,
             )
-        assert meta.statistics["query"]["statementType"] == "EXPORT_DATA"
-        assert meta.statistics["query"]["totalRows"] == "0"
+        query_stats = meta.statistics["query"]
+        assert query_stats["statementType"] == "EXPORT_DATA"
+        assert query_stats["totalRows"] == "0"
+        # exportDataStatistics mirrors BigQuery's job resource (pinned by the
+        # http_corpus/jobs/export_csv_query_job conformance baseline): the
+        # written-file + exported-row counts as int64-strings, plus the
+        # sibling totalPartitionsProcessed / transferredBytes fields.
+        assert query_stats["exportDataStatistics"] == {"fileCount": "1", "rowCount": "1"}
+        assert query_stats["totalPartitionsProcessed"] == "0"
+        assert query_stats["transferredBytes"] == "0"
         assert JOB_RESULTS["j-csv"].num_rows == 0
         out = _resolved(ctx, "bkt", "out", "data.csv")
         assert out.exists()
@@ -542,9 +556,15 @@ class TestHelperBranches:
             _resolve_field_delimiter(bad)
 
     def test_normalize_format_unknown_raises(self) -> None:
-        """An unknown (non-ORC) format is rejected with a clear error."""
-        with pytest.raises(InvalidQueryError, match="Unsupported EXPORT DATA format"):
+        """Any unrecognised ``format`` value errors with BigQuery's wording + location.
+
+        ORC and every other non-export value take this same path — an invalid
+        ``format`` OPTIONS value with ``location='query'`` (pinned by the
+        ``export_orc_rejected`` conformance baseline).
+        """
+        with pytest.raises(InvalidQueryError, match="'XML' is not a valid value") as exc_info:
             _normalize_export_format("XML")
+        assert exc_info.value.location == "query"
 
     def test_extract_options_requires_properties(self) -> None:
         """A missing OPTIONS list is rejected."""
@@ -564,8 +584,13 @@ class TestHelperBranches:
         assert options.uri == "gs://b/o.csv"
 
     def test_empty_uri_rejected(self) -> None:
-        """An empty ``uri`` string is rejected."""
-        with pytest.raises(InvalidQueryError, match="non-empty"):
+        """An empty ``uri`` string is rejected with BigQuery's wording.
+
+        BigQuery uses one message for both the missing and the empty case —
+        "Option 'uri' is missing or empty." (pinned by the
+        ``export_missing_uri`` conformance baseline).
+        """
+        with pytest.raises(InvalidQueryError, match="missing or empty"):
             parse_export_data("EXPORT DATA OPTIONS(uri='') AS SELECT 1 AS a")
 
     def test_use_avro_logical_types_on_non_avro_rejected(self) -> None:

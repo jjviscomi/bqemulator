@@ -759,6 +759,7 @@ def _build_query_statistics(
     statement_type: str,
     num_dml_affected_rows: int | None,
     ddl_operation: str | None = None,
+    export_statistics: tuple[int, int] | None = None,
 ) -> dict[str, Any]:
     """Construct the canonical ``statistics`` dict for a query job.
 
@@ -772,6 +773,12 @@ def _build_query_statistics(
     pre-execution target existence); otherwise it falls back to the
     static per-statement-type mapping in
     :data:`bqemulator.jobs.ddl_result.DDL_OPERATION_BY_STATEMENT`.
+
+    ``export_statistics`` carries ``(file_count, row_count)`` for an
+    ``EXPORT_DATA`` job; when given, ``statistics.query`` gains the
+    ``exportDataStatistics`` block plus the ``totalPartitionsProcessed``
+    / ``transferredBytes`` fields BigQuery emits alongside it (the
+    shape is pinned by ``http_corpus/jobs/export_csv_query_job``).
 
     The shape mirrors BigQuery's REST `Job.statistics.query` field;
     the conformance comparator at
@@ -790,6 +797,14 @@ def _build_query_statistics(
             query_stats["ddlOperationPerformed"] = ddl_op
     if num_dml_affected_rows is not None:
         query_stats["numDmlAffectedRows"] = str(num_dml_affected_rows)
+    if export_statistics is not None:
+        file_count, exported_rows = export_statistics
+        query_stats["totalPartitionsProcessed"] = "0"
+        query_stats["transferredBytes"] = "0"
+        query_stats["exportDataStatistics"] = {
+            "fileCount": str(file_count),
+            "rowCount": str(exported_rows),
+        }
     return {"query": query_stats}
 
 
@@ -1749,15 +1764,21 @@ def _resolve_field_delimiter(raw: str) -> str:
 
 
 def _normalize_export_format(raw: str) -> str:
-    """Upper-case a format and reject ORC / unknown values with parity wording."""
+    """Upper-case a ``format`` value; reject ORC / unknown values like BigQuery.
+
+    BigQuery does not export ORC, but it rejects ``format='ORC'`` exactly the
+    way it rejects any unrecognised value — as an invalid ``format`` OPTIONS
+    value (``invalidQuery`` / HTTP 400), not as a distinct "unsupported
+    feature". The recorded conformance baseline
+    (``sql_corpus/export_data/export_orc_rejected``) pins the exact message,
+    so ORC carries no special case here.
+    """
     fmt = raw.strip().upper()
-    if fmt == "ORC":
-        raise UnsupportedFeatureError(
-            "EXPORT DATA to ORC is not supported; BigQuery does not export "
-            "ORC. Use PARQUET, AVRO, CSV, or NEWLINE_DELIMITED_JSON.",
-        )
     if fmt not in _EXPORT_FORMATS:
-        raise InvalidQueryError(f"Unsupported EXPORT DATA format: {raw}")
+        raise InvalidQueryError(
+            f"'{raw}' is not a valid value; failed to set 'format' in EXPORT DATA OPTIONS",
+            location="query",
+        )
     return "NEWLINE_DELIMITED_JSON" if fmt == "JSON" else fmt
 
 
@@ -1790,10 +1811,10 @@ def _extract_export_options(properties: Any) -> _ExportOptions:
     fmt = _normalize_export_format(fmt_raw) if fmt_raw is not None else "CSV"
 
     if "uri" not in values:
-        raise InvalidQueryError("EXPORT DATA requires a 'uri' option.")
+        raise InvalidQueryError("Option 'uri' is missing or empty.")
     uri = _opt_literal_str(values["uri"])
     if not uri:
-        raise InvalidQueryError("EXPORT DATA 'uri' option must be a non-empty string.")
+        raise InvalidQueryError("Option 'uri' is missing or empty.")
 
     for csv_only in _CSV_ONLY_OPTIONS:
         if csv_only in values and fmt != "CSV":
@@ -1966,7 +1987,7 @@ async def _execute_export_data_job(
         is_scripted=False,
         effective_caller=effective_caller,
     )
-    write_export(arrow_table, request.options, ctx)
+    outcome = write_export(arrow_table, request.options, ctx)
     JOB_RESULTS[job_id] = _EMPTY_ARROW
     JOB_SCHEMAS[job_id] = []
     ctx.metrics.sql_translation_total.labels(outcome="ok").inc()
@@ -1974,6 +1995,7 @@ async def _execute_export_data_job(
         total_rows=0,
         statement_type="EXPORT_DATA",
         num_dml_affected_rows=None,
+        export_statistics=(outcome.file_count, outcome.rows),
     )
     return JobMeta(
         project_id=project_id,

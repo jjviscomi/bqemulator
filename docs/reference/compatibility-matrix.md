@@ -139,7 +139,7 @@ surfaces).
 
 > **Auto-generated.** Edit fixtures under [`tests/conformance/`](https://github.com/jjviscomi/bqemulator/blob/main/tests/conformance) or update the XFAIL registry in [`tests/conformance/divergences.py`](https://github.com/jjviscomi/bqemulator/blob/main/tests/conformance/divergences.py), then run `make compat-matrix` to regenerate this block. The CI gate (`--check`) refuses to merge a PR whose committed snapshot has drifted from the corpus.
 
-- **Corpus totals**: 1276 fixtures (1202 SQL + 48 HTTP + 26 gRPC); **1264 PASS / 12 XFAIL**
+- **Corpus totals**: 1288 fixtures (1213 SQL + 49 HTTP + 26 gRPC); **1276 PASS / 12 XFAIL**
 - **XFAIL contract**: every pin in `KNOWN_DIVERGENCES` references an ADR or `out-of-scope.md` section — invented divergences are forbidden (see [ADR 0023](https://github.com/jjviscomi/bqemulator/blob/main/docs/adr/0023-conformance-divergence-baseline.md)).
 
 ### Per-phase fixture coverage
@@ -149,6 +149,7 @@ Each row aggregates fixtures by corpus (SQL / HTTP / gRPC) and the on-disk phase
 | Corpus | Phase | Fixtures | PASS | XFAIL | Status |
 |---|---|---:|---:|---:|:---:|
 | SQL | `api_configuration` | 63 | 63 | 0 | ✅ |
+| SQL | `export_data` | 11 | 11 | 0 | ✅ |
 | SQL | `information_schema` | 18 | 18 | 0 | ✅ |
 | SQL | `partitioning_clustering` | 23 | 23 | 0 | ✅ |
 | SQL | `rest_crud` | 169 | 169 | 0 | ✅ |
@@ -157,10 +158,10 @@ Each row aggregates fixtures by corpus (SQL / HTTP / gRPC) and the on-disk phase
 | SQL | `specialized_types` | 150 | 143 | 7 | ⚠ |
 | SQL | `standard_functions` | 662 | 658 | 4 | ⚠ |
 | SQL | `versioning` | 24 | 24 | 0 | ✅ |
-| HTTP | `jobs` | 48 | 48 | 0 | ✅ |
+| HTTP | `jobs` | 49 | 49 | 0 | ✅ |
 | gRPC | `storage_read` | 16 | 16 | 0 | ✅ |
 | gRPC | `storage_write` | 10 | 10 | 0 | ✅ |
-| **Total** | | **1276** | **1264** | **12** | ⚠ |
+| **Total** | | **1288** | **1276** | **12** | ⚠ |
 
 ### XFAIL pin registry
 

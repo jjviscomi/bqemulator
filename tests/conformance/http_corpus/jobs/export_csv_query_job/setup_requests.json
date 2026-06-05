@@ -1,0 +1,13 @@
+[
+  {
+    "method": "POST",
+    "path": "/bigquery/v2/projects/${PROJECT}/queries",
+    "body": {
+      "query": "EXPORT DATA OPTIONS (uri='gs://${GCS_BUCKET}/export/http_csv_query_job/*.csv', format='CSV', overwrite=true) AS SELECT 1 AS id, 'alpha' AS name UNION ALL SELECT 2 AS id, 'beta' AS name UNION ALL SELECT 3 AS id, 'gamma' AS name",
+      "useLegacySql": false
+    },
+    "capture": {
+      "JOB_ID": "jobReference.jobId"
+    }
+  }
+]

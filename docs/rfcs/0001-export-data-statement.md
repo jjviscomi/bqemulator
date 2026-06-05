@@ -180,17 +180,23 @@ The job stores a zero-row result and reports `statementType = EXPORT_DATA`
 ### Result and statistics
 
 The job returns no result rows. `statistics.query.statementType` is
-`EXPORT_DATA`. The exact statistics field set (e.g. any exported-row/file count)
-is **pinned by conformance fixtures recorded from real BigQuery** rather than
-guessed here (see *Unresolved questions*).
+`EXPORT_DATA`, and `statistics.query.exportDataStatistics` carries the
+written-file and exported-row counts as int64-strings (`{fileCount, rowCount}`),
+alongside the `totalPartitionsProcessed` and `transferredBytes` fields BigQuery
+emits for an export job. This shape is **pinned by conformance fixtures recorded
+from real BigQuery**: `http_corpus/jobs/export_csv_query_job` for the REST job
+resource, and `sql_corpus/export_data/*` for the `statement_type`.
 
 ### Error shapes
 
 Clear, BigQuery-shaped errors for: missing/empty `uri`; more than one `*`;
-wildcard-free URI whose output exceeds the size limit; `ORC`; unknown or
-mismatched OPTIONS; `overwrite = false` with an existing target;
-`gs://` URI when `BQEMU_GCS_LOCAL_ROOT` is unset; and `WITH CONNECTION`. Exact
-envelopes are pinned by recorded conformance fixtures.
+wildcard-free URI whose output exceeds the size limit; unknown or mismatched
+OPTIONS; `overwrite = false` with an existing target; `gs://` URI when
+`BQEMU_GCS_LOCAL_ROOT` is unset; and `WITH CONNECTION`. `ORC` is rejected the
+way BigQuery rejects it — as an invalid `format` OPTIONS value (`invalidQuery`,
+HTTP 400, `location = "query"`), not as a distinct unsupported-feature error.
+Exact envelopes are pinned by recorded conformance fixtures
+(`export_missing_uri`, `export_orc_rejected`).
 
 ## Drawbacks
 
@@ -243,8 +249,11 @@ envelopes are pinned by recorded conformance fixtures.
 ## Unresolved questions
 
 - The exact `statistics.query` field set and the precise `statementType` string
-  for `EXPORT_DATA` → resolved by the Phase-2 conformance recording, then fed
-  back into the implementation.
+  for `EXPORT_DATA` are resolved by the conformance recording: `statementType =
+  "EXPORT_DATA"`, `exportDataStatistics {fileCount, rowCount}`, and the sibling
+  `totalPartitionsProcessed` / `transferredBytes` fields. The error envelopes
+  are likewise pinned — `invalidQuery` / HTTP 400 for an invalid `format` value
+  (including `ORC`) and for a missing/empty `uri`.
 - `use_avro_logical_types` default and whether DuckDB's `COPY … (FORMAT AVRO)`
   honors it; the precise DuckDB `COPY` option mapping for each `compression`
   value per format (notably PARQUET `ZSTD`/`GZIP` and AVRO `DEFLATE`/`SNAPPY`).
