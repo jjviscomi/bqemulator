@@ -35,6 +35,16 @@ CVE-2026-34518      # aiohttp form-data DoS
 CVE-2026-34519      # aiohttp redirect-loop control
 CVE-2026-34520      # aiohttp header-injection
 CVE-2026-34525      # aiohttp TLS hostname verification
+# Two further aiohttp advisories rolled into the pip-audit DB on
+# 2026-06-05 (fix version 3.14.0). Same rationale: aiohttp is required
+# only by ``aiohttp-retry`` / ``pubnub`` / ``twilio`` in the dev env,
+# confirmed via ``pip show aiohttp`` (Required-by) — it is NOT a
+# ``bqemulator[dev]`` transitive and is absent from pyproject.toml, so
+# there is nothing to pin. The airflow-dag-test example pins aiohttp in
+# its own requirements lockfile and is bumped to 3.14.0 separately by
+# Dependabot.
+CVE-2026-34993      # aiohttp parser request-line handling
+CVE-2026-47265      # aiohttp streaming-body resource exhaustion
 
 # cbor2 5.8.0 — CVE in the C-extension decoder. Only present in the
 # env via ``pubnub``; not a bqemulator transitive.
@@ -51,9 +61,14 @@ CVE-2026-42561      # python-multipart parser state machine
 # pip 26.0.1 — system installer CVEs (cannot be pinned in pyproject.toml
 # because pip is not a project dependency; the version is whatever the
 # environment provides). Users should upgrade pip independently:
-# ``python -m pip install --upgrade 'pip>=26.1'``.
+# ``python -m pip install --upgrade 'pip>=26.1.2'``. PYSEC-2026-196
+# (alias CVE-2026-8643, fix 26.1.2) rolled into the DB on 2026-06-05 —
+# same rationale. The ID is kept as PYSEC-2026-196 because that is the
+# exact key pip-audit emits; --ignore-vuln matches on it (the public
+# CVE alias would not suppress the finding).
 CVE-2026-3219       # pip credential-leak via index URL
 CVE-2026-6357       # pip metadata-cache poisoning
+PYSEC-2026-196      # pip directory traversal (CVE-2026-8643; fix pip>=26.1.2)
 
 # idna 3.11 — CVE-2026-45409 (DoS via overlong domain names in the
 # IDNA UTS-46 decode path). idna lands in the project as a transitive

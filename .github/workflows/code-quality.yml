@@ -34,10 +34,11 @@ on:
       - ".jscpd.json"
       - ".lychee.toml"
       - "Makefile"
+      - ".pip-audit-ignore"
       # Run on every workflow / dependabot example change too, so the
       # ``Quality gates`` job emits a status on PRs that only touch
-      # ``.github/workflows/*``, ``.github/dependabot.yml``, or
-      # ``docs/**``. Without these
+      # ``.github/workflows/*``, ``.github/dependabot.yml``,
+      # ``docs/**``, or ``.pip-audit-ignore``. Without these
       # patterns the required-check is "missing" rather than green for
       # those PRs and even ``gh pr merge --admin`` can't bypass it
       # (GitHub treats a never-reported required-check as unresolvable).
@@ -59,10 +60,11 @@ on:
       - ".vulture_whitelist.py"
       - ".jscpd.json"
       - "Makefile"
+      - ".pip-audit-ignore"
       # Run on every workflow / dependabot example change too, so the
       # ``Quality gates`` job emits a status on PRs that only touch
-      # ``.github/workflows/*``, ``.github/dependabot.yml``, or
-      # ``docs/**``. Without these
+      # ``.github/workflows/*``, ``.github/dependabot.yml``,
+      # ``docs/**``, or ``.pip-audit-ignore``. Without these
       # patterns the required-check is "missing" rather than green for
       # those PRs and even ``gh pr merge --admin`` can't bypass it
       # (GitHub treats a never-reported required-check as unresolvable).
