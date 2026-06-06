@@ -385,17 +385,20 @@
   
   
   
-    <li class="md-tabs__item">
-      <a href="../../rfcs/" class="md-tabs__link">
-        
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../rfcs/" class="md-tabs__link">
+          
   
   
     
   
   RFCs
 
-      </a>
-    </li>
+        </a>
+      </li>
+    
   
 
       
@@ -873,6 +876,8 @@
       
         
       
+        
+      
     
     
     
@@ -961,6 +966,34 @@
     
   
     Loading from local files
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../guides/exporting-data/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Exporting data
   
 
     
@@ -3305,6 +3338,8 @@
       
         
       
+        
+      
     
     
     
@@ -4526,6 +4561,34 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../adr/0043-export-data-statement/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0043 EXPORT DATA statement (Cloud Storage)
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -4539,9 +4602,34 @@
   
   
   
-    <li class="md-nav__item">
-      <a href="../../rfcs/" class="md-nav__link">
+    
+    
+      
         
+          
+        
+      
+        
+      
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_8" >
+        
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="../../rfcs/" class="md-nav__link ">
+              
   
   
   <span class="md-ellipsis">
@@ -4555,7 +4643,66 @@
   
   
 
+            </a>
+            
+              
+              <label class="md-nav__link " for="__nav_8" id="__nav_8_label" tabindex="0">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_8_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_8">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    RFCs
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../rfcs/0001-export-data-statement/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0001 EXPORT DATA statement (Cloud Storage)
+  
+
+    
+  </span>
+  
+  
+    
+  
+  
+    <span class="md-status md-status--Accepted"></span>
+  
+
+  
+
       </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
     </li>
   
 
@@ -4718,6 +4865,8 @@
       
         
       
+        
+      
     
     
     
@@ -4770,6 +4919,34 @@
           </label>
           <ul class="md-nav__list" data-md-scrollfix>
             
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../examples/python/export-to-gcs/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Export to GCS
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
               
             
               
@@ -5785,8 +5962,8 @@
 <p><strong>Auto-generated.</strong> Edit <a href="https://github.com/jjviscomi/bqemulator/blob/main/tests/conformance/_surface_inventory.py"><code>tests/conformance/_surface_inventory.py</code></a> to add surface items, then run <code>make coverage-matrix</code> to regenerate this document. The CI gate (<code>--check</code>) refuses to merge a PR whose committed matrix has drifted from the inventory or the corpus.</p>
 </blockquote>
 <ul>
-<li><strong>Inventory</strong>: 418 surface items across 20 categories (10 flagged non-deterministic — excluded from the corpus by ADR 0022, tracked under <a href="#excluded-non-deterministic-see-adr-0022">Excluded (non-deterministic)</a>)</li>
-<li><strong>Corpus</strong>: 1202 fixtures under <a href="https://github.com/jjviscomi/bqemulator/blob/main/tests/conformance/sql_corpus"><code>tests/conformance/sql_corpus/</code></a></li>
+<li><strong>Inventory</strong>: 419 surface items across 20 categories (10 flagged non-deterministic — excluded from the corpus by ADR 0022, tracked under <a href="#excluded-non-deterministic-see-adr-0022">Excluded (non-deterministic)</a>)</li>
+<li><strong>Corpus</strong>: 1213 fixtures under <a href="https://github.com/jjviscomi/bqemulator/blob/main/tests/conformance/sql_corpus"><code>tests/conformance/sql_corpus/</code></a></li>
 </ul>
 <h2 id="what-this-measures">What this measures<a class="headerlink" href="#what-this-measures" title="Permanent link">&para;</a></h2>
 <p>Each row in the per-category tables below is one BigQuery surface item (a function, a statement form, a wire-format shape, an error reason). The <code>Count</code> column is the number of fixtures in the conformance corpus that exercise the item, via a static regex match against the fixture's SQL + setup_rest + expected.json. The <code>Tier</code> column places the item in a depth bucket:</p>
@@ -5816,21 +5993,21 @@
 <tr>
 <td>🟡 Sampled</td>
 <td style="text-align: right;">238</td>
-<td style="text-align: right;">58.3%</td>
+<td style="text-align: right;">58.2%</td>
 </tr>
 <tr>
 <td>🟢 Covered</td>
 <td style="text-align: right;">68</td>
-<td style="text-align: right;">16.7%</td>
+<td style="text-align: right;">16.6%</td>
 </tr>
 <tr>
 <td>🟢🟢 Deep</td>
-<td style="text-align: right;">101</td>
-<td style="text-align: right;">24.8%</td>
+<td style="text-align: right;">102</td>
+<td style="text-align: right;">24.9%</td>
 </tr>
 <tr>
 <td><strong>Total</strong></td>
-<td style="text-align: right;"><strong>408</strong></td>
+<td style="text-align: right;"><strong>409</strong></td>
 <td style="text-align: right;">100.0%</td>
 </tr>
 </tbody>
@@ -6097,10 +6274,10 @@
 <tbody>
 <tr>
 <td><a href="https://cloud.google.com/bigquery/docs/reference/standard-sql/dml-syntax#insert_statement"><code>INSERT … VALUES</code></a></td>
-<td style="text-align: right;">358</td>
+<td style="text-align: right;">359</td>
 <td style="text-align: center;">🟢🟢 Deep</td>
-<td>happy×292 / null×41 / empty×6 / bound×9 / error×13</td>
-<td><a href="https://github.com/jjviscomi/bqemulator/blob/main/tests/conformance/sql_corpus/api_configuration/default_dataset_insert_unqualified"><code>api_configuration/default_dataset_insert_unqualified</code></a>, <a href="https://github.com/jjviscomi/bqemulator/blob/main/tests/conformance/sql_corpus/api_configuration/default_dataset_join_partial_qualification"><code>api_configuration/default_dataset_join_partial_qualification</code></a>, <a href="https://github.com/jjviscomi/bqemulator/blob/main/tests/conformance/sql_corpus/api_configuration/default_dataset_select_table"><code>api_configuration/default_dataset_select_table</code></a>, <a href="https://github.com/jjviscomi/bqemulator/blob/main/tests/conformance/sql_corpus/api_configuration/dest_clustering_fields_basic"><code>api_configuration/dest_clustering_fields_basic</code></a>, <a href="https://github.com/jjviscomi/bqemulator/blob/main/tests/conformance/sql_corpus/api_configuration/dest_clustering_fields_invalid_column"><code>api_configuration/dest_clustering_fields_invalid_column</code></a>, … (+353 more)</td>
+<td>happy×293 / null×41 / empty×6 / bound×9 / error×13</td>
+<td><a href="https://github.com/jjviscomi/bqemulator/blob/main/tests/conformance/sql_corpus/api_configuration/default_dataset_insert_unqualified"><code>api_configuration/default_dataset_insert_unqualified</code></a>, <a href="https://github.com/jjviscomi/bqemulator/blob/main/tests/conformance/sql_corpus/api_configuration/default_dataset_join_partial_qualification"><code>api_configuration/default_dataset_join_partial_qualification</code></a>, <a href="https://github.com/jjviscomi/bqemulator/blob/main/tests/conformance/sql_corpus/api_configuration/default_dataset_select_table"><code>api_configuration/default_dataset_select_table</code></a>, <a href="https://github.com/jjviscomi/bqemulator/blob/main/tests/conformance/sql_corpus/api_configuration/dest_clustering_fields_basic"><code>api_configuration/dest_clustering_fields_basic</code></a>, <a href="https://github.com/jjviscomi/bqemulator/blob/main/tests/conformance/sql_corpus/api_configuration/dest_clustering_fields_invalid_column"><code>api_configuration/dest_clustering_fields_invalid_column</code></a>, … (+354 more)</td>
 </tr>
 <tr>
 <td><a href="https://cloud.google.com/bigquery/docs/reference/standard-sql/dml-syntax#insert_statement"><code>INSERT … SELECT</code></a></td>
@@ -6147,7 +6324,7 @@
 </tbody>
 </table>
 <h3 id="data-definition-ddl">Data Definition (DDL)<a class="headerlink" href="#data-definition-ddl" title="Permanent link">&para;</a></h3>
-<p><a href="https://cloud.google.com/bigquery/docs/reference/standard-sql/data-definition-language">BigQuery reference</a> -- <strong>25 / 25 items covered</strong></p>
+<p><a href="https://cloud.google.com/bigquery/docs/reference/standard-sql/data-definition-language">BigQuery reference</a> -- <strong>26 / 26 items covered</strong></p>
 <blockquote>
 <p>Schema-mutating DDL. Each form has wire-format implications (REST tables.insert / tables.patch / tables.delete) — coverage should pair the SQL form with the REST equivalent where BQ publishes both.</p>
 </blockquote>
@@ -6164,10 +6341,10 @@
 <tbody>
 <tr>
 <td><a href="https://cloud.google.com/bigquery/docs/reference/standard-sql/data-definition-language#create_table_statement"><code>CREATE TABLE</code></a></td>
-<td style="text-align: right;">470</td>
+<td style="text-align: right;">471</td>
 <td style="text-align: center;">🟢🟢 Deep</td>
-<td>happy×375 / null×47 / empty×28 / bound×11 / error×16</td>
-<td><a href="https://github.com/jjviscomi/bqemulator/blob/main/tests/conformance/sql_corpus/api_configuration/default_dataset_insert_unqualified"><code>api_configuration/default_dataset_insert_unqualified</code></a>, <a href="https://github.com/jjviscomi/bqemulator/blob/main/tests/conformance/sql_corpus/api_configuration/default_dataset_join_partial_qualification"><code>api_configuration/default_dataset_join_partial_qualification</code></a>, <a href="https://github.com/jjviscomi/bqemulator/blob/main/tests/conformance/sql_corpus/api_configuration/default_dataset_select_table"><code>api_configuration/default_dataset_select_table</code></a>, <a href="https://github.com/jjviscomi/bqemulator/blob/main/tests/conformance/sql_corpus/api_configuration/dest_clustering_fields_basic"><code>api_configuration/dest_clustering_fields_basic</code></a>, <a href="https://github.com/jjviscomi/bqemulator/blob/main/tests/conformance/sql_corpus/api_configuration/dest_clustering_fields_invalid_column"><code>api_configuration/dest_clustering_fields_invalid_column</code></a>, … (+465 more)</td>
+<td>happy×376 / null×47 / empty×28 / bound×11 / error×16</td>
+<td><a href="https://github.com/jjviscomi/bqemulator/blob/main/tests/conformance/sql_corpus/api_configuration/default_dataset_insert_unqualified"><code>api_configuration/default_dataset_insert_unqualified</code></a>, <a href="https://github.com/jjviscomi/bqemulator/blob/main/tests/conformance/sql_corpus/api_configuration/default_dataset_join_partial_qualification"><code>api_configuration/default_dataset_join_partial_qualification</code></a>, <a href="https://github.com/jjviscomi/bqemulator/blob/main/tests/conformance/sql_corpus/api_configuration/default_dataset_select_table"><code>api_configuration/default_dataset_select_table</code></a>, <a href="https://github.com/jjviscomi/bqemulator/blob/main/tests/conformance/sql_corpus/api_configuration/dest_clustering_fields_basic"><code>api_configuration/dest_clustering_fields_basic</code></a>, <a href="https://github.com/jjviscomi/bqemulator/blob/main/tests/conformance/sql_corpus/api_configuration/dest_clustering_fields_invalid_column"><code>api_configuration/dest_clustering_fields_invalid_column</code></a>, … (+466 more)</td>
 </tr>
 <tr>
 <td><a href="https://cloud.google.com/bigquery/docs/reference/standard-sql/data-definition-language#create_table_statement"><code>CREATE TABLE … AS SELECT (CTAS)</code></a></td>
@@ -6351,6 +6528,20 @@
 <td></td>
 <td><em>Setup happens via setup_rest.json POST, not SQL.</em></td>
 </tr>
+<tr>
+<td><a href="https://cloud.google.com/bigquery/docs/reference/standard-sql/export-statements"><code>EXPORT DATA</code></a></td>
+<td style="text-align: right;">11</td>
+<td style="text-align: center;">🟢🟢 Deep</td>
+<td>happy×8 / empty×1 / error×2</td>
+<td><a href="https://github.com/jjviscomi/bqemulator/blob/main/tests/conformance/sql_corpus/export_data/export_avro_basic"><code>export_data/export_avro_basic</code></a>, <a href="https://github.com/jjviscomi/bqemulator/blob/main/tests/conformance/sql_corpus/export_data/export_csv_basic"><code>export_data/export_csv_basic</code></a>, <a href="https://github.com/jjviscomi/bqemulator/blob/main/tests/conformance/sql_corpus/export_data/export_csv_compression_gzip"><code>export_data/export_csv_compression_gzip</code></a>, <a href="https://github.com/jjviscomi/bqemulator/blob/main/tests/conformance/sql_corpus/export_data/export_csv_field_delimiter_pipe"><code>export_data/export_csv_field_delimiter_pipe</code></a>, <a href="https://github.com/jjviscomi/bqemulator/blob/main/tests/conformance/sql_corpus/export_data/export_csv_no_header"><code>export_data/export_csv_no_header</code></a>, … (+6 more)</td>
+</tr>
+<tr>
+<td></td>
+<td style="text-align: right;"></td>
+<td style="text-align: center;"></td>
+<td></td>
+<td><em>GoogleSQL EXPORT DATA OPTIONS(...) AS SELECT → Cloud Storage (RFC 0001 / ADR 0043). Runs as a QUERY job with statementType EXPORT_DATA. SQL-corpus fixtures pin the empty result + job_metadata.statement_type; the wire job-resource shape is pinned by http_corpus/jobs/export</em>*. The \bdata\b boundary excludes the admin EXPORT DATABASE (ADR 0020)._</td>
+</tr>
 </tbody>
 </table>
 <h3 id="query-language">Query language<a class="headerlink" href="#query-language" title="Permanent link">&para;</a></h3>
@@ -6371,10 +6562,10 @@
 <tbody>
 <tr>
 <td><a href="https://cloud.google.com/bigquery/docs/reference/standard-sql/query-syntax#select_list"><code>SELECT</code></a></td>
-<td style="text-align: right;">1176</td>
+<td style="text-align: right;">1187</td>
 <td style="text-align: center;">🟢🟢 Deep</td>
-<td>happy×865 / null×110 / empty×62 / bound×49 / unicode×40 / error×43 / tz×20</td>
-<td><a href="https://github.com/jjviscomi/bqemulator/blob/main/tests/conformance/sql_corpus/api_configuration/cache_disabled_with_count_distinct"><code>api_configuration/cache_disabled_with_count_distinct</code></a>, <a href="https://github.com/jjviscomi/bqemulator/blob/main/tests/conformance/sql_corpus/api_configuration/cache_disabled_with_join"><code>api_configuration/cache_disabled_with_join</code></a>, <a href="https://github.com/jjviscomi/bqemulator/blob/main/tests/conformance/sql_corpus/api_configuration/create_never_missing_destination"><code>api_configuration/create_never_missing_destination</code></a>, <a href="https://github.com/jjviscomi/bqemulator/blob/main/tests/conformance/sql_corpus/api_configuration/create_never_with_append"><code>api_configuration/create_never_with_append</code></a>, <a href="https://github.com/jjviscomi/bqemulator/blob/main/tests/conformance/sql_corpus/api_configuration/create_never_with_truncate"><code>api_configuration/create_never_with_truncate</code></a>, … (+1171 more)</td>
+<td>happy×873 / null×110 / empty×63 / bound×49 / unicode×40 / error×45 / tz×20</td>
+<td><a href="https://github.com/jjviscomi/bqemulator/blob/main/tests/conformance/sql_corpus/api_configuration/cache_disabled_with_count_distinct"><code>api_configuration/cache_disabled_with_count_distinct</code></a>, <a href="https://github.com/jjviscomi/bqemulator/blob/main/tests/conformance/sql_corpus/api_configuration/cache_disabled_with_join"><code>api_configuration/cache_disabled_with_join</code></a>, <a href="https://github.com/jjviscomi/bqemulator/blob/main/tests/conformance/sql_corpus/api_configuration/create_never_missing_destination"><code>api_configuration/create_never_missing_destination</code></a>, <a href="https://github.com/jjviscomi/bqemulator/blob/main/tests/conformance/sql_corpus/api_configuration/create_never_with_append"><code>api_configuration/create_never_with_append</code></a>, <a href="https://github.com/jjviscomi/bqemulator/blob/main/tests/conformance/sql_corpus/api_configuration/create_never_with_truncate"><code>api_configuration/create_never_with_truncate</code></a>, … (+1182 more)</td>
 </tr>
 <tr>
 <td><a href="https://cloud.google.com/bigquery/docs/reference/standard-sql/query-syntax#where_clause"><code>WHERE</code></a></td>
@@ -6406,17 +6597,17 @@
 </tr>
 <tr>
 <td><a href="https://cloud.google.com/bigquery/docs/reference/standard-sql/query-syntax#order_by_clause"><code>ORDER BY</code></a></td>
-<td style="text-align: right;">315</td>
+<td style="text-align: right;">316</td>
 <td style="text-align: center;">🟢🟢 Deep</td>
-<td>happy×265 / null×35 / empty×9 / bound×3 / error×3</td>
-<td><a href="https://github.com/jjviscomi/bqemulator/blob/main/tests/conformance/sql_corpus/api_configuration/cache_disabled_with_join"><code>api_configuration/cache_disabled_with_join</code></a>, <a href="https://github.com/jjviscomi/bqemulator/blob/main/tests/conformance/sql_corpus/api_configuration/default_dataset_join_partial_qualification"><code>api_configuration/default_dataset_join_partial_qualification</code></a>, <a href="https://github.com/jjviscomi/bqemulator/blob/main/tests/conformance/sql_corpus/api_configuration/default_dataset_select_table"><code>api_configuration/default_dataset_select_table</code></a>, <a href="https://github.com/jjviscomi/bqemulator/blob/main/tests/conformance/sql_corpus/api_configuration/dry_run_aggregate"><code>api_configuration/dry_run_aggregate</code></a>, <a href="https://github.com/jjviscomi/bqemulator/blob/main/tests/conformance/sql_corpus/api_configuration/positional_array_int64"><code>api_configuration/positional_array_int64</code></a>, … (+310 more)</td>
+<td>happy×266 / null×35 / empty×9 / bound×3 / error×3</td>
+<td><a href="https://github.com/jjviscomi/bqemulator/blob/main/tests/conformance/sql_corpus/api_configuration/cache_disabled_with_join"><code>api_configuration/cache_disabled_with_join</code></a>, <a href="https://github.com/jjviscomi/bqemulator/blob/main/tests/conformance/sql_corpus/api_configuration/default_dataset_join_partial_qualification"><code>api_configuration/default_dataset_join_partial_qualification</code></a>, <a href="https://github.com/jjviscomi/bqemulator/blob/main/tests/conformance/sql_corpus/api_configuration/default_dataset_select_table"><code>api_configuration/default_dataset_select_table</code></a>, <a href="https://github.com/jjviscomi/bqemulator/blob/main/tests/conformance/sql_corpus/api_configuration/dry_run_aggregate"><code>api_configuration/dry_run_aggregate</code></a>, <a href="https://github.com/jjviscomi/bqemulator/blob/main/tests/conformance/sql_corpus/api_configuration/positional_array_int64"><code>api_configuration/positional_array_int64</code></a>, … (+311 more)</td>
 </tr>
 <tr>
 <td><a href="https://cloud.google.com/bigquery/docs/reference/standard-sql/query-syntax#limit_and_offset_clause"><code>LIMIT</code></a></td>
-<td style="text-align: right;">80</td>
+<td style="text-align: right;">81</td>
 <td style="text-align: center;">🟢🟢 Deep</td>
-<td>happy×62 / null×15 / empty×4</td>
-<td><a href="https://github.com/jjviscomi/bqemulator/blob/main/tests/conformance/sql_corpus/partitioning_clustering/wildcard_join_self"><code>partitioning_clustering/wildcard_join_self</code></a>, <a href="https://github.com/jjviscomi/bqemulator/blob/main/tests/conformance/sql_corpus/rest_crud/select_limit"><code>rest_crud/select_limit</code></a>, <a href="https://github.com/jjviscomi/bqemulator/blob/main/tests/conformance/sql_corpus/rest_crud/select_limit_offset"><code>rest_crud/select_limit_offset</code></a>, <a href="https://github.com/jjviscomi/bqemulator/blob/main/tests/conformance/sql_corpus/standard_functions/agg_array_agg_ordered"><code>standard_functions/agg_array_agg_ordered</code></a>, <a href="https://github.com/jjviscomi/bqemulator/blob/main/tests/conformance/sql_corpus/standard_functions/agg_percentile_cont_50"><code>standard_functions/agg_percentile_cont_50</code></a>, … (+75 more)</td>
+<td>happy×62 / null×15 / empty×5</td>
+<td><a href="https://github.com/jjviscomi/bqemulator/blob/main/tests/conformance/sql_corpus/export_data/export_empty_via_limit_zero"><code>export_data/export_empty_via_limit_zero</code></a>, <a href="https://github.com/jjviscomi/bqemulator/blob/main/tests/conformance/sql_corpus/partitioning_clustering/wildcard_join_self"><code>partitioning_clustering/wildcard_join_self</code></a>, <a href="https://github.com/jjviscomi/bqemulator/blob/main/tests/conformance/sql_corpus/rest_crud/select_limit"><code>rest_crud/select_limit</code></a>, <a href="https://github.com/jjviscomi/bqemulator/blob/main/tests/conformance/sql_corpus/rest_crud/select_limit_offset"><code>rest_crud/select_limit_offset</code></a>, <a href="https://github.com/jjviscomi/bqemulator/blob/main/tests/conformance/sql_corpus/standard_functions/agg_array_agg_ordered"><code>standard_functions/agg_array_agg_ordered</code></a>, … (+76 more)</td>
 </tr>
 <tr>
 <td><a href="https://cloud.google.com/bigquery/docs/reference/standard-sql/query-syntax#limit_and_offset_clause"><code>OFFSET</code></a></td>
@@ -6434,10 +6625,10 @@
 </tr>
 <tr>
 <td><a href="https://cloud.google.com/bigquery/docs/reference/standard-sql/query-syntax#set_operators"><code>UNION ALL</code></a></td>
-<td style="text-align: right;">86</td>
+<td style="text-align: right;">93</td>
 <td style="text-align: center;">🟢🟢 Deep</td>
-<td>happy×81 / null×4 / empty×1</td>
-<td><a href="https://github.com/jjviscomi/bqemulator/blob/main/tests/conformance/sql_corpus/api_configuration/cache_disabled_with_join"><code>api_configuration/cache_disabled_with_join</code></a>, <a href="https://github.com/jjviscomi/bqemulator/blob/main/tests/conformance/sql_corpus/api_configuration/dml_merge_basic"><code>api_configuration/dml_merge_basic</code></a>, <a href="https://github.com/jjviscomi/bqemulator/blob/main/tests/conformance/sql_corpus/api_configuration/dml_merge_when_matched"><code>api_configuration/dml_merge_when_matched</code></a>, <a href="https://github.com/jjviscomi/bqemulator/blob/main/tests/conformance/sql_corpus/api_configuration/dml_merge_when_not_matched"><code>api_configuration/dml_merge_when_not_matched</code></a>, <a href="https://github.com/jjviscomi/bqemulator/blob/main/tests/conformance/sql_corpus/api_configuration/dry_run_aggregate"><code>api_configuration/dry_run_aggregate</code></a>, … (+81 more)</td>
+<td>happy×88 / null×4 / empty×1</td>
+<td><a href="https://github.com/jjviscomi/bqemulator/blob/main/tests/conformance/sql_corpus/api_configuration/cache_disabled_with_join"><code>api_configuration/cache_disabled_with_join</code></a>, <a href="https://github.com/jjviscomi/bqemulator/blob/main/tests/conformance/sql_corpus/api_configuration/dml_merge_basic"><code>api_configuration/dml_merge_basic</code></a>, <a href="https://github.com/jjviscomi/bqemulator/blob/main/tests/conformance/sql_corpus/api_configuration/dml_merge_when_matched"><code>api_configuration/dml_merge_when_matched</code></a>, <a href="https://github.com/jjviscomi/bqemulator/blob/main/tests/conformance/sql_corpus/api_configuration/dml_merge_when_not_matched"><code>api_configuration/dml_merge_when_not_matched</code></a>, <a href="https://github.com/jjviscomi/bqemulator/blob/main/tests/conformance/sql_corpus/api_configuration/dry_run_aggregate"><code>api_configuration/dry_run_aggregate</code></a>, … (+88 more)</td>
 </tr>
 <tr>
 <td><a href="https://cloud.google.com/bigquery/docs/reference/standard-sql/query-syntax#set_operators"><code>UNION DISTINCT</code></a></td>
@@ -6546,10 +6737,10 @@
 </tr>
 <tr>
 <td><a href="https://cloud.google.com/bigquery/docs/querying-wildcard-tables"><code>Wildcard tables (</code>prefix_*<code>)</code></a></td>
-<td style="text-align: right;">110</td>
+<td style="text-align: right;">111</td>
 <td style="text-align: center;">🟢🟢 Deep</td>
-<td>happy×86 / null×9 / empty×14 / error×1</td>
-<td><a href="https://github.com/jjviscomi/bqemulator/blob/main/tests/conformance/sql_corpus/information_schema/is_partitions_empty_table"><code>information_schema/is_partitions_empty_table</code></a>, <a href="https://github.com/jjviscomi/bqemulator/blob/main/tests/conformance/sql_corpus/information_schema/is_views_empty_dataset"><code>information_schema/is_views_empty_dataset</code></a>, <a href="https://github.com/jjviscomi/bqemulator/blob/main/tests/conformance/sql_corpus/partitioning_clustering/cluster_basic"><code>partitioning_clustering/cluster_basic</code></a>, <a href="https://github.com/jjviscomi/bqemulator/blob/main/tests/conformance/sql_corpus/partitioning_clustering/partition_prune_integer_range"><code>partitioning_clustering/partition_prune_integer_range</code></a>, <a href="https://github.com/jjviscomi/bqemulator/blob/main/tests/conformance/sql_corpus/partitioning_clustering/partition_prune_partitiontime"><code>partitioning_clustering/partition_prune_partitiontime</code></a>, … (+105 more)</td>
+<td>happy×87 / null×9 / empty×14 / error×1</td>
+<td><a href="https://github.com/jjviscomi/bqemulator/blob/main/tests/conformance/sql_corpus/export_data/export_from_table_ordered"><code>export_data/export_from_table_ordered</code></a>, <a href="https://github.com/jjviscomi/bqemulator/blob/main/tests/conformance/sql_corpus/information_schema/is_partitions_empty_table"><code>information_schema/is_partitions_empty_table</code></a>, <a href="https://github.com/jjviscomi/bqemulator/blob/main/tests/conformance/sql_corpus/information_schema/is_views_empty_dataset"><code>information_schema/is_views_empty_dataset</code></a>, <a href="https://github.com/jjviscomi/bqemulator/blob/main/tests/conformance/sql_corpus/partitioning_clustering/cluster_basic"><code>partitioning_clustering/cluster_basic</code></a>, <a href="https://github.com/jjviscomi/bqemulator/blob/main/tests/conformance/sql_corpus/partitioning_clustering/partition_prune_integer_range"><code>partitioning_clustering/partition_prune_integer_range</code></a>, … (+106 more)</td>
 </tr>
 <tr>
 <td><a href="https://cloud.google.com/bigquery/docs/querying-wildcard-tables#filtering_selected_tables_using_table_suffix"><code>_TABLE_SUFFIX pseudo-column</code></a></td>
@@ -6743,10 +6934,10 @@
 <tbody>
 <tr>
 <td><a href="https://cloud.google.com/bigquery/docs/reference/standard-sql/data-types#integer_type"><code>INT64</code></a></td>
-<td style="text-align: right;">465</td>
+<td style="text-align: right;">466</td>
 <td style="text-align: center;">🟢🟢 Deep</td>
-<td>happy×346 / null×62 / empty×40 / bound×8 / error×20</td>
-<td><a href="https://github.com/jjviscomi/bqemulator/blob/main/tests/conformance/sql_corpus/api_configuration/default_dataset_insert_unqualified"><code>api_configuration/default_dataset_insert_unqualified</code></a>, <a href="https://github.com/jjviscomi/bqemulator/blob/main/tests/conformance/sql_corpus/api_configuration/default_dataset_join_partial_qualification"><code>api_configuration/default_dataset_join_partial_qualification</code></a>, <a href="https://github.com/jjviscomi/bqemulator/blob/main/tests/conformance/sql_corpus/api_configuration/default_dataset_select_table"><code>api_configuration/default_dataset_select_table</code></a>, <a href="https://github.com/jjviscomi/bqemulator/blob/main/tests/conformance/sql_corpus/api_configuration/dest_clustering_fields_basic"><code>api_configuration/dest_clustering_fields_basic</code></a>, <a href="https://github.com/jjviscomi/bqemulator/blob/main/tests/conformance/sql_corpus/api_configuration/dest_clustering_fields_invalid_column"><code>api_configuration/dest_clustering_fields_invalid_column</code></a>, … (+460 more)</td>
+<td>happy×347 / null×62 / empty×40 / bound×8 / error×20</td>
+<td><a href="https://github.com/jjviscomi/bqemulator/blob/main/tests/conformance/sql_corpus/api_configuration/default_dataset_insert_unqualified"><code>api_configuration/default_dataset_insert_unqualified</code></a>, <a href="https://github.com/jjviscomi/bqemulator/blob/main/tests/conformance/sql_corpus/api_configuration/default_dataset_join_partial_qualification"><code>api_configuration/default_dataset_join_partial_qualification</code></a>, <a href="https://github.com/jjviscomi/bqemulator/blob/main/tests/conformance/sql_corpus/api_configuration/default_dataset_select_table"><code>api_configuration/default_dataset_select_table</code></a>, <a href="https://github.com/jjviscomi/bqemulator/blob/main/tests/conformance/sql_corpus/api_configuration/dest_clustering_fields_basic"><code>api_configuration/dest_clustering_fields_basic</code></a>, <a href="https://github.com/jjviscomi/bqemulator/blob/main/tests/conformance/sql_corpus/api_configuration/dest_clustering_fields_invalid_column"><code>api_configuration/dest_clustering_fields_invalid_column</code></a>, … (+461 more)</td>
 </tr>
 <tr>
 <td><a href="https://cloud.google.com/bigquery/docs/reference/standard-sql/data-types#floating_point_types"><code>FLOAT64</code></a></td>
@@ -6778,10 +6969,10 @@
 </tr>
 <tr>
 <td><a href="https://cloud.google.com/bigquery/docs/reference/standard-sql/data-types#string_type"><code>STRING</code></a></td>
-<td style="text-align: right;">603</td>
+<td style="text-align: right;">604</td>
 <td style="text-align: center;">🟢🟢 Deep</td>
-<td>happy×463 / null×71 / empty×37 / bound×12 / unicode×12 / error×12 / tz×1</td>
-<td><a href="https://github.com/jjviscomi/bqemulator/blob/main/tests/conformance/sql_corpus/api_configuration/cache_disabled_with_join"><code>api_configuration/cache_disabled_with_join</code></a>, <a href="https://github.com/jjviscomi/bqemulator/blob/main/tests/conformance/sql_corpus/api_configuration/default_dataset_insert_unqualified"><code>api_configuration/default_dataset_insert_unqualified</code></a>, <a href="https://github.com/jjviscomi/bqemulator/blob/main/tests/conformance/sql_corpus/api_configuration/default_dataset_join_partial_qualification"><code>api_configuration/default_dataset_join_partial_qualification</code></a>, <a href="https://github.com/jjviscomi/bqemulator/blob/main/tests/conformance/sql_corpus/api_configuration/default_dataset_select_table"><code>api_configuration/default_dataset_select_table</code></a>, <a href="https://github.com/jjviscomi/bqemulator/blob/main/tests/conformance/sql_corpus/api_configuration/dest_clustering_fields_basic"><code>api_configuration/dest_clustering_fields_basic</code></a>, … (+598 more)</td>
+<td>happy×464 / null×71 / empty×37 / bound×12 / unicode×12 / error×12 / tz×1</td>
+<td><a href="https://github.com/jjviscomi/bqemulator/blob/main/tests/conformance/sql_corpus/api_configuration/cache_disabled_with_join"><code>api_configuration/cache_disabled_with_join</code></a>, <a href="https://github.com/jjviscomi/bqemulator/blob/main/tests/conformance/sql_corpus/api_configuration/default_dataset_insert_unqualified"><code>api_configuration/default_dataset_insert_unqualified</code></a>, <a href="https://github.com/jjviscomi/bqemulator/blob/main/tests/conformance/sql_corpus/api_configuration/default_dataset_join_partial_qualification"><code>api_configuration/default_dataset_join_partial_qualification</code></a>, <a href="https://github.com/jjviscomi/bqemulator/blob/main/tests/conformance/sql_corpus/api_configuration/default_dataset_select_table"><code>api_configuration/default_dataset_select_table</code></a>, <a href="https://github.com/jjviscomi/bqemulator/blob/main/tests/conformance/sql_corpus/api_configuration/dest_clustering_fields_basic"><code>api_configuration/dest_clustering_fields_basic</code></a>, … (+599 more)</td>
 </tr>
 <tr>
 <td><a href="https://cloud.google.com/bigquery/docs/reference/standard-sql/data-types#bytes_type"><code>BYTES</code></a></td>
@@ -6841,10 +7032,10 @@
 </tr>
 <tr>
 <td><a href="https://cloud.google.com/bigquery/docs/reference/standard-sql/data-types#json_type"><code>JSON</code></a></td>
-<td style="text-align: right;">12</td>
+<td style="text-align: right;">13</td>
 <td style="text-align: center;">🟢🟢 Deep</td>
-<td>happy×11 / null×1</td>
-<td><a href="https://github.com/jjviscomi/bqemulator/blob/main/tests/conformance/sql_corpus/routines_scripting/js_udf_json_roundtrip"><code>routines_scripting/js_udf_json_roundtrip</code></a>, <a href="https://github.com/jjviscomi/bqemulator/blob/main/tests/conformance/sql_corpus/specialized_types/st_asgeojson_in_parse_json_roundtrip"><code>specialized_types/st_asgeojson_in_parse_json_roundtrip</code></a>, <a href="https://github.com/jjviscomi/bqemulator/blob/main/tests/conformance/sql_corpus/standard_functions/json_array_construct"><code>standard_functions/json_array_construct</code></a>, <a href="https://github.com/jjviscomi/bqemulator/blob/main/tests/conformance/sql_corpus/standard_functions/json_array_insert_at_zero"><code>standard_functions/json_array_insert_at_zero</code></a>, <a href="https://github.com/jjviscomi/bqemulator/blob/main/tests/conformance/sql_corpus/standard_functions/json_array_insert_nested"><code>standard_functions/json_array_insert_nested</code></a>, … (+7 more)</td>
+<td>happy×12 / null×1</td>
+<td><a href="https://github.com/jjviscomi/bqemulator/blob/main/tests/conformance/sql_corpus/export_data/export_json_basic"><code>export_data/export_json_basic</code></a>, <a href="https://github.com/jjviscomi/bqemulator/blob/main/tests/conformance/sql_corpus/routines_scripting/js_udf_json_roundtrip"><code>routines_scripting/js_udf_json_roundtrip</code></a>, <a href="https://github.com/jjviscomi/bqemulator/blob/main/tests/conformance/sql_corpus/specialized_types/st_asgeojson_in_parse_json_roundtrip"><code>specialized_types/st_asgeojson_in_parse_json_roundtrip</code></a>, <a href="https://github.com/jjviscomi/bqemulator/blob/main/tests/conformance/sql_corpus/standard_functions/json_array_construct"><code>standard_functions/json_array_construct</code></a>, <a href="https://github.com/jjviscomi/bqemulator/blob/main/tests/conformance/sql_corpus/standard_functions/json_array_insert_at_zero"><code>standard_functions/json_array_insert_at_zero</code></a>, … (+8 more)</td>
 </tr>
 <tr>
 <td><a href="https://cloud.google.com/bigquery/docs/reference/standard-sql/data-types#array_type"><code>ARRAY&lt;T&gt;</code></a></td>
@@ -9335,10 +9526,10 @@
 </tr>
 <tr>
 <td><a href="https://cloud.google.com/bigquery/docs/reference/rest/v2/jobs/query#response-body"><code>NULL in row payload</code></a></td>
-<td style="text-align: right;">206</td>
+<td style="text-align: right;">208</td>
 <td style="text-align: center;">🟢🟢 Deep</td>
-<td>happy×43 / null×108 / empty×11 / bound×10 / error×46 / tz×2</td>
-<td><a href="https://github.com/jjviscomi/bqemulator/blob/main/tests/conformance/sql_corpus/api_configuration/create_never_missing_destination"><code>api_configuration/create_never_missing_destination</code></a>, <a href="https://github.com/jjviscomi/bqemulator/blob/main/tests/conformance/sql_corpus/api_configuration/create_never_with_append"><code>api_configuration/create_never_with_append</code></a>, <a href="https://github.com/jjviscomi/bqemulator/blob/main/tests/conformance/sql_corpus/api_configuration/create_never_with_truncate"><code>api_configuration/create_never_with_truncate</code></a>, <a href="https://github.com/jjviscomi/bqemulator/blob/main/tests/conformance/sql_corpus/api_configuration/dest_clustering_fields_invalid_column"><code>api_configuration/dest_clustering_fields_invalid_column</code></a>, <a href="https://github.com/jjviscomi/bqemulator/blob/main/tests/conformance/sql_corpus/api_configuration/dest_time_partitioning_invalid_field"><code>api_configuration/dest_time_partitioning_invalid_field</code></a>, … (+201 more)</td>
+<td>happy×43 / null×108 / empty×11 / bound×10 / error×48 / tz×2</td>
+<td><a href="https://github.com/jjviscomi/bqemulator/blob/main/tests/conformance/sql_corpus/api_configuration/create_never_missing_destination"><code>api_configuration/create_never_missing_destination</code></a>, <a href="https://github.com/jjviscomi/bqemulator/blob/main/tests/conformance/sql_corpus/api_configuration/create_never_with_append"><code>api_configuration/create_never_with_append</code></a>, <a href="https://github.com/jjviscomi/bqemulator/blob/main/tests/conformance/sql_corpus/api_configuration/create_never_with_truncate"><code>api_configuration/create_never_with_truncate</code></a>, <a href="https://github.com/jjviscomi/bqemulator/blob/main/tests/conformance/sql_corpus/api_configuration/dest_clustering_fields_invalid_column"><code>api_configuration/dest_clustering_fields_invalid_column</code></a>, <a href="https://github.com/jjviscomi/bqemulator/blob/main/tests/conformance/sql_corpus/api_configuration/dest_time_partitioning_invalid_field"><code>api_configuration/dest_time_partitioning_invalid_field</code></a>, … (+203 more)</td>
 </tr>
 <tr>
 <td><a href="https://cloud.google.com/bigquery/docs/parameterized-queries#bigquery_query_parameters_via_rest-python"><code>Named queryParameters (mode="named")</code></a></td>

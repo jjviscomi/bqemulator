@@ -385,17 +385,20 @@
   
   
   
-    <li class="md-tabs__item">
-      <a href="../../rfcs/" class="md-tabs__link">
-        
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../rfcs/" class="md-tabs__link">
+          
   
   
     
   
   RFCs
 
-      </a>
-    </li>
+        </a>
+      </li>
+    
   
 
       
@@ -873,6 +876,8 @@
       
         
       
+        
+      
     
     
     
@@ -961,6 +966,34 @@
     
   
     Loading from local files
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../guides/exporting-data/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Exporting data
   
 
     
@@ -2277,6 +2310,17 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#export-data-with-connection-external-sinks" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        EXPORT DATA WITH CONNECTION (external sinks)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#information_schemajobs-family" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -3220,6 +3264,8 @@
   
     
     
+      
+        
       
         
       
@@ -4526,6 +4572,34 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../adr/0043-export-data-statement/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0043 EXPORT DATA statement (Cloud Storage)
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -4539,9 +4613,34 @@
   
   
   
-    <li class="md-nav__item">
-      <a href="../../rfcs/" class="md-nav__link">
+    
+    
+      
         
+          
+        
+      
+        
+      
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_8" >
+        
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="../../rfcs/" class="md-nav__link ">
+              
   
   
   <span class="md-ellipsis">
@@ -4555,7 +4654,66 @@
   
   
 
+            </a>
+            
+              
+              <label class="md-nav__link " for="__nav_8" id="__nav_8_label" tabindex="0">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_8_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_8">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    RFCs
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../rfcs/0001-export-data-statement/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0001 EXPORT DATA statement (Cloud Storage)
+  
+
+    
+  </span>
+  
+  
+    
+  
+  
+    <span class="md-status md-status--Accepted"></span>
+  
+
+  
+
       </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
     </li>
   
 
@@ -4718,6 +4876,8 @@
       
         
       
+        
+      
     
     
     
@@ -4770,6 +4930,34 @@
           </label>
           <ul class="md-nav__list" data-md-scrollfix>
             
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../examples/python/export-to-gcs/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Export to GCS
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
               
             
               
@@ -5699,6 +5887,17 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#export-data-with-connection-external-sinks" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        EXPORT DATA WITH CONNECTION (external sinks)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#information_schemajobs-family" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -6249,6 +6448,27 @@ then convert downstream with <code>pyorc</code> or <code>pyarrow</code>:</p>
 <p>See <a href="../../adr/0027-load-extract-avro-orc/">ADR 0027</a> for the
 load/extract format-coverage contract. ORC <strong>load</strong> is supported
 via the optional <code>[orc]</code> extra; only ORC write is excluded.</p>
+<p>The GoogleSQL <a href="../../guides/exporting-data/"><code>EXPORT DATA</code></a> statement
+shares this destination format set: <code>format = 'ORC'</code> is rejected as an
+invalid <code>format</code> OPTIONS value (matching BigQuery), not modelled as a
+separate unsupported feature.</p>
+<h3 id="export-data-with-connection-external-sinks"><code>EXPORT DATA WITH CONNECTION</code> (external sinks)<a class="headerlink" href="#export-data-with-connection-external-sinks" title="Permanent link">&para;</a></h3>
+<p><strong>Status</strong>: Excluded permanently.</p>
+<p>The GoogleSQL <code>EXPORT DATA OPTIONS(...) AS SELECT</code> statement is
+<a href="../../guides/exporting-data/">supported</a> for Cloud Storage destinations
+(<code>gs://</code>, resolved under <code>BQEMU_GCS_LOCAL_ROOT</code>). Its <code>WITH CONNECTION</code>
+variant — which exports to external systems (Amazon S3, Azure Blob
+Storage, Pub/Sub reverse-ETL) through a <code>CONNECTION</code> resource — is
+<strong>not</strong> supported, and is rejected with a clear
+<code>UnsupportedFeatureError</code>.</p>
+<p><em>Rationale</em>: the emulator's charter is BigQuery and its Cloud Storage
+integration. External sinks are separate services that real BigQuery
+reaches through connection resources — each a distinct integration well
+outside the SQL-semantics surface the emulator targets. See
+<a href="../../adr/0043-export-data-statement/">ADR 0043</a> and
+<a href="../../rfcs/0001-export-data-statement/">RFC 0001</a>.</p>
+<p><strong>Workaround</strong>: export to Cloud Storage and move the files to the
+external sink with the provider's own tooling.</p>
 <h3 id="information_schemajobs-family">INFORMATION_SCHEMA.JOBS* family<a class="headerlink" href="#information_schemajobs-family" title="Permanent link">&para;</a></h3>
 <p><strong>Status</strong>: Excluded permanently.</p>
 <p>BigQuery exposes a <code>JOBS</code> / <code>JOBS_BY_PROJECT</code> / <code>JOBS_BY_FOLDER</code> /
@@ -6295,8 +6515,9 @@ BigQuery doesn't include.</p>
 <p>The emulator's existing <code>BQEMU_GCS_LOCAL_ROOT</code> shim
 (<a href="../../adr/0027-load-extract-avro-orc/">ADR 0027</a>) is a <em>filesystem
 resolver</em> for <code>gs://</code> URIs that appear in LOAD / EXTRACT
-<code>sourceUris</code> — it maps <code>gs://bucket/path</code> to a local filesystem
-path, so a test that pre-stages files on disk can load them. It is
+<code>sourceUris</code> and <code>EXPORT DATA</code> destination URIs — it maps
+<code>gs://bucket/path</code> to a local filesystem path, so a test can
+pre-stage files for a load or read an exported file back. It is
 not a GCS API emulator. Anything that needs the actual GCS JSON API
 (Beam's <code>BigQueryIO.Write</code> BATCH_LOADS staging step, the Java SDK's
 <code>Storage.objects.insert</code>, signed URLs, multipart uploads) must
