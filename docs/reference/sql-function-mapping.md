@@ -50,7 +50,7 @@ table below maps each BigQuery view to its rewriter function.
 
 > **Auto-generated.** Edit translation rules under [`src/bqemulator/sql/rules/`](https://github.com/jjviscomi/bqemulator/blob/main/src/bqemulator/sql/rules/) or rewriters under [`src/bqemulator/sql/rewriter/`](https://github.com/jjviscomi/bqemulator/blob/main/src/bqemulator/sql/rewriter/), then run `make function-mapping` to regenerate this block. The CI gate (`--check`) refuses to merge a PR whose committed registry has drifted from the live source. Per-rule docstring summaries are extracted as the cell text — if a cell reads wrong, edit the rule's docstring.
 
-- **Registered rules**: 93 (13 rule modules)
+- **Registered rules**: 92 (13 rule modules)
 - **Rewriter functions**: 24 (24 rewriter modules; the INFORMATION_SCHEMA rewriter has its own hand-maintained per-view table below)
 
 ### Translation rules (post-transpile AST passes)
@@ -76,7 +76,6 @@ table below maps each BigQuery view to its rewriter function.
 | Date / time / timestamp | `FORMAT_TIME(fmt, t)` | `STRFTIME(DATE '1970-01-01' + t, fmt)` | `FORMAT_TIME` |
 | Date / time / timestamp | `JSON_TYPE(x)` | `LOWER(JSON_TYPE(x))` | `JSON_TYPE_LOWER` |
 | Date / time / timestamp | `PARSE_DATETIME(fmt, value)` | `strptime(value, fmt)` | `PARSE_DATETIME` |
-| Date / time / timestamp | `PARSE_TIME(value, fmt)` | `CAST(strptime(value, fmt) AS TIME)` | `PARSE_TIME` |
 | Date / time / timestamp | `STRPTIME(value, fmt)` | `timezone('UTC', STRPTIME(value, fmt))` | `PARSE_TIMESTAMP_UTC` |
 | Date / time / timestamp | `DATE_TRUNC('WEEK', ts AT TIME ZONE 'X')` | Sunday-start truncation | `TIMESTAMP_TRUNC_WEEK_ZONE_SUNDAY` |
 | Date / time / timestamp | `TIME(timestamp)` | `CAST(timezone('UTC', timestamp) AS TIME)` | `TIME_FROM_TIMESTAMPTZ` |

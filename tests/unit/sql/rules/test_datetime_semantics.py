@@ -190,6 +190,36 @@ class TestParseTime:
         assert str(desc[0][1]).upper() == "TIME"
         assert cursor.fetchone() == (_dt.time(12, 34, 56),)
 
+    def test_strptime_not_utc_wrapped(self, t: SQLTranslator) -> None:
+        """Regression: the ``strptime`` under ``CAST(... AS TIME)`` stays naive.
+
+        SQLGlot >= 30.9 transpiles ``PARSE_TIME`` natively to
+        ``CAST(STRPTIME(...) AS TIME)``. ``ParseTimestampUtcRule`` must
+        NOT wrap that ``strptime`` in ``timezone('UTC', …)`` — doing so
+        yields ``CAST(TIMESTAMP WITH TIME ZONE AS TIME)``, which DuckDB
+        rejects (the bug that motivated the sqlglot 30.9 cap).
+        """
+        result = t.translate("SELECT PARSE_TIME('%H:%M:%S', '12:34:56') AS t")
+        assert isinstance(result, Ok)
+        upper = result.value.upper()
+        assert "TIMEZONE" not in upper
+        assert "AS TIME)" in upper
+
+
+class TestParseDate:
+    """``PARSE_DATE(fmt, value)`` → ``CAST(strptime(value, fmt) AS DATE)``."""
+
+    def test_basic_format(self, t: SQLTranslator, con: duckdb.DuckDBPyConnection) -> None:
+        result = t.translate("SELECT PARSE_DATE('%Y-%m-%d', '2024-01-15') AS d")
+        assert isinstance(result, Ok)
+        # The ``strptime`` must stay naive: UTC-wrapping it would tz-shift
+        # the value (``CAST(TIMESTAMP WITH TIME ZONE AS DATE)``) and read
+        # back off-by-one in a non-UTC session timezone.
+        assert "TIMEZONE" not in result.value.upper()
+        cursor = con.execute(result.value)
+        assert str(cursor.description[0][1]).upper() == "DATE"
+        assert cursor.fetchone() == (_dt.date(2024, 1, 15),)
+
 
 class TestParseTimestampUtc:
     """``PARSE_TIMESTAMP`` → wrapped in ``timezone('UTC', strptime(...))``."""
@@ -205,6 +235,20 @@ class TestParseTimestampUtc:
         row = cursor.fetchone()
         assert row is not None
         assert row[0].tzinfo is not None
+
+    def test_cast_to_timestamp_still_wrapped(self, t: SQLTranslator) -> None:
+        """A ``strptime`` cast to ``TIMESTAMP`` keeps its UTC wrap.
+
+        The Cast-to-TIME/DATE guard suppresses the UTC wrap only for
+        tz-less target types; a ``TIMESTAMP`` (instant) target must still
+        be UTC-stamped so the wire renderer emits a UTC datetime.
+        """
+        result = t.translate(
+            "SELECT CAST(PARSE_TIMESTAMP('%Y-%m-%d %H:%M:%S', "
+            "'2024-01-15 12:34:56') AS TIMESTAMP) AS ts",
+        )
+        assert isinstance(result, Ok)
+        assert "TIMEZONE" in result.value.upper()
 
 
 class TestFormatTime:

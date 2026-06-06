@@ -76,9 +76,6 @@ documented in [out-of-scope.md](out-of-scope.md), including:
   BigQuery gates the view on `bigquery.rowAccessPolicies.list`; the
   emulator does not enforce IAM. See
   [out-of-scope.md#iam-enforcement](out-of-scope.md#iam-enforcement).
-* **CTE self-join with window aggregate (TPC-DS Q47)** — a SQLGlot
-  CTE-inlining shape DuckDB's binder rejects. See
-  [out-of-scope.md#cte-self-join-with-window-aggregate-tpc-ds-q47](out-of-scope.md#cte-self-join-with-window-aggregate-tpc-ds-q47).
 
 Each pin's rationale string in `divergences.py` links to its
 out-of-scope.md section.
