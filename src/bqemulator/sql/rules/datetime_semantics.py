@@ -25,9 +25,11 @@ post-translate stage:
   reaches ``STRFTIME`` as a ``TIMESTAMP``, and translates BigQuery's
   ``%E#S`` fractional-second extension to DuckDB's ``%S.%g`` /
   ``%S.%f``.
-* BigQuery's ``PARSE_TIME(fmt, value)`` returns ``TIME``; DuckDB has
-  no ``parse_time`` function. :class:`ParseTimeRule` emits
-  ``CAST(strptime(value, fmt) AS TIME)``.
+* BigQuery's ``PARSE_TIME(fmt, value)`` returns ``TIME``. SQLGlot
+  (>= 30.9) transpiles it natively to ``CAST(strptime(value, fmt) AS
+  TIME)``; the only bqemulator concern is keeping that ``strptime``
+  *naive* — :class:`ParseTimestampUtcRule` skips its UTC wrap when the
+  ``strptime`` is the operand of a ``CAST(... AS TIME)`` (or ``DATE``).
 * BigQuery's ``PARSE_DATETIME(fmt, value)`` returns ``DATETIME``;
   DuckDB has no ``parse_datetime`` function. :class:`ParseDatetimeRule`
   emits ``strptime(value, fmt)`` whose naive-TIMESTAMP return lands on
@@ -328,37 +330,6 @@ class FormatPrintfRule(TranslationRule):
 
 
 @register
-class ParseTimeRule(TranslationRule):
-    """``PARSE_TIME(value, fmt)`` → ``CAST(strptime(value, fmt) AS TIME)``.
-
-    DuckDB does not implement ``parse_time``; ``strptime`` returns a
-    ``TIMESTAMP`` which the explicit cast narrows to ``TIME``. The
-    BigQuery arg order is ``(format, value)`` but SQLGlot swaps to the
-    DuckDB-native ``(value, format)`` during the transpile — the
-    ``ParseTime`` AST node at this point already carries
-    ``this=value``, ``format=format``.
-    """
-
-    name = "PARSE_TIME"
-
-    def applies_to(self, node: exp.Expression) -> bool:
-        """Match the typed ``ParseTime`` AST node."""
-        return isinstance(node, exp.ParseTime)
-
-    def rewrite(self, node: exp.Expression) -> exp.Expression:
-        """Emit ``CAST(strptime(value, fmt) AS TIME)``."""
-        value = node.this
-        fmt = node.args.get("format")
-        if value is None or fmt is None:
-            return node
-        strptime_call = exp.Anonymous(
-            this="strptime",
-            expressions=[value.copy(), fmt.copy()],
-        )
-        return exp.Cast(this=strptime_call, to=exp.DataType.build("TIME"))
-
-
-@register
 class JsonTypeLowerRule(TranslationRule):
     """``JSON_TYPE(x)`` → ``LOWER(JSON_TYPE(x))``.
 
@@ -402,10 +373,28 @@ class ParseTimestampUtcRule(TranslationRule):
         """Match SQLGlot's ``StrToTime`` node (DuckDB ``strptime``)."""
         if not isinstance(node, exp.StrToTime):
             return False
+        parent = node.parent
         # Don't double-wrap when an outer ``timezone(...)`` already
         # settles the tz.
-        parent = node.parent
-        return not (isinstance(parent, exp.Anonymous) and str(parent.this).upper() == "TIMEZONE")
+        if isinstance(parent, exp.Anonymous) and str(parent.this).upper() == "TIMEZONE":
+            return False
+        # Don't wrap a ``strptime`` that is the operand of a CAST to a
+        # tz-less type (``TIME`` / ``DATE``). SQLGlot >= 30.9 transpiles
+        # BigQuery ``PARSE_TIME`` natively to ``CAST(STRPTIME(...) AS
+        # TIME)``; UTC-stamping that ``strptime`` would yield ``CAST(
+        # TIMESTAMP WITH TIME ZONE AS TIME)``, which DuckDB rejects (and
+        # is semantically wrong — ``TIME``/``DATE`` carry no zone). The
+        # naive ``CAST(STRPTIME(...) AS TIME)`` is already correct for
+        # ``PARSE_TIME``; ``PARSE_TIMESTAMP`` reaches this rule as a bare
+        # ``strptime`` (no CAST) and is still wrapped.
+        if isinstance(parent, exp.Cast):
+            to_type = parent.to
+            if isinstance(to_type, exp.DataType) and to_type.this in (
+                exp.DataType.Type.TIME,
+                exp.DataType.Type.DATE,
+            ):
+                return False
+        return True
 
     def rewrite(self, node: exp.Expression) -> exp.Expression:
         """Wrap the ``strptime`` call in ``timezone('UTC', …)``."""
@@ -923,7 +912,6 @@ __all__ = [
     "FormatTimeRule",
     "JsonTypeLowerRule",
     "ParseDatetimeRule",
-    "ParseTimeRule",
     "ParseTimestampUtcRule",
     "TimeFromTimestamptzRule",
     "TimeTruncRule",

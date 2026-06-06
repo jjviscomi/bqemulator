@@ -477,61 +477,6 @@ standard pipeline. A full legacy-SQL parser remains out of scope.
 standard SQL (the canonical migration path BigQuery itself
 recommends) and submit it with `useLegacySql=false` (the default).
 
-### CTE self-join with window aggregate (TPC-DS Q47)
-
-TPC-DS Q47 uses a multi-CTE pattern where a CTE (`v1`) is
-defined with two window aggregates — `AVG(SUM(...)) OVER (PARTITION
-BY...)` for monthly-average sales plus `RANK() OVER (PARTITION
-BY... ORDER BY d_year, d_moy)` for a chronological row-number —
-and then **self-joined three times** in a subsequent CTE (`v2`):
-
-```sql
-WITH v1 AS (
-  SELECT ...,
-    AVG(SUM(ss_sales_price)) OVER (PARTITION BY ...) AS avg_monthly_sales,
-    RANK() OVER (PARTITION BY ... ORDER BY d_year, d_moy) AS rn
-  FROM item, store_sales, date_dim, store
-  WHERE ...
-  GROUP BY ...
-),
-v2 AS (
-  SELECT v1.*, v1_lag.sum_sales AS psum, v1_lead.sum_sales AS nsum
-  FROM v1, v1 v1_lag, v1 v1_lead
-  WHERE v1.rn = v1_lag.rn + 1
-    AND v1.rn = v1_lead.rn - 1
-)
-```
-
-When SQLGlot translates this to DuckDB it inlines `v1` three
-times into `v2`. DuckDB's planner raises `Binder Error: UNNEST
-requires a single list as input` on the resulting plan — the
-exact internal step that mis-fires is not yet diagnosed.
-
-Closing this divergence cleanly requires either:
-
-1. Investigating SQLGlot's inlining strategy for CTEs whose
-   bodies carry window aggregates and emitting an alternative
-   plan (materialise the CTE first via `CREATE TEMP TABLE AS
-   SELECT FROM v1` before the self-join). DuckDB does honour
-   `CREATE TEMP TABLE`, so a pre-translator that materialises
-   any multi-times-referenced CTE with a window aggregate would
-   work — but the criteria for "materialise vs inline" need a
-   cost model.
-2. A DuckDB upstream fix to the planner's UNNEST-related binder
-   for the specific shape SQLGlot emits — out of scope here.
-
-The conformance fixture
-[`standard_functions/tpcds_q47`](https://github.com/jjviscomi/bqemulator/blob/main/tests/conformance/sql_corpus/standard_functions/tpcds_q47)
-is pinned XFAIL against this divergence. Q47 is the only one of
-the 29 TPC-DS fixtures in the corpus that surfaces this issue; the
-other 28 picks PASS without code changes.
-
-*Workaround*: clients that need the same shape should
-materialise the CTE manually (`CREATE TEMP TABLE v1_materialised
-AS SELECT... FROM v1`) before the self-join, or refactor to
-use `LAG`/`LEAD` window functions on the original CTE without
-self-joining.
-
 ### ORC extract
 
 **Status**: Excluded permanently.

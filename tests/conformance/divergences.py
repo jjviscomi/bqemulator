@@ -63,17 +63,6 @@ _BIGNUMERIC_CAP = (
     "fractional truncation (Path C of numeric_literals.py) — see "
     "docs/reference/out-of-scope.md#bignumeric-literals-with-39-integer-digits"
 )
-_CTE_SELF_JOIN_WINDOW_UNNEST = (
-    "TPC-DS Q47-style multi-CTE pattern: a CTE that carries a window "
-    "aggregate (AVG OVER PARTITION BY ... and RANK OVER ...) is self-"
-    "joined to itself three times (v1, v1 v1_lag, v1 v1_lead) with "
-    "row-number equality joins. SQLGlot inlines the CTE three times; "
-    "DuckDB raises ``Binder Error: UNNEST requires a single list as "
-    "input`` on the resulting plan. Closure needs an investigation "
-    "into how SQLGlot's CTE-inlining transforms window aggregates over "
-    "ROW_NUMBER joins — see "
-    "docs/reference/out-of-scope.md#cte-self-join-with-window-aggregate-tpc-ds-q47"
-)
 _HLL_SKETCH_BINARY = (
     "HLL sketch BYTES format differs — see "
     "docs/reference/out-of-scope.md#hll-sketch-binary-format-hll_countinit-merge_partial"
@@ -105,8 +94,6 @@ KNOWN_DIVERGENCES: dict[str, str] = {
     "standard_functions/agg_hll_count_merge_partial_basic": _HLL_SKETCH_BINARY,
     # docs/reference/out-of-scope.md#bignumeric-literals-with-39-integer-digits
     "standard_functions/bound_bignumeric_max": _BIGNUMERIC_CAP,
-    # docs/reference/out-of-scope.md#cte-self-join-with-window-aggregate-tpc-ds-q47
-    "standard_functions/tpcds_q47": _CTE_SELF_JOIN_WINDOW_UNNEST,
     # docs/reference/out-of-scope.md#iam-enforcement
     "row_access/caller_information_schema_visibility": _INFO_SCHEMA_IAM,
 }
