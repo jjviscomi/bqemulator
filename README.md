@@ -10,9 +10,9 @@ DuckDB-backed, SQLGlot-powered, and tested against the real service. Point the o
 [![E2E](https://github.com/jjviscomi/bqemulator/actions/workflows/e2e.yml/badge.svg)](https://github.com/jjviscomi/bqemulator/actions/workflows/e2e.yml)
 [![Conformance](https://github.com/jjviscomi/bqemulator/actions/workflows/conformance.yml/badge.svg)](https://github.com/jjviscomi/bqemulator/actions/workflows/conformance.yml)
 [![Docs](https://github.com/jjviscomi/bqemulator/actions/workflows/docs.yml/badge.svg)](https://jjviscomi.github.io/bqemulator/)
-[![PyPI](https://img.shields.io/pypi/v/bqemulator.svg?cacheSeconds=120&v=1.1.2)](https://pypi.org/project/bqemulator/)
-[![Python](https://img.shields.io/pypi/pyversions/bqemulator.svg?cacheSeconds=120&v=1.1.2)](https://pypi.org/project/bqemulator/)
-[![OpenSSF Scorecard](https://api.securityscorecards.dev/projects/github.com/jjviscomi/bqemulator/badge?v=1.1.2)](https://scorecard.dev/viewer/?uri=github.com/jjviscomi/bqemulator)
+[![PyPI](https://img.shields.io/pypi/v/bqemulator.svg?cacheSeconds=120&v=1.1.3)](https://pypi.org/project/bqemulator/)
+[![Python](https://img.shields.io/pypi/pyversions/bqemulator.svg?cacheSeconds=120&v=1.1.3)](https://pypi.org/project/bqemulator/)
+[![OpenSSF Scorecard](https://api.securityscorecards.dev/projects/github.com/jjviscomi/bqemulator/badge?v=1.1.3)](https://scorecard.dev/viewer/?uri=github.com/jjviscomi/bqemulator)
 [![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](LICENSE)
 [![Ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json)](https://github.com/astral-sh/ruff)
 [![Checked with mypy](https://www.mypy-lang.org/static/mypy_badge.svg)](https://mypy-lang.org/)
@@ -46,7 +46,7 @@ Three use cases, one binary:
 - 🧠 **Features `goccy/bigquery-emulator` doesn't have** — JavaScript UDFs (embedded V8 via `mini-racer`), procedural scripting (`DECLARE` / `BEGIN…END` / `IF` / `LOOP` / `EXCEPTION` / `BEGIN TRANSACTION`), time travel (`FOR SYSTEM_TIME AS OF`), table snapshots, table clones, materialized views with refresh dispatch, GEOGRAPHY (planar via DuckDB-spatial + S2 helpers), RANGE, INTERVAL, authorized views, row-access policies, `INFORMATION_SCHEMA`.
 - 🔌 **Five-client e2e matrix** — every release is exercised against the official Python, Node.js, Go, and Java BigQuery client libraries plus Google's `bq` CLI in a live Docker container.
 - 🧪 **7-tier test pyramid** — unit + property + integration + conformance + e2e + perf + chaos, plus mutation / fuzz / differential siblings. Combined coverage is gated at ≥90% line + branch.
-- 📐 **Conformance corpus** — 1,244 fixtures recorded against real BigQuery. Drift between the emulator and the real service surfaces as a failing test; documented divergences are pinned with ADR references.
+- 📐 **Conformance corpus** — 1,276 fixtures recorded against real BigQuery. Drift between the emulator and the real service surfaces as a failing test; documented divergences are pinned with ADR references.
 - 🐍 **Native pytest plugin** — `pip install bqemulator` registers a pytest plugin; the `bqemu_server` fixture starts an ephemeral in-process emulator on random free ports and sets `BIGQUERY_EMULATOR_HOST`. No `conftest.py` wiring required.
 - 🐳 **Multi-arch container** — `ghcr.io/jjviscomi/bqemulator` builds for `linux/amd64` + `linux/arm64`, with cosign keyless signatures via GitHub OIDC.
 - 🔭 **Production-grade observability** — `structlog` JSON logs, OpenTelemetry tracing (configurable OTLP exporter), Prometheus metrics endpoint.
@@ -201,7 +201,7 @@ See the [`docker-compose/full-stack`](docs/examples/docker-compose/full-stack/) 
 
 ## What works today
 
-`bqemulator` is at **v1.1.2** — first minor on the production-stable
+`bqemulator` is at **v1.1.3** — first minor on the production-stable
 line. SemVer applies: breaking changes ship only in MAJOR,
 deprecations live ≥2 MINOR or 6 months. The [compatibility matrix](https://jjviscomi.github.io/bqemulator/latest/reference/compatibility-matrix/) is auto-generated from the conformance corpus on every CI run; the [conformance coverage matrix](https://jjviscomi.github.io/bqemulator/latest/reference/conformance-coverage-matrix/) breaks down support by surface item.
 
@@ -227,13 +227,13 @@ deprecations live ≥2 MINOR or 6 months. The [compatibility matrix](https://jjv
 
 | Status | Surface items | % of deterministic surface |
 |---|---|---|
-| 🟢🟢 Deep (≥6 fixtures) | 98 | 24.3% |
-| 🟢 Covered (3–5 fixtures) | 69 | 17.1% |
-| 🟡 Sampled (1–2 fixtures) | 235 | 58.3% |
+| 🟢🟢 Deep (≥6 fixtures) | 101 | 24.8% |
+| 🟢 Covered (3–5 fixtures) | 68 | 16.7% |
+| 🟡 Sampled (1–2 fixtures) | 238 | 58.3% |
 | 🔴 Uncovered (0 fixtures) | 1 | 0.2% |
-| **Total** | **403** | 100.0% |
+| **Total** | **408** | 100.0% |
 
-Plus **10 non-deterministic items** (`RAND`, `CURRENT_*`, `SESSION_USER`, `GENERATE_UUID`, `TABLESAMPLE`, `FOR SYSTEM_TIME AS OF <expression>`) that are excluded from the conformance corpus by [ADR 0022](docs/adr/0022-conformance-corpus-design.md) and exercised in unit / property / integration tiers instead — bringing the full inventory to **413 surface items across 20 categories**, backed by a **1,244-fixture conformance corpus** (1,170 SQL + 48 HTTP + 26 gRPC) under `tests/conformance/`.
+Plus **10 non-deterministic items** (`RAND`, `CURRENT_*`, `SESSION_USER`, `GENERATE_UUID`, `TABLESAMPLE`, `FOR SYSTEM_TIME AS OF <expression>`) that are excluded from the conformance corpus by [ADR 0022](docs/adr/0022-conformance-corpus-design.md) and exercised in unit / property / integration tiers instead — bringing the full inventory to **418 surface items across 20 categories**, backed by a **1,276-fixture conformance corpus** (1,202 SQL + 48 HTTP + 26 gRPC) under `tests/conformance/`.
 
 We follow a **no-deferral principle**: features either ship complete or are excluded with documented rationale. There is no "TODO for v1.1." Scope boundaries are catalogued in [`docs/reference/out-of-scope.md`](docs/reference/out-of-scope.md).
 
@@ -271,7 +271,7 @@ Every example under [`docs/examples/`](docs/examples/) is a complete, runnable p
 
 ## Project status
 
-`bqemulator` is at **v1.1.2** — first minor on the production-stable
+`bqemulator` is at **v1.1.3** — first minor on the production-stable
 line. SemVer applies: breaking changes ship only in MAJOR
 versions, preceded by ≥1 MINOR with deprecation warnings;
 deprecated APIs remain for ≥2 MINOR versions or 6 months.
@@ -286,8 +286,8 @@ Maturity signals:
 - ✅ Fuzz-tier (`Atheris`) harnesses on the SQL translator, dynamic-protobuf decoder, and Arrow bridge.
 - ✅ Differential-tier row-order perturbation of the entire conformance corpus passes.
 - ✅ Performance baselines committed for `darwin-arm64`, with regression gates (`pytest-benchmark` `--benchmark-compare-fail=median:10%`).
-- ✅ PyPI publish via Trusted Publishing (sigstore-attested wheels) — `pip install bqemulator==1.1.2` resolves from [PyPI](https://pypi.org/project/bqemulator/).
-- ✅ GHCR publish with keyless cosign signatures — `docker pull ghcr.io/jjviscomi/bqemulator:1.1.2` resolves and the image is cosign-verifiable.
+- ✅ PyPI publish via Trusted Publishing (sigstore-attested wheels) — `pip install bqemulator==1.1.3` resolves from [PyPI](https://pypi.org/project/bqemulator/).
+- ✅ GHCR publish with keyless cosign signatures — `docker pull ghcr.io/jjviscomi/bqemulator:1.1.3` resolves and the image is cosign-verifiable.
 
 See [`CHANGELOG.md`](CHANGELOG.md) for the complete release-by-release inventory.
 

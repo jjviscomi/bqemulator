@@ -678,6 +678,23 @@ class ScriptInterpreter:
                 # (last-statement-wins, matching BigQuery).
                 self._final_table = None
                 return
+        # EXPORT DATA — run the inner SELECT through the standard query path
+        # (so row-access / MV / wildcard rewrites apply), then write the
+        # result to Cloud Storage. Non-row-producing, so reset
+        # ``_final_table`` (last-statement-wins). Imported lazily to avoid
+        # an import cycle (the executor imports this interpreter).
+        from bqemulator.jobs.executor import parse_export_data, write_export
+
+        export_request = parse_export_data(sql)
+        if export_request is not None:
+            exported = await self._run_query(export_request.select_sql)
+            # Serialise the register/unregister + COPY on the shared DuckDB
+            # connection under the engine write lock (parity with every other
+            # register/unregister site).
+            async with self._ctx.engine.write_lock():
+                write_export(exported, export_request.options, self._ctx)
+            self._final_table = None
+            return
         # Reject a bare / RESTRICT DROP SCHEMA on a non-empty dataset with
         # BigQuery's ``resourceInUse`` error before DuckDB runs — same guard
         # the single-statement executor path applies, so scripted drops get

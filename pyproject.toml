@@ -42,7 +42,16 @@ classifiers = [
 
 dependencies = [
     "duckdb>=1.0",
-    "sqlglot>=23.0",
+    # Cap below sqlglot 30.9.0: it changed PARSE_TIME translation to emit a
+    # ``TIMESTAMP WITH TIME ZONE -> TIME`` cast DuckDB rejects (breaks the
+    # unit ``test_datetime_semantics::TestParseTime`` + conformance
+    # ``standard_functions/parse_time_format``), and it fixed the TPC-DS Q47
+    # CTE-inlining so the strict-xfail divergence pin
+    # (``standard_functions/tpcds_q47``) now XPASSes and trips the gate. The
+    # pin was previously unbounded, so a fresh resolve pulled 30.9.0 and went
+    # red. Lift once the PARSE_TIME rule is updated and the Q47 divergence is
+    # re-evaluated for >=30.9.
+    "sqlglot>=23.0,<30.9",
     "pyarrow>=14.0",
     # Exclude fastapi 0.136.3: MAL-2026-4750 — Amazon Inspector flagged
     # the release as tampered (adds an undocumented ``fastar>=0.9.0``

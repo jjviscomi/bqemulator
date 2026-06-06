@@ -23,6 +23,22 @@ new release.
 See [`docs/architecture/contributing/documentation-style-guide.md`](docs/architecture/contributing/documentation-style-guide.md)
 for the full entry-form rules and worked examples.
 
+## [1.1.3] - 2026-06-03
+
+### Fixed
+
+- Return BigQuery's per-type result shape for single-statement DDL submitted via `jobs.query` — the analyzed schema with zero rows for `CREATE TABLE` / CTAS / `CREATE VIEW`, an empty result for `ALTER` / `CREATE SCHEMA` / `DROP`, DML-style counts for `TRUNCATE` — instead of DuckDB's status column.
+- Report the correct `statementType` (`CREATE_FUNCTION` / `CREATE_TABLE_FUNCTION`) for single `CREATE FUNCTION` / `CREATE TABLE FUNCTION` statements instead of `SCRIPT`, and execute `DROP FUNCTION` / `DROP PROCEDURE` / `DROP TABLE FUNCTION` submitted via `jobs.query`.
+- Reject `DROP SCHEMA` on a non-empty dataset with a `resourceInUse` error, matching BigQuery; only `DROP SCHEMA ... CASCADE` removes the dataset's contents.
+- Return the final statement's result from a multi-statement script, rather than the last row-producing statement's.
+- Register datasets created by `CREATE SCHEMA` inside multi-statement scripts in the catalog so later statements and `INFORMATION_SCHEMA` resolve them.
+- Remove dropped tables, views, and datasets from the catalog when dropped via `jobs.query`.
+- Cap `grpcio-tools` and `grpcio-health-checking` below 1.81 to keep the generated gRPC stubs building against the example-pinned `grpcio` 1.80.0.
+
+### Security
+
+- Raise the PyJWT floor to `>=2.13.0` to close PYSEC-2025-183 (transitive via `google-auth`; the emulator does not exercise the JWT codepath at runtime).
+
 ## [1.1.2] - 2026-05-31
 
 ### Changed

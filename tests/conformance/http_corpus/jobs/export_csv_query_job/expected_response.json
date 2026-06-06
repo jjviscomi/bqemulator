@@ -1,0 +1,59 @@
+{
+  "fixture_version": 1,
+  "bigquery": {
+    "project": "your-bigquery-project",
+    "location": "US"
+  },
+  "http_status": 200,
+  "headers": {
+    "content-type": "application/json"
+  },
+  "body": {
+    "kind": "bigquery#job",
+    "etag": "<*>",
+    "id": "<*>",
+    "selfLink": "<*>",
+    "user_email": "<*>",
+    "configuration": {
+      "query": {
+        "query": "EXPORT DATA OPTIONS (uri='gs://test-webhook-bucket/bqemu-conformance/export/http_csv_query_job/*.csv', format='CSV', overwrite=true) AS SELECT 1 AS id, 'alpha' AS name UNION ALL SELECT 2 AS id, 'beta' AS name UNION ALL SELECT 3 AS id, 'gamma' AS name",
+        "priority": "<*>",
+        "useLegacySql": "<*>"
+      },
+      "jobType": "<*>"
+    },
+    "jobReference": {
+      "projectId": "<*>",
+      "jobId": "<*>",
+      "location": "<*>"
+    },
+    "statistics": {
+      "creationTime": "<*>",
+      "startTime": "<*>",
+      "endTime": "<*>",
+      "totalBytesProcessed": "<*>",
+      "query": {
+        "queryPlan": "<*>",
+        "estimatedBytesProcessed": "<*>",
+        "timeline": "<*>",
+        "totalPartitionsProcessed": "0",
+        "totalBytesProcessed": "<*>",
+        "totalBytesBilled": "<*>",
+        "billingTier": "<*>",
+        "totalSlotMs": "<*>",
+        "cacheHit": "<*>",
+        "statementType": "EXPORT_DATA",
+        "exportDataStatistics": {
+          "fileCount": "1",
+          "rowCount": "3"
+        },
+        "transferredBytes": "0"
+      },
+      "totalSlotMs": "<*>",
+      "finalExecutionDurationMs": "<*>"
+    },
+    "status": "<*>",
+    "principal_subject": "<*>",
+    "jobCreationReason": "<*>"
+  }
+}

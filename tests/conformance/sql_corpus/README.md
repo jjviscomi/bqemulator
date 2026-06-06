@@ -30,6 +30,7 @@ by which subsystem they primarily exercise:
 | `specialized_types` | GEOGRAPHY, RANGE, INTERVAL |
 | `standard_functions` | string / numeric / date-time / array / struct / json / aggregate / conversion |
 | `api_configuration` | `QueryJobConfig` variations — same SQL, different request configurations (`useQueryCache=false`, `priority=BATCH`, `dryRun=true`, `labels`, `parameterMode=POSITIONAL`, DML `statementType` + `numDmlAffectedRows`, …). See [`api-configuration-coverage-matrix`](../../../docs/reference/api-configuration-coverage-matrix.md) for the canonical list. |
+| `export_data` | `EXPORT DATA OPTIONS(...) AS SELECT` → `gs://` (RFC 0001 / ADR 0043). The baseline pins the empty result + `job_metadata.statement_type = EXPORT_DATA`; queries template the destination with `${GCS_BUCKET}`. The wire-level job-resource shape lives in the sibling HTTP corpus (`../http_corpus/jobs/export_*`). Recording flow: [`export_data/_recording_steps.md`](export_data/_recording_steps.md). |
 
 `admin/` is intentionally absent — admin endpoints are
 metadata HTTP routes, not SQL, and so do not have a conformance
@@ -78,6 +79,14 @@ let the matrix drift from the inventory or the corpus.
      account `serviceAccount:<projnum>-compute@developer.gserviceaccount.com`
      is a convenient choice); runner substitutes
      `serviceAccount:other@example.com` by default.
+   - `${GCS_BUCKET}` — Cloud Storage bucket name (no `gs://` prefix)
+     used by `export_data` fixtures to template the EXPORT DATA
+     destination URI. The recorder substitutes
+     `BQEMU_CONFORMANCE_GCS_BUCKET` (a bucket its ADC can write); the
+     runner substitutes `bqemu-conformance-no-bucket-set` by default —
+     harmless for EXPORT DATA replay, which writes under the
+     emulator's `gcs_local_root` and never reads the path back (the
+     recorded baseline carries no URI).
 2. **Fixtures with `setup.sql` or `setup_rest.json` get a temp
    dataset; literal-only fixtures don't.** The runner avoids dataset
    creation when both are absent, which keeps the parametrised suite

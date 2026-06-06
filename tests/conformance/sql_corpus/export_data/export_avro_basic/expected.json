@@ -1,0 +1,19 @@
+{
+  "fixture_version": 2,
+  "bigquery": {
+    "project": "your-bigquery-project",
+    "job_id": "08a2c5cd-eb8c-4a77-8b0b-4be11d30ab42",
+    "location": "US",
+    "total_bytes_processed": 0,
+    "total_bytes_billed": 0,
+    "duration_ms": 2266
+  },
+  "schema": [],
+  "rows": [],
+  "row_count": 0,
+  "duration_class": "medium",
+  "job_metadata": {
+    "cache_hit": false,
+    "statement_type": "EXPORT_DATA"
+  }
+}

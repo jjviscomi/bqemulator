@@ -65,6 +65,13 @@ PHASE_SUBDIRS = (
     # of three per view; recording flow documented at
     # ``information_schema/_g4_recording_steps.md``.
     "information_schema",
+    # EXPORT DATA statement fixtures — ``EXPORT DATA OPTIONS(...) AS
+    # SELECT`` writing to a ``gs://`` URI (RFC 0001 / ADR 0043). The
+    # recorded baselines pin the empty result + ``job_metadata
+    # .statement_type = EXPORT_DATA``; the wire-level job-resource shape
+    # is pinned by the sibling HTTP corpus (``http_corpus/jobs/export_*``).
+    # Recording flow documented at ``export_data/_recording_steps.md``.
+    "export_data",
 )
 
 PLACEHOLDER_PATTERN = re.compile(r"\$\{([A-Z_][A-Z0-9_]*)\}")

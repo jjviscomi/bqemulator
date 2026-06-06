@@ -71,6 +71,7 @@ if str(_REPO_ROOT) not in sys.path:
 
 from tests.conformance._corpus import (  # noqa: E402
     CORPUS_DIR,
+    DEFAULT_RUNNER_GCS_BUCKET,
     DEFAULT_RUNNER_GROUP,
     DEFAULT_RUNNER_OTHER_PRINCIPAL,
     DEFAULT_RUNNER_PRINCIPAL,
@@ -99,6 +100,13 @@ GROUP_ENV = "BQEMU_CONFORMANCE_GROUP"
 #: the recorder's ADC identity.
 OTHER_PRINCIPAL_ENV = "BQEMU_CONFORMANCE_OTHER_PRINCIPAL"
 
+#: Env var the operator sets to a writable GCS bucket name (no
+#: ``gs://`` prefix) so the ``${GCS_BUCKET}`` placeholder in EXPORT DATA
+#: fixtures (RFC 0001 / ADR 0043) expands to a bucket the recording
+#: account's ADC can write. Mirrors the HTTP recorder's identically
+#: named env var so a single export records both corpora.
+GCS_BUCKET_ENV = "BQEMU_CONFORMANCE_GCS_BUCKET"
+
 #: BigQuery's REST API base URL — the recorder's REST setup operations
 #: target this; the runner uses the emulator's base URL instead.
 BQ_REST_BASE = "https://bigquery.googleapis.com"
@@ -126,6 +134,25 @@ DURATION_FAST_MS = 1_000
 DURATION_MEDIUM_MS = 10_000
 
 logger = logging.getLogger("record_conformance")
+
+#: The ``${GCS_BUCKET}`` placeholder, kept as a literal so the
+#: needs-bucket guard and the corpus substituter never drift.
+_GCS_BUCKET_PLACEHOLDER = "${GCS_BUCKET}"
+
+
+def _references_gcs_bucket(fixture: Fixture) -> bool:
+    """Return ``True`` when a fixture's SQL references ``${GCS_BUCKET}``.
+
+    EXPORT DATA fixtures (RFC 0001 / ADR 0043) template their
+    destination URI through the ``${GCS_BUCKET}`` placeholder. Recording
+    them against real BigQuery requires a writable bucket; the recorder
+    uses this predicate to fail fast with an actionable message when the
+    operator selected such a fixture but left
+    :data:`GCS_BUCKET_ENV` unset, mirroring the ``${PRINCIPAL}`` guard.
+    """
+    return _GCS_BUCKET_PLACEHOLDER in fixture.query_sql or _GCS_BUCKET_PLACEHOLDER in (
+        fixture.setup_sql or ""
+    )
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -159,13 +186,26 @@ def main(argv: list[str] | None = None) -> int:
         )
         return 1
 
+    gcs_bucket = os.environ.get(GCS_BUCKET_ENV, "").strip()
+    needs_bucket = any(_references_gcs_bucket(f) for f in fixtures)
+    if needs_bucket and not gcs_bucket:
+        logger.error(
+            "At least one selected fixture references ${GCS_BUCKET} (EXPORT "
+            "DATA). Export %s=<bucket-name> (no gs:// prefix) pointing at a "
+            "bucket the recording account's ADC can write before re-running.",
+            GCS_BUCKET_ENV,
+        )
+        return 1
+
     logger.info(
-        "Recording %d fixtures against project=%s (principal=%s group=%s other_principal=%s)",
+        "Recording %d fixtures against project=%s "
+        "(principal=%s group=%s other_principal=%s gcs_bucket=%s)",
         len(fixtures),
         args.project,
         principal or "<unset>",
         group or "<unset>",
         other_principal or "<unset>",
+        gcs_bucket or "<unset>",
     )
     run_id = uuid.uuid4().hex[:12]
     successes = 0
@@ -187,6 +227,7 @@ def main(argv: list[str] | None = None) -> int:
             principal=principal or DEFAULT_RUNNER_PRINCIPAL,
             group=group or DEFAULT_RUNNER_GROUP,
             other_principal=other_principal or DEFAULT_RUNNER_OTHER_PRINCIPAL,
+            gcs_bucket=gcs_bucket or DEFAULT_RUNNER_GCS_BUCKET,
         )
         if outcome == "ok":
             successes += 1
@@ -354,6 +395,7 @@ def _record_one(  # noqa: PLR0915 — the recorder body is a linear pipeline
     principal: str,
     group: str,
     other_principal: str,
+    gcs_bucket: str,
 ) -> str:
     """Record one fixture.
 
@@ -378,6 +420,7 @@ def _record_one(  # noqa: PLR0915 — the recorder body is a linear pipeline
         principal=principal,
         group=group,
         other_principal=other_principal,
+        gcs_bucket=gcs_bucket,
     )
 
     rest_created_datasets: list[tuple[str, str]] = []

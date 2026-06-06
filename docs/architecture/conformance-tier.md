@@ -24,9 +24,8 @@ For every query in `tests/conformance/sql_corpus/`:
    `workflow_dispatch` invocation against a specific branch (typical
    use case: verifying a recording-session PR before opening it).
 
-The corpus currently ships **1141 active SQL fixtures + 48 HTTP +
-26 gRPC = 1215 active fixtures** (plus 18 INFORMATION_SCHEMA
-stubs awaiting operator-side recording). 13 fixtures are pinned
+The corpus currently ships **1202 active SQL fixtures + 48 HTTP +
+26 gRPC = 1276 active fixtures**. 12 fixtures are pinned
 XFAIL in `tests/conformance/divergences.py` as permanent
 design-decision divergences. The pass-rate gate is **100%
 non-divergent** — every fixture must either pass or be in the
@@ -129,9 +128,9 @@ field's presence:
   exact match; ``message`` regex-matched against
   ``message_pattern`` via ``re.search`` with DOTALL).
 
-The 644 pre-existing v1 fixtures stay backward-compatible because
-they lack an ``error`` field. Only newly-recorded fixtures get
-``fixture_version`` 2.
+Version-1 (success / row) fixtures stay backward-compatible because
+they lack an ``error`` field; error fixtures carry ``fixture_version``
+2.
 
 The `bigquery.*` block is metadata only — the runner reads it solely
 for diagnostic messages. The comparison is driven by `schema` and
