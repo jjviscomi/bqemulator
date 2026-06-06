@@ -62,10 +62,13 @@ CVE-2026-42561      # python-multipart parser state machine
 # because pip is not a project dependency; the version is whatever the
 # environment provides). Users should upgrade pip independently:
 # ``python -m pip install --upgrade 'pip>=26.1.2'``. PYSEC-2026-196
-# (fix 26.1.2) rolled into the DB on 2026-06-05 — same rationale.
+# (alias CVE-2026-8643, fix 26.1.2) rolled into the DB on 2026-06-05 —
+# same rationale. The ID is kept as PYSEC-2026-196 because that is the
+# exact key pip-audit emits; --ignore-vuln matches on it (the public
+# CVE alias would not suppress the finding).
 CVE-2026-3219       # pip credential-leak via index URL
 CVE-2026-6357       # pip metadata-cache poisoning
-PYSEC-2026-196      # pip wheel-cache path traversal
+PYSEC-2026-196      # pip directory traversal (CVE-2026-8643; fix pip>=26.1.2)
 
 # idna 3.11 — CVE-2026-45409 (DoS via overlong domain names in the
 # IDNA UTS-46 decode path). idna lands in the project as a transitive
