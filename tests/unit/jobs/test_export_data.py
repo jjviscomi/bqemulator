@@ -381,6 +381,32 @@ class TestExportEndToEnd:
                     ctx,
                 )
 
+    async def test_gs_uri_path_traversal_rejected(self, tmp_path: Path) -> None:
+        """A gs:// uri using ``..`` to escape BQEMU_GCS_LOCAL_ROOT is rejected."""
+        async with _export_ctx(_settings(tmp_path)) as ctx:
+            with pytest.raises(InvalidQueryError, match="escapes the configured"):
+                await execute_query_job(
+                    "p",
+                    "j-traversal",
+                    "EXPORT DATA OPTIONS("
+                    "uri='gs://bkt/../../../../etc/pwn.csv', format='CSV', overwrite=true) "
+                    "AS SELECT 1 AS a",
+                    None,
+                    ctx,
+                )
+
+    async def test_non_gcs_uri_rejected(self, tmp_path: Path) -> None:
+        """A non-gs:// export uri (file:// / bare path) is rejected before any write."""
+        async with _export_ctx(_settings(tmp_path)) as ctx:
+            with pytest.raises(InvalidQueryError, match="must be a Cloud Storage URI"):
+                await execute_query_job(
+                    "p",
+                    "j-fileuri",
+                    "EXPORT DATA OPTIONS(uri='file:///tmp/pwn.csv', format='CSV') AS SELECT 1 AS a",
+                    None,
+                    ctx,
+                )
+
 
 class TestSharding:
     """Real size-based multi-file sharding (low threshold) and its guards."""

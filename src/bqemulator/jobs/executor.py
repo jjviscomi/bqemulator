@@ -1547,9 +1547,19 @@ def _resolve_uri(uri: str, ctx: AppContext) -> str:
             raise InvalidQueryError(
                 "Cannot resolve gs:// URIs without BQEMU_GCS_LOCAL_ROOT configured",
             )
-        # Strip gs:// prefix.
+        # Strip gs:// prefix and map onto the shim root.
         relative = uri[5:]
-        return str(gcs_root / relative)
+        target = gcs_root / relative
+        # Containment guard: ``..`` segments must not escape the shim root.
+        # EXPORT DATA / extract destinations are SQL-facing, so a path that
+        # escaped BQEMU_GCS_LOCAL_ROOT would be an arbitrary host-file write.
+        root_resolved = gcs_root.resolve()
+        target_resolved = target.resolve()
+        if root_resolved != target_resolved and root_resolved not in target_resolved.parents:
+            raise InvalidQueryError(
+                "gs:// path escapes the configured BQEMU_GCS_LOCAL_ROOT",
+            )
+        return str(target)
     if uri.startswith("file://"):
         return uri[7:]
     return uri
@@ -1918,6 +1928,10 @@ def _extract_export_options(properties: Any) -> _ExportOptions:
     uri = _opt_literal_str(values["uri"])
     if not uri:
         raise InvalidQueryError("Option 'uri' is missing or empty.")
+    if not uri.startswith("gs://"):
+        raise InvalidQueryError(
+            "EXPORT DATA uri must be a Cloud Storage URI (gs://bucket/path).",
+        )
 
     _validate_export_option_scope(values, fmt)
     compression = _resolve_export_compression(values, fmt)
