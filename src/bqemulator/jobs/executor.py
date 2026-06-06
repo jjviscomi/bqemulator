@@ -1881,17 +1881,21 @@ def _validate_export_option_scope(values: dict[str, Any], fmt: str) -> None:
     """Reject format-scoped options applied to the wrong ``format``.
 
     ``header`` / ``field_delimiter`` are valid only for CSV;
-    ``use_avro_logical_types`` only for AVRO.
+    ``use_avro_logical_types`` only for AVRO. The AVRO flag's value is also
+    validated as a boolean — it is a documented no-op (ADR 0043), but rejecting
+    a non-boolean keeps the "accepted + validated" contract honest.
     """
     for csv_only in _CSV_ONLY_OPTIONS:
         if csv_only in values and fmt != "CSV":
             raise InvalidQueryError(
                 f"EXPORT DATA option '{csv_only}' is only valid for FORMAT CSV.",
             )
-    if "use_avro_logical_types" in values and fmt != "AVRO":
-        raise InvalidQueryError(
-            "EXPORT DATA option 'use_avro_logical_types' is only valid for FORMAT AVRO.",
-        )
+    if "use_avro_logical_types" in values:
+        if fmt != "AVRO":
+            raise InvalidQueryError(
+                "EXPORT DATA option 'use_avro_logical_types' is only valid for FORMAT AVRO.",
+            )
+        _opt_literal_bool(values["use_avro_logical_types"])
 
 
 def _resolve_export_compression(values: dict[str, Any], fmt: str) -> str | None:

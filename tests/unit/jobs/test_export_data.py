@@ -207,6 +207,11 @@ class TestClassifyAndParse:
                 "EXPORT DATA OPTIONS(uri='gs://b/*.csv', nope=1) AS SELECT 1 AS a",
                 "Unknown EXPORT DATA option",
             ),
+            (
+                "EXPORT DATA OPTIONS(uri='gs://b/o.avro', format='AVRO', "
+                "use_avro_logical_types='nope') AS SELECT 1 AS a",
+                "boolean option",
+            ),
         ],
     )
     def test_invalid_options_rejected(self, sql: str, match: str) -> None:
