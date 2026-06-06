@@ -123,6 +123,7 @@ nav:
   - Guides:
       - Loading data: guides/loading-data.md
       - Loading from local files: guides/loading-from-local-files.md
+      - Exporting data: guides/exporting-data.md
       - Querying: guides/querying.md
       - Query parameters: guides/query-parameters.md
       - Streaming inserts: guides/streaming-inserts.md
@@ -227,13 +228,17 @@ nav:
       - "0040 SESSION_USER coverage closure: aliases + Storage Read pre-pass": adr/0040-session-user-coverage-closure.md
       - "0041 Cyclomatic-complexity ratchet to rank B + campaign retrospective": adr/0041-complexity-ratchet-to-b.md
       - "0042 Per-module-average ratchet to rank B (no-refactor follow-on)": adr/0042-module-ceiling-ratchet-to-b.md
-  - RFCs: rfcs/README.md
+      - "0043 EXPORT DATA statement (Cloud Storage)": adr/0043-export-data-statement.md
+  - RFCs:
+      - Overview: rfcs/README.md
+      - "0001 EXPORT DATA statement (Cloud Storage)": rfcs/0001-export-data-statement.md
   - Examples:
       - Overview: examples/README.md
       - bq CLI quickstart: examples/bq-cli-quickstart/README.md
       - Local file load: examples/local-file-load/README.md
       - Python:
           - pytest integration: examples/python/pytest-integration/README.md
+          - Export to GCS: examples/python/export-to-gcs/README.md
           - dbt local: examples/python/dbt-local/README.md
           - Airflow DAG test: examples/python/airflow-dag-test/README.md
           - PySpark + BigQuery: examples/python/pyspark-bigquery/README.md

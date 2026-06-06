@@ -28,4 +28,6 @@ for the PR mechanics.
 
 ## Active RFCs
 
-_None yet._
+| RFC | Title | Status |
+|---|---|---|
+| [0001](0001-export-data-statement.md) | EXPORT DATA statement (Cloud Storage) | Accepted |

@@ -98,6 +98,21 @@ class Settings(BaseSettings):
         default=None,
         description="Local directory that 'gs://' URIs are resolved under",
     )
+    export_shard_threshold_bytes: int = Field(
+        default=1024 * 1024 * 1024,
+        ge=1,
+        description=(
+            "Approximate per-file size threshold (bytes) for an EXPORT DATA "
+            "statement that writes to a wildcard URI. The exported result is "
+            "split into ``ceil(in-memory_size / threshold)`` shard files, "
+            "mirroring BigQuery's multi-file sharding and 12-digit zero-padded "
+            "naming. The default of 1 GiB matches BigQuery's per-file limit so "
+            "realistic small exports produce a single file; lower it to "
+            "exercise multi-file sharding deterministically in tests. The "
+            "in-memory Arrow size is an approximation of the compressed "
+            "on-disk size (see ADR 0043)."
+        ),
+    )
     max_concurrent_jobs: int = Field(
         default=8,
         ge=1,

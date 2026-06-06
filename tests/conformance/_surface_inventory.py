@@ -334,6 +334,21 @@ DDL = SurfaceCategory(
             detect=_re(r"rowAccessPolicies"),
             notes="Setup happens via setup_rest.json POST, not SQL.",
         ),
+        SurfaceItem(
+            id="ddl.export_data",
+            name="EXPORT DATA",
+            bq_docs="https://cloud.google.com/bigquery/docs/reference/standard-sql/export-statements",
+            detect=_re(r"\bexport\s+data\b"),
+            notes=(
+                "GoogleSQL EXPORT DATA OPTIONS(...) AS SELECT → Cloud "
+                "Storage (RFC 0001 / ADR 0043). Runs as a QUERY job with "
+                "statementType EXPORT_DATA. SQL-corpus fixtures pin the "
+                "empty result + job_metadata.statement_type; the wire "
+                "job-resource shape is pinned by http_corpus/jobs/export_*. "
+                "The \\bdata\\b boundary excludes the admin EXPORT DATABASE "
+                "(ADR 0020)."
+            ),
+        ),
     ),
 )
 

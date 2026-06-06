@@ -860,3 +860,60 @@ class TestRecorderBuildJobConfig:
         assert cfg is not None
         assert len(cfg.query_parameters) == 1
         assert cfg.query_parameters[0].value == "hi"
+
+
+class TestRecorderReferencesGcsBucket:
+    """The recorder's ``${GCS_BUCKET}`` needs-bucket guard predicate (RFC 0001)."""
+
+    @pytest.fixture(scope="class")
+    def recorder_module(self):
+        import importlib.util
+
+        path = Path(__file__).resolve().parents[3] / "scripts" / "record_conformance_fixtures.py"
+        spec = importlib.util.spec_from_file_location("_recorder_gcs_bucket_test", path)
+        assert spec is not None and spec.loader is not None
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        return module
+
+    def test_query_sql_reference_detected(self, recorder_module, tmp_path: Path) -> None:
+        """An EXPORT DATA query that templates ``${GCS_BUCKET}`` is flagged."""
+        from tests.conformance._corpus import Fixture
+
+        fixture = Fixture(
+            phase="export_data",
+            name="export_csv_basic",
+            path=tmp_path,
+            query_sql="EXPORT DATA OPTIONS (uri='gs://${GCS_BUCKET}/e/*.csv') AS SELECT 1",
+            setup_sql=None,
+            expected_path=tmp_path / "expected.json",
+        )
+        assert recorder_module._references_gcs_bucket(fixture) is True
+
+    def test_setup_sql_reference_detected(self, recorder_module, tmp_path: Path) -> None:
+        """A reference only in ``setup.sql`` (query.sql clean) is still flagged."""
+        from tests.conformance._corpus import Fixture
+
+        fixture = Fixture(
+            phase="export_data",
+            name="export_setup_ref",
+            path=tmp_path,
+            query_sql="SELECT 1",
+            setup_sql="EXPORT DATA OPTIONS (uri='gs://${GCS_BUCKET}/e/*.csv') AS SELECT 1",
+            expected_path=tmp_path / "expected.json",
+        )
+        assert recorder_module._references_gcs_bucket(fixture) is True
+
+    def test_no_reference_returns_false(self, recorder_module, tmp_path: Path) -> None:
+        """A fixture with neither a query nor a setup reference is not flagged."""
+        from tests.conformance._corpus import Fixture
+
+        fixture = Fixture(
+            phase="rest_crud",
+            name="plain_select",
+            path=tmp_path,
+            query_sql="SELECT 1 AS x",
+            setup_sql="CREATE OR REPLACE TABLE `p.ds.t` (id INT64)",
+            expected_path=tmp_path / "expected.json",
+        )
+        assert recorder_module._references_gcs_bucket(fixture) is False
