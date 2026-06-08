@@ -1,0 +1,57 @@
+# Reference .circleci/config.yml — copy to .circleci/ in your repo.
+# Pattern A: Docker executor with a secondary bqemulator image.
+# Pattern B: machine executor + docker compose for full local fidelity.
+
+version: 2.1
+
+jobs:
+  test-docker:
+    docker:
+      - image: cimg/python:3.11
+      - image: ghcr.io/jjviscomi/bqemulator:dev
+        environment:
+          BQEMU_REST_HOST: "0.0.0.0"
+          BQEMU_GRPC_HOST: "0.0.0.0"
+          BQEMU_ADMIN_ENABLED: "1"
+    environment:
+      BIGQUERY_EMULATOR_HOST: "localhost:9050"
+    steps:
+      - checkout
+      - run:
+          name: Wait for bqemulator
+          command: |
+            for _ in $(seq 1 120); do
+              if curl -sf http://localhost:9050/healthz >/dev/null 2>&1; then
+                break
+              fi
+              sleep 0.5
+            done
+      - run: pip install google-cloud-bigquery pytest
+      - run: pytest tests/
+
+  test-machine:
+    machine:
+      image: ubuntu-2204:current
+    steps:
+      - checkout
+      - run:
+          name: Boot stack via docker compose
+          command: docker compose up -d
+      - run:
+          name: Wait for /healthz
+          command: |
+            for _ in $(seq 1 120); do
+              if curl -sf http://localhost:9050/healthz >/dev/null 2>&1; then
+                break
+              fi
+              sleep 0.5
+            done
+      - run: pip install google-cloud-bigquery pytest
+      - run: pytest tests/
+
+workflows:
+  version: 2
+  pull-request:
+    jobs:
+      - test-docker
+      - test-machine

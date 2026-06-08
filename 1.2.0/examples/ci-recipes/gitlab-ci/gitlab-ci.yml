@@ -1,0 +1,33 @@
+# Reference .gitlab-ci.yml — copy to your repo root.
+# Boots bqemulator as a service container reachable at hostname
+# ``bqemulator`` on port 9050 (REST) and 9060 (gRPC).
+
+variables:
+  BQEMU_IMAGE: "ghcr.io/jjviscomi/bqemulator:dev"
+  BIGQUERY_EMULATOR_HOST: "bqemulator:9050"
+
+stages:
+  - test
+
+test:
+  stage: test
+  image: python:3.11-slim
+  services:
+    - name: ghcr.io/jjviscomi/bqemulator:dev
+      alias: bqemulator
+      variables:
+        BQEMU_REST_HOST: "0.0.0.0"
+        BQEMU_GRPC_HOST: "0.0.0.0"
+        BQEMU_ADMIN_ENABLED: "1"
+  before_script:
+    - pip install google-cloud-bigquery pytest
+    # Wait for /healthz to respond before running tests.
+    - >
+      for _ in $(seq 1 120); do
+        if curl -sf http://bqemulator:9050/healthz >/dev/null 2>&1; then
+          break;
+        fi;
+        sleep 0.5;
+      done
+  script:
+    - pytest tests/
