@@ -23,6 +23,21 @@ new release.
 See [`docs/architecture/contributing/documentation-style-guide.md`](docs/architecture/contributing/documentation-style-guide.md)
 for the full entry-form rules and worked examples.
 
+## [1.2.0] - 2026-06-08
+
+### Changed
+
+- Require `sqlglot >= 30.9` (previously `>= 23.0`), adopting its native `PARSE_TIME` / `PARSE_DATE` transpilation and CTE-inlining fixes.
+- Bump GitHub Actions: `actions/checkout` 6.0.2 → 6.0.3, `actions/setup-python` 5.6.0 → 6.2.0, `github/codeql-action` 4.36.0 → 4.36.2, `crate-ci/typos` 1.47.0 → 1.47.2.
+
+### Added
+
+- Support the `EXPORT DATA OPTIONS(...) AS SELECT` statement — export query results to Cloud Storage (`gs://`) as CSV, JSON, Parquet, or Avro, with size-based wildcard sharding, `overwrite`, and CSV `header` / `field_delimiter` options ([RFC 0001](docs/rfcs/0001-export-data-statement.md), [ADR 0043](docs/adr/0043-export-data-statement.md)).
+
+### Fixed
+
+- Run TPC-DS Q47-style queries (a window-aggregate CTE self-joined on row number) that previously raised a DuckDB binder error, now resolved by the `sqlglot >= 30.9` upgrade.
+
 ## [1.1.3] - 2026-06-03
 
 ### Fixed
