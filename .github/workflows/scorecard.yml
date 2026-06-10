@@ -15,15 +15,25 @@
 #  - First-class signalling for OSSF tooling (e.g. ``deps.dev``,
 #    Open Source Insights, ``allstar``) downstream of the database.
 #
-# Three triggers feed the database:
+# Four triggers feed the database:
 #  - ``push: main``      — every change on the default branch
 #                          re-scores immediately (catches regressions).
-#  - ``release: published`` — re-score on tag-driven releases so the
-#                          badge reflects the freshly-published
-#                          artefacts (signed wheel + signed image).
+#  - ``release: published`` — re-score when a release is published
+#                          *manually* (e.g. through the GitHub UI).
+#                          The automated ``release.yml`` creates its
+#                          release with the default ``GITHUB_TOKEN``,
+#                          and token-created events do NOT start other
+#                          workflow runs — so for tag-driven releases
+#                          this trigger is inert and ``release.yml``
+#                          dispatches the re-score explicitly via
+#                          ``workflow_dispatch`` (below) once the
+#                          signed artefacts are attached.
 #  - ``schedule``        — weekly cron for low-frequency signals
 #                          (deps that drifted, vuln database updates).
-#  - ``workflow_dispatch`` — manual re-run from the Actions UI.
+#  - ``workflow_dispatch`` — manual re-run from the Actions UI, and
+#                          the programmatic re-score that
+#                          ``release.yml`` fires after a release
+#                          publishes its signed artefacts.
 #
 # Third-party action pinning follows the project-wide
 # OpenSSF-alignment rule (see AGENTS.md): full commit SHA + trailing
