@@ -163,7 +163,12 @@ jobs:
       - name: Upload coverage
         uses: codecov/codecov-action@fb8b3582c8e4def4969c97caa2f19720cb33a72f # v7.0.0
         with:
-          file: coverage.xml
+          # v7 removed the singular ``file`` input; ``files`` (a
+          # comma-separated list) is the replacement. Without this
+          # rename the explicit path is silently dropped — and since
+          # ``fail_ci_if_error: false`` the upload failure wouldn't
+          # surface in CI.
+          files: coverage.xml
           # Don't fail the CI run if the Codecov upload itself
           # fails — the 90% gate is already enforced locally on
           # the runner by ``--cov-fail-under=90``. Codecov is for
