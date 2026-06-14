@@ -286,7 +286,8 @@ class TestTrackDatasetCreation:
     """Both runner and recorder must spot ``POST /datasets`` for teardown."""
 
     @pytest.fixture(scope="class")
-    def runner_module(self):
+    @staticmethod
+    def runner_module():
         """Load the conformance runner's REST helpers as a module."""
         import importlib.util
         from pathlib import Path
@@ -299,7 +300,8 @@ class TestTrackDatasetCreation:
         return module
 
     @pytest.fixture(scope="class")
-    def recorder_module(self):
+    @staticmethod
+    def recorder_module():
         """Load the recorder's REST helpers as a module."""
         import importlib.util
         from pathlib import Path
@@ -729,7 +731,8 @@ class TestRunnerBuildJobConfig:
     """The runner's ``_build_job_config`` produces a ``QueryJobConfig`` or ``None``."""
 
     @pytest.fixture(scope="class")
-    def runner_module(self):
+    @staticmethod
+    def runner_module():
         """Load the conformance runner module so its private helpers are testable."""
         import importlib.util
 
@@ -812,7 +815,8 @@ class TestRecorderBuildJobConfig:
     """The recorder's ``_build_job_config`` mirrors the runner's contract."""
 
     @pytest.fixture(scope="class")
-    def recorder_module(self):
+    @staticmethod
+    def recorder_module():
         import importlib.util
 
         path = Path(__file__).resolve().parents[3] / "scripts" / "record_conformance_fixtures.py"
@@ -866,7 +870,8 @@ class TestRecorderReferencesGcsBucket:
     """The recorder's ``${GCS_BUCKET}`` needs-bucket guard predicate (RFC 0001)."""
 
     @pytest.fixture(scope="class")
-    def recorder_module(self):
+    @staticmethod
+    def recorder_module():
         import importlib.util
 
         path = Path(__file__).resolve().parents[3] / "scripts" / "record_conformance_fixtures.py"
