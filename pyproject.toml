@@ -100,7 +100,7 @@ dependencies = [
     # The floor matches FastAPI 0.135's own ``starlette>=0.46`` floor:
     # explicit so any future loosening of FastAPI's transitive
     # constraint doesn't open a security-drift window on starlette.
-    "starlette>=0.46,<1.0",
+    "starlette>=0.46,<2.0",
     "alembic>=1.13",
     # Floor pin on alembic's transitive Mako dep to dodge CVE-2026-44307
     # (template-injection in the Babel string-extractor). 1.3.12 is the
