@@ -19,9 +19,9 @@
 # Default check timeout per URL.
 timeout = 20
 
-# Don't follow more than 20 redirects (catches infinite-loop CDNs).
-# Bumped from 5 → 10 → 15 → 20 to absorb Google Cloud docs' CDN/locale
-# redirect chain (``cloud.google.com → docs.cloud.google.com →
+# Don't follow more than 25 redirects (catches infinite-loop CDNs).
+# Bumped from 5 → 10 → 15 → 20 → 25 to absorb Google Cloud docs'
+# CDN/locale redirect chain (``cloud.google.com → docs.cloud.google.com →
 # locale-prefixed → canonical``) which keeps growing with their
 # CDN topology. PR #101 (2026-05-28) bumped 10 → 15 to clear PR #100's
 # failures; PR #110 (2026-05-30) bumped 15 → 20 after the pre-v1.1.2
@@ -29,11 +29,18 @@ timeout = 20
 # been limited by "max-redirects"`` on two GCP docs URLs
 # (``information-schema-columns``, ``standard-sql/transactions``)
 # referenced from ``docs/reference/conformance-coverage-matrix.md``.
-# Same URLs resolve fine in a browser — the hop count from the runner
-# egress region is the variable. 20 absorbs the latest observed chain
+# Issue #141 (2026-06-11 nightly) hit the same limit on
+# ``reference/rest`` and ``standard-sql/date_functions``: the
+# ``cloud.google.com`` host now issues a 301 to ``docs.cloud.google.com``
+# (a permanent host move), adding one hop on top of the locale chain,
+# so 20 → 25. If this recurs, the next step is migrating the source
+# URLs to ``docs.cloud.google.com`` (the new canonical host) rather
+# than raising the cap further.
+# Same URLs resolve fine in a browser; the hop count from the runner
+# egress region is the variable. 25 absorbs the latest observed chain
 # with headroom; infinite-loop CDNs cap out much higher (40+) so we
 # still catch the pathological cases.
-max_redirects = 20
+max_redirects = 25
 
 # Retry failed URLs on transient errors. Calibrated against the
 # v1.0.2 release CI cycle (PR #43, 2026-05-23) where lychee hit
