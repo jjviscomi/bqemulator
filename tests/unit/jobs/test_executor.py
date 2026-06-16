@@ -347,6 +347,7 @@ class TestMaybeCreateLoadDestination:
             now="2026-06-15T00:00:00Z",
             ctx=ctx,
         )
+        ctx.catalog.get_dataset.assert_not_called()
         ctx.catalog.create_table.assert_not_called()
 
     def test_missing_dataset_raises(self) -> None:

@@ -926,9 +926,6 @@ async def execute_load_job(
     # schema is not supplied (autodetect path), the existing DuckDB
     # COPY/INSERT call below will raise a binder error which the load
     # error wrapper translates to a proper ``invalid`` job error.
-    # Resolve URIs: gs:// → local path under GCS_LOCAL_ROOT, or file:// → local.
-    resolved_paths = [_resolve_uri(uri, ctx) for uri in job.source_uris]
-
     if (
         job.create_disposition == "CREATE_IF_NEEDED"
         and ctx.catalog.get_table(job.project_id, job.dataset_id, job.table_id) is None
@@ -941,6 +938,9 @@ async def execute_load_job(
             now=now,
             ctx=ctx,
         )
+
+    # Resolve URIs: gs:// → local path under GCS_LOCAL_ROOT, or file:// → local.
+    resolved_paths = [_resolve_uri(uri, ctx) for uri in job.source_uris]
     for path in resolved_paths:
         _validate_local_path(path)
 
@@ -1333,9 +1333,8 @@ def _maybe_create_load_destination(
 
     Mirrors ``tables.insert``: builds the DuckDB CREATE TABLE DDL from
     the ``load.schema.fields`` payload and registers a ``TableMeta``.
-    No-op when the request omits a schema (autodetect path); the
-    caller's downstream COPY/INSERT will raise a binder error which
-    the load error wrapper converts to a proper async job error.
+    When schema fields are absent and autodetect is enabled, it samples
+    the first source file to automatically detect the schema.
     """
     from bqemulator.api.routes.tables import _field_to_rest, _parse_schema_fields
     from bqemulator.catalog.models import TableFieldSchema, TableMeta, TableSchema
