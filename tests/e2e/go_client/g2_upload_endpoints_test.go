@@ -165,3 +165,54 @@ func TestG2LoadNDJSONResumable(t *testing.T) {
 		t.Fatalf("want 60000 rows, got %d", row.N)
 	}
 }
+
+func TestLoadTableCSVAutodetect(t *testing.T) {
+	ctx := context.Background()
+	client := g2Client(ctx, t)
+	defer client.Close()
+
+	dsID := "g2_csv_autodetect"
+	tblID := "rows"
+
+	err := client.Dataset(dsID).Create(ctx, &bigquery.DatasetMetadata{Location: "US"})
+	if err != nil && !strings.Contains(err.Error(), "Already Exists") && !strings.Contains(err.Error(), "duplicate") {
+		t.Fatalf("Failed to create dataset: %v", err)
+	}
+
+	csvData := []byte("id,name,score\n1,alice,99.5\n2,bob,88.2\n")
+	rs := bigquery.NewReaderSource(bytes.NewReader(csvData))
+	rs.SourceFormat = bigquery.CSV
+	rs.SkipLeadingRows = 1
+	rs.AutoDetect = true
+	
+	loader := client.Dataset(dsID).Table(tblID).LoaderFrom(rs)
+	loader.WriteDisposition = bigquery.WriteTruncate
+	loader.CreateDisposition = bigquery.CreateIfNeeded
+
+	job, err := loader.Run(ctx)
+	if err != nil {
+		t.Fatalf("Loader.Run failed: %v", err)
+	}
+	status, err := job.Wait(ctx)
+	if err != nil {
+		t.Fatalf("Job wait failed: %v", err)
+	}
+	if err := status.Err(); err != nil {
+		t.Fatalf("Job failed: %v", err)
+	}
+
+	q := client.Query(fmt.Sprintf("SELECT COUNT(*) AS n FROM `%s.%s.%s`", g2Project, dsID, tblID))
+	it, err := q.Read(ctx)
+	if err != nil {
+		t.Fatalf("Query failed: %v", err)
+	}
+
+	var row struct{ N int64 }
+	err = it.Next(&row)
+	if err != iterator.Done && err != nil {
+		t.Fatalf("Next failed: %v", err)
+	}
+	if row.N != 2 {
+		t.Errorf("Expected 2 rows, got %d", row.N)
+	}
+}

@@ -150,6 +150,15 @@ def _duckdb_compound_to_bq(duckdb_type: str, upper: str) -> str | None:
     return None
 
 
+def _duckdb_autodetect_fallback(duckdb_type: str) -> str | None:
+    """Fallback complex types to STRING for non-strict autodetect schema mapping."""
+    if duckdb_type.startswith("STRUCT"):
+        return "STRING"
+    if duckdb_type.endswith("[]") or duckdb_type.startswith("LIST"):
+        return "STRING"
+    return None
+
+
 def duckdb_to_bq(duckdb_type: str, strict: bool = True) -> str:
     """Convert a DuckDB type name to its BigQuery equivalent.
 
@@ -166,10 +175,10 @@ def duckdb_to_bq(duckdb_type: str, strict: bool = True) -> str:
     """
     # Handle deeply nested types from read_json_auto like STRUCT(...) or VARCHAR[]
     if not strict:
-        if duckdb_type.startswith("STRUCT"):
-            return "STRING"
-        if duckdb_type.endswith("[]") or duckdb_type.startswith("LIST"):
-            return "STRING"
+        fallback = _duckdb_autodetect_fallback(duckdb_type)
+        if fallback is not None:
+            return fallback
+
     upper = duckdb_type.strip().upper()
 
     # Parameterized types (ARRAY suffix / LIST(...) / STRUCT(...)).

@@ -1574,7 +1574,28 @@ ERRORS = SurfaceCategory(
 # ---------------------------------------------------------------------------
 # Master list — order drives matrix display order.
 # ---------------------------------------------------------------------------
+
+JOBS = SurfaceCategory(
+    id="jobs",
+    name="BigQuery Jobs",
+    bq_docs="https://cloud.google.com/bigquery/docs/reference/rest/v2/jobs",
+    description=(
+        "Job execution configurations and behaviors, such as load jobs, "
+        "query configurations, and extract jobs."
+    ),
+    items=(
+        SurfaceItem(
+            id="jobs.load_autodetect",
+            name="Load Job: Schema Autodetect",
+            bq_docs="https://cloud.google.com/bigquery/docs/reference/rest/v2/Job#JobConfigurationLoad.autodetect",
+            detect=_re(r'"autodetect"\s*:\s*true'),
+            notes="Schema auto-detection for CSV/JSON loads.",
+        ),
+    ),
+)
+
 SURFACE: tuple[SurfaceCategory, ...] = (
+    JOBS,
     DML,
     DDL,
     QUERY,
@@ -1620,6 +1641,7 @@ __all__ = [
     "FUNCTIONS_STRING",
     "FUNCTIONS_WINDOW",
     "INFORMATION_SCHEMA",
+    "JOBS",
     "QUERY",
     "SCRIPTING",
     "SURFACE",

@@ -1320,6 +1320,58 @@ async def execute_copy_job(
     )
 
 
+def _infer_autodetect_schema(
+    ctx: AppContext, target_ref: str, source_uris: list[str], fmt: str
+) -> tuple[Any, ...]:
+    """Sample the source file via DuckDB to infer its schema."""
+    from bqemulator.catalog.models import TableFieldSchema
+    from bqemulator.storage.type_map import duckdb_to_bq
+
+    path = _resolve_uri(source_uris[0], ctx)
+
+    if fmt in ("NEWLINE_DELIMITED_JSON", "JSON"):
+        query = f"CREATE TABLE {target_ref} AS SELECT * FROM read_json_auto(?) LIMIT 0"
+    elif fmt == "CSV":
+        query = f"CREATE TABLE {target_ref} AS SELECT * FROM read_csv_auto(?) LIMIT 0"
+    else:
+        return ()
+
+    ctx.engine.execute(query, [path])
+
+    duck_schema = ctx.engine.execute(f"DESCRIBE {target_ref}").fetchall()
+
+    autodetect_fields = []
+    for row in duck_schema:
+        col_name = row[0]
+        duck_type = row[1]
+        bq_type = duckdb_to_bq(duck_type, strict=False)
+        autodetect_fields.append(
+            TableFieldSchema(
+                name=col_name,
+                type=bq_type,
+                mode="NULLABLE",
+            )
+        )
+
+    return tuple(autodetect_fields)
+
+
+def _build_explicit_schema(ctx: AppContext, target_ref: str, fields_raw: list[Any]) -> Any:
+    """Parse the explicit schema and create the empty table in DuckDB."""
+    from bqemulator.api.routes.tables import _field_to_rest, _parse_schema_fields
+    from bqemulator.catalog.models import TableSchema
+    from bqemulator.storage.type_map import bq_schema_to_duckdb_columns
+
+    field_models = _parse_schema_fields(fields_raw)
+    schema = TableSchema(fields=field_models)
+    duckdb_cols = bq_schema_to_duckdb_columns(
+        [_field_to_rest(f) for f in field_models],
+    )
+    col_defs = ", ".join(f'"{name}" {dtype}' for name, dtype in duckdb_cols)
+    ctx.engine.execute(f"CREATE TABLE {target_ref} ({col_defs})")
+    return schema
+
+
 def _maybe_create_load_destination(
     *,
     dest_project: str,
@@ -1378,7 +1430,7 @@ def _maybe_create_load_destination(
         for row in duck_schema:
             col_name = row[0]
             duck_type = row[1]
-            bq_type = duckdb_to_bq(duck_type)
+            bq_type = duckdb_to_bq(duck_type, strict=False)
             autodetect_fields.append(
                 TableFieldSchema(
                     name=col_name,

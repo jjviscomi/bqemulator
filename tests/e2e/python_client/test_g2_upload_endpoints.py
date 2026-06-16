@@ -116,3 +116,39 @@ def test_load_table_from_file_ndjson_resumable(bq_client: bigquery.Client) -> No
 
     out = list(bq_client.query(f"SELECT COUNT(*) AS n FROM `{table_ref}`").result())
     assert out[0].n == 80_000
+
+
+def test_load_table_csv_autodetect(bq_client: bigquery.Client) -> None:
+    """CSV load honoring the autodetect flag."""
+    ds_id = "g2_csv_autodetect"
+    tbl_id = "rows"
+    # Ensure dataset exists, but NOT the table.
+    dataset = bigquery.Dataset(f"{bq_client.project}.{ds_id}")
+    dataset.location = "US"
+    bq_client.create_dataset(dataset, exists_ok=True)
+
+    table_ref = f"{bq_client.project}.{ds_id}.{tbl_id}"
+    csv_bytes = b"id,name,score\n1,alice,99.5\n2,bob,88.2\n"
+
+    job_config = bigquery.LoadJobConfig(
+        source_format=bigquery.SourceFormat.CSV,
+        skip_leading_rows=1,
+        autodetect=True,
+        write_disposition=bigquery.WriteDisposition.WRITE_TRUNCATE,
+        create_disposition=bigquery.CreateDisposition.CREATE_IF_NEEDED,
+    )
+    job = bq_client.load_table_from_file(
+        io.BytesIO(csv_bytes),
+        table_ref,
+        job_config=job_config,
+    )
+    result = job.result(timeout=60)
+    assert result.state == "DONE"
+
+    rows = list(bq_client.query(f"SELECT COUNT(*) AS n FROM `{table_ref}`").result())
+    assert rows[0].n == 2
+
+    # Assert table was actually created and inferred
+    table = bq_client.get_table(table_ref)
+    names = [f.name for f in table.schema]
+    assert names == ["id", "name", "score"]

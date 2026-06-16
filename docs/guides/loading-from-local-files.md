@@ -110,7 +110,7 @@ try (TableDataWriteChannel channel = client.writer(cfg)) {
 
 | `sourceFormat` | Multipart media Content-Type | Notes |
 |---|---|---|
-| `CSV` | `text/csv` | `skipLeadingRows`, `fieldDelimiter`, `quote` all honored. |
+| `CSV` | `text/csv` | `skipLeadingRows`, `fieldDelimiter`, `quote`, and `autodetect` all honored. |
 | `NEWLINE_DELIMITED_JSON` | `application/json` | `autodetect` flag honored. |
 | `PARQUET` | `application/x-parquet` or `application/octet-stream` | Schema inferred from file. |
 | `AVRO` | `application/avro` or `application/octet-stream` | Requires DuckDB's `avro` extension (G1, ADR 0027). |
@@ -162,3 +162,11 @@ A complete runnable example lives at
 single-file Python script that starts the emulator, runs the
 multipart upload, queries the rows back, and asserts. The example
 is executed in CI by the docs build to prevent doc rot.
+
+## Schema Autodetection
+
+When the `autodetect` flag is enabled for CSV or JSON loads, the emulator infers the schema by sampling the source data using DuckDB's native auto-detection capabilities (`read_csv_auto` or `read_json_auto`). 
+
+**Note on multi-file loads:** Schema inference is performed by sampling the *first* file in the `sourceUris` list. For multi-file loads where the schema drifts between files, the `COPY` operation may fail or write data incorrectly if subsequent files do not match the schema inferred from the first file.
+
+**Note on complex types:** Deeply nested types inferred from JSON (like DuckDB `STRUCT` or `LIST`) are mapped to BigQuery `STRING` fields rather than recursive `RECORD` or `REPEATED` fields. If you require strict typing for nested structures, provide an explicit `schema` rather than relying on `autodetect`.
