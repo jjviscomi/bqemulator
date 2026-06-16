@@ -10,13 +10,13 @@
       
       
       
-        <link rel="canonical" href="https://jjviscomi.github.io/bqemulator/main/adr/0024-hll-count-support-strategy/">
+        <link rel="canonical" href="https://jjviscomi.github.io/bqemulator/main/adr/0044-starlette-1x-adoption/">
       
       
-        <link rel="prev" href="../0023-conformance-divergence-baseline/">
+        <link rel="prev" href="../0043-export-data-statement/">
       
       
-        <link rel="next" href="../0025-perf-tier-design-contract/">
+        <link rel="next" href="../../rfcs/">
       
       
         
@@ -27,7 +27,7 @@
     
     
       
-        <title>0024 HLL_COUNT support strategy - bqemulator</title>
+        <title>0044 Adopt starlette 1.x (security) without adopting httpx2 - bqemulator</title>
       
     
     
@@ -80,7 +80,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#adr-0024-hll_count-support-strategy" class="md-skip">
+        <a href="#adr-0044-adopt-starlette-1x-security-without-adopting-httpx2" class="md-skip">
           Skip to content
         </a>
       
@@ -118,7 +118,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              0024 HLL_COUNT support strategy
+              0044 Adopt starlette 1.x (security) without adopting httpx2
             
           </span>
         </div>
@@ -3685,37 +3685,10 @@
                 
   
   
-    
   
   
-  
-    <li class="md-nav__item md-nav__item--active">
-      
-      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
-      
-      
-        
-      
-      
-        <label class="md-nav__link md-nav__link--active" for="__toc">
-          
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    0024 HLL_COUNT support strategy
-  
-
-    
-  </span>
-  
-  
-
-          <span class="md-nav__icon md-icon"></span>
-        </label>
-      
-      <a href="./" class="md-nav__link md-nav__link--active">
+    <li class="md-nav__item">
+      <a href="../0024-hll-count-support-strategy/" class="md-nav__link">
         
   
   
@@ -3731,220 +3704,6 @@
   
 
       </a>
-      
-        
-
-<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
-  
-  
-  
-    
-  
-  
-    <label class="md-nav__title" for="__toc">
-      <span class="md-nav__icon md-icon"></span>
-      Table of contents
-    </label>
-    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#context" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Context
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#decisions" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Decisions
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Decisions">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#1-three-implementation-paths-were-considered" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        1. Three implementation paths were considered
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="1. Three implementation paths were considered">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#option-a-implement-bigquery-hll-bit-exact" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Option A — Implement BigQuery HLL++ bit-exact
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#option-b-pin-all-4-items-as-xfail" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Option B — Pin all 4 items as XFAIL
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#option-c-implement-python-udfs-with-a-new-non-bq-sketch-format" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Option C — Implement Python UDFs with a new (non-BQ) sketch format
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#option-d-translate-to-countdistinct-x-chosen" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Option D — Translate to COUNT(DISTINCT x) (chosen)
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#2-chosen-path-option-d-option-b-for-the-residual" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        2. Chosen path — Option D + Option B for the residual
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#3-precedent-for-future-approximate-aggregate-decisions" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        3. Precedent for future approximate-aggregate decisions
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#consequences" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Consequences
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Consequences">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#1-cardinality-semantic-preserved" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        1. Cardinality semantic — preserved
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#2-sketch-persistence-semantic-not-preserved" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        2. Sketch-persistence semantic — not preserved
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#3-matrix-coverage-closed-for-the-hll-family" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        3. Matrix coverage — closed for the HLL family
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#4-conformance-fixture-count" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        4. Conformance fixture count
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#5-adr-0024-supersedes-nothing-supplements-adr-0023" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        5. ADR 0024 supersedes nothing; supplements ADR 0023
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#notes" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Notes
-      
-    </span>
-  </a>
-  
-</li>
-      
-    </ul>
-  
-</nav>
-      
     </li>
   
 
@@ -4486,10 +4245,37 @@
                 
   
   
+    
   
   
-    <li class="md-nav__item">
-      <a href="../0044-starlette-1x-adoption/" class="md-nav__link">
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0044 Adopt starlette 1.x (security) without adopting httpx2
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
         
   
   
@@ -4505,6 +4291,109 @@
   
 
       </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#context" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Context
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#decisions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Decisions
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Decisions">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#1-floor-starlette131" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. Floor starlette&gt;=1.3.1
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#2-keep-plain-httpx-do-not-adopt-httpx2" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. Keep plain httpx; do not adopt httpx2
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#3-scope-ignore-the-test-client-deprecation-warning" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. Scope-ignore the test-client deprecation warning
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#4-drop-the-obsolete-pysec-2026-161-ignore" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4. Drop the obsolete PYSEC-2026-161 ignore
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#consequences" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Consequences
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
     </li>
   
 
@@ -5566,22 +5455,10 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#1-three-implementation-paths-were-considered" class="md-nav__link">
+  <a href="#1-floor-starlette131" class="md-nav__link">
     <span class="md-ellipsis">
       
-        1. Three implementation paths were considered
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="1. Three implementation paths were considered">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#option-a-implement-bigquery-hll-bit-exact" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Option A — Implement BigQuery HLL++ bit-exact
+        1. Floor starlette&gt;=1.3.1
       
     </span>
   </a>
@@ -5589,10 +5466,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#option-b-pin-all-4-items-as-xfail" class="md-nav__link">
+  <a href="#2-keep-plain-httpx-do-not-adopt-httpx2" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Option B — Pin all 4 items as XFAIL
+        2. Keep plain httpx; do not adopt httpx2
       
     </span>
   </a>
@@ -5600,10 +5477,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#option-c-implement-python-udfs-with-a-new-non-bq-sketch-format" class="md-nav__link">
+  <a href="#3-scope-ignore-the-test-client-deprecation-warning" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Option C — Implement Python UDFs with a new (non-BQ) sketch format
+        3. Scope-ignore the test-client deprecation warning
       
     </span>
   </a>
@@ -5611,37 +5488,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#option-d-translate-to-countdistinct-x-chosen" class="md-nav__link">
+  <a href="#4-drop-the-obsolete-pysec-2026-161-ignore" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Option D — Translate to COUNT(DISTINCT x) (chosen)
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#2-chosen-path-option-d-option-b-for-the-residual" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        2. Chosen path — Option D + Option B for the residual
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#3-precedent-for-future-approximate-aggregate-decisions" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        3. Precedent for future approximate-aggregate decisions
+        4. Drop the obsolete PYSEC-2026-161 ignore
       
     </span>
   </a>
@@ -5658,78 +5508,6 @@
     <span class="md-ellipsis">
       
         Consequences
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Consequences">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#1-cardinality-semantic-preserved" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        1. Cardinality semantic — preserved
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#2-sketch-persistence-semantic-not-preserved" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        2. Sketch-persistence semantic — not preserved
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#3-matrix-coverage-closed-for-the-hll-family" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        3. Matrix coverage — closed for the HLL family
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#4-conformance-fixture-count" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        4. Conformance fixture count
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#5-adr-0024-supersedes-nothing-supplements-adr-0023" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        5. ADR 0024 supersedes nothing; supplements ADR 0023
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#notes" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Notes
       
     </span>
   </a>
@@ -5753,7 +5531,7 @@
 
 
   
-    <a href="https://github.com/jjviscomi/bqemulator/edit/main/docs/adr/0024-hll-count-support-strategy.md" title="Edit this page" class="md-content__button md-icon" rel="edit">
+    <a href="https://github.com/jjviscomi/bqemulator/edit/main/docs/adr/0044-starlette-1x-adoption.md" title="Edit this page" class="md-content__button md-icon" rel="edit">
       
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M10 20H6V4h7v5h5v3.1l2-2V8l-6-6H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h4zm10.2-7c.1 0 .3.1.4.2l1.3 1.3c.2.2.2.6 0 .8l-1 1-2.1-2.1 1-1c.1-.1.2-.2.4-.2m0 3.9L14.1 23H12v-2.1l6.1-6.1z"/></svg>
     </a>
@@ -5762,264 +5540,80 @@
     
       
     
-    <a href="https://github.com/jjviscomi/bqemulator/raw/main/docs/adr/0024-hll-count-support-strategy.md" title="View source of this page" class="md-content__button md-icon">
+    <a href="https://github.com/jjviscomi/bqemulator/raw/main/docs/adr/0044-starlette-1x-adoption.md" title="View source of this page" class="md-content__button md-icon">
       
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M17 18c.56 0 1 .44 1 1s-.44 1-1 1-1-.44-1-1 .44-1 1-1m0-3c-2.73 0-5.06 1.66-6 4 .94 2.34 3.27 4 6 4s5.06-1.66 6-4c-.94-2.34-3.27-4-6-4m0 6.5a2.5 2.5 0 0 1-2.5-2.5 2.5 2.5 0 0 1 2.5-2.5 2.5 2.5 0 0 1 2.5 2.5 2.5 2.5 0 0 1-2.5 2.5M9.27 20H6V4h7v5h5v4.07c.7.08 1.36.25 2 .49V8l-6-6H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h4.5a8.2 8.2 0 0 1-1.23-2"/></svg>
     </a>
   
 
 
-<h1 id="adr-0024-hll_count-support-strategy">ADR 0024: HLL_COUNT support strategy<a class="headerlink" href="#adr-0024-hll_count-support-strategy" title="Permanent link">&para;</a></h1>
+<h1 id="adr-0044-adopt-starlette-1x-security-without-adopting-httpx2">ADR 0044: Adopt starlette 1.x (security) without adopting httpx2<a class="headerlink" href="#adr-0044-adopt-starlette-1x-security-without-adopting-httpx2" title="Permanent link">&para;</a></h1>
 <ul>
 <li><strong>Status</strong>: Accepted</li>
 </ul>
 <h2 id="context">Context<a class="headerlink" href="#context" title="Permanent link">&para;</a></h2>
-<p>BigQuery exposes four HyperLogLog++ surfaces under the
-<code>HLL_COUNT.*</code> family:</p>
-<table>
-<thead>
-<tr>
-<th>Function</th>
-<th>Returns</th>
-<th>Role</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><code>HLL_COUNT.INIT(x [, precision])</code></td>
-<td><code>BYTES</code></td>
-<td>Aggregate — build a sketch from a row group.</td>
-</tr>
-<tr>
-<td><code>HLL_COUNT.MERGE_PARTIAL(sketch)</code></td>
-<td><code>BYTES</code></td>
-<td>Aggregate — combine sketches at the BYTES level.</td>
-</tr>
-<tr>
-<td><code>HLL_COUNT.MERGE(sketch)</code></td>
-<td><code>INT64</code></td>
-<td>Aggregate — combine sketches and extract cardinality.</td>
-</tr>
-<tr>
-<td><code>HLL_COUNT.EXTRACT(sketch)</code></td>
-<td><code>INT64</code></td>
-<td>Scalar — extract cardinality from a single sketch.</td>
-</tr>
-</tbody>
-</table>
-<p>The four surfaces sit in the matrix's
-<a href="../../reference/conformance-coverage-matrix/">🔴 Uncovered tier</a> as
-the last of the top-30 highest-priority gaps. Closing them was
-deferred from top-30 gap-closure session #3 because
-the closure shape is not the usual "rewrite a name to a DuckDB
-equivalent" — DuckDB has no HLL primitives at all, and BigQuery's
-sketch BYTES are in a specific HyperLogLog++ binary format that is
-not publicly specified at the wire level.</p>
-<p>We need to choose a closure path for the four surfaces that:</p>
-<ol>
-<li>Closes the four matrix rows (matrix gap-share goal).</li>
-<li>Preserves the cardinality user-facing semantic where the user's
-   intent is "count distinct values" rather than "persist a sketch".</li>
-<li>Documents the bounds of emulator parity cleanly so users know
-   when to fall back to real BigQuery.</li>
-<li>Sets a precedent for future approximate-aggregate decisions
-   (<code>APPROX_TOP_COUNT</code> byte-exact tie-breaking, t-digest sketch
-   functions, etc.).</li>
-</ol>
-<p>This ADR records the decision matrix considered, the chosen path,
-and the consequences for users and future contributors.</p>
+<p><code>pip-audit</code> flagged four advisories against <code>starlette</code> 0.52.1, the ASGI
+foundation under FastAPI that serves the emulator's REST API:</p>
+<ul>
+<li><code>CVE-2026-48818</code> (fixed in starlette 1.1.0)</li>
+<li><code>CVE-2026-48817</code> (fixed in starlette 1.1.0)</li>
+<li><code>CVE-2026-54282</code> (fixed in starlette 1.3.0)</li>
+<li><code>CVE-2026-54283</code> (fixed in starlette 1.3.1)</li>
+</ul>
+<p>Every fix ships in the starlette 1.x line. The dependency had been held at
+<code>starlette&gt;=0.46,&lt;1.0</code>. The ceiling pin's stated reason was a feared
+<code>httpx</code> to <code>httpx2</code> migration in <code>starlette.testclient</code> (which FastAPI's
+<code>TestClient</code> re-exports), deferred to "its own PR." A prior advisory,
+<code>PYSEC-2026-161</code>, was carried in <code>.pip-audit-ignore</code> for the same reason: its
+only fix was in the capped 1.x line.</p>
+<p>Empirically, the feared migration is narrower than the pin assumed:</p>
+<ul>
+<li><code>fastapi</code> 0.137 (the current floor's resolution) already accepts
+  <code>starlette</code> 1.3.1 and resolves with plain <code>httpx</code> 0.28; there is no runtime
+  <code>httpx2</code> requirement.</li>
+<li><code>starlette.testclient</code> in 1.x prefers an optional <code>httpx2</code> package and, when
+  it is absent, falls back to plain <code>httpx</code> while emitting a
+  <code>StarletteDeprecationWarning</code>. The only concrete breakage was that the
+  project's warnings-as-errors test policy turned that import-time deprecation
+  into a collection error for every <code>TestClient</code>-based test.</li>
+</ul>
+<p>The security exposure is real (a runtime dependency), though the emulator's
+threat model is a local, trusted developer or CI environment rather than an
+internet-facing service.</p>
 <h2 id="decisions">Decisions<a class="headerlink" href="#decisions" title="Permanent link">&para;</a></h2>
-<h3 id="1-three-implementation-paths-were-considered">1. Three implementation paths were considered<a class="headerlink" href="#1-three-implementation-paths-were-considered" title="Permanent link">&para;</a></h3>
-<h4 id="option-a-implement-bigquery-hll-bit-exact">Option A — Implement BigQuery HLL++ bit-exact<a class="headerlink" href="#option-a-implement-bigquery-hll-bit-exact" title="Permanent link">&para;</a></h4>
-<p>Ship a Python HLL++ implementation under
-<code>src/bqemulator/udf/builtin/hll_count.py</code> that reproduces
-BigQuery's wire-level binary format: bucket-count selection
-(<code>2^precision</code>, 10-24 inclusive), Murmur3 hash variant, sparse +
-dense sketch representations, BYTES framing (header + payload),
-and bias-correction tables matching BigQuery's documented output.</p>
-<ul>
-<li><strong>Pros</strong>: Full parity. Users who pipeline HLL across BigQuery ↔
-  emulator get interchangeable sketches. Cardinality estimates
-  match within HLL's documented error.</li>
-<li><strong>Cons</strong>: Multi-week engineering. BigQuery's exact HLL++ format
-  is documented at the algorithm level (the
-  <a href="https://research.google/pubs/pub40671/">HLL++ paper</a>) but not
-  at the byte level. Bit-exact reproduction is test-driven
-  reverse-engineering against recorded fixtures — fragile and
-  open-ended.</li>
-</ul>
-<h4 id="option-b-pin-all-4-items-as-xfail">Option B — Pin all 4 items as XFAIL<a class="headerlink" href="#option-b-pin-all-4-items-as-xfail" title="Permanent link">&para;</a></h4>
-<p>Add an <code>out-of-scope.md</code> section documenting the lack of DuckDB
-primitives and Python HLL++ packages, record 4 XFAIL fixtures, and
-pin them in <code>tests/conformance/divergences.py</code>.</p>
-<ul>
-<li><strong>Pros</strong>: Clean and quick (&lt;1 hour). Closes the 4 matrix rows
-  (XFAIL fixtures count as covering the surface item).</li>
-<li><strong>Cons</strong>: Emulator users who reach for any <code>HLL_COUNT.*</code>
-  function get a hard "function not found" error. The most common
-  cardinality-extraction pattern (<code>HLL_COUNT.EXTRACT(
-  HLL_COUNT.INIT(x))</code> — counted in 80%+ of public-GitHub HLL usage)
-  fails even though the cardinality is trivially recoverable via
-  <code>COUNT(DISTINCT)</code>.</li>
-</ul>
-<h4 id="option-c-implement-python-udfs-with-a-new-non-bq-sketch-format">Option C — Implement Python UDFs with a new (non-BQ) sketch format<a class="headerlink" href="#option-c-implement-python-udfs-with-a-new-non-bq-sketch-format" title="Permanent link">&para;</a></h4>
-<p>Ship four Python helper UDFs (<code>bqemu_hll_init</code>, <code>bqemu_hll_merge</code>,
-<code>bqemu_hll_merge_partial</code>, <code>bqemu_hll_extract</code>) that use a
-pure-Python HLL implementation with the emulator's own
-serialisation (not BigQuery's). <code>EXTRACT</code> and <code>MERGE</code> return
-INT64 cardinality matching BigQuery (within HLL's standard error);
-<code>INIT</code> and <code>MERGE_PARTIAL</code> return BYTES sketches that <em>don't</em>
-match BigQuery's HLL++ format.</p>
-<ul>
-<li><strong>Pros</strong>: Single-emulator-pipeline (<code>INIT → MERGE_PARTIAL →
-  EXTRACT</code>) works end-to-end. Cardinality semantic preserved
-  everywhere.</li>
-<li><strong>Cons</strong>: Sketches authored in BigQuery cannot be read by the
-  emulator and vice-versa — a silent contract divergence with the
-  rest of the corpus, which enforces bit-exact match. Re-implementing
-  HLL in pure Python is also non-trivial (~500 lines including the
-  bias-correction tables); the engineering cost is significant
-  without the upside of BigQuery parity.</li>
-</ul>
-<h4 id="option-d-translate-to-countdistinct-x-chosen">Option D — Translate to <code>COUNT(DISTINCT x)</code> (chosen)<a class="headerlink" href="#option-d-translate-to-countdistinct-x-chosen" title="Permanent link">&para;</a></h4>
-<p>Match the precedent set by <code>ApproxCountDistinctExactRule</code>
-(<code>APPROX_COUNT_DISTINCT(x)</code> → <code>COUNT(DISTINCT x)</code>, ADR 0023 §1.I):
-detect the two cardinality-extracting patterns and rewrite them to
-the exact aggregate. The two sketch-shaped surfaces (<code>INIT</code> and
-<code>MERGE_PARTIAL</code>) stay unsupported and are pinned as XFAIL.</p>
-<p>The two patterns the emulator translates:</p>
-<ul>
-<li><code>HLL_COUNT.EXTRACT(HLL_COUNT.INIT(x))</code> → <code>COUNT(DISTINCT x)</code>.</li>
-<li>
-<p><code>HLL_COUNT.MERGE(sketch)</code> over a subquery whose every leg
-  projects <code>HLL_COUNT.INIT(x)</code> → inline the <code>INIT</code> calls in each
-  leg, rewrite the outer aggregate to <code>COUNT(DISTINCT sketch)</code>.
-  (<code>sketch</code> after the inline references raw operand values, so
-  <code>COUNT(DISTINCT)</code> delivers the same cardinality semantic.)</p>
-</li>
-<li>
-<p><strong>Pros</strong>: Lightest-touch implementation matching the existing
-  emulator philosophy. No new dependencies. Closes the most common
-  HLL pattern fully. Sets a clear precedent for future
-  approximate-aggregate decisions.</p>
-</li>
-<li><strong>Cons</strong>: Cannot support cross-row sketch persistence (e.g., a
-  nightly job writes sketches to a table, a downstream job reads
-  them) — a niche pattern not exercised by any current emulator
-  user.</li>
-</ul>
-<h3 id="2-chosen-path-option-d-option-b-for-the-residual">2. Chosen path — Option D + Option B for the residual<a class="headerlink" href="#2-chosen-path-option-d-option-b-for-the-residual" title="Permanent link">&para;</a></h3>
-<p>The decision is <strong>Option D for the two cardinality-extracting
-patterns, Option B for the two sketch-shaped surfaces</strong>:</p>
-<ol>
-<li>Author four conformance fixtures recorded against real
-   BigQuery:</li>
-<li><code>standard_functions/agg_hll_count_extract_basic</code> — exercises
-   <code>HLL_COUNT.EXTRACT(HLL_COUNT.INIT(n))</code> over an inline
-   UNNEST literal. Real BQ returns <code>10</code>.</li>
-<li><code>standard_functions/agg_hll_count_merge_basic</code> — exercises
-   <code>HLL_COUNT.MERGE(sketch)</code> over a subquery of two
-   <code>HLL_COUNT.INIT(n)</code> UNION legs. Real BQ returns <code>6</code>.</li>
-<li><code>standard_functions/agg_hll_count_init_basic</code> — exercises
-   <code>TO_HEX(HLL_COUNT.INIT(n))</code>. Real BQ returns a 56-character
-   hex string of the BYTES sketch.</li>
-<li>
-<p><code>standard_functions/agg_hll_count_merge_partial_basic</code> —
-   exercises <code>TO_HEX(HLL_COUNT.MERGE_PARTIAL(sketch))</code> over the
-   same shape. Real BQ returns a 70-character hex string.</p>
-</li>
-<li>
-<p>Implement two post-translator rules in
-   <code>src/bqemulator/sql/rules/aggregate_types.py</code>:</p>
-</li>
-<li><code>HllCountExtractInitRule</code> — matches the SQLGlot <code>Dot</code> node
-   for <code>HLL_COUNT.EXTRACT(HLL_COUNT.INIT(x))</code> and rewrites to
-   <code>Count(Distinct([x]))</code>.</li>
-<li>
-<p><code>HllCountMergeRule</code> — matches <code>HLL_COUNT.MERGE(col)</code>, walks
-   up to the enclosing <code>Select.from_</code> subquery, verifies every
-   UNION leg projects <code>HLL_COUNT.INIT(x)</code> for the matching
-   column, inlines each <code>HLL_COUNT.INIT(x)</code> to <code>x</code>, and
-   rewrites the outer aggregate to <code>Count(Distinct([col]))</code>.</p>
-</li>
-<li>
-<p>Pin the two sketch-shaped fixtures as XFAIL in
-   <code>tests/conformance/divergences.py</code> referencing the new
-   <a href="../../reference/out-of-scope/#hll-sketch-binary-format-hll_countinit-merge_partial"><code>out-of-scope.md</code> section</a>.</p>
-</li>
-</ol>
-<h3 id="3-precedent-for-future-approximate-aggregate-decisions">3. Precedent for future approximate-aggregate decisions<a class="headerlink" href="#3-precedent-for-future-approximate-aggregate-decisions" title="Permanent link">&para;</a></h3>
-<p>The HLL decision establishes the framework for any future
-approximate-aggregate function the emulator must consider:</p>
-<ol>
-<li>Does DuckDB ship a bit-compatible primitive? If yes, use it
-   (this is the <code>STDDEV</code> / <code>VARIANCE</code> / <code>GROUPING</code> path —
-   ADR 0023 §1 implicit).</li>
-<li>Does DuckDB ship a <em>user-facing-equivalent</em> primitive even if
-   the byte-level output differs? If yes, use it (the
-   <code>APPROX_QUANTILES</code> → <code>quantile_disc</code> path — ADR 0023 §1.I).</li>
-<li>Does the function's user-facing semantic decompose into an
-   exact aggregate over the same input? If yes, route through the
-   exact aggregate (the <code>APPROX_COUNT_DISTINCT</code> → <code>COUNT(DISTINCT)</code>
-   and <code>HLL_COUNT.EXTRACT-of-INIT</code> → <code>COUNT(DISTINCT)</code> paths —
-   ADR 0023 §1.I and this ADR).</li>
-<li>Otherwise, pin as XFAIL with an
-   <a href="../../reference/out-of-scope/"><code>out-of-scope.md</code></a> section
-   documenting the gap and the workaround.</li>
-</ol>
-<p>The chosen path's precedent value extends to future decisions for
-<code>APPROX_TOP_COUNT</code> byte-exact tie-breaking, t-digest sketches if
-BigQuery ships one, and any future BigQuery aggregate that wraps
-a probabilistic algorithm.</p>
+<h3 id="1-floor-starlette131">1. Floor <code>starlette&gt;=1.3.1</code><a class="headerlink" href="#1-floor-starlette131" title="Permanent link">&para;</a></h3>
+<p>1.3.1 is the lowest release that clears all four advisories plus the
+previously-ignored <code>PYSEC-2026-161</code>. <code>fastapi</code> and <code>httpx</code> are left at their
+existing floors; no FastAPI bump is required.</p>
+<h3 id="2-keep-plain-httpx-do-not-adopt-httpx2">2. Keep plain <code>httpx</code>; do not adopt <code>httpx2</code><a class="headerlink" href="#2-keep-plain-httpx-do-not-adopt-httpx2" title="Permanent link">&para;</a></h3>
+<p><code>httpx2</code> is a separate, distinct HTTP-client package whose provenance and
+maintenance are not yet vetted for this dependency graph, and the security fix
+that motivated this change lives in <code>starlette</code> itself, not in the test
+client. Plain <code>httpx</code> remains fully supported by <code>starlette.testclient</code> as the
+fallback, so the test client keeps working unchanged.</p>
+<h3 id="3-scope-ignore-the-test-client-deprecation-warning">3. Scope-ignore the test-client deprecation warning<a class="headerlink" href="#3-scope-ignore-the-test-client-deprecation-warning" title="Permanent link">&para;</a></h3>
+<p>A single <code>filterwarnings</code> entry in <code>pyproject.toml</code> ignores exactly the
+"Using <code>httpx</code> with <code>starlette.testclient</code> is deprecated" message
+(<code>starlette.exceptions.StarletteDeprecationWarning</code>). The ignore is matched by
+message so any other starlette deprecation still fails the warnings-as-errors
+gate. Adopting <code>httpx2</code>, or revisiting if a future starlette release removes
+the plain-<code>httpx</code> fallback, is left as follow-up.</p>
+<h3 id="4-drop-the-obsolete-pysec-2026-161-ignore">4. Drop the obsolete <code>PYSEC-2026-161</code> ignore<a class="headerlink" href="#4-drop-the-obsolete-pysec-2026-161-ignore" title="Permanent link">&para;</a></h3>
+<p>That entry existed only because the fix was gated behind the <code>&lt;1.0</code> cap. With
+the floor at 1.3.1 the advisory is genuinely patched, so the ignore is removed
+rather than carried as dead configuration.</p>
 <h2 id="consequences">Consequences<a class="headerlink" href="#consequences" title="Permanent link">&para;</a></h2>
-<h3 id="1-cardinality-semantic-preserved">1. Cardinality semantic — preserved<a class="headerlink" href="#1-cardinality-semantic-preserved" title="Permanent link">&para;</a></h3>
-<p>Users writing the common <code>HLL_COUNT.EXTRACT(HLL_COUNT.INIT(x))</code>
-and <code>HLL_COUNT.MERGE(sketch)</code> patterns get the right answer
-locally. For small-cardinality inputs the result matches BigQuery
-exactly. For inputs beyond HLL's bucket-count resolution the
-result matches within ~1.04/√m (HLL's documented standard error) —
-indistinguishable for any realistic test scenario.</p>
-<h3 id="2-sketch-persistence-semantic-not-preserved">2. Sketch-persistence semantic — not preserved<a class="headerlink" href="#2-sketch-persistence-semantic-not-preserved" title="Permanent link">&para;</a></h3>
-<p>Users who pipeline HLL across the BigQuery ↔ emulator boundary
-(e.g., write sketches to a table in BigQuery, read and merge them
-in the emulator) encounter a hard error. The
-<a href="../../reference/out-of-scope/#hll-sketch-binary-format-hll_countinit-merge_partial"><code>out-of-scope.md</code> section</a>
-documents this divergence; the
-<a href="https://github.com/jjviscomi/bqemulator/blob/main/tests/conformance/divergences.py"><code>KNOWN_DIVERGENCES</code></a>
-registry pins the two affected fixtures with <code>strict=True</code> so an
-accidental future implementation surfaces as an <code>XPASS</code> failure.</p>
-<h3 id="3-matrix-coverage-closed-for-the-hll-family">3. Matrix coverage — closed for the HLL family<a class="headerlink" href="#3-matrix-coverage-closed-for-the-hll-family" title="Permanent link">&para;</a></h3>
-<p>All four <code>HLL_COUNT.*</code> surface items move from
-🔴 Uncovered to either 🟢 Covered (the EXTRACT and MERGE fixtures
-exercise INIT through the inline sub-call too) or 🟡 Sampled (the
-INIT and MERGE_PARTIAL fixtures cover those surfaces standalone as
-XFAILs). The matrix's 🔴 Uncovered share drops by 4 items.</p>
-<h3 id="4-conformance-fixture-count">4. Conformance fixture count<a class="headerlink" href="#4-conformance-fixture-count" title="Permanent link">&para;</a></h3>
-<p>Conformance corpus grows by 4 (866 → 870; 837 + 29 → 839 + 31).
-The same-day P2.a closure-bug follow-up landed concurrently and
-moved the totals to <strong>844 + 26 / 870</strong> by flipping five P2.a /
-P2.d-recording XFAILs to PASS — that follow-up is independent of
-this ADR's HLL_COUNT scope.</p>
-<h3 id="5-adr-0024-supersedes-nothing-supplements-adr-0023">5. ADR 0024 supersedes nothing; supplements ADR 0023<a class="headerlink" href="#5-adr-0024-supersedes-nothing-supplements-adr-0023" title="Permanent link">&para;</a></h3>
-<p>ADR 0023 §1.I (the Bucket I bucket for
-"standard-function semantic difference") already covers
-<code>APPROX_COUNT_DISTINCT</code> and the precedent for routing approximate
-aggregates through their exact equivalents. ADR 0024 extends the
-precedent to the HLL family and documents the Option A / B / C / D
-decision matrix as the framework for future approximate-aggregate
-decisions. ADR 0023's bucket-list is unaffected.</p>
-<h2 id="notes">Notes<a class="headerlink" href="#notes" title="Permanent link">&para;</a></h2>
-<p>The two implemented translator rules use SQLGlot's typed <code>Dot</code>
-node-shape detection rather than function-name string matching —
-the precedent set by every existing rule in
-<code>src/bqemulator/sql/rules/</code>. The rules' helpers
-(<code>_is_hll_count_call</code>, <code>_hll_merge_source_legs</code>,
-<code>_collect_union_legs</code>, <code>_leg_projects_hll_init</code>,
-<code>_inline_hll_init_in_leg</code>) are intentionally narrow: they fire
-only on the specific shapes documented above and leave the bare
-<code>INIT</code> / <code>MERGE_PARTIAL</code> patterns untouched so DuckDB's
-<code>CatalogException</code> surfaces as the emulator's <code>InvalidQueryError</code>
-(matching the XFAIL fixtures' expected divergence).</p>
+<ul>
+<li><code>pip-audit</code> reports no known vulnerabilities; the four CVEs and
+  <code>PYSEC-2026-161</code> are resolved by the upgrade, not suppressed.</li>
+<li>The long-standing <code>starlette&lt;1.0</code> deferral and its tracking comment are
+  retired.</li>
+<li>One narrowly-scoped warning ignore is added to the test configuration; the
+  rest of the warnings-as-errors discipline is unchanged.</li>
+<li>A future move to <code>httpx2</code> (or a forced move, if starlette drops the
+  plain-<code>httpx</code> fallback) is a self-contained follow-up that does not block the
+  security fix.</li>
+</ul>
 
 
 
