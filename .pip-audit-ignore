@@ -93,11 +93,3 @@ CVE-2026-45409
 # fix version is available; tracked for the same dependency-refresh
 # sweep that bumps idna / requests.
 PYSEC-2026-89
-
-# starlette 0.52.1 — PYSEC-2026-161 (fix in 1.0.1). The starlette
-# version is gated by fastapi's compatibility range; the next
-# fastapi minor (>0.118) will pull starlette 1.0.1 transitively.
-# Tracked for the same dependency-refresh sweep that bumps idna /
-# requests / markdown. Advisory rolled into the pip-audit DB after
-# the v1.0.0 release-candidate baseline was checked clean.
-PYSEC-2026-161
