@@ -1339,7 +1339,6 @@ def _maybe_create_load_destination(
     """
     from bqemulator.api.routes.tables import _field_to_rest, _parse_schema_fields
     from bqemulator.catalog.models import TableFieldSchema, TableMeta, TableSchema
-    from bqemulator.jobs.executor import _resolve_uri
     from bqemulator.storage.type_map import bq_schema_to_duckdb_columns, duckdb_to_bq
 
     schema_raw = load_config.get("schema") or {}
