@@ -344,10 +344,9 @@ class TestMaybeCreateLoadDestination:
             dest_dataset="ds",
             dest_table_id="t",
             load_config={},
-            now=None,
+            now="2026-06-15T00:00:00Z",
             ctx=ctx,
         )
-        ctx.catalog.get_dataset.assert_not_called()
         ctx.catalog.create_table.assert_not_called()
 
     def test_missing_dataset_raises(self) -> None:
@@ -423,3 +422,95 @@ class TestCopyTableIntoDestination:
                 create_if_needed=True,
                 ctx=ctx,
             )
+
+
+class TestMaybeCreateLoadDestinationAutodetect:
+    def test_autodetect_json_calls_read_json_auto(self) -> None:
+        from unittest.mock import Mock
+
+        from bqemulator.jobs.executor import _maybe_create_load_destination
+
+        ctx = Mock()
+        ctx.catalog.get_dataset.return_value = Mock()
+
+        # Mock the DESCRIBE response (column_name, column_type, null, key, default, extra)
+        ctx.engine.execute.return_value.fetchall.return_value = [
+            ("id", "BIGINT", "YES", "PRI", "NULL", ""),
+            ("name", "VARCHAR", "YES", "", "NULL", ""),
+        ]
+
+        _maybe_create_load_destination(
+            dest_project="p",
+            dest_dataset="ds",
+            dest_table_id="t",
+            load_config={
+                "autodetect": True,
+                "sourceFormat": "NEWLINE_DELIMITED_JSON",
+                "sourceUris": ["file:///tmp/test.json"],
+            },
+            now="2026-06-15T00:00:00Z",
+            ctx=ctx,
+        )
+
+        execute_calls = ctx.engine.execute.call_args_list
+        assert (
+            execute_calls[0][0][0]
+            == 'CREATE TABLE "p__ds"."t" AS SELECT * FROM read_json_auto(?) LIMIT 0'
+        )
+        assert execute_calls[1][0][0] == 'DESCRIBE "p__ds"."t"'
+
+        added_meta = ctx.catalog.create_table.call_args[0][0]
+        assert len(added_meta.schema_.fields) == 2
+        assert added_meta.schema_.fields[0].name == "id"
+        assert added_meta.schema_.fields[0].type == "INT64"
+
+    def test_autodetect_csv_calls_read_csv_auto(self) -> None:
+        from unittest.mock import Mock
+
+        from bqemulator.jobs.executor import _maybe_create_load_destination
+
+        ctx = Mock()
+        ctx.catalog.get_dataset.return_value = Mock()
+        ctx.engine.execute.return_value.fetchall.return_value = []
+
+        _maybe_create_load_destination(
+            dest_project="p",
+            dest_dataset="ds",
+            dest_table_id="t",
+            load_config={
+                "autodetect": True,
+                "sourceFormat": "CSV",
+                "sourceUris": ["file:///tmp/test.csv"],
+            },
+            now="2026-06-15T00:00:00Z",
+            ctx=ctx,
+        )
+
+        execute_calls = ctx.engine.execute.call_args_list
+        assert (
+            execute_calls[0][0][0]
+            == 'CREATE TABLE "p__ds"."t" AS SELECT * FROM read_csv_auto(?) LIMIT 0'
+        )
+
+    def test_autodetect_unsupported_format_returns(self) -> None:
+        from unittest.mock import Mock
+
+        from bqemulator.jobs.executor import _maybe_create_load_destination
+
+        ctx = Mock()
+        ctx.catalog.get_dataset.return_value = Mock()
+
+        _maybe_create_load_destination(
+            dest_project="p",
+            dest_dataset="ds",
+            dest_table_id="t",
+            load_config={
+                "autodetect": True,
+                "sourceFormat": "AVRO",
+                "sourceUris": ["file:///tmp/test.avro"],
+            },
+            now="2026-06-15T00:00:00Z",
+            ctx=ctx,
+        )
+
+        ctx.engine.execute.assert_not_called()

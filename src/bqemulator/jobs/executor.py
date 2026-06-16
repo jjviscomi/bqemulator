@@ -926,6 +926,9 @@ async def execute_load_job(
     # schema is not supplied (autodetect path), the existing DuckDB
     # COPY/INSERT call below will raise a binder error which the load
     # error wrapper translates to a proper ``invalid`` job error.
+    # Resolve URIs: gs:// → local path under GCS_LOCAL_ROOT, or file:// → local.
+    resolved_paths = [_resolve_uri(uri, ctx) for uri in job.source_uris]
+
     if (
         job.create_disposition == "CREATE_IF_NEEDED"
         and ctx.catalog.get_table(job.project_id, job.dataset_id, job.table_id) is None
@@ -938,9 +941,6 @@ async def execute_load_job(
             now=now,
             ctx=ctx,
         )
-
-    # Resolve URIs: gs:// → local path under GCS_LOCAL_ROOT, or file:// → local.
-    resolved_paths = [_resolve_uri(uri, ctx) for uri in job.source_uris]
     for path in resolved_paths:
         _validate_local_path(path)
 
@@ -1338,27 +1338,68 @@ def _maybe_create_load_destination(
     the load error wrapper converts to a proper async job error.
     """
     from bqemulator.api.routes.tables import _field_to_rest, _parse_schema_fields
-    from bqemulator.catalog.models import TableMeta, TableSchema
-    from bqemulator.storage.type_map import bq_schema_to_duckdb_columns
+    from bqemulator.catalog.models import TableFieldSchema, TableMeta, TableSchema
+    from bqemulator.jobs.executor import _resolve_uri
+    from bqemulator.storage.type_map import bq_schema_to_duckdb_columns, duckdb_to_bq
 
     schema_raw = load_config.get("schema") or {}
     fields_raw = schema_raw.get("fields") or []
-    if not fields_raw:
+    autodetect = load_config.get("autodetect", False)
+
+    if not fields_raw and not autodetect:
         return
+
     if ctx.catalog.get_dataset(dest_project, dest_dataset) is None:
         raise resource_not_found(
             ResourceRef("dataset", dest_project, dest_dataset),
         )
 
-    field_models = _parse_schema_fields(fields_raw)
-    schema = TableSchema(fields=field_models)
-    duckdb_cols = bq_schema_to_duckdb_columns(
-        [_field_to_rest(f) for f in field_models],
-    )
-    col_defs = ", ".join(f'"{name}" {dtype}' for name, dtype in duckdb_cols)
     target_ref = quoted_table_ref(dest_project, dest_dataset, dest_table_id)
 
-    ctx.engine.execute(f"CREATE TABLE {target_ref} ({col_defs})")
+    if not fields_raw:
+        source_uris = load_config.get("sourceUris", [])
+        if not source_uris:
+            return
+
+        fmt = load_config.get("sourceFormat", "CSV").upper()
+        if fmt not in ("NEWLINE_DELIMITED_JSON", "JSON", "CSV"):
+            return
+
+        path = _resolve_uri(source_uris[0], ctx)
+
+        if fmt in ("NEWLINE_DELIMITED_JSON", "JSON"):
+            query = f"CREATE TABLE {target_ref} AS SELECT * FROM read_json_auto(?) LIMIT 0"
+        elif fmt == "CSV":
+            query = f"CREATE TABLE {target_ref} AS SELECT * FROM read_csv_auto(?) LIMIT 0"
+
+        ctx.engine.execute(query, [path])
+
+        duck_schema = ctx.engine.execute(f"DESCRIBE {target_ref}").fetchall()
+
+        autodetect_fields = []
+        for row in duck_schema:
+            col_name = row[0]
+            duck_type = row[1]
+            bq_type = duckdb_to_bq(duck_type)
+            autodetect_fields.append(
+                TableFieldSchema(
+                    name=col_name,
+                    type=bq_type,
+                    mode="NULLABLE",
+                )
+            )
+
+        field_models = tuple(autodetect_fields)
+        schema = TableSchema(fields=field_models)
+    else:
+        field_models = _parse_schema_fields(fields_raw)
+        schema = TableSchema(fields=field_models)
+        duckdb_cols = bq_schema_to_duckdb_columns(
+            [_field_to_rest(f) for f in field_models],
+        )
+        col_defs = ", ".join(f'"{name}" {dtype}' for name, dtype in duckdb_cols)
+        ctx.engine.execute(f"CREATE TABLE {target_ref} ({col_defs})")
+
     meta = TableMeta(
         project_id=dest_project,
         dataset_id=dest_dataset,

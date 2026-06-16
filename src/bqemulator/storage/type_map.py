@@ -150,21 +150,33 @@ def _duckdb_compound_to_bq(duckdb_type: str, upper: str) -> str | None:
     return None
 
 
-def duckdb_to_bq(duckdb_type: str) -> str:
+def duckdb_to_bq(duckdb_type: str, strict: bool = True) -> str:
     """Convert a DuckDB type name to its BigQuery equivalent.
 
     Handles parameterized types:
     - ``BIGINT[]`` → ``ARRAY<INT64>``
     - ``STRUCT(name VARCHAR, age BIGINT)`` → ``STRUCT<name STRING, age INT64>``
 
+    When ``strict=False``, compound types (STRUCT, ARRAY/LIST) are mapped
+    to STRING instead of attempting full recursive conversion — intended
+    for autodetect schema inference where deeply nested DuckDB types
+    cannot be faithfully represented in BigQuery.
+
     Raises :class:`ValidationError` for unmappable types.
     """
+    # Handle deeply nested types from read_json_auto like STRUCT(...) or VARCHAR[]
+    if not strict:
+        if duckdb_type.startswith("STRUCT"):
+            return "STRING"
+        if duckdb_type.endswith("[]") or duckdb_type.startswith("LIST"):
+            return "STRING"
     upper = duckdb_type.strip().upper()
 
     # Parameterized types (ARRAY suffix / LIST(...) / STRUCT(...)).
-    compound = _duckdb_compound_to_bq(duckdb_type, upper)
-    if compound is not None:
-        return compound
+    if strict:
+        compound = _duckdb_compound_to_bq(duckdb_type, upper)
+        if compound is not None:
+            return compound
 
     # DECIMAL with explicit precision/scale → NUMERIC or BIGNUMERIC.
     bignumeric_threshold = 38
