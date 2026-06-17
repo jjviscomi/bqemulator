@@ -146,16 +146,28 @@ describe("bqemulator G2 upload host (Node.js)", () => {
     assert.equal(Number(rows[0].n), 60_000);
   });
   it("should honor autodetect flag for CSV load", async () => {
-    const dataset = client.dataset(DATASET);
     const tableId = "rows_autodetect";
-    const csvData = "id,name,score\n1,alice,99.5\n2,bob,88.2\n";
+    const csvData = Buffer.from("id,name,score\n1,alice,99.5\n2,bob,88.2\n", "utf-8");
 
-    const [job] = await dataset.table(tableId).load(Readable.from(csvData), {
-      sourceFormat: "CSV",
-      skipLeadingRows: 1,
-      autodetect: true,
-      writeDisposition: "WRITE_TRUNCATE",
-      createDisposition: "CREATE_IF_NEEDED",
+    const writeStream = client
+      .dataset(DATASET)
+      .table(tableId)
+      .createWriteStream({
+        sourceFormat: "CSV",
+        skipLeadingRows: 1,
+        autodetect: true,
+        writeDisposition: "WRITE_TRUNCATE",
+        createDisposition: "CREATE_IF_NEEDED",
+      });
+      
+    const job = await new Promise((resolve, reject) => {
+      let receivedJob = null;
+      writeStream.on("job", (j) => {
+        receivedJob = j;
+      });
+      writeStream.on("complete", () => resolve(receivedJob));
+      writeStream.on("error", reject);
+      Readable.from(csvData).pipe(writeStream);
     });
 
     const [meta] = await job.getMetadata();
