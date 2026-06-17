@@ -1588,7 +1588,7 @@ JOBS = SurfaceCategory(
             id="jobs.load_autodetect",
             name="Load Job: Schema Autodetect",
             bq_docs="https://cloud.google.com/bigquery/docs/reference/rest/v2/Job#JobConfigurationLoad.autodetect",
-            detect=_re(r'"autodetect"\s*:\s*true'),
+            detect=_re(r'"load"\s*:\s*\{[\s\S]{0,400}?"autodetect"\s*:\s*true'),
             notes="Schema auto-detection for CSV/JSON loads.",
         ),
     ),

@@ -165,7 +165,11 @@ is executed in CI by the docs build to prevent doc rot.
 
 ## Schema Autodetection
 
-When the `autodetect` flag is enabled for CSV or JSON loads, the emulator infers the schema by sampling the source data using DuckDB's native auto-detection capabilities (`read_csv_auto` or `read_json_auto`). 
+Schema autodetection (using DuckDB's `read_csv_auto` or `read_json_auto`) only occurs when **both** of the following conditions are met:
+1. The destination table does not already exist
+2. No explicit `schema.fields` are provided in the load configuration
+
+When these conditions are met and the `autodetect` flag is enabled for CSV or JSON loads, the emulator infers the schema by sampling the source data using DuckDB's native auto-detection capabilities. 
 
 **Note on multi-file loads:** Schema inference is performed by sampling the *first* file in the `sourceUris` list. For multi-file loads where the schema drifts between files, the `COPY` operation may fail or write data incorrectly if subsequent files do not match the schema inferred from the first file.
 
