@@ -2,8 +2,15 @@
 
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
 import pyarrow as pa
 import pytest
+
+if TYPE_CHECKING:
+    from pathlib import Path
+
+    from bqemulator.config import Settings
 
 from bqemulator.jobs.executor import (
     _arrow_type_to_bq_type,
@@ -426,6 +433,58 @@ class TestCopyTableIntoDestination:
 
 
 class TestMaybeCreateLoadDestinationAutodetect:
+    def test_infer_autodetect_schema_real_duckdb(
+        self, ephemeral_settings: Settings, tmp_path: Path
+    ) -> None:
+        import asyncio
+        from unittest.mock import Mock
+
+        from bqemulator.jobs.executor import _infer_autodetect_schema
+        from bqemulator.storage.engine import DuckDBEngine
+
+        csv_file = tmp_path / "data.csv"
+        csv_file.write_text("id,name\n1,alice\n2,bob\n")
+
+        engine = DuckDBEngine(ephemeral_settings)
+        asyncio.run(engine.start())
+
+        try:
+            ctx = Mock()
+            ctx.engine = engine
+            ctx.settings = ephemeral_settings
+
+            schema = _infer_autodetect_schema(
+                ctx=ctx,
+                target_ref="tbl",
+                source_uris=[f"file://{csv_file}"],
+                fmt="CSV",
+            )
+
+            assert len(schema) == 2
+            assert schema[0].name == "id"
+            assert schema[0].type == "INT64"
+            assert schema[1].name == "name"
+            assert schema[1].type == "STRING"
+
+            json_file = tmp_path / "data.json"
+            json_file.write_text('{"id": 1, "score": 99.5}\n{"id": 2, "score": 88.2}\n')
+
+            schema2 = _infer_autodetect_schema(
+                ctx=ctx,
+                target_ref="tbl2",
+                source_uris=[f"file://{json_file}"],
+                fmt="NEWLINE_DELIMITED_JSON",
+            )
+
+            assert len(schema2) == 2
+            assert schema2[0].name == "id"
+            assert schema2[0].type == "INT64"
+            assert schema2[1].name == "score"
+            assert schema2[1].type == "FLOAT64"
+
+        finally:
+            asyncio.run(engine.stop())
+
     def test_autodetect_json_calls_read_json_auto(self) -> None:
         from unittest.mock import Mock
 

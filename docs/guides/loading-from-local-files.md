@@ -171,6 +171,8 @@ Schema autodetection (using DuckDB's `read_csv_auto` or `read_json_auto`) only o
 
 When these conditions are met and the `autodetect` flag is enabled for CSV or JSON loads, the emulator infers the schema by sampling the source data using DuckDB's native auto-detection capabilities. 
 
+**Note on CSV parsing:** DuckDB's `read_csv_auto` automatically sniffs the delimiter, header existence, and quote character independently of the explicit `fieldDelimiter`, `skipLeadingRows`, or `quote` properties specified in the load job configuration. For CSVs that lack headers or use exotic delimiters, schema inference may diverge from explicit load behavior; providing an explicit schema is recommended in these cases.
+
 **Note on multi-file loads:** Schema inference is performed by sampling the *first* file in the `sourceUris` list. For multi-file loads where the schema drifts between files, the `COPY` operation may fail or write data incorrectly if subsequent files do not match the schema inferred from the first file.
 
 **Note on complex types:** Deeply nested types inferred from JSON (like DuckDB `STRUCT` or `LIST`) are mapped to BigQuery `STRING` fields rather than recursive `RECORD` or `REPEATED` fields. If you require strict typing for nested structures, provide an explicit `schema` rather than relying on `autodetect`.
