@@ -2,7 +2,7 @@
 
 > **Auto-generated.** Edit [`tests/conformance/_surface_inventory.py`](https://github.com/jjviscomi/bqemulator/blob/main/tests/conformance/_surface_inventory.py) to add surface items, then run ``make coverage-matrix`` to regenerate this document. The CI gate (``--check``) refuses to merge a PR whose committed matrix has drifted from the inventory or the corpus.
 
-- **Inventory**: 419 surface items across 20 categories (10 flagged non-deterministic — excluded from the corpus by ADR 0022, tracked under [Excluded (non-deterministic)](#excluded-non-deterministic-see-adr-0022))
+- **Inventory**: 420 surface items across 21 categories (10 flagged non-deterministic — excluded from the corpus by ADR 0022, tracked under [Excluded (non-deterministic)](#excluded-non-deterministic-see-adr-0022))
 - **Corpus**: 1213 fixtures under [`tests/conformance/sql_corpus/`](https://github.com/jjviscomi/bqemulator/blob/main/tests/conformance/sql_corpus)
 
 ## What this measures
@@ -22,11 +22,11 @@ Tier counts below exclude the 10 surface items flagged as non-deterministic (RAN
 
 | Tier | Count | Share |
 |---|---:|---:|
-| 🔴 Uncovered | 1 | 0.2% |
-| 🟡 Sampled | 238 | 58.2% |
+| 🔴 Uncovered | 2 | 0.5% |
+| 🟡 Sampled | 238 | 58.0% |
 | 🟢 Covered | 68 | 16.6% |
 | 🟢🟢 Deep | 102 | 24.9% |
-| **Total** | **409** | 100.0% |
+| **Total** | **410** | 100.0% |
 
 ## Excluded (non-deterministic — see ADR 0022)
 
@@ -79,9 +79,21 @@ The fastest single-session improvements come from these uncovered cells. Each is
 
 | Category | Item | BQ docs |
 |---|---|---|
+| BigQuery Jobs | `Load Job: Schema Autodetect` | [BQ ref](https://cloud.google.com/bigquery/docs/reference/rest/v2/Job#JobConfigurationLoad.autodetect) |
 | GEOGRAPHY functions | `ST_CLUSTERDBSCAN` | [BQ ref](https://cloud.google.com/bigquery/docs/reference/standard-sql/geography_functions) |
 
 ## Per-category coverage
+
+### BigQuery Jobs
+
+[BigQuery reference](https://cloud.google.com/bigquery/docs/reference/rest/v2/jobs) -- **0 / 1 items covered**
+
+> Job execution configurations and behaviors, such as load jobs, query configurations, and extract jobs.
+
+| Item | Count | Tier | Variation | Fixtures |
+|---|---:|:---:|---|---|
+| [`Load Job: Schema Autodetect`](https://cloud.google.com/bigquery/docs/reference/rest/v2/Job#JobConfigurationLoad.autodetect) | 0 | 🔴 Uncovered | — | _gap_ |
+|  |  |  |  | _Schema auto-detection for CSV/JSON loads._ |
 
 ### Data Manipulation (DML)
 
