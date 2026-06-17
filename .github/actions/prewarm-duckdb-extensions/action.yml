@@ -1,0 +1,49 @@
+name: Prewarm DuckDB extensions
+description: >-
+  Make the DuckDB ``spatial`` and ``avro`` extensions available in the runner's
+  local extension cache before tests run. The in-process emulator installs
+  these during ``DuckDBEngine.start``; doing it here keeps the network fetch
+  from ``extensions.duckdb.org`` out of the test hot path, where an
+  intermittent stall under CI load hangs server startup and aborts the run
+  (exit 134). The extension dir is cached across runs (keyed on the installed
+  DuckDB version), so the network is only touched on a cold cache; the install
+  step is bounded and retried so a transient stall fails this (retryable) step
+  cleanly rather than hanging deep inside pytest. Run after the project
+  dependencies are installed (so the same ``duckdb`` build populates the cache
+  the tests read) and before pytest.
+
+runs:
+  using: composite
+  steps:
+    - name: Resolve DuckDB version (cache key)
+      id: duckdb
+      shell: bash
+      run: echo "version=$(python -c 'import duckdb; print(duckdb.__version__)')" >> "$GITHUB_OUTPUT"
+    - name: Restore DuckDB extension cache
+      id: cache
+      uses: actions/cache/restore@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
+      with:
+        path: ~/.duckdb/extensions
+        key: duckdb-ext-${{ runner.os }}-${{ steps.duckdb.outputs.version }}-spatial-avro
+    - name: Install spatial + avro (network only on a cold cache)
+      shell: bash
+      run: |
+        install_exts() {
+          timeout 90 python -c "import duckdb; c = duckdb.connect(); [c.execute(q) for e in ('spatial', 'avro') for q in (f'INSTALL {e}', f'LOAD {e}')]"
+        }
+        for attempt in 1 2 3; do
+          if install_exts; then
+            echo "DuckDB extensions installed and loadable (attempt ${attempt})."
+            exit 0
+          fi
+          echo "::warning::DuckDB extension prewarm attempt ${attempt} failed or timed out; retrying."
+          sleep 5
+        done
+        echo "::error::DuckDB extension prewarm failed after 3 attempts."
+        exit 1
+    - name: Save DuckDB extension cache
+      if: steps.cache.outputs.cache-hit != 'true'
+      uses: actions/cache/save@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
+      with:
+        path: ~/.duckdb/extensions
+        key: duckdb-ext-${{ runner.os }}-${{ steps.duckdb.outputs.version }}-spatial-avro

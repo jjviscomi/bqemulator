@@ -17,6 +17,16 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:  # pragma: no cover
     from bqemulator.config import Settings
 
+# Grace period for the in-process test server to signal readiness. The
+# wait returns the instant the server is up (typically well under a
+# second), so this bound governs only the worst case: a shared CI runner
+# so overloaded that a healthy startup is merely slow. Sized generously
+# because a tighter bound intermittently tripped under that contention. A
+# genuine startup *error* short-circuits the wait (the background thread
+# captures it and signals immediately), so this longer bound only delays
+# surfacing a true hang, never a real error, and never slows a normal run.
+_STARTUP_TIMEOUT_SECONDS = 90
+
 
 class ThreadedEmulator:
     """Runs an :class:`EmulatorServer` on a background thread + event loop."""
@@ -31,7 +41,7 @@ class ThreadedEmulator:
         self._stopped = threading.Event()
         # Captured if ``server.start()`` raised on the background
         # thread; surfaced from the foreground ``start()`` call so test
-        # code sees the actual error (not just a 30s timeout).
+        # code sees the actual error (not just a startup timeout).
         self._startup_error: BaseException | None = None
 
     def start(self) -> None:
@@ -44,14 +54,17 @@ class ThreadedEmulator:
            captures the exception, sets ``_started`` so we unblock, and
            we re-raise here. The captured exception is more actionable
            than a generic timeout.
-        3. Neither happens within 30 s — surface a timeout.
+        3. Neither happens within ``_STARTUP_TIMEOUT_SECONDS`` — surface
+           a timeout.
         """
         self._thread = threading.Thread(target=self._run, name="bqemu-server", daemon=True)
         self._thread.start()
-        if not self._started.wait(timeout=30):
+        if not self._started.wait(timeout=_STARTUP_TIMEOUT_SECONDS):
             if self._startup_error is not None:
                 raise self._startup_error
-            raise RuntimeError("bqemulator test server failed to start within 30s")
+            raise RuntimeError(
+                f"bqemulator test server failed to start within {_STARTUP_TIMEOUT_SECONDS}s"
+            )
         # Event fired — either the server is up, or startup raised and
         # captured the error before signalling. The latter has
         # ``_startup_error`` set; surface it now.
@@ -59,14 +72,33 @@ class ThreadedEmulator:
             raise self._startup_error
 
     def stop(self) -> None:
-        """Stop the server thread."""
-        if self._loop is None or self._thread is None:
+        """Stop the server thread. Idempotent and safe after a failed start.
+
+        ``start`` may have raised (timeout, or a captured startup error), in
+        which case the background thread's loop is already closed or wedged.
+        Every loop interaction is guarded and the thread is always joined
+        (bounded), so callers can run ``stop`` unconditionally in a ``finally``
+        to reclaim the background thread instead of leaking it into interpreter
+        shutdown (which aborts with "terminate called without an active
+        exception"). Test teardown must never raise.
+        """
+        if self._thread is None:
             return
-        fut = asyncio.run_coroutine_threadsafe(self.server.stop(), self._loop)
-        # Best-effort wait for clean shutdown; test teardown must never raise.
-        with contextlib.suppress(Exception):
-            fut.result(timeout=10)
-        self._loop.call_soon_threadsafe(self._loop.stop)
+        # Do loop work only when the loop exists and is still open, but always
+        # join the thread below, even in the narrow window where ``_run`` has
+        # started but not yet assigned ``_loop`` — otherwise the thread leaks.
+        if self._loop is not None and not self._loop.is_closed():
+            # Only a cleanly-started server has something to gracefully stop.
+            # On a failed or wedged start, scheduling ``server.stop()`` would
+            # create a coroutine the closed/hung loop never awaits (a
+            # ``RuntimeWarning`` the suite treats as an error); skip it and just
+            # unwind the loop and join the thread.
+            if self._started.is_set() and self._startup_error is None:
+                with contextlib.suppress(Exception):
+                    fut = asyncio.run_coroutine_threadsafe(self.server.stop(), self._loop)
+                    fut.result(timeout=10)
+            with contextlib.suppress(Exception):
+                self._loop.call_soon_threadsafe(self._loop.stop)
         self._thread.join(timeout=10)
 
     def _run(self) -> None:
@@ -82,7 +114,8 @@ class ThreadedEmulator:
             loop.run_until_complete(_start_then_park())
         except BaseException as exc:  # noqa: BLE001 — re-raised in start()
             # Capture and signal the waiter so the foreground call
-            # surfaces the actual cause instead of timing out at 30s.
+            # surfaces the actual cause instead of timing out after the
+            # startup grace period.
             self._startup_error = exc
             self._started.set()
             loop.close()
