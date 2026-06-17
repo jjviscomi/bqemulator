@@ -923,9 +923,10 @@ async def execute_load_job(
     # CREATE_IF_NEEDED — materialise the destination from the explicit
     # schema (bq CLI / SDK clients pass ``load.schema.fields``) before
     # touching DuckDB. CREATE_NEVER + missing table → notFound. If a
-    # schema is not supplied (autodetect path), the existing DuckDB
-    # COPY/INSERT call below will raise a binder error which the load
-    # error wrapper translates to a proper ``invalid`` job error.
+    # schema is not supplied and autodetect is True, the schema is inferred
+    # from the source file. Otherwise, the existing DuckDB COPY/INSERT
+    # call below will raise a binder error which the load error wrapper
+    # translates to a proper ``invalid`` job error.
     if (
         job.create_disposition == "CREATE_IF_NEEDED"
         and ctx.catalog.get_table(job.project_id, job.dataset_id, job.table_id) is None
