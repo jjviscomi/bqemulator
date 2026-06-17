@@ -1328,6 +1328,7 @@ def _infer_autodetect_schema(
     from bqemulator.storage.type_map import duckdb_to_bq
 
     path = _resolve_uri(source_uris[0], ctx)
+    _validate_local_path(path)
 
     if fmt in ("NEWLINE_DELIMITED_JSON", "JSON"):
         query = f"CREATE TABLE {target_ref} AS SELECT * FROM read_json_auto(?) LIMIT 0"
