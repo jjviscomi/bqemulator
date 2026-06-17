@@ -66,3 +66,87 @@ updates:
       interval: weekly
     commit-message:
       prefix: "chore(deps)"
+
+  # ----------------------------------------------------------------------
+  # Example + e2e manifests: GROUP security updates; no version updates.
+  #
+  # The example lock files and e2e client manifests are deliberately
+  # pinned snapshots, so Dependabot must not version-update their hundreds
+  # of transitively-pinned dependencies. ``open-pull-requests-limit: 0``
+  # disables version updates for each block while leaving security updates
+  # on (security updates are not counted against that limit).
+  #
+  # Dependabot security updates fire for vulnerable dependencies in these
+  # manifests regardless of this file (they are driven by the dependency
+  # graph, not by a version-update ``updates`` block). Without a matching
+  # block they arrive ungrouped: one pull request per dependency per
+  # directory, so a single shared CVE (e.g. ``cryptography``) fans out into
+  # one PR per example. The ``applies-to: security-updates`` group below
+  # collapses each wave into one pull request per ecosystem, spanning every
+  # affected directory.
+  #
+  # Go modules (``gomod``) and Maven (``maven``) are covered for the same
+  # reason; the scio example uses sbt, which Dependabot does not support,
+  # so it is intentionally absent.
+  # ----------------------------------------------------------------------
+  - package-ecosystem: pip
+    directories:
+      - "/docs/examples/python/*"
+      - "/docs/examples/docker-compose/full-stack/app"
+    schedule:
+      interval: weekly
+      day: monday
+      time: "06:00"
+    open-pull-requests-limit: 0
+    groups:
+      example-pip-security:
+        applies-to: security-updates
+        patterns:
+          - "*"
+    commit-message:
+      prefix: "chore(deps)"
+
+  - package-ecosystem: npm
+    directories:
+      - "/docs/examples/nodejs/*"
+      - "/tests/e2e/nodejs_client"
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 0
+    groups:
+      example-npm-security:
+        applies-to: security-updates
+        patterns:
+          - "*"
+    commit-message:
+      prefix: "chore(deps)"
+
+  - package-ecosystem: gomod
+    directories:
+      - "/docs/examples/go/*"
+      - "/tests/e2e/go_client"
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 0
+    groups:
+      example-gomod-security:
+        applies-to: security-updates
+        patterns:
+          - "*"
+    commit-message:
+      prefix: "chore(deps)"
+
+  - package-ecosystem: maven
+    directories:
+      - "/docs/examples/java/spring-boot"
+      - "/tests/e2e/java_client"
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 0
+    groups:
+      example-maven-security:
+        applies-to: security-updates
+        patterns:
+          - "*"
+    commit-message:
+      prefix: "chore(deps)"
