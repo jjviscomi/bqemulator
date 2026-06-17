@@ -344,7 +344,7 @@ class TestMaybeCreateLoadDestination:
             dest_dataset="ds",
             dest_table_id="t",
             load_config={},
-            now="2026-06-15T00:00:00Z",
+            now=None,
             ctx=ctx,
         )
         ctx.catalog.get_dataset.assert_not_called()
