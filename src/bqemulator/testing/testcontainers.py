@@ -16,6 +16,7 @@ Example::
 
 from __future__ import annotations
 
+import contextlib
 import os
 import re
 from typing import Self
@@ -28,6 +29,12 @@ DEFAULT_IMAGE = "ghcr.io/jjviscomi/bqemulator:latest"
 DEFAULT_REST_PORT = 9050
 DEFAULT_GRPC_PORT = 9060
 _READY_RE = re.compile(r"rest\.listen")
+# Grace period for the container's REST listener to log readiness.
+# ``wait_for_logs`` returns the instant the pattern matches, so this bounds
+# only a slow start under shared-CI load (where a tighter window
+# intermittently elapsed while the container was still booting), never a
+# normal run.
+_READY_TIMEOUT_SECONDS = 90
 
 
 class BigQueryEmulatorContainer(DockerContainer):
@@ -87,9 +94,17 @@ class BigQueryEmulatorContainer(DockerContainer):
         wrapper don't need to edit their own pytest filter list.
         """
         super().start()
-        with warnings.catch_warnings():
-            warnings.simplefilter("ignore", DeprecationWarning)
-            wait_for_logs(self, _READY_RE.pattern, timeout=30)
+        try:
+            with warnings.catch_warnings():
+                warnings.simplefilter("ignore", DeprecationWarning)
+                wait_for_logs(self, _READY_RE.pattern, timeout=_READY_TIMEOUT_SECONDS)
+        except Exception:
+            # The container started but never signalled readiness in time. Stop
+            # it before re-raising so a caller that runs ``start()`` before its
+            # own ``try``/``finally`` does not leak a running container.
+            with contextlib.suppress(Exception):
+                self.stop()
+            raise
         return self
 
     def get_rest_url(self) -> str:

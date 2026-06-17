@@ -112,12 +112,13 @@ jobs:
             -e BQEMU_ADMIN_ENABLED=1 \
             -e BQEMU_GCS_LOCAL_ROOT=/var/lib/bqemu-gcs \
             "$BQEMU_IMAGE"
-          # Wait up to 60s for /healthz to respond.
-          for _ in $(seq 1 120); do
+          # Wait up to 90s for /healthz to respond (headroom for slow
+          # container startup under shared-CI load).
+          for _ in $(seq 1 180); do
             if curl -sf http://localhost:9050/healthz > /dev/null; then exit 0; fi
             sleep 0.5
           done
-          echo "::error::bqemulator did not become ready in 60s"
+          echo "::error::bqemulator did not become ready in 90s"
           docker logs bqemu || true
           exit 1
       - name: Install + test
@@ -178,11 +179,11 @@ jobs:
             -e BQEMU_ADMIN_ENABLED=1 \
             -e BQEMU_GCS_LOCAL_ROOT=/var/lib/bqemu-gcs \
             "$BQEMU_IMAGE"
-          for _ in $(seq 1 120); do
+          for _ in $(seq 1 180); do
             if curl -sf http://localhost:9050/healthz > /dev/null; then exit 0; fi
             sleep 0.5
           done
-          echo "::error::bqemulator did not become ready in 60s"
+          echo "::error::bqemulator did not become ready in 90s"
           docker logs bqemu || true
           exit 1
       - name: Test
@@ -238,11 +239,11 @@ jobs:
             -e BQEMU_ADMIN_ENABLED=1 \
             -e BQEMU_GCS_LOCAL_ROOT=/var/lib/bqemu-gcs \
             "$BQEMU_IMAGE"
-          for _ in $(seq 1 120); do
+          for _ in $(seq 1 180); do
             if curl -sf http://localhost:9050/healthz > /dev/null; then exit 0; fi
             sleep 0.5
           done
-          echo "::error::bqemulator did not become ready in 60s"
+          echo "::error::bqemulator did not become ready in 90s"
           docker logs bqemu || true
           exit 1
       - name: Test

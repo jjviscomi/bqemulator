@@ -87,11 +87,17 @@ def bqemu_server(
     from bqemulator.testing._thread_runner import ThreadedEmulator
 
     threaded = ThreadedEmulator(bqemu_settings)
-    threaded.start()
-
     previous = os.environ.get("BIGQUERY_EMULATOR_HOST")
-    os.environ["BIGQUERY_EMULATOR_HOST"] = f"{bqemu_settings.rest_host}:{threaded.server.rest_port}"
     try:
+        # ``start()`` runs inside the ``try`` so a failed or slow startup still
+        # reaches ``threaded.stop()`` in the ``finally``. Otherwise a
+        # half-started server leaks its background thread (and the native gRPC /
+        # DuckDB resources it holds) into interpreter shutdown, which aborts the
+        # process with "terminate called without an active exception".
+        threaded.start()
+        os.environ["BIGQUERY_EMULATOR_HOST"] = (
+            f"{bqemu_settings.rest_host}:{threaded.server.rest_port}"
+        )
         yield threaded.server
     finally:
         if previous is None:

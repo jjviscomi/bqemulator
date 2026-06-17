@@ -70,6 +70,12 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install -e ".[dev,all]"
+      # Prewarm DuckDB extensions so engine-backed unit tests read them from
+      # the local cache rather than fetching over the network mid-test.
+      # Linux-only: the prewarm uses ``timeout``, absent from the macOS /
+      # Windows matrix cells' bash.
+      - uses: ./.github/actions/prewarm-duckdb-extensions
+        if: runner.os == 'Linux'
       - name: Unit tests
         run: pytest tests/unit -m unit
       - name: Property tests
@@ -97,6 +103,7 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y --no-install-recommends avro-tools || \
             echo "::warning::avro-tools apt package unavailable; the cross-impl test will skip"
+      - uses: ./.github/actions/prewarm-duckdb-extensions
       - name: Integration tests
         run: pytest tests/integration -m integration
 
@@ -127,6 +134,7 @@ jobs:
       - run: |
           python -m pip install --upgrade pip
           pip install -e ".[dev,all]"
+      - uses: ./.github/actions/prewarm-duckdb-extensions
       - name: Replay conformance corpus (offline; no BQ creds)
         run: pytest tests/conformance -m conformance --junit-xml=conformance.xml
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
@@ -154,6 +162,7 @@ jobs:
       - run: |
           python -m pip install --upgrade pip
           pip install -e ".[dev,all]"
+      - uses: ./.github/actions/prewarm-duckdb-extensions
       - name: Combined coverage (unit + property + integration)
         run: |
           pytest tests/unit tests/property tests/integration \
