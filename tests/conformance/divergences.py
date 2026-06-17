@@ -76,6 +76,12 @@ _INFO_SCHEMA_IAM = (
 )
 
 
+_AUTODETECT_NESTED = (
+    "Autodetect schema inference maps deeply nested STRUCT/LIST to STRING "
+    "instead of recursive RECORD/REPEATED fields — see ADR 0045"
+)
+
+
 # fixture_id → rationale. Keys are unique by construction
 # (``test_corpus.py`` parametrises one test per id). Entries are
 # grouped by rationale source for review ergonomics; the matrix
@@ -96,6 +102,8 @@ KNOWN_DIVERGENCES: dict[str, str] = {
     "standard_functions/bound_bignumeric_max": _BIGNUMERIC_CAP,
     # docs/reference/out-of-scope.md#iam-enforcement
     "row_access/caller_information_schema_visibility": _INFO_SCHEMA_IAM,
+    # ADR 0045 — nested JSON autodetect.
+    "jobs/upload_multipart_json_autodetect_nested_new_table": _AUTODETECT_NESTED,
 }
 
 
