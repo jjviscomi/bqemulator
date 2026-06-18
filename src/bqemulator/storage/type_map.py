@@ -152,7 +152,7 @@ def _duckdb_compound_to_bq(duckdb_type: str, upper: str) -> str | None:
 
 def _duckdb_autodetect_fallback(duckdb_type: str) -> str | None:
     """Fallback complex types to STRING for non-strict autodetect schema mapping."""
-    upper = duckdb_type.upper()
+    upper = duckdb_type.strip().upper()
     if upper.startswith("STRUCT"):
         return "STRING"
     if upper.endswith("[]") or upper.startswith("LIST"):
