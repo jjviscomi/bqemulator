@@ -606,7 +606,7 @@ class TestMaybeCreateLoadDestinationAutodetect:
         # Ensure the table creation was mocked
         ctx.catalog.create_table.assert_called_once()
         table_meta = ctx.catalog.create_table.call_args[0][0]
-        
+
         # Verify the inferred schema relaxed compound types to STRING
         assert table_meta.schema_ is not None
         assert [
