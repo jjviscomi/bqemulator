@@ -128,6 +128,7 @@ def test_load_table_csv_autodetect(bq_client: bigquery.Client) -> None:
     bq_client.create_dataset(dataset, exists_ok=True)
     # Delete the table if it exists from a prior run.
     from google.api_core.exceptions import NotFound
+
     try:
         bq_client.delete_table(f"{bq_client.project}.{ds_id}.{tbl_id}")
     except NotFound:
