@@ -574,3 +574,50 @@ class TestMaybeCreateLoadDestinationAutodetect:
         )
 
         ctx.engine.execute.assert_not_called()
+
+    def test_autodetect_relaxes_compound_types_to_string(self) -> None:
+        from unittest.mock import Mock
+
+        from bqemulator.jobs.executor import _maybe_create_load_destination
+
+        ctx = Mock()
+        ctx.catalog.get_dataset.return_value = Mock()
+        # Mock DuckDB DESCRIBE returning scalar and compound types
+        ctx.engine.execute.return_value.fetchall.return_value = [
+            ("scalar_col", "BIGINT"),
+            ("struct_col", "STRUCT(a BIGINT)"),
+            ("list_col", "BIGINT[]"),
+            ("nested_col", "LIST(STRUCT(x VARCHAR))"),
+        ]
+
+        _maybe_create_load_destination(
+            dest_project="p",
+            dest_dataset="ds",
+            dest_table_id="t",
+            load_config={
+                "autodetect": True,
+                "sourceFormat": "NEWLINE_DELIMITED_JSON",
+                "sourceUris": ["file:///tmp/test.json"],
+            },
+            now="2026-06-15T00:00:00Z",
+            ctx=ctx,
+        )
+
+        # Ensure the table creation was mocked
+        ctx.catalog.create_table.assert_called_once()
+        table_meta = ctx.catalog.create_table.call_args[0][0]
+        
+        # Verify the inferred schema relaxed compound types to STRING
+        assert table_meta.schema_ is not None
+        assert [
+            {
+                "name": f.name,
+                "type": f.type,
+            }
+            for f in table_meta.schema_.fields
+        ] == [
+            {"name": "scalar_col", "type": "INT64"},
+            {"name": "struct_col", "type": "STRING"},
+            {"name": "list_col", "type": "STRING"},
+            {"name": "nested_col", "type": "STRING"},
+        ]
