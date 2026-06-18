@@ -110,7 +110,7 @@ try (TableDataWriteChannel channel = client.writer(cfg)) {
 
 | `sourceFormat` | Multipart media Content-Type | Notes |
 |---|---|---|
-| `CSV` | `text/csv` | `skipLeadingRows`, `fieldDelimiter`, `quote`, and `autodetect` all honored. |
+| `CSV` | `text/csv` | `autodetect` honored; CSV loads currently assume a header row (other CSV parsing knobs like `skipLeadingRows`, `fieldDelimiter`, and `quote` are not applied). |
 | `NEWLINE_DELIMITED_JSON` | `application/json` | `autodetect` flag honored. |
 | `PARQUET` | `application/x-parquet` or `application/octet-stream` | Schema inferred from file. |
 | `AVRO` | `application/avro` or `application/octet-stream` | Requires DuckDB's `avro` extension (G1, ADR 0027). |
