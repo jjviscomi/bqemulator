@@ -41,6 +41,10 @@ from tests.conformance._corpus import (  # noqa: E402
     classify_variation,
     discover_fixtures,
 )
+from tests.conformance._http_corpus import (  # noqa: E402
+    HttpFixture,
+    discover_http_fixtures,
+)
 from tests.conformance._surface_inventory import (  # noqa: E402
     SURFACE,
     SurfaceCategory,
@@ -143,19 +147,48 @@ def _fixture_text(fixture: Fixture) -> str:
     return "\n".join(parts)
 
 
+def _http_fixture_text(fixture: HttpFixture) -> str:
+    """Return the concatenated text the detector scans for an HTTP fixture.
+
+    Joins the fixture id, every setup + canonical request path and JSON
+    body, any ``body_bin`` payload (so a multipart load envelope's
+    ``"autodetect": true`` is detectable), the ``setup.sql``, and the
+    recorded ``expected_response.json``. Binary media inside a ``body_bin``
+    is decoded leniently — the detector only needs the textual JSON parts.
+    """
+    parts: list[str] = [fixture.id]
+    for request in (*fixture.setup_requests, fixture.request):
+        parts.append(request.path)
+        if request.body is not None:
+            parts.append(json.dumps(request.body))
+        if request.body_bin is not None:
+            body_path = fixture.path / request.body_bin
+            if body_path.is_file():
+                parts.append(body_path.read_text(encoding="utf-8", errors="replace"))
+    if fixture.setup_sql:
+        parts.append(fixture.setup_sql)
+    if fixture.expected_path.is_file():
+        parts.append(fixture.expected_path.read_text(encoding="utf-8"))
+    return "\n".join(parts)
+
+
 def _coverage(
     items: Iterable[SurfaceItem],
-    fixtures: Iterable[Fixture],
+    texts: dict[str, str],
 ) -> dict[str, list[str]]:
-    """Map ``item.id`` → sorted list of fixture ids exercising the item."""
-    fixtures = list(fixtures)
-    cache: dict[str, str] = {f.id: _fixture_text(f) for f in fixtures}
+    """Map ``item.id`` → sorted list of fixture ids exercising the item.
+
+    ``texts`` maps a fixture id to the concatenated text the detector
+    scans (built by :func:`_fixture_text` for SQL fixtures and
+    :func:`_http_fixture_text` for HTTP fixtures), so a single pass spans
+    both corpora.
+    """
     hits: dict[str, list[str]] = defaultdict(list)
     for item in items:
         pattern = item.detect
-        for fixture in fixtures:
-            if pattern.search(cache[fixture.id]):
-                hits[item.id].append(fixture.id)
+        for fixture_id, text in texts.items():
+            if pattern.search(text):
+                hits[item.id].append(fixture_id)
         hits[item.id].sort()
     return hits
 
@@ -245,14 +278,21 @@ _GITHUB_BLOB = "https://github.com/jjviscomi/bqemulator/blob/main"
 def _format_fixture_links(
     fixture_ids: list[str],
     *,
+    http_ids: frozenset[str] = frozenset(),
     limit: int = FIXTURE_LINK_LIMIT,
 ) -> str:
-    """Render ``fixture_ids`` as a comma-separated list of clickable links."""
+    """Render ``fixture_ids`` as a comma-separated list of clickable links.
+
+    Ids in ``http_ids`` link into ``http_corpus/``; every other id links
+    into ``sql_corpus/`` (the two phase namespaces are disjoint).
+    """
     if not fixture_ids:
         return "—"
     shown = fixture_ids[:limit]
     rendered = ", ".join(
-        f"[`{fid}`]({_GITHUB_BLOB}/tests/conformance/sql_corpus/{fid})" for fid in shown
+        f"[`{fid}`]({_GITHUB_BLOB}/tests/conformance/"
+        f"{'http_corpus' if fid in http_ids else 'sql_corpus'}/{fid})"
+        for fid in shown
     )
     if len(fixture_ids) > limit:
         rendered += f", … (+{len(fixture_ids) - limit} more)"
@@ -263,6 +303,8 @@ def render(
     hits: dict[str, list[str]],
     fixtures: list[Fixture],
     variation_tags: dict[str, frozenset[VariationTag]] | None = None,
+    *,
+    http_ids: frozenset[str] = frozenset(),
 ) -> str:
     """Build the full Markdown document.
 
@@ -271,12 +313,17 @@ def render(
     per-category row and a top-level "Variation depth" report
     enumerating broad-but-shallow surfaces. When omitted (legacy / test
     helper callers), the matrix renders without the variation axis.
+
+    ``http_ids`` is the set of fixture ids in ``hits`` that come from the
+    HTTP corpus (so their fixture links resolve into ``http_corpus/`` and
+    the header reports the HTTP corpus size). Variation tags cover only
+    SQL fixtures; HTTP ids without tags simply contribute no histogram.
     """
     if variation_tags is None:
         variation_tags = _variation_tags(fixtures)
     totals = _summary(hits)
     sections: list[str] = []
-    sections.append(_render_header(totals, len(fixtures)))
+    sections.append(_render_header(totals, len(fixtures), len(http_ids)))
     sections.append(_render_what_this_measures())
     sections.append(_render_summary(totals))
     excluded_section = _render_excluded()
@@ -284,12 +331,16 @@ def render(
         sections.append(excluded_section)
     sections.append(_render_variation_depth(hits, variation_tags))
     sections.append(_render_gaps(hits))
-    sections.append(_render_per_category(hits, variation_tags))
+    sections.append(_render_per_category(hits, variation_tags, http_ids=http_ids))
     sections.append(_render_see_also())
     return "\n".join(sections) + "\n"
 
 
-def _render_header(totals: dict[str, int], fixture_count: int) -> str:
+def _render_header(
+    totals: dict[str, int],
+    fixture_count: int,
+    http_fixture_count: int = 0,
+) -> str:
     """Document title + auto-gen banner + corpus/inventory stats."""
     inventory_line = (
         f"- **Inventory**: {totals['all_items']} surface items across {len(SURFACE)} categories"
@@ -301,28 +352,33 @@ def _render_header(totals: dict[str, int], fixture_count: int) -> str:
             "tracked under "
             "[Excluded (non-deterministic)](#excluded-non-deterministic-see-adr-0022))"
         )
-    return "\n".join(
+    lines = [
+        "# Conformance coverage matrix",
+        "",
         (
-            "# Conformance coverage matrix",
-            "",
-            (
-                "> **Auto-generated.** Edit "
-                f"[`tests/conformance/_surface_inventory.py`]"
-                f"({_GITHUB_BLOB}/tests/conformance/_surface_inventory.py) "
-                "to add surface items, then run ``make coverage-matrix`` "
-                "to regenerate this document. The CI gate (``--check``) "
-                "refuses to merge a PR whose committed matrix has "
-                "drifted from the inventory or the corpus."
-            ),
-            "",
-            inventory_line,
-            (
-                f"- **Corpus**: {fixture_count} fixtures under "
-                f"[`tests/conformance/sql_corpus/`]"
-                f"({_GITHUB_BLOB}/tests/conformance/sql_corpus)"
-            ),
+            "> **Auto-generated.** Edit "
+            f"[`tests/conformance/_surface_inventory.py`]"
+            f"({_GITHUB_BLOB}/tests/conformance/_surface_inventory.py) "
+            "to add surface items, then run ``make coverage-matrix`` "
+            "to regenerate this document. The CI gate (``--check``) "
+            "refuses to merge a PR whose committed matrix has "
+            "drifted from the inventory or the corpus."
+        ),
+        "",
+        inventory_line,
+        (
+            f"- **Corpus (SQL)**: {fixture_count} fixtures under "
+            f"[`tests/conformance/sql_corpus/`]"
+            f"({_GITHUB_BLOB}/tests/conformance/sql_corpus)"
+        ),
+    ]
+    if http_fixture_count:
+        lines.append(
+            f"- **Corpus (HTTP)**: {http_fixture_count} fixtures under "
+            f"[`tests/conformance/http_corpus/`]"
+            f"({_GITHUB_BLOB}/tests/conformance/http_corpus)"
         )
-    )
+    return "\n".join(lines)
 
 
 def _render_what_this_measures() -> str:
@@ -539,11 +595,13 @@ def _render_gaps(hits: dict[str, list[str]]) -> str:
 def _render_per_category(
     hits: dict[str, list[str]],
     variation_tags: dict[str, frozenset[VariationTag]],
+    *,
+    http_ids: frozenset[str] = frozenset(),
 ) -> str:
     """Concatenate the per-category sections."""
     lines: list[str] = ["", "## Per-category coverage", ""]
     for cat in SURFACE:
-        lines.extend(_render_category(cat, hits, variation_tags))
+        lines.extend(_render_category(cat, hits, variation_tags, http_ids=http_ids))
     return "\n".join(lines)
 
 
@@ -577,6 +635,8 @@ def _render_category(
     cat: SurfaceCategory,
     hits: dict[str, list[str]],
     variation_tags: dict[str, frozenset[VariationTag]],
+    *,
+    http_ids: frozenset[str] = frozenset(),
 ) -> list[str]:
     """Render one category's section.
 
@@ -623,7 +683,7 @@ def _render_category(
                 out.append(f"|  |  |  |  | _{item.notes}_ |")
             continue
         label, _ = _tier(count)
-        fixture_cell = _format_fixture_links(fixtures)
+        fixture_cell = _format_fixture_links(fixtures, http_ids=http_ids)
         histogram = _variation_histogram(fixtures, variation_tags)
         variation_cell = _format_variation_histogram(histogram)
         # Italicize the gap rows for at-a-glance scanning.
@@ -658,10 +718,15 @@ def main(argv: list[str] | None = None) -> int:
     args = parser.parse_args(argv)
 
     fixtures = sorted(discover_fixtures(corpus_dir=CORPUS_DIR), key=lambda f: f.id)
-    hits = _coverage(all_items(), fixtures)
+    http_fixtures = sorted(discover_http_fixtures(), key=lambda f: f.id)
+    texts = {f.id: _fixture_text(f) for f in fixtures}
+    texts.update({f.id: _http_fixture_text(f) for f in http_fixtures})
+    hits = _coverage(all_items(), texts)
     variation_tags = _variation_tags(fixtures)
-    rendered = render(hits, fixtures, variation_tags)
+    http_ids = frozenset(f.id for f in http_fixtures)
+    rendered = render(hits, fixtures, variation_tags, http_ids=http_ids)
 
+    corpus_summary = f"{len(fixtures)} SQL + {len(http_fixtures)} HTTP fixtures"
     if args.check:
         existing = args.output.read_text(encoding="utf-8") if args.output.is_file() else ""
         if rendered != existing:
@@ -671,14 +736,14 @@ def main(argv: list[str] | None = None) -> int:
                 file=sys.stderr,
             )
             return EXIT_DRIFT
-        print(f"Coverage matrix up to date ({len(fixtures)} fixtures).")
+        print(f"Coverage matrix up to date ({corpus_summary}).")
         return EXIT_CLEAN
 
     args.output.parent.mkdir(parents=True, exist_ok=True)
     args.output.write_text(rendered, encoding="utf-8")
     print(
         f"Wrote {args.output.relative_to(_REPO_ROOT)} "
-        f"({len(fixtures)} fixtures vs {len(all_items())} inventory items)."
+        f"({corpus_summary} vs {len(all_items())} inventory items)."
     )
     return EXIT_CLEAN
 
