@@ -169,7 +169,7 @@ Schema autodetection (using DuckDB's `read_csv_auto` or `read_json_auto`) only o
 1. The destination table does not already exist
 2. No explicit `schema.fields` are provided in the load configuration
 
-When these conditions are met and the `autodetect` flag is enabled for CSV or JSON loads, the emulator infers the schema by sampling the source data using DuckDB's native auto-detection capabilities. 
+When these conditions are met and the `autodetect` flag is enabled for CSV or JSON loads, the emulator infers the schema by sampling the source data using DuckDB's native auto-detection capabilities.
 
 **Note on CSV parsing:** DuckDB's `read_csv_auto` automatically sniffs the delimiter, header existence, and quote character independently of the explicit `fieldDelimiter`, `skipLeadingRows`, or `quote` properties specified in the load job configuration. For CSVs that lack headers or use exotic delimiters, schema inference may diverge from explicit load behavior; providing an explicit schema is recommended in these cases.
 

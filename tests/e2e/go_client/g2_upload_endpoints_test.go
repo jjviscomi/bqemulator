@@ -187,7 +187,7 @@ func TestLoadTableCSVAutodetect(t *testing.T) {
 	rs.SourceFormat = bigquery.CSV
 	rs.SkipLeadingRows = 1
 	rs.AutoDetect = true
-	
+
 	loader := ds.Table(tblID).LoaderFrom(rs)
 	loader.WriteDisposition = bigquery.WriteTruncate
 	loader.CreateDisposition = bigquery.CreateIfNeeded

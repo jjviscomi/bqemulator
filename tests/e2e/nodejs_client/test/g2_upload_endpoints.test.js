@@ -159,7 +159,7 @@ describe("bqemulator G2 upload host (Node.js)", () => {
         writeDisposition: "WRITE_TRUNCATE",
         createDisposition: "CREATE_IF_NEEDED",
       });
-      
+
     const job = await new Promise((resolve, reject) => {
       let receivedJob = null;
       writeStream.on("job", (j) => {
