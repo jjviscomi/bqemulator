@@ -1,7 +1,4 @@
 {
-  "method": "POST",
-  "url": "https://bigquery.googleapis.com/upload/bigquery/v2/projects/${PROJECT}/jobs?uploadType=multipart",
-  "headers": {
-    "Content-Type": "multipart/related; boundary=\"===bqemu-fixture-boundary===\""
-  }
+  "method": "GET",
+  "path": "/bigquery/v2/projects/${PROJECT}/datasets/${DATASET_ID}/tables/tbl"
 }

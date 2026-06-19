@@ -8,5 +8,4 @@ Content-Type: text/csv
 id,name
 1,a
 2,b
-
 --===bqemu-fixture-boundary===--

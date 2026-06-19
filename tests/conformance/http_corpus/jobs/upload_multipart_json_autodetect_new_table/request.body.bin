@@ -7,5 +7,4 @@ Content-Type: application/json
 
 {"id":1,"name":"a"}
 {"id":2,"name":"b"}
-
 --===bqemu-fixture-boundary===--

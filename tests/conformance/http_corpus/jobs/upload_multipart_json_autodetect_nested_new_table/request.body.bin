@@ -5,7 +5,6 @@ Content-Type: application/json; charset=UTF-8
 --===bqemu-fixture-boundary===
 Content-Type: application/json
 
-{"id":1,"nested":{"a":1,"b":2}}
-{"id":2,"nested":{"a":3,"b":4}}
-
+{"id":1,"name":"alice","info":{"age":30,"city":"NYC"},"tags":["a","b"],"items":[{"sku":"x1","qty":2},{"sku":"x2","qty":5}]}
+{"id":2,"name":"bob","info":{"age":25,"city":"LA"},"tags":["c"],"items":[{"sku":"y1","qty":1}]}
 --===bqemu-fixture-boundary===--
