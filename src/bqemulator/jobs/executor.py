@@ -1017,10 +1017,6 @@ def _parse_load_job_config(project_id: str, config: dict[str, Any]) -> _LoadJobC
 
 def _apply_load_write_disposition(job: _LoadJobConfig, ctx: AppContext) -> None:
     """Honour ``writeDisposition`` (WRITE_TRUNCATE / WRITE_EMPTY) before the load runs."""
-    # Ensure the table exists before attempting to apply write disposition
-    if ctx.catalog.get_table(job.project_id, job.dataset_id, job.table_id) is None:
-        return
-
     if job.write_disposition == "WRITE_TRUNCATE":
         ctx.engine.execute(f"DELETE FROM {job.target_ref}")
         return
