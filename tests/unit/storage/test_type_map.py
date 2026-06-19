@@ -9,6 +9,7 @@ from bqemulator.storage.type_map import (
     bq_schema_to_duckdb_columns,
     bq_to_duckdb,
     duckdb_to_bq,
+    duckdb_type_to_bq_field,
 )
 
 pytestmark = pytest.mark.unit
@@ -287,3 +288,116 @@ class TestSpecializedTypes:
         ]
         with pytest.raises(ValidationError, match="missing 'type'"):
             bq_schema_to_duckdb_columns(fields)
+
+
+# ---------------------------------------------------------------------------
+# duckdb_type_to_bq_field: autodetect inference (DuckDB type to REST field)
+# ---------------------------------------------------------------------------
+
+
+class TestDuckdbTypeToBqField:
+    @pytest.mark.parametrize(
+        ("duckdb_type", "expected_type"),
+        [
+            # Scalars use BigQuery's legacy REST names, matching tables.get.
+            ("BIGINT", "INTEGER"),
+            ("INTEGER", "INTEGER"),
+            ("HUGEINT", "INTEGER"),
+            ("DOUBLE", "FLOAT"),
+            ("REAL", "FLOAT"),
+            ("BOOLEAN", "BOOLEAN"),
+            ("VARCHAR", "STRING"),
+            ("BLOB", "BYTES"),
+            ("DATE", "DATE"),
+            ("TIME", "TIME"),
+            ("TIMESTAMP", "DATETIME"),
+            ("TIMESTAMPTZ", "TIMESTAMP"),
+            ("JSON", "JSON"),
+            ("DECIMAL(38, 9)", "NUMERIC"),
+            ("DECIMAL(76, 38)", "BIGNUMERIC"),
+        ],
+    )
+    def test_scalar_maps_to_legacy_wire_name(self, duckdb_type: str, expected_type: str) -> None:
+        assert duckdb_type_to_bq_field("col", duckdb_type) == {
+            "name": "col",
+            "type": expected_type,
+            "mode": "NULLABLE",
+        }
+
+    def test_array_of_scalar_is_repeated(self) -> None:
+        assert duckdb_type_to_bq_field("tags", "VARCHAR[]") == {
+            "name": "tags",
+            "type": "STRING",
+            "mode": "REPEATED",
+        }
+
+    def test_list_syntax_is_repeated(self) -> None:
+        assert duckdb_type_to_bq_field("ids", "LIST(BIGINT)") == {
+            "name": "ids",
+            "type": "INTEGER",
+            "mode": "REPEATED",
+        }
+
+    def test_struct_maps_to_record_with_nested_fields(self) -> None:
+        # DuckDB's read_json_auto emits ``STRUCT(a BIGINT, b DOUBLE)`` for a
+        # nested JSON object; BigQuery represents it as a NULLABLE RECORD.
+        assert duckdb_type_to_bq_field("nested", "STRUCT(a BIGINT, b DOUBLE)") == {
+            "name": "nested",
+            "type": "RECORD",
+            "mode": "NULLABLE",
+            "fields": [
+                {"name": "a", "type": "INTEGER", "mode": "NULLABLE"},
+                {"name": "b", "type": "FLOAT", "mode": "NULLABLE"},
+            ],
+        }
+
+    def test_array_of_struct_is_repeated_record(self) -> None:
+        # ``STRUCT(...)[]`` (JSON array of objects) → REPEATED RECORD.
+        assert duckdb_type_to_bq_field("items", "STRUCT(sku VARCHAR, qty BIGINT)[]") == {
+            "name": "items",
+            "type": "RECORD",
+            "mode": "REPEATED",
+            "fields": [
+                {"name": "sku", "type": "STRING", "mode": "NULLABLE"},
+                {"name": "qty", "type": "INTEGER", "mode": "NULLABLE"},
+            ],
+        }
+
+    def test_deeply_nested_struct_recurses(self) -> None:
+        assert duckdb_type_to_bq_field("o", "STRUCT(p STRUCT(q VARCHAR))") == {
+            "name": "o",
+            "type": "RECORD",
+            "mode": "NULLABLE",
+            "fields": [
+                {
+                    "name": "p",
+                    "type": "RECORD",
+                    "mode": "NULLABLE",
+                    "fields": [{"name": "q", "type": "STRING", "mode": "NULLABLE"}],
+                },
+            ],
+        }
+
+    def test_repeated_field_inside_record(self) -> None:
+        # A struct whose member is itself an array → NULLABLE RECORD holding a
+        # REPEATED scalar.
+        assert duckdb_type_to_bq_field("o", "STRUCT(xs BIGINT[])") == {
+            "name": "o",
+            "type": "RECORD",
+            "mode": "NULLABLE",
+            "fields": [{"name": "xs", "type": "INTEGER", "mode": "REPEATED"}],
+        }
+
+    def test_surrounding_whitespace_is_tolerated(self) -> None:
+        assert duckdb_type_to_bq_field("nested", "  STRUCT(a BIGINT)  ") == {
+            "name": "nested",
+            "type": "RECORD",
+            "mode": "NULLABLE",
+            "fields": [{"name": "a", "type": "INTEGER", "mode": "NULLABLE"}],
+        }
+
+    def test_nested_array_raises(self) -> None:
+        # BigQuery has no ARRAY of ARRAY, so a nested DuckDB array is rejected
+        # rather than silently mismapped.
+        with pytest.raises(ValidationError, match="ARRAY of ARRAY"):
+            duckdb_type_to_bq_field("matrix", "BIGINT[][]")

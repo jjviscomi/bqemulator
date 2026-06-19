@@ -268,3 +268,31 @@ def test_table_delete_via_rm(bq_runner: BqRunner) -> None:
         assert not result.succeeded()
     finally:
         _rm_dataset(bq_runner, ds_id)
+
+
+def test_load_csv_autodetect(bq_runner: BqRunner, tmp_path: Path) -> None:
+    """``bq load --autodetect --source_format=CSV --skip_leading_rows=1`` infers schema."""
+    ds_id = "bq_cli_jobs_load_autodetect"
+    table_fq = f"{ds_id}.t_auto"
+    src = tmp_path / "t_auto.csv"
+    src.write_text("id,name,score\n1,alpha,99.5\n2,beta,88.2\n", encoding="utf-8")
+    try:
+        _mk_dataset(bq_runner, ds_id)
+        result = bq_runner.run(
+            "load",
+            "--autodetect",
+            "--source_format=CSV",
+            "--skip_leading_rows=1",
+            table_fq,
+            str(src),
+        )
+        assert result.succeeded(), result.stderr
+        out = bq_runner.query_json(
+            f"SELECT id, name, score FROM `{table_fq}` ORDER BY id",
+        )
+        assert out == [
+            {"id": "1", "name": "alpha", "score": "99.5"},
+            {"id": "2", "name": "beta", "score": "88.2"},
+        ]
+    finally:
+        _rm_dataset(bq_runner, ds_id)

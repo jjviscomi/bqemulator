@@ -415,6 +415,16 @@ def _record_one(  # noqa: PLR0915 — linear pipeline
                 except (KeyError, IndexError) as exc:
                     return f"setup[#{idx}] capture failed: {exc}"
 
+            if setup_request.await_job is not None:
+                error = _await_job(
+                    client,
+                    setup_request.await_job,
+                    captured,
+                    source=f"{fixture.id} setup[#{idx}]",
+                )
+                if error is not None:
+                    return error
+
         if dry_run:
             logger.info("[dry-run] %s (would record)", fixture.id)
             return "ok"
@@ -580,6 +590,33 @@ def _track_dataset_creation(method: str, path: str, response: Any) -> tuple[str,
     if not isinstance(project, str) or not isinstance(dataset_id, str):
         return None
     return project, dataset_id
+
+
+def _await_job(
+    client: Any,
+    var_name: str,
+    captured: dict[str, str],
+    *,
+    source: str,
+) -> str | None:
+    """Block until a captured BigQuery job finishes; return an error string or None.
+
+    Load jobs uploaded via multipart are asynchronous: the upload response
+    returns the job in ``RUNNING`` and the destination table's inferred
+    schema only exists once the load completes. A setup request that sets
+    ``await_job`` names the captured job-id variable to wait on before the
+    next request (the canonical ``tables.get``) is issued.
+    """
+    from google.api_core.exceptions import GoogleAPIError
+
+    job_id = captured.get(var_name)
+    if not job_id:
+        return f"{source}: await_job {var_name!r} was not captured"
+    try:
+        client.get_job(job_id, location=client.location).result()
+    except GoogleAPIError as exc:
+        return f"{source}: awaited job {job_id} failed: {exc}"
+    return None
 
 
 def _parse_args(argv: list[str] | None) -> argparse.Namespace:

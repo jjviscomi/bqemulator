@@ -1,0 +1,10 @@
+--===bqemu-fixture-boundary===
+Content-Type: application/json; charset=UTF-8
+
+{"configuration": {"load": {"destinationTable": {"projectId": "${PROJECT}", "datasetId": "${DATASET_ID}", "tableId": "tbl"}, "sourceFormat": "NEWLINE_DELIMITED_JSON", "writeDisposition": "WRITE_TRUNCATE", "autodetect": true}}}
+--===bqemu-fixture-boundary===
+Content-Type: application/json
+
+{"id":1,"name":"alice","info":{"age":30,"city":"NYC"},"tags":["a","b"],"items":[{"sku":"x1","qty":2},{"sku":"x2","qty":5}]}
+{"id":2,"name":"bob","info":{"age":25,"city":"LA"},"tags":["c"],"items":[{"sku":"y1","qty":1}]}
+--===bqemu-fixture-boundary===--

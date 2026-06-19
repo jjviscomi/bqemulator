@@ -19,6 +19,12 @@ the emulator's runtime response. Comparison rules:
      are tolerated.
    - Recorded lists must match the actual list element-wise. List
      length must match. Each element is diffed recursively.
+   - A schema ``fields`` list (a list at a path ending in ``.fields``
+     whose elements are field objects) is the exception: it is matched
+     by field name, not position. BigQuery does not guarantee the field
+     order of an autodetected schema and DuckDB infers a different
+     order, so a positional diff would flag spurious mismatches even
+     when every name, type, and mode agrees.
    - Recorded scalar values must equal the actual scalar value via
      ``==``.
 
@@ -31,6 +37,7 @@ key would break the corpus on every BQ minor release.
 from __future__ import annotations
 
 from dataclasses import dataclass, field
+from typing import Any
 
 from tests.conformance._http_corpus import WILDCARD
 
@@ -122,12 +129,57 @@ def _diff_body(
             # Don't dive into per-element diffs when lengths differ —
             # the indices wouldn't line up.
             return
+        if _is_schema_field_list(path, expected):
+            _diff_schema_fields(expected, actual, path=path, diffs=diffs)
+            return
         for idx, (expected_item, actual_item) in enumerate(zip(expected, actual, strict=True)):
             _diff_body(expected_item, actual_item, path=f"{path}[{idx}]", diffs=diffs)
         return
 
     if expected != actual:
         diffs.append(f"{path}: expected={expected!r} actual={actual!r}")
+
+
+def _is_schema_field_list(path: str, expected: list[Any]) -> bool:
+    """True for a BigQuery schema ``fields`` list, matched by name not order.
+
+    BigQuery does not guarantee the field order of an autodetected schema,
+    and DuckDB's inference orders columns differently, so a positional diff
+    of ``schema.fields`` would flag spurious mismatches even when every
+    field name, type, and mode agrees. These lists are diffed by field name
+    instead. The rule is scoped to a path ending in ``.fields`` whose
+    recorded elements are all field objects (dicts carrying a ``name``), so
+    ordered lists elsewhere (rows, pages, job lists) keep positional diffing.
+    """
+    return path.endswith(".fields") and all(
+        isinstance(item, dict) and "name" in item for item in expected
+    )
+
+
+def _diff_schema_fields(
+    expected: list[Any],
+    actual: list[Any],
+    *,
+    path: str,
+    diffs: list[str],
+) -> None:
+    """Diff two schema ``fields`` lists by field name rather than position.
+
+    Lengths are already known equal. Each recorded field must appear by
+    name in the actual schema and matches recursively, so a nested RECORD's
+    own ``fields`` are themselves diffed by name.
+    """
+    actual_by_name = {
+        item["name"]: item for item in actual if isinstance(item, dict) and "name" in item
+    }
+    for expected_field in expected:
+        name = expected_field["name"]
+        sub_path = f"{path}[name={name}]"
+        actual_field = actual_by_name.get(name)
+        if actual_field is None:
+            diffs.append(f"{sub_path}: field {name!r} absent in actual")
+            continue
+        _diff_body(expected_field, actual_field, path=sub_path, diffs=diffs)
 
 
 def _describe(value: object) -> str:

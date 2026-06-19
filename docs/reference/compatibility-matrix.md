@@ -139,7 +139,7 @@ surfaces).
 
 > **Auto-generated.** Edit fixtures under [`tests/conformance/`](https://github.com/jjviscomi/bqemulator/blob/main/tests/conformance) or update the XFAIL registry in [`tests/conformance/divergences.py`](https://github.com/jjviscomi/bqemulator/blob/main/tests/conformance/divergences.py), then run `make compat-matrix` to regenerate this block. The CI gate (`--check`) refuses to merge a PR whose committed snapshot has drifted from the corpus.
 
-- **Corpus totals**: 1288 fixtures (1213 SQL + 49 HTTP + 26 gRPC); **1277 PASS / 11 XFAIL**
+- **Corpus totals**: 1291 fixtures (1213 SQL + 52 HTTP + 26 gRPC); **1280 PASS / 11 XFAIL**
 - **XFAIL contract**: every pin in `KNOWN_DIVERGENCES` references an ADR or `out-of-scope.md` section — invented divergences are forbidden (see [ADR 0023](https://github.com/jjviscomi/bqemulator/blob/main/docs/adr/0023-conformance-divergence-baseline.md)).
 
 ### Per-phase fixture coverage
@@ -158,10 +158,10 @@ Each row aggregates fixtures by corpus (SQL / HTTP / gRPC) and the on-disk phase
 | SQL | `specialized_types` | 150 | 143 | 7 | ⚠ |
 | SQL | `standard_functions` | 662 | 659 | 3 | ⚠ |
 | SQL | `versioning` | 24 | 24 | 0 | ✅ |
-| HTTP | `jobs` | 49 | 49 | 0 | ✅ |
+| HTTP | `jobs` | 52 | 52 | 0 | ✅ |
 | gRPC | `storage_read` | 16 | 16 | 0 | ✅ |
 | gRPC | `storage_write` | 10 | 10 | 0 | ✅ |
-| **Total** | | **1288** | **1277** | **11** | ⚠ |
+| **Total** | | **1291** | **1280** | **11** | ⚠ |
 
 ### XFAIL pin registry
 
