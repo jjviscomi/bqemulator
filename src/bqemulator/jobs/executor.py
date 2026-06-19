@@ -1334,7 +1334,9 @@ def _infer_autodetect_schema(
     tuple for formats that carry their own schema (PARQUET / AVRO).
 
     Raises :class:`ValidationError` (surfaced as a 400) when DuckDB infers
-    a shape BigQuery cannot represent, e.g. an array of arrays.
+    a shape BigQuery cannot represent, e.g. an array of arrays. On such a
+    failure the probe table is dropped, so the error leaves no orphan to
+    block a retry.
     """
     from bqemulator.api.routes.tables import _parse_schema_fields
     from bqemulator.storage.type_map import duckdb_type_to_bq_field
@@ -1351,9 +1353,18 @@ def _infer_autodetect_schema(
 
     ctx.engine.execute(query, [path])
 
-    duck_schema = ctx.engine.execute(f"DESCRIBE {target_ref}").fetchall()
-    rest_fields = [duckdb_type_to_bq_field(row[0], row[1]) for row in duck_schema]
-    return tuple(_parse_schema_fields(rest_fields))
+    try:
+        duck_schema = ctx.engine.execute(f"DESCRIBE {target_ref}").fetchall()
+        rest_fields = [duckdb_type_to_bq_field(row[0], row[1]) for row in duck_schema]
+        return tuple(_parse_schema_fields(rest_fields))
+    except Exception:
+        # Inference can fail after the probe table is created, e.g. DuckDB
+        # infers a shape BigQuery cannot represent (an array of arrays).
+        # Drop the orphaned table so a retry sees the same clean error
+        # instead of a DuckDB "table already exists", which would otherwise
+        # surface while the catalog still reports the table missing.
+        ctx.engine.execute(f"DROP TABLE IF EXISTS {target_ref}")
+        raise
 
 
 def _build_explicit_schema(ctx: AppContext, target_ref: str, fields_raw: list[Any]) -> Any:
