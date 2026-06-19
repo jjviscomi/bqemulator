@@ -1328,9 +1328,20 @@ async def execute_copy_job(
 def _infer_autodetect_schema(
     ctx: AppContext, target_ref: str, source_uris: list[str], fmt: str
 ) -> tuple[Any, ...]:
-    """Sample the source file via DuckDB to infer its schema."""
-    from bqemulator.catalog.models import TableFieldSchema
-    from bqemulator.storage.type_map import duckdb_to_bq
+    """Sample the first source file via DuckDB to infer the load schema.
+
+    Creates the destination table from a zero-row sample (DuckDB's
+    ``read_*_auto``), reads the inferred column types back with
+    ``DESCRIBE``, and maps each to a BigQuery schema field via
+    :func:`duckdb_type_to_bq_field`, preserving legacy REST type names and
+    full RECORD / REPEATED structure for nested JSON. Returns an empty
+    tuple for formats that carry their own schema (PARQUET / AVRO).
+
+    Raises :class:`ValidationError` (surfaced as a 400) when DuckDB infers
+    a shape BigQuery cannot represent, e.g. an array of arrays.
+    """
+    from bqemulator.api.routes.tables import _parse_schema_fields
+    from bqemulator.storage.type_map import duckdb_type_to_bq_field
 
     path = _resolve_uri(source_uris[0], ctx)
     _validate_local_path(path)
@@ -1345,21 +1356,8 @@ def _infer_autodetect_schema(
     ctx.engine.execute(query, [path])
 
     duck_schema = ctx.engine.execute(f"DESCRIBE {target_ref}").fetchall()
-
-    autodetect_fields = []
-    for row in duck_schema:
-        col_name = row[0]
-        duck_type = row[1]
-        bq_type = duckdb_to_bq(duck_type, strict=False)
-        autodetect_fields.append(
-            TableFieldSchema(
-                name=col_name,
-                type=bq_type,
-                mode="NULLABLE",
-            )
-        )
-
-    return tuple(autodetect_fields)
+    rest_fields = [duckdb_type_to_bq_field(row[0], row[1]) for row in duck_schema]
+    return tuple(_parse_schema_fields(rest_fields))
 
 
 def _build_explicit_schema(ctx: AppContext, target_ref: str, fields_raw: list[Any]) -> Any:

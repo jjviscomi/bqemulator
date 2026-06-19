@@ -227,13 +227,13 @@ func TestLoadTableCSVAutodetect(t *testing.T) {
 	if len(meta.Schema) != 3 {
 		t.Fatalf("Expected 3 schema fields, got %d", len(meta.Schema))
 	}
-	if meta.Schema[0].Name != "id" || (meta.Schema[0].Type != bigquery.IntegerFieldType && meta.Schema[0].Type != "INT64") {
-		t.Errorf("Expected id INT64, got %v %v", meta.Schema[0].Name, meta.Schema[0].Type)
+	if meta.Schema[0].Name != "id" || meta.Schema[0].Type != bigquery.IntegerFieldType {
+		t.Errorf("Expected id INTEGER, got %v %v", meta.Schema[0].Name, meta.Schema[0].Type)
 	}
-	if meta.Schema[1].Name != "name" || (meta.Schema[1].Type != bigquery.StringFieldType && meta.Schema[1].Type != "STRING") {
+	if meta.Schema[1].Name != "name" || meta.Schema[1].Type != bigquery.StringFieldType {
 		t.Errorf("Expected name STRING, got %v %v", meta.Schema[1].Name, meta.Schema[1].Type)
 	}
-	if meta.Schema[2].Name != "score" || (meta.Schema[2].Type != bigquery.FloatFieldType && meta.Schema[2].Type != "FLOAT64") {
-		t.Errorf("Expected score FLOAT64, got %v %v", meta.Schema[2].Name, meta.Schema[2].Type)
+	if meta.Schema[2].Name != "score" || meta.Schema[2].Type != bigquery.FloatFieldType {
+		t.Errorf("Expected score FLOAT, got %v %v", meta.Schema[2].Name, meta.Schema[2].Type)
 	}
 }

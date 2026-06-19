@@ -165,43 +165,23 @@ def _duckdb_compound_to_bq(duckdb_type: str, upper: str) -> str | None:
     return None
 
 
-def _duckdb_autodetect_fallback(duckdb_type: str) -> str | None:
-    """Fallback complex types to STRING for non-strict autodetect schema mapping."""
-    upper = duckdb_type.strip().upper()
-    if upper.startswith("STRUCT"):
-        return "STRING"
-    if upper.endswith("[]") or upper.startswith("LIST"):
-        return "STRING"
-    return None
-
-
-def duckdb_to_bq(duckdb_type: str, strict: bool = True) -> str:
-    """Convert a DuckDB type name to its BigQuery equivalent.
+def duckdb_to_bq(duckdb_type: str) -> str:
+    """Convert a DuckDB type name to its BigQuery (standard-SQL) equivalent.
 
     Handles parameterized types:
     - ``BIGINT[]`` → ``ARRAY<INT64>``
     - ``STRUCT(name VARCHAR, age BIGINT)`` → ``STRUCT<name STRING, age INT64>``
 
-    When ``strict=False``, compound types (STRUCT, ARRAY/LIST) are mapped
-    to STRING instead of attempting full recursive conversion — intended
-    for autodetect schema inference where deeply nested DuckDB types
-    cannot be faithfully represented in BigQuery.
-
-    Raises :class:`ValidationError` for unmappable types.
+    Raises :class:`ValidationError` for unmappable types. Autodetect load
+    inference uses :func:`duckdb_type_to_bq_field` instead, which maps onto
+    BigQuery's legacy REST names and RECORD / REPEATED structure.
     """
-    # Handle deeply nested types from read_json_auto like STRUCT(...) or VARCHAR[]
-    if not strict:
-        fallback = _duckdb_autodetect_fallback(duckdb_type)
-        if fallback is not None:
-            return fallback
-
     upper = duckdb_type.strip().upper()
 
     # Parameterized types (ARRAY suffix / LIST(...) / STRUCT(...)).
-    if strict:
-        compound = _duckdb_compound_to_bq(duckdb_type, upper)
-        if compound is not None:
-            return compound
+    compound = _duckdb_compound_to_bq(duckdb_type, upper)
+    if compound is not None:
+        return compound
 
     # DECIMAL with explicit precision/scale → NUMERIC or BIGNUMERIC.
     bignumeric_threshold = 38

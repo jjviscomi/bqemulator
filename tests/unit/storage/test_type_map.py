@@ -291,7 +291,7 @@ class TestSpecializedTypes:
 
 
 # ---------------------------------------------------------------------------
-# duckdb_type_to_bq_field — autodetect inference (DuckDB type → REST field)
+# duckdb_type_to_bq_field: autodetect inference (DuckDB type to REST field)
 # ---------------------------------------------------------------------------
 
 

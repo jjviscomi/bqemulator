@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 import pyarrow as pa
 import pytest
@@ -462,7 +462,7 @@ class TestMaybeCreateLoadDestinationAutodetect:
 
             assert len(schema) == 2
             assert schema[0].name == "id"
-            assert schema[0].type == "INT64"
+            assert schema[0].type == "INTEGER"
             assert schema[1].name == "name"
             assert schema[1].type == "STRING"
 
@@ -478,9 +478,31 @@ class TestMaybeCreateLoadDestinationAutodetect:
 
             assert len(schema2) == 2
             assert schema2[0].name == "id"
-            assert schema2[0].type == "INT64"
+            assert schema2[0].type == "INTEGER"
             assert schema2[1].name == "score"
-            assert schema2[1].type == "FLOAT64"
+            assert schema2[1].type == "FLOAT"
+
+            # Nested JSON: a nested object infers as a RECORD with sub-fields
+            # and a scalar array as a REPEATED scalar, end to end through real
+            # DuckDB inference (not mocked DESCRIBE rows).
+            nested_file = tmp_path / "nested.json"
+            nested_file.write_text(
+                '{"id": 1, "obj": {"a": 1}, "tags": ["x", "y"]}\n'
+                '{"id": 2, "obj": {"a": 2}, "tags": ["z"]}\n'
+            )
+            schema3 = _infer_autodetect_schema(
+                ctx=ctx,
+                target_ref="tbl3",
+                source_uris=[f"file://{nested_file}"],
+                fmt="NEWLINE_DELIMITED_JSON",
+            )
+            by_name = {field.name: field for field in schema3}
+            assert by_name["id"].type == "INTEGER"
+            assert by_name["obj"].type == "RECORD"
+            assert by_name["obj"].mode == "NULLABLE"
+            assert [(sub.name, sub.type) for sub in by_name["obj"].fields] == [("a", "INTEGER")]
+            assert by_name["tags"].type == "STRING"
+            assert by_name["tags"].mode == "REPEATED"
 
         finally:
             asyncio.run(engine.stop())
@@ -522,7 +544,7 @@ class TestMaybeCreateLoadDestinationAutodetect:
         added_meta = ctx.catalog.create_table.call_args[0][0]
         assert len(added_meta.schema_.fields) == 2
         assert added_meta.schema_.fields[0].name == "id"
-        assert added_meta.schema_.fields[0].type == "INT64"
+        assert added_meta.schema_.fields[0].type == "INTEGER"
 
     def test_autodetect_csv_calls_read_csv_auto(self) -> None:
         from unittest.mock import Mock
@@ -575,14 +597,15 @@ class TestMaybeCreateLoadDestinationAutodetect:
 
         ctx.engine.execute.assert_not_called()
 
-    def test_autodetect_relaxes_compound_types_to_string(self) -> None:
+    def test_autodetect_maps_compound_types_to_record_and_repeated(self) -> None:
         from unittest.mock import Mock
 
         from bqemulator.jobs.executor import _maybe_create_load_destination
 
         ctx = Mock()
         ctx.catalog.get_dataset.return_value = Mock()
-        # Mock DuckDB DESCRIBE returning scalar and compound types
+        # Mock DuckDB DESCRIBE returning scalar and compound types, as
+        # read_json_auto infers them from nested JSON.
         ctx.engine.execute.return_value.fetchall.return_value = [
             ("scalar_col", "BIGINT"),
             ("struct_col", "STRUCT(a BIGINT)"),
@@ -603,21 +626,31 @@ class TestMaybeCreateLoadDestinationAutodetect:
             ctx=ctx,
         )
 
-        # Ensure the table creation was mocked
         ctx.catalog.create_table.assert_called_once()
         table_meta = ctx.catalog.create_table.call_args[0][0]
-
-        # Verify the inferred schema relaxed compound types to STRING
         assert table_meta.schema_ is not None
-        assert [
+
+        def as_dict(field: Any) -> dict[str, Any]:
+            out: dict[str, Any] = {"name": field.name, "type": field.type, "mode": field.mode}
+            if field.fields:
+                out["fields"] = [as_dict(sub) for sub in field.fields]
+            return out
+
+        # Nested JSON maps to RECORD / REPEATED with legacy scalar names,
+        # matching real BigQuery autodetect, not a flattened STRING.
+        assert [as_dict(f) for f in table_meta.schema_.fields] == [
+            {"name": "scalar_col", "type": "INTEGER", "mode": "NULLABLE"},
             {
-                "name": f.name,
-                "type": f.type,
-            }
-            for f in table_meta.schema_.fields
-        ] == [
-            {"name": "scalar_col", "type": "INT64"},
-            {"name": "struct_col", "type": "STRING"},
-            {"name": "list_col", "type": "STRING"},
-            {"name": "nested_col", "type": "STRING"},
+                "name": "struct_col",
+                "type": "RECORD",
+                "mode": "NULLABLE",
+                "fields": [{"name": "a", "type": "INTEGER", "mode": "NULLABLE"}],
+            },
+            {"name": "list_col", "type": "INTEGER", "mode": "REPEATED"},
+            {
+                "name": "nested_col",
+                "type": "RECORD",
+                "mode": "REPEATED",
+                "fields": [{"name": "x", "type": "STRING", "mode": "NULLABLE"}],
+            },
         ]
