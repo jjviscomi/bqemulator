@@ -29,7 +29,10 @@ import re
 
 import pytest
 from scripts.generate_coverage_matrix import (
+    _coverage,
+    _format_fixture_links,
     _format_variation_histogram,
+    _http_fixture_text,
     _render_variation_depth,
     _variation_histogram,
     _variation_tags,
@@ -41,7 +44,8 @@ from tests.conformance._corpus import (
     VariationTag,
     classify_variation,
 )
-from tests.conformance._surface_inventory import SurfaceCategory, SurfaceItem
+from tests.conformance._http_corpus import HttpFixture, HttpRequest
+from tests.conformance._surface_inventory import SurfaceCategory, SurfaceItem, all_items
 
 pytestmark = pytest.mark.unit
 
@@ -615,3 +619,48 @@ class TestRenderByteStability:
         first = render(hits, fixtures, variation_tags)
         second = render(hits, fixtures, variation_tags)
         assert first == second
+
+
+class TestHttpCorpusCoverage:
+    """The coverage scan spans the HTTP corpus, not just sql_corpus."""
+
+    def _http_fixture(self, tmp_path: Path, body: bytes) -> HttpFixture:
+        fixture_dir = tmp_path / "jobs" / "fx"
+        fixture_dir.mkdir(parents=True)
+        (fixture_dir / "request.body.bin").write_bytes(body)
+        return HttpFixture(
+            phase="jobs",
+            name="fx",
+            path=fixture_dir,
+            setup_sql=None,
+            setup_requests=(
+                HttpRequest(
+                    method="POST",
+                    path="/upload/bigquery/v2/projects/p/jobs",
+                    body_bin="request.body.bin",
+                ),
+            ),
+            request=HttpRequest(method="GET", path="/bigquery/v2/projects/p/datasets/d/tables/tbl"),
+            expected_path=fixture_dir / "expected_response.json",
+        )
+
+    def test_http_fixture_text_includes_body_bin_and_id(self, tmp_path: Path) -> None:
+        fixture = self._http_fixture(tmp_path, b'{"configuration": {"load": {"autodetect": true}}}')
+        text = _http_fixture_text(fixture)
+        assert '"autodetect": true' in text  # body_bin payload is scanned
+        assert "jobs/fx" in text  # the fixture id is scanned
+        assert "/tables/tbl" in text  # the canonical request path is scanned
+
+    def test_coverage_detects_autodetect_surface_in_http_text(self) -> None:
+        item = next(i for i in all_items() if i.id == "jobs.load_autodetect")
+        texts = {"jobs/upload_x": '{"load": {"autodetect": true}}'}
+        hits = _coverage([item], texts)
+        assert hits["jobs.load_autodetect"] == ["jobs/upload_x"]
+
+    def test_format_fixture_links_routes_http_ids_to_http_corpus(self) -> None:
+        rendered = _format_fixture_links(
+            ["jobs/upload_x", "standard_functions/abs_basic"],
+            http_ids=frozenset({"jobs/upload_x"}),
+        )
+        assert "http_corpus/jobs/upload_x" in rendered
+        assert "sql_corpus/standard_functions/abs_basic" in rendered

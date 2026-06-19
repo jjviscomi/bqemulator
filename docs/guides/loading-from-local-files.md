@@ -110,7 +110,7 @@ try (TableDataWriteChannel channel = client.writer(cfg)) {
 
 | `sourceFormat` | Multipart media Content-Type | Notes |
 |---|---|---|
-| `CSV` | `text/csv` | `skipLeadingRows`, `fieldDelimiter`, `quote` all honored. |
+| `CSV` | `text/csv` | `autodetect` honored; CSV loads currently assume a header row (other CSV parsing knobs like `skipLeadingRows`, `fieldDelimiter`, and `quote` are not applied). |
 | `NEWLINE_DELIMITED_JSON` | `application/json` | `autodetect` flag honored. |
 | `PARQUET` | `application/x-parquet` or `application/octet-stream` | Schema inferred from file. |
 | `AVRO` | `application/avro` or `application/octet-stream` | Requires DuckDB's `avro` extension (G1, ADR 0027). |
@@ -162,3 +162,17 @@ A complete runnable example lives at
 single-file Python script that starts the emulator, runs the
 multipart upload, queries the rows back, and asserts. The example
 is executed in CI by the docs build to prevent doc rot.
+
+## Schema Autodetection
+
+Schema autodetection (using DuckDB's `read_csv_auto` or `read_json_auto`) only occurs when **both** of the following conditions are met:
+1. The destination table does not already exist
+2. No explicit `schema.fields` are provided in the load configuration
+
+When these conditions are met and the `autodetect` flag is enabled for CSV or JSON loads, the emulator infers the schema by sampling the source data using DuckDB's native auto-detection capabilities.
+
+**Note on CSV parsing:** DuckDB's `read_csv_auto` automatically sniffs the delimiter, header existence, and quote character independently of the explicit `fieldDelimiter`, `skipLeadingRows`, or `quote` properties specified in the load job configuration. For CSVs that lack headers or use exotic delimiters, schema inference may diverge from explicit load behavior; providing an explicit schema is recommended in these cases.
+
+**Note on multi-file loads:** Schema inference is performed by sampling the *first* file in the `sourceUris` list. For multi-file loads where the schema drifts between files, the `COPY` operation may fail or write data incorrectly if subsequent files do not match the schema inferred from the first file.
+
+**Note on nested types:** Nested data is inferred with full parity. A JSON object becomes a `RECORD`, a JSON array becomes a `REPEATED` field, and an array of objects becomes a `REPEATED RECORD`, recursively, matching what BigQuery's own autodetect produces (verified against recorded BigQuery responses). An array of arrays, which BigQuery's schema model cannot represent, is rejected with a clear error; provide an explicit `schema` if your data requires that shape.
