@@ -3155,6 +3155,8 @@
       
         
       
+        
+      
     
     
     
@@ -4419,6 +4421,34 @@
     
   
     0044 Adopt starlette 1.x (security) without adopting httpx2
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../adr/0045-autodetect-schema-inference/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0045 Autodetect schema inference via DuckDB
   
 
     
@@ -6009,7 +6039,7 @@ surfaces).</p>
 <p><strong>Auto-generated.</strong> Edit fixtures under <a href="https://github.com/jjviscomi/bqemulator/blob/main/tests/conformance"><code>tests/conformance/</code></a> or update the XFAIL registry in <a href="https://github.com/jjviscomi/bqemulator/blob/main/tests/conformance/divergences.py"><code>tests/conformance/divergences.py</code></a>, then run <code>make compat-matrix</code> to regenerate this block. The CI gate (<code>--check</code>) refuses to merge a PR whose committed snapshot has drifted from the corpus.</p>
 </blockquote>
 <ul>
-<li><strong>Corpus totals</strong>: 1288 fixtures (1213 SQL + 49 HTTP + 26 gRPC); <strong>1277 PASS / 11 XFAIL</strong></li>
+<li><strong>Corpus totals</strong>: 1291 fixtures (1213 SQL + 52 HTTP + 26 gRPC); <strong>1280 PASS / 11 XFAIL</strong></li>
 <li><strong>XFAIL contract</strong>: every pin in <code>KNOWN_DIVERGENCES</code> references an ADR or <code>out-of-scope.md</code> section — invented divergences are forbidden (see <a href="https://github.com/jjviscomi/bqemulator/blob/main/docs/adr/0023-conformance-divergence-baseline.md">ADR 0023</a>).</li>
 </ul>
 <h3 id="per-phase-fixture-coverage">Per-phase fixture coverage<a class="headerlink" href="#per-phase-fixture-coverage" title="Permanent link">&para;</a></h3>
@@ -6109,8 +6139,8 @@ surfaces).</p>
 <tr>
 <td>HTTP</td>
 <td><code>jobs</code></td>
-<td style="text-align: right;">49</td>
-<td style="text-align: right;">49</td>
+<td style="text-align: right;">52</td>
+<td style="text-align: right;">52</td>
 <td style="text-align: right;">0</td>
 <td style="text-align: center;">✅</td>
 </tr>
@@ -6133,8 +6163,8 @@ surfaces).</p>
 <tr>
 <td><strong>Total</strong></td>
 <td></td>
-<td style="text-align: right;"><strong>1288</strong></td>
-<td style="text-align: right;"><strong>1277</strong></td>
+<td style="text-align: right;"><strong>1291</strong></td>
+<td style="text-align: right;"><strong>1280</strong></td>
 <td style="text-align: right;"><strong>11</strong></td>
 <td style="text-align: center;">⚠</td>
 </tr>

@@ -1132,6 +1132,17 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#schema-autodetection" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Schema Autodetection
+      
+    </span>
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -3149,6 +3160,8 @@
       
         
       
+        
+      
     
     
     
@@ -4426,6 +4439,34 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../adr/0045-autodetect-schema-inference/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0045 Autodetect schema inference via DuckDB
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -5568,6 +5609,17 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#schema-autodetection" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Schema Autodetection
+      
+    </span>
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -5733,7 +5785,7 @@ identically — the same <code>LoadJobConfig</code> flags apply.</p>
 <tr>
 <td><code>CSV</code></td>
 <td><code>text/csv</code></td>
-<td><code>skipLeadingRows</code>, <code>fieldDelimiter</code>, <code>quote</code> all honored.</td>
+<td><code>autodetect</code> honored; CSV loads currently assume a header row (other CSV parsing knobs like <code>skipLeadingRows</code>, <code>fieldDelimiter</code>, and <code>quote</code> are not applied).</td>
 </tr>
 <tr>
 <td><code>NEWLINE_DELIMITED_JSON</code></td>
@@ -5819,6 +5871,14 @@ libraries already implement:</p>
 single-file Python script that starts the emulator, runs the
 multipart upload, queries the rows back, and asserts. The example
 is executed in CI by the docs build to prevent doc rot.</p>
+<h2 id="schema-autodetection">Schema Autodetection<a class="headerlink" href="#schema-autodetection" title="Permanent link">&para;</a></h2>
+<p>Schema autodetection (using DuckDB's <code>read_csv_auto</code> or <code>read_json_auto</code>) only occurs when <strong>both</strong> of the following conditions are met:
+1. The destination table does not already exist
+2. No explicit <code>schema.fields</code> are provided in the load configuration</p>
+<p>When these conditions are met and the <code>autodetect</code> flag is enabled for CSV or JSON loads, the emulator infers the schema by sampling the source data using DuckDB's native auto-detection capabilities.</p>
+<p><strong>Note on CSV parsing:</strong> DuckDB's <code>read_csv_auto</code> automatically sniffs the delimiter, header existence, and quote character independently of the explicit <code>fieldDelimiter</code>, <code>skipLeadingRows</code>, or <code>quote</code> properties specified in the load job configuration. For CSVs that lack headers or use exotic delimiters, schema inference may diverge from explicit load behavior; providing an explicit schema is recommended in these cases.</p>
+<p><strong>Note on multi-file loads:</strong> Schema inference is performed by sampling the <em>first</em> file in the <code>sourceUris</code> list. For multi-file loads where the schema drifts between files, the <code>COPY</code> operation may fail or write data incorrectly if subsequent files do not match the schema inferred from the first file.</p>
+<p><strong>Note on nested types:</strong> Nested data is inferred with full parity. A JSON object becomes a <code>RECORD</code>, a JSON array becomes a <code>REPEATED</code> field, and an array of objects becomes a <code>REPEATED RECORD</code>, recursively, matching what BigQuery's own autodetect produces (verified against recorded BigQuery responses). An array of arrays, which BigQuery's schema model cannot represent, is rejected with a clear error; provide an explicit <code>schema</code> if your data requires that shape.</p>
 
 
 
