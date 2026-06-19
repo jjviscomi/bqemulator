@@ -175,4 +175,4 @@ When these conditions are met and the `autodetect` flag is enabled for CSV or JS
 
 **Note on multi-file loads:** Schema inference is performed by sampling the *first* file in the `sourceUris` list. For multi-file loads where the schema drifts between files, the `COPY` operation may fail or write data incorrectly if subsequent files do not match the schema inferred from the first file.
 
-**Note on complex types:** Deeply nested types inferred from JSON (like DuckDB `STRUCT` or `LIST`) are mapped to BigQuery `STRING` fields rather than recursive `RECORD` or `REPEATED` fields. If you require strict typing for nested structures, provide an explicit `schema` rather than relying on `autodetect`.
+**Note on nested types:** Nested data is inferred with full parity. A JSON object becomes a `RECORD`, a JSON array becomes a `REPEATED` field, and an array of objects becomes a `REPEATED RECORD`, recursively, matching what BigQuery's own autodetect produces (verified against recorded BigQuery responses). An array of arrays, which BigQuery's schema model cannot represent, is rejected with a clear error; provide an explicit `schema` if your data requires that shape.
