@@ -24,6 +24,13 @@ canonical ``request.json`` can substitute ``${JOB_ID}`` / ``${PAGE_TOKEN}``
 syntax is a dotted JSON path: ``jobReference.jobId``,
 ``jobs.0.jobReference.jobId``. List indexing uses positive integers.
 
+A setup entry may also carry ``await_job``: the name of a captured
+variable holding a BigQuery job id. At record time the recorder blocks
+until that job finishes before issuing the next request, so a fixture
+that uploads an asynchronous load job can then GET the resulting table
+once its inferred schema exists. The runner ignores ``await_job`` — the
+emulator executes loads synchronously, so the table is already present.
+
 ``request.json`` and ``expected_response.json`` are the canonical pair
 the comparator diffs:
 
@@ -90,6 +97,7 @@ class HttpRequest:
     body_bin: str | None = None
     headers: tuple[tuple[str, str], ...] = ()
     capture: tuple[tuple[str, str], ...] = ()
+    await_job: str | None = None
 
 
 @dataclass(slots=True, frozen=True)
@@ -242,6 +250,10 @@ def _request_from_dict(data: dict[str, Any], *, source: str) -> HttpRequest:
         raise TypeError(msg)
     headers = _coerce_headers(data.get("headers"), source=source)
     capture = _coerce_capture(data.get("capture"), source=source)
+    await_job = data.get("await_job")
+    if await_job is not None and (not isinstance(await_job, str) or not await_job):
+        msg = f"{source}: 'await_job' must be a non-empty captured-variable name"
+        raise ValueError(msg)
     return HttpRequest(
         method=method.upper(),
         path=path_value,
@@ -249,6 +261,7 @@ def _request_from_dict(data: dict[str, Any], *, source: str) -> HttpRequest:
         body_bin=body_bin,
         headers=headers,
         capture=capture,
+        await_job=await_job,
     )
 
 

@@ -28,6 +28,7 @@ from tests.conformance._http_comparison import (
 )
 from tests.conformance._http_corpus import (
     WILDCARD,
+    HttpFixture,
     discover_http_fixtures,
     expand_placeholders,
     expand_placeholders_in_json,
@@ -421,6 +422,33 @@ class TestDiscoverHttpFixtures:
         fixtures = discover_http_fixtures(corpus_dir=tmp_path, include_unrecorded=True)
         assert len(fixtures) == 1
         assert fixtures[0].name == "no_expected"
+
+
+class TestSetupRequestAwaitJob:
+    """The optional ``await_job`` field on a setup request."""
+
+    def _discover(self, tmp_path: Path, setup_requests: str) -> list[HttpFixture]:
+        phase = tmp_path / "jobs" / "fx"
+        phase.mkdir(parents=True)
+        (phase / "request.json").write_text('{"method": "GET", "path": "/x"}')
+        (phase / "setup_requests.json").write_text(setup_requests)
+        return discover_http_fixtures(corpus_dir=tmp_path, include_unrecorded=True)
+
+    def test_await_job_parsed(self, tmp_path: Path) -> None:
+        fixtures = self._discover(
+            tmp_path,
+            '[{"method": "POST", "path": "/u", '
+            '"capture": {"JOB_ID": "jobReference.jobId"}, "await_job": "JOB_ID"}]',
+        )
+        assert fixtures[0].setup_requests[0].await_job == "JOB_ID"
+
+    def test_await_job_defaults_to_none(self, tmp_path: Path) -> None:
+        fixtures = self._discover(tmp_path, '[{"method": "POST", "path": "/u"}]')
+        assert fixtures[0].setup_requests[0].await_job is None
+
+    def test_await_job_must_be_non_empty_string(self, tmp_path: Path) -> None:
+        with pytest.raises(ValueError, match="await_job"):
+            self._discover(tmp_path, '[{"method": "POST", "path": "/u", "await_job": 5}]')
 
 
 class TestHttpCompareReportContract:
