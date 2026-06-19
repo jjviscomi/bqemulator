@@ -923,9 +923,10 @@ async def execute_load_job(
     # CREATE_IF_NEEDED — materialise the destination from the explicit
     # schema (bq CLI / SDK clients pass ``load.schema.fields``) before
     # touching DuckDB. CREATE_NEVER + missing table → notFound. If a
-    # schema is not supplied (autodetect path), the existing DuckDB
-    # COPY/INSERT call below will raise a binder error which the load
-    # error wrapper translates to a proper ``invalid`` job error.
+    # schema is not supplied and autodetect is True, the schema is inferred
+    # from the source file. Otherwise, the existing DuckDB COPY/INSERT
+    # call below will raise a binder error which the load error wrapper
+    # translates to a proper ``invalid`` job error.
     if (
         job.create_disposition == "CREATE_IF_NEEDED"
         and ctx.catalog.get_table(job.project_id, job.dataset_id, job.table_id) is None
@@ -1320,6 +1321,68 @@ async def execute_copy_job(
     )
 
 
+def _infer_autodetect_schema(
+    ctx: AppContext, target_ref: str, source_uris: list[str], fmt: str
+) -> tuple[Any, ...]:
+    """Sample the first source file via DuckDB to infer the load schema.
+
+    Creates the destination table from a zero-row sample (DuckDB's
+    ``read_*_auto``), reads the inferred column types back with
+    ``DESCRIBE``, and maps each to a BigQuery schema field via
+    :func:`duckdb_type_to_bq_field`, preserving legacy REST type names and
+    full RECORD / REPEATED structure for nested JSON. Returns an empty
+    tuple for formats that carry their own schema (PARQUET / AVRO).
+
+    Raises :class:`ValidationError` (surfaced as a 400) when DuckDB infers
+    a shape BigQuery cannot represent, e.g. an array of arrays. On such a
+    failure the probe table is dropped, so the error leaves no orphan to
+    block a retry.
+    """
+    from bqemulator.api.routes.tables import _parse_schema_fields
+    from bqemulator.storage.type_map import duckdb_type_to_bq_field
+
+    path = _resolve_uri(source_uris[0], ctx)
+    _validate_local_path(path)
+
+    if fmt in ("NEWLINE_DELIMITED_JSON", "JSON"):
+        query = f"CREATE TABLE {target_ref} AS SELECT * FROM read_json_auto(?) LIMIT 0"
+    elif fmt == "CSV":
+        query = f"CREATE TABLE {target_ref} AS SELECT * FROM read_csv_auto(?) LIMIT 0"
+    else:
+        return ()
+
+    ctx.engine.execute(query, [path])
+
+    try:
+        duck_schema = ctx.engine.execute(f"DESCRIBE {target_ref}").fetchall()
+        rest_fields = [duckdb_type_to_bq_field(row[0], row[1]) for row in duck_schema]
+        return tuple(_parse_schema_fields(rest_fields))
+    except Exception:
+        # Inference can fail after the probe table is created, e.g. DuckDB
+        # infers a shape BigQuery cannot represent (an array of arrays).
+        # Drop the orphaned table so a retry sees the same clean error
+        # instead of a DuckDB "table already exists", which would otherwise
+        # surface while the catalog still reports the table missing.
+        ctx.engine.execute(f"DROP TABLE IF EXISTS {target_ref}")
+        raise
+
+
+def _build_explicit_schema(ctx: AppContext, target_ref: str, fields_raw: list[Any]) -> Any:
+    """Parse the explicit schema and create the empty table in DuckDB."""
+    from bqemulator.api.routes.tables import _field_to_rest, _parse_schema_fields
+    from bqemulator.catalog.models import TableSchema
+    from bqemulator.storage.type_map import bq_schema_to_duckdb_columns
+
+    field_models = _parse_schema_fields(fields_raw)
+    schema = TableSchema(fields=field_models)
+    duckdb_cols = bq_schema_to_duckdb_columns(
+        [_field_to_rest(f) for f in field_models],
+    )
+    col_defs = ", ".join(f'"{name}" {dtype}' for name, dtype in duckdb_cols)
+    ctx.engine.execute(f"CREATE TABLE {target_ref} ({col_defs})")
+    return schema
+
+
 def _maybe_create_load_destination(
     *,
     dest_project: str,
@@ -1333,32 +1396,38 @@ def _maybe_create_load_destination(
 
     Mirrors ``tables.insert``: builds the DuckDB CREATE TABLE DDL from
     the ``load.schema.fields`` payload and registers a ``TableMeta``.
-    No-op when the request omits a schema (autodetect path); the
-    caller's downstream COPY/INSERT will raise a binder error which
-    the load error wrapper converts to a proper async job error.
+    When schema fields are absent and autodetect is enabled, it samples
+    the first source file to automatically detect the schema.
     """
-    from bqemulator.api.routes.tables import _field_to_rest, _parse_schema_fields
     from bqemulator.catalog.models import TableMeta, TableSchema
-    from bqemulator.storage.type_map import bq_schema_to_duckdb_columns
 
     schema_raw = load_config.get("schema") or {}
     fields_raw = schema_raw.get("fields") or []
-    if not fields_raw:
+    autodetect = load_config.get("autodetect", False)
+
+    if not fields_raw and not autodetect:
         return
+
     if ctx.catalog.get_dataset(dest_project, dest_dataset) is None:
         raise resource_not_found(
             ResourceRef("dataset", dest_project, dest_dataset),
         )
 
-    field_models = _parse_schema_fields(fields_raw)
-    schema = TableSchema(fields=field_models)
-    duckdb_cols = bq_schema_to_duckdb_columns(
-        [_field_to_rest(f) for f in field_models],
-    )
-    col_defs = ", ".join(f'"{name}" {dtype}' for name, dtype in duckdb_cols)
     target_ref = quoted_table_ref(dest_project, dest_dataset, dest_table_id)
 
-    ctx.engine.execute(f"CREATE TABLE {target_ref} ({col_defs})")
+    if not fields_raw:
+        source_uris = load_config.get("sourceUris", [])
+        fmt = load_config.get("sourceFormat", "CSV").upper()
+        if not source_uris or fmt not in ("NEWLINE_DELIMITED_JSON", "JSON", "CSV"):
+            return
+
+        field_models = _infer_autodetect_schema(ctx, target_ref, source_uris, fmt)
+        if not field_models:
+            return
+        schema = TableSchema(fields=field_models)
+    else:
+        schema = _build_explicit_schema(ctx, target_ref, fields_raw)
+
     meta = TableMeta(
         project_id=dest_project,
         dataset_id=dest_dataset,

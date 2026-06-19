@@ -2,8 +2,15 @@
 
 from __future__ import annotations
 
+from typing import TYPE_CHECKING, Any
+
 import pyarrow as pa
 import pytest
+
+if TYPE_CHECKING:
+    from pathlib import Path
+
+    from bqemulator.config import Settings
 
 from bqemulator.jobs.executor import (
     _arrow_type_to_bq_type,
@@ -423,3 +430,227 @@ class TestCopyTableIntoDestination:
                 create_if_needed=True,
                 ctx=ctx,
             )
+
+
+class TestMaybeCreateLoadDestinationAutodetect:
+    def test_infer_autodetect_schema_real_duckdb(
+        self, ephemeral_settings: Settings, tmp_path: Path
+    ) -> None:
+        import asyncio
+        from unittest.mock import Mock
+
+        from bqemulator.jobs.executor import _infer_autodetect_schema
+        from bqemulator.storage.engine import DuckDBEngine
+
+        csv_file = tmp_path / "data.csv"
+        csv_file.write_text("id,name\n1,alice\n2,bob\n")
+
+        engine = DuckDBEngine(ephemeral_settings)
+        asyncio.run(engine.start())
+
+        try:
+            ctx = Mock()
+            ctx.engine = engine
+            ctx.settings = ephemeral_settings
+
+            schema = _infer_autodetect_schema(
+                ctx=ctx,
+                target_ref="tbl",
+                source_uris=[f"file://{csv_file}"],
+                fmt="CSV",
+            )
+
+            assert len(schema) == 2
+            assert schema[0].name == "id"
+            assert schema[0].type == "INTEGER"
+            assert schema[1].name == "name"
+            assert schema[1].type == "STRING"
+
+            json_file = tmp_path / "data.json"
+            json_file.write_text('{"id": 1, "score": 99.5}\n{"id": 2, "score": 88.2}\n')
+
+            schema2 = _infer_autodetect_schema(
+                ctx=ctx,
+                target_ref="tbl2",
+                source_uris=[f"file://{json_file}"],
+                fmt="NEWLINE_DELIMITED_JSON",
+            )
+
+            assert len(schema2) == 2
+            assert schema2[0].name == "id"
+            assert schema2[0].type == "INTEGER"
+            assert schema2[1].name == "score"
+            assert schema2[1].type == "FLOAT"
+
+            # Nested JSON: a nested object infers as a RECORD with sub-fields
+            # and a scalar array as a REPEATED scalar, end to end through real
+            # DuckDB inference (not mocked DESCRIBE rows).
+            nested_file = tmp_path / "nested.json"
+            nested_file.write_text(
+                '{"id": 1, "obj": {"a": 1}, "tags": ["x", "y"]}\n'
+                '{"id": 2, "obj": {"a": 2}, "tags": ["z"]}\n'
+            )
+            schema3 = _infer_autodetect_schema(
+                ctx=ctx,
+                target_ref="tbl3",
+                source_uris=[f"file://{nested_file}"],
+                fmt="NEWLINE_DELIMITED_JSON",
+            )
+            by_name = {field.name: field for field in schema3}
+            assert by_name["id"].type == "INTEGER"
+            assert by_name["obj"].type == "RECORD"
+            assert by_name["obj"].mode == "NULLABLE"
+            assert [(sub.name, sub.type) for sub in by_name["obj"].fields] == [("a", "INTEGER")]
+            assert by_name["tags"].type == "STRING"
+            assert by_name["tags"].mode == "REPEATED"
+
+        finally:
+            asyncio.run(engine.stop())
+
+    def test_autodetect_json_calls_read_json_auto(self) -> None:
+        from unittest.mock import Mock
+
+        from bqemulator.jobs.executor import _maybe_create_load_destination
+
+        ctx = Mock()
+        ctx.catalog.get_dataset.return_value = Mock()
+
+        # Mock the DESCRIBE response (column_name, column_type, null, key, default, extra)
+        ctx.engine.execute.return_value.fetchall.return_value = [
+            ("id", "BIGINT", "YES", "PRI", "NULL", ""),
+            ("name", "VARCHAR", "YES", "", "NULL", ""),
+        ]
+
+        _maybe_create_load_destination(
+            dest_project="p",
+            dest_dataset="ds",
+            dest_table_id="t",
+            load_config={
+                "autodetect": True,
+                "sourceFormat": "NEWLINE_DELIMITED_JSON",
+                "sourceUris": ["file:///tmp/test.json"],
+            },
+            now="2026-06-15T00:00:00Z",
+            ctx=ctx,
+        )
+
+        execute_calls = ctx.engine.execute.call_args_list
+        assert (
+            execute_calls[0][0][0]
+            == 'CREATE TABLE "p__ds"."t" AS SELECT * FROM read_json_auto(?) LIMIT 0'
+        )
+        assert execute_calls[1][0][0] == 'DESCRIBE "p__ds"."t"'
+
+        added_meta = ctx.catalog.create_table.call_args[0][0]
+        assert len(added_meta.schema_.fields) == 2
+        assert added_meta.schema_.fields[0].name == "id"
+        assert added_meta.schema_.fields[0].type == "INTEGER"
+
+    def test_autodetect_csv_calls_read_csv_auto(self) -> None:
+        from unittest.mock import Mock
+
+        from bqemulator.jobs.executor import _maybe_create_load_destination
+
+        ctx = Mock()
+        ctx.catalog.get_dataset.return_value = Mock()
+        ctx.engine.execute.return_value.fetchall.return_value = []
+
+        _maybe_create_load_destination(
+            dest_project="p",
+            dest_dataset="ds",
+            dest_table_id="t",
+            load_config={
+                "autodetect": True,
+                "sourceFormat": "CSV",
+                "sourceUris": ["file:///tmp/test.csv"],
+            },
+            now="2026-06-15T00:00:00Z",
+            ctx=ctx,
+        )
+
+        execute_calls = ctx.engine.execute.call_args_list
+        assert (
+            execute_calls[0][0][0]
+            == 'CREATE TABLE "p__ds"."t" AS SELECT * FROM read_csv_auto(?) LIMIT 0'
+        )
+
+    def test_autodetect_unsupported_format_returns(self) -> None:
+        from unittest.mock import Mock
+
+        from bqemulator.jobs.executor import _maybe_create_load_destination
+
+        ctx = Mock()
+        ctx.catalog.get_dataset.return_value = Mock()
+
+        _maybe_create_load_destination(
+            dest_project="p",
+            dest_dataset="ds",
+            dest_table_id="t",
+            load_config={
+                "autodetect": True,
+                "sourceFormat": "AVRO",
+                "sourceUris": ["file:///tmp/test.avro"],
+            },
+            now="2026-06-15T00:00:00Z",
+            ctx=ctx,
+        )
+
+        ctx.engine.execute.assert_not_called()
+
+    def test_autodetect_maps_compound_types_to_record_and_repeated(self) -> None:
+        from unittest.mock import Mock
+
+        from bqemulator.jobs.executor import _maybe_create_load_destination
+
+        ctx = Mock()
+        ctx.catalog.get_dataset.return_value = Mock()
+        # Mock DuckDB DESCRIBE returning scalar and compound types, as
+        # read_json_auto infers them from nested JSON.
+        ctx.engine.execute.return_value.fetchall.return_value = [
+            ("scalar_col", "BIGINT"),
+            ("struct_col", "STRUCT(a BIGINT)"),
+            ("list_col", "BIGINT[]"),
+            ("nested_col", "LIST(STRUCT(x VARCHAR))"),
+        ]
+
+        _maybe_create_load_destination(
+            dest_project="p",
+            dest_dataset="ds",
+            dest_table_id="t",
+            load_config={
+                "autodetect": True,
+                "sourceFormat": "NEWLINE_DELIMITED_JSON",
+                "sourceUris": ["file:///tmp/test.json"],
+            },
+            now="2026-06-15T00:00:00Z",
+            ctx=ctx,
+        )
+
+        ctx.catalog.create_table.assert_called_once()
+        table_meta = ctx.catalog.create_table.call_args[0][0]
+        assert table_meta.schema_ is not None
+
+        def as_dict(field: Any) -> dict[str, Any]:
+            out: dict[str, Any] = {"name": field.name, "type": field.type, "mode": field.mode}
+            if field.fields:
+                out["fields"] = [as_dict(sub) for sub in field.fields]
+            return out
+
+        # Nested JSON maps to RECORD / REPEATED with legacy scalar names,
+        # matching real BigQuery autodetect, not a flattened STRING.
+        assert [as_dict(f) for f in table_meta.schema_.fields] == [
+            {"name": "scalar_col", "type": "INTEGER", "mode": "NULLABLE"},
+            {
+                "name": "struct_col",
+                "type": "RECORD",
+                "mode": "NULLABLE",
+                "fields": [{"name": "a", "type": "INTEGER", "mode": "NULLABLE"}],
+            },
+            {"name": "list_col", "type": "INTEGER", "mode": "REPEATED"},
+            {
+                "name": "nested_col",
+                "type": "RECORD",
+                "mode": "REPEATED",
+                "fields": [{"name": "x", "type": "STRING", "mode": "NULLABLE"}],
+            },
+        ]

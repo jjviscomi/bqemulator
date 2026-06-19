@@ -165,3 +165,75 @@ func TestG2LoadNDJSONResumable(t *testing.T) {
 		t.Fatalf("want 60000 rows, got %d", row.N)
 	}
 }
+
+func TestLoadTableCSVAutodetect(t *testing.T) {
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+	client := g2Client(ctx, t)
+	defer client.Close()
+
+	dsID := "g2_csv_autodetect"
+	tblID := "rows"
+
+	ds := client.Dataset(dsID)
+	_ = ds.DeleteWithContents(ctx)
+	if err := ds.Create(ctx, &bigquery.DatasetMetadata{Location: "US"}); err != nil {
+		t.Fatalf("Failed to create dataset: %v", err)
+	}
+	defer func() { _ = ds.DeleteWithContents(ctx) }()
+
+	csvData := []byte("id,name,score\n1,alice,99.5\n2,bob,88.2\n")
+	rs := bigquery.NewReaderSource(bytes.NewReader(csvData))
+	rs.SourceFormat = bigquery.CSV
+	rs.SkipLeadingRows = 1
+	rs.AutoDetect = true
+
+	loader := ds.Table(tblID).LoaderFrom(rs)
+	loader.WriteDisposition = bigquery.WriteTruncate
+	loader.CreateDisposition = bigquery.CreateIfNeeded
+
+	job, err := loader.Run(ctx)
+	if err != nil {
+		t.Fatalf("Loader.Run failed: %v", err)
+	}
+	status, err := job.Wait(ctx)
+	if err != nil {
+		t.Fatalf("Job wait failed: %v", err)
+	}
+	if err := status.Err(); err != nil {
+		t.Fatalf("Job failed: %v", err)
+	}
+
+	q := client.Query(fmt.Sprintf("SELECT COUNT(*) AS n FROM `%s.%s.%s`", g2Project, dsID, tblID))
+	it, err := q.Read(ctx)
+	if err != nil {
+		t.Fatalf("Query failed: %v", err)
+	}
+
+	var row struct{ N int64 }
+	err = it.Next(&row)
+	if err != iterator.Done && err != nil {
+		t.Fatalf("Next failed: %v", err)
+	}
+	if row.N != 2 {
+		t.Errorf("Expected 2 rows, got %d", row.N)
+	}
+
+	// Verify inferred schema via Metadata
+	meta, err := ds.Table(tblID).Metadata(ctx)
+	if err != nil {
+		t.Fatalf("Failed to fetch metadata: %v", err)
+	}
+	if len(meta.Schema) != 3 {
+		t.Fatalf("Expected 3 schema fields, got %d", len(meta.Schema))
+	}
+	if meta.Schema[0].Name != "id" || meta.Schema[0].Type != bigquery.IntegerFieldType {
+		t.Errorf("Expected id INTEGER, got %v %v", meta.Schema[0].Name, meta.Schema[0].Type)
+	}
+	if meta.Schema[1].Name != "name" || meta.Schema[1].Type != bigquery.StringFieldType {
+		t.Errorf("Expected name STRING, got %v %v", meta.Schema[1].Name, meta.Schema[1].Type)
+	}
+	if meta.Schema[2].Name != "score" || meta.Schema[2].Type != bigquery.FloatFieldType {
+		t.Errorf("Expected score FLOAT, got %v %v", meta.Schema[2].Name, meta.Schema[2].Type)
+	}
+}

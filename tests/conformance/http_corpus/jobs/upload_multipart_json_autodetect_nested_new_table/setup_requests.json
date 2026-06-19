@@ -1,0 +1,14 @@
+[
+  {
+    "method": "POST",
+    "path": "/upload/bigquery/v2/projects/${PROJECT}/jobs?uploadType=multipart",
+    "headers": {
+      "Content-Type": "multipart/related; boundary=\"===bqemu-fixture-boundary===\""
+    },
+    "body_bin": "request.body.bin",
+    "capture": {
+      "JOB_ID": "jobReference.jobId"
+    },
+    "await_job": "JOB_ID"
+  }
+]

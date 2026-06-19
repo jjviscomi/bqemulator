@@ -1,0 +1,80 @@
+{
+  "fixture_version": 1,
+  "bigquery": {
+    "project": "your-bigquery-project",
+    "location": "US"
+  },
+  "http_status": 200,
+  "headers": {
+    "content-type": "application/json"
+  },
+  "body": {
+    "kind": "bigquery#table",
+    "etag": "<*>",
+    "id": "<*>",
+    "selfLink": "<*>",
+    "tableReference": {
+      "projectId": "<*>",
+      "datasetId": "<*>",
+      "tableId": "<*>"
+    },
+    "schema": {
+      "fields": [
+        {
+          "name": "items",
+          "type": "RECORD",
+          "mode": "REPEATED",
+          "fields": [
+            {
+              "name": "qty",
+              "type": "INTEGER",
+              "mode": "NULLABLE"
+            },
+            {
+              "name": "sku",
+              "type": "STRING",
+              "mode": "NULLABLE"
+            }
+          ]
+        },
+        {
+          "name": "tags",
+          "type": "STRING",
+          "mode": "REPEATED"
+        },
+        {
+          "name": "info",
+          "type": "RECORD",
+          "mode": "NULLABLE",
+          "fields": [
+            {
+              "name": "city",
+              "type": "STRING",
+              "mode": "NULLABLE"
+            },
+            {
+              "name": "age",
+              "type": "INTEGER",
+              "mode": "NULLABLE"
+            }
+          ]
+        },
+        {
+          "name": "name",
+          "type": "STRING",
+          "mode": "NULLABLE"
+        },
+        {
+          "name": "id",
+          "type": "INTEGER",
+          "mode": "NULLABLE"
+        }
+      ]
+    },
+    "numRows": "2",
+    "creationTime": "<*>",
+    "lastModifiedTime": "<*>",
+    "type": "TABLE",
+    "location": "<*>"
+  }
+}

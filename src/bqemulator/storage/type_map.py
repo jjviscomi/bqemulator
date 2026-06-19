@@ -95,6 +95,21 @@ _DUCKDB_ALIASES: dict[str, str] = {
     "INTERVAL": "INTERVAL",
 }
 
+# BigQuery standard-SQL type name → legacy REST ("wire") type name. Real
+# BigQuery reports the legacy names in its REST schema (``tables.get`` and
+# the load-job schema), and the catalog stores them so every code path
+# agrees: the DDL path normalizes via ``ddl_result.DDL_BQ_WIRE_TYPES`` and
+# explicit-schema loads arrive already legacy-named. Autodetect inference
+# routes through here so it matches. Names absent from this map are spelled
+# identically in both forms (STRING, BYTES, NUMERIC, BIGNUMERIC, DATE, TIME,
+# DATETIME, TIMESTAMP, JSON, GEOGRAPHY, ...).
+_BQ_STANDARD_TO_WIRE: dict[str, str] = {
+    "INT64": "INTEGER",
+    "FLOAT64": "FLOAT",
+    "BOOL": "BOOLEAN",
+    "STRUCT": "RECORD",
+}
+
 
 def bq_to_duckdb(bq_type: str) -> str:
     """Convert a BigQuery type name to its DuckDB equivalent.
@@ -151,13 +166,15 @@ def _duckdb_compound_to_bq(duckdb_type: str, upper: str) -> str | None:
 
 
 def duckdb_to_bq(duckdb_type: str) -> str:
-    """Convert a DuckDB type name to its BigQuery equivalent.
+    """Convert a DuckDB type name to its BigQuery (standard-SQL) equivalent.
 
     Handles parameterized types:
     - ``BIGINT[]`` → ``ARRAY<INT64>``
     - ``STRUCT(name VARCHAR, age BIGINT)`` → ``STRUCT<name STRING, age INT64>``
 
-    Raises :class:`ValidationError` for unmappable types.
+    Raises :class:`ValidationError` for unmappable types. Autodetect load
+    inference uses :func:`duckdb_type_to_bq_field` instead, which maps onto
+    BigQuery's legacy REST names and RECORD / REPEATED structure.
     """
     upper = duckdb_type.strip().upper()
 
@@ -236,9 +253,79 @@ def bq_schema_to_duckdb_columns(
     return result
 
 
+def duckdb_type_to_bq_field(
+    name: str,
+    duckdb_type: str,
+    *,
+    mode: str = "NULLABLE",
+) -> dict[str, Any]:
+    """Convert a DuckDB column type into a BigQuery REST schema field.
+
+    Produces the ``{"name", "type", "mode", "fields"}`` shape the REST
+    ``TableFieldSchema`` uses, so the result feeds straight into
+    ``_parse_schema_fields``. This is the autodetect counterpart to
+    :func:`bq_schema_to_duckdb_columns` (which goes the other way): it maps
+    the types DuckDB's ``read_csv_auto`` / ``read_json_auto`` infer onto
+    BigQuery's schema with full structural parity:
+
+    - scalars use BigQuery's legacy REST names (``BIGINT`` → ``INTEGER``,
+      ``DOUBLE`` → ``FLOAT``, ``BOOLEAN`` → ``BOOLEAN``), matching what real
+      BigQuery returns from ``tables.get``;
+    - ``STRUCT(...)`` → a ``RECORD`` whose ``fields`` are converted
+      recursively;
+    - an array (``T[]`` or ``LIST(T)``) → the element's field with
+      ``mode="REPEATED"``, so an array of struct becomes a ``REPEATED``
+      ``RECORD`` and an array of scalar a ``REPEATED`` scalar.
+
+    Raises :class:`ValidationError` for a nested array (``T[][]``), which
+    BigQuery's schema model cannot represent.
+    """
+    stripped = duckdb_type.strip()
+    upper = stripped.upper()
+
+    element = _duckdb_array_element(stripped, upper)
+    if element is not None:
+        element = element.strip()
+        if _duckdb_array_element(element, element.upper()) is not None:
+            raise ValidationError(
+                f"Cannot map nested DuckDB array type {duckdb_type!r} to a "
+                "BigQuery field: BigQuery has no ARRAY of ARRAY.",
+            )
+        return duckdb_type_to_bq_field(name, element, mode="REPEATED")
+
+    if upper.startswith(("STRUCT(", "STRUCT (")):
+        sub_fields = _parse_struct_fields(_extract_parens(stripped, "STRUCT"))
+        return {
+            "name": name,
+            "type": "RECORD",
+            "mode": mode,
+            "fields": [
+                duckdb_type_to_bq_field(field_name, field_type)
+                for field_name, field_type in sub_fields
+            ],
+        }
+
+    standard = duckdb_to_bq(stripped)
+    return {"name": name, "type": _BQ_STANDARD_TO_WIRE.get(standard, standard), "mode": mode}
+
+
 # ---------------------------------------------------------------------------
 # Internals
 # ---------------------------------------------------------------------------
+
+
+def _duckdb_array_element(stripped: str, upper: str) -> str | None:
+    """Return the element type of a DuckDB array (``T[]`` / ``LIST(T)``), else ``None``.
+
+    ``stripped`` is the whitespace-trimmed type string and ``upper`` its
+    upper-cased form (the caller already has both, so they are passed in
+    rather than recomputed).
+    """
+    if upper.endswith("[]"):
+        return stripped[:-2].strip()
+    if upper.startswith(("LIST(", "LIST (")):
+        return _extract_parens(stripped, "LIST")
+    return None
 
 
 def _parse_struct_fields(inner: str) -> list[tuple[str, str]]:
@@ -309,4 +396,5 @@ __all__ = [
     "bq_schema_to_duckdb_columns",
     "bq_to_duckdb",
     "duckdb_to_bq",
+    "duckdb_type_to_bq_field",
 ]

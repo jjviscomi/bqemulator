@@ -28,6 +28,7 @@ from tests.conformance._http_comparison import (
 )
 from tests.conformance._http_corpus import (
     WILDCARD,
+    HttpFixture,
     discover_http_fixtures,
     expand_placeholders,
     expand_placeholders_in_json,
@@ -232,6 +233,134 @@ class TestCompareHttpResponse:
         assert any("expected object" in d for d in report.diffs)
 
 
+class TestSchemaFieldOrderInsensitivity:
+    """A schema ``fields`` list is diffed by field name, not position.
+
+    BigQuery's autodetect does not guarantee field order and DuckDB infers
+    a different one, so the comparator matches ``schema.fields`` by name.
+    """
+
+    def _schema(self, fields: list[dict[str, object]]) -> dict[str, object]:
+        return {"schema": {"fields": fields}}
+
+    def test_reordered_top_level_fields_match(self) -> None:
+        report = compare_http_response(
+            expected_status=200,
+            expected_body=self._schema(
+                [{"name": "id", "type": "INTEGER"}, {"name": "name", "type": "STRING"}]
+            ),
+            expected_headers=(),
+            actual_status=200,
+            # Emulator emits the columns in a different order.
+            actual_body=self._schema(
+                [{"name": "name", "type": "STRING"}, {"name": "id", "type": "INTEGER"}]
+            ),
+            actual_headers={},
+        )
+        assert report.ok, report.diffs
+
+    def test_reordered_nested_record_fields_match(self) -> None:
+        expected = self._schema(
+            [
+                {
+                    "name": "info",
+                    "type": "RECORD",
+                    "mode": "NULLABLE",
+                    "fields": [
+                        {"name": "age", "type": "INTEGER"},
+                        {"name": "city", "type": "STRING"},
+                    ],
+                }
+            ]
+        )
+        actual = self._schema(
+            [
+                {
+                    "name": "info",
+                    "type": "RECORD",
+                    "mode": "NULLABLE",
+                    # Nested fields reordered too.
+                    "fields": [
+                        {"name": "city", "type": "STRING"},
+                        {"name": "age", "type": "INTEGER"},
+                    ],
+                }
+            ]
+        )
+        report = compare_http_response(
+            expected_status=200,
+            expected_body=expected,
+            expected_headers=(),
+            actual_status=200,
+            actual_body=actual,
+            actual_headers={},
+        )
+        assert report.ok, report.diffs
+
+    def test_field_type_mismatch_still_fails(self) -> None:
+        report = compare_http_response(
+            expected_status=200,
+            expected_body=self._schema(
+                [{"name": "id", "type": "INTEGER"}, {"name": "name", "type": "STRING"}]
+            ),
+            expected_headers=(),
+            actual_status=200,
+            # 'id' came back STRING instead of INTEGER — a real regression.
+            actual_body=self._schema(
+                [{"name": "name", "type": "STRING"}, {"name": "id", "type": "STRING"}]
+            ),
+            actual_headers={},
+        )
+        assert not report.ok
+        assert any("name=id" in d and "type" in d for d in report.diffs)
+
+    def test_missing_field_by_name_fails(self) -> None:
+        report = compare_http_response(
+            expected_status=200,
+            expected_body=self._schema(
+                [{"name": "id", "type": "INTEGER"}, {"name": "name", "type": "STRING"}]
+            ),
+            expected_headers=(),
+            # Same length, but 'name' is replaced by an unrelated field.
+            actual_status=200,
+            actual_body=self._schema(
+                [{"name": "id", "type": "INTEGER"}, {"name": "other", "type": "STRING"}]
+            ),
+            actual_headers={},
+        )
+        assert not report.ok
+        assert any("name=name" in d and "absent" in d for d in report.diffs)
+
+    def test_actual_non_field_element_is_skipped(self) -> None:
+        """A malformed actual element (no name) cannot satisfy a recorded field."""
+        report = compare_http_response(
+            expected_status=200,
+            expected_body=self._schema(
+                [{"name": "id", "type": "INTEGER"}, {"name": "name", "type": "STRING"}]
+            ),
+            expected_headers=(),
+            actual_status=200,
+            actual_body=self._schema([{"name": "id", "type": "INTEGER"}, "garbage"]),
+            actual_headers={},
+        )
+        assert not report.ok
+        assert any("name=name" in d and "absent" in d for d in report.diffs)
+
+    def test_length_mismatch_reported_before_name_match(self) -> None:
+        report = compare_http_response(
+            expected_status=200,
+            expected_body=self._schema(
+                [{"name": "id", "type": "INTEGER"}, {"name": "name", "type": "STRING"}]
+            ),
+            expected_headers=(),
+            actual_status=200,
+            actual_body=self._schema([{"name": "id", "type": "INTEGER"}]),
+            actual_headers={},
+        )
+        assert not report.ok
+        assert any("list length mismatch" in d for d in report.diffs)
+
+
 class TestMaskVolatileFields:
     """The recorder's wildcard-masking helper."""
 
@@ -293,6 +422,33 @@ class TestDiscoverHttpFixtures:
         fixtures = discover_http_fixtures(corpus_dir=tmp_path, include_unrecorded=True)
         assert len(fixtures) == 1
         assert fixtures[0].name == "no_expected"
+
+
+class TestSetupRequestAwaitJob:
+    """The optional ``await_job`` field on a setup request."""
+
+    def _discover(self, tmp_path: Path, setup_requests: str) -> list[HttpFixture]:
+        phase = tmp_path / "jobs" / "fx"
+        phase.mkdir(parents=True)
+        (phase / "request.json").write_text('{"method": "GET", "path": "/x"}')
+        (phase / "setup_requests.json").write_text(setup_requests)
+        return discover_http_fixtures(corpus_dir=tmp_path, include_unrecorded=True)
+
+    def test_await_job_parsed(self, tmp_path: Path) -> None:
+        fixtures = self._discover(
+            tmp_path,
+            '[{"method": "POST", "path": "/u", '
+            '"capture": {"JOB_ID": "jobReference.jobId"}, "await_job": "JOB_ID"}]',
+        )
+        assert fixtures[0].setup_requests[0].await_job == "JOB_ID"
+
+    def test_await_job_defaults_to_none(self, tmp_path: Path) -> None:
+        fixtures = self._discover(tmp_path, '[{"method": "POST", "path": "/u"}]')
+        assert fixtures[0].setup_requests[0].await_job is None
+
+    def test_await_job_must_be_non_empty_string(self, tmp_path: Path) -> None:
+        with pytest.raises(ValueError, match="await_job"):
+            self._discover(tmp_path, '[{"method": "POST", "path": "/u", "await_job": 5}]')
 
 
 class TestHttpCompareReportContract:

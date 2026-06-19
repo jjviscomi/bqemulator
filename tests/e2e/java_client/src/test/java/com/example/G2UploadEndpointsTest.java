@@ -17,6 +17,7 @@ import com.google.cloud.bigquery.TableDataWriteChannel;
 import com.google.cloud.bigquery.TableId;
 import com.google.cloud.bigquery.TableInfo;
 import com.google.cloud.bigquery.TableResult;
+import com.google.cloud.bigquery.CsvOptions;
 import com.google.cloud.bigquery.WriteChannelConfiguration;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -147,5 +148,29 @@ class G2UploadEndpointsTest {
                         "SELECT COUNT(*) AS n FROM `" + PROJECT + "." + DATASET + ".rows_json`"));
         long count = result.iterateAll().iterator().next().get("n").getLongValue();
         assertEquals(60_000L, count);
+    }
+
+    @Test
+    public void testLoadCsvAutodetect() throws Exception {
+        TableId tableId = TableId.of(PROJECT, DATASET, "rows_autodetect");
+        String csvData = "id,name,score\n1,alice,99.5\n2,bob,88.2\n";
+        byte[] payload = csvData.getBytes(StandardCharsets.UTF_8);
+
+        WriteChannelConfiguration cfg = WriteChannelConfiguration.newBuilder(tableId)
+                .setFormatOptions(CsvOptions.newBuilder().setSkipLeadingRows(1).build())
+                .setAutodetect(true)
+                .setWriteDisposition(JobInfo.WriteDisposition.WRITE_TRUNCATE)
+                .setCreateDisposition(JobInfo.CreateDisposition.CREATE_IF_NEEDED)
+                .build();
+
+        try (TableDataWriteChannel channel = client.writer(cfg)) {
+            channel.write(ByteBuffer.wrap(payload));
+        }
+
+        TableResult result = client.query(
+                QueryJobConfiguration.of(
+                        "SELECT COUNT(*) AS n FROM `" + PROJECT + "." + DATASET + ".rows_autodetect`"));
+        long count = result.iterateAll().iterator().next().get("n").getLongValue();
+        assertEquals(2L, count);
     }
 }
