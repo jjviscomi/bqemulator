@@ -697,4 +697,3 @@ The fastest single-session improvements come from these uncovered cells. Each is
 - [ADR 0022 -- Conformance corpus design](../adr/0022-conformance-corpus-design.md) -- what makes a fixture qualify.
 - [ADR 0023 -- Conformance divergence baseline](../adr/0023-conformance-divergence-baseline.md) -- how divergent fixtures are pinned.
 - [Conformance corpus README](https://github.com/jjviscomi/bqemulator/blob/main/tests/conformance/sql_corpus/README.md) -- fixture authoring contract.
-

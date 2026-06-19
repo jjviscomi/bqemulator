@@ -24,4 +24,3 @@ We will implement schema auto-detection by leveraging DuckDB's native capabiliti
   - Schema drift across multiple files in a single load job is not handled; we only infer from the first file.
   - An array of array cannot be represented in BigQuery's schema model and is rejected; provide an explicit schema for such data.
   - DuckDB and BigQuery do not guarantee the field order of an autodetected JSON schema, and the two orders can differ; the schema content (names, types, modes, nesting) is identical, and the conformance comparator matches schema fields by name.
-

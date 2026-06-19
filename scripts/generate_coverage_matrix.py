@@ -725,6 +725,10 @@ def main(argv: list[str] | None = None) -> int:
     variation_tags = _variation_tags(fixtures)
     http_ids = frozenset(f.id for f in http_fixtures)
     rendered = render(hits, fixtures, variation_tags, http_ids=http_ids)
+    # Normalise to exactly one trailing newline so the written document is
+    # stable under the end-of-file-fixer pre-commit hook and matches on
+    # ``--check`` (render joins sections that can leave a blank final line).
+    rendered = rendered.rstrip("\n") + "\n"
 
     corpus_summary = f"{len(fixtures)} SQL + {len(http_fixtures)} HTTP fixtures"
     if args.check:
