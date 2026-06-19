@@ -439,10 +439,11 @@ def serialize_arrow_record_batch(batch: pa.RecordBatch) -> bytes:
     #   [schema][dict-1]...[dict-N][batch][EOS]
     # Either way we want the RecordBatch message — loop until we
     # find one. ``MessageReader`` is re-exported by the
-    # ``pyarrow.ipc`` module but the stubs don't list it; the
-    # ignore matches the pattern used elsewhere in this file for
-    # ``new_stream``.
-    reader = pa.ipc.MessageReader.open_stream(  # type: ignore[attr-defined]
+    # ``pyarrow.ipc`` module, but only some stub versions list it
+    # (newer pyarrow ships it, older ones do not); ``unused-ignore``
+    # keeps the suppression cross-version-compatible, matching the
+    # ``new_stream`` ignores elsewhere in this file.
+    reader = pa.ipc.MessageReader.open_stream(  # type: ignore[attr-defined,unused-ignore]
         pa.BufferReader(stream_bytes)
     )
     batch_msg = None
