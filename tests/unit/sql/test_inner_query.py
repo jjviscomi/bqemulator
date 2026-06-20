@@ -19,7 +19,7 @@ import pytest_asyncio
 from bqemulator.api.dependencies import AppContext
 from bqemulator.catalog.etag import generate_etag
 from bqemulator.catalog.memory_repository import MemoryCatalogRepository
-from bqemulator.catalog.models import DatasetMeta, TableMeta
+from bqemulator.catalog.models import DatasetMeta, MaterializedViewMeta, TableMeta
 from bqemulator.config import Settings
 from bqemulator.domain.clock import FrozenClock
 from bqemulator.domain.errors import InvalidQueryError
@@ -106,8 +106,37 @@ def _seed_table(ctx: AppContext, frozen_clock: FrozenClock) -> None:
     ctx.engine.execute(f"INSERT INTO {quoted_table_ref('p', 'ds', 't')} VALUES (1)")
 
 
-async def test_refresh_dependent_mvs_ignores_unparseable_sql(ctx: AppContext) -> None:
+def _register_mv(ctx: AppContext, frozen_clock: FrozenClock) -> None:
+    """Register a materialized view so the refresh walk runs past the no-MV short-circuit.
+
+    The registered view is never referenced by the test queries; its mere
+    presence in the catalog is what makes ``refresh_dependent_mvs`` parse
+    and walk the statement instead of short-circuiting.
+    """
+    ctx.catalog.upsert_materialized_view(
+        MaterializedViewMeta(
+            project_id="p",
+            dataset_id="ds",
+            table_id="mv",
+            view_query="SELECT 1",
+            base_tables=(),
+            last_refresh_time=frozen_clock.now(),
+        ),
+    )
+
+
+async def test_refresh_dependent_mvs_short_circuits_without_views(ctx: AppContext) -> None:
+    """With no materialized views in the catalog, the walk is skipped entirely."""
+    # No MV registered: returns before parsing, so even malformed SQL is a no-op.
+    await refresh_dependent_mvs("p", "this is not valid sql @@@", ctx)
+
+
+async def test_refresh_dependent_mvs_ignores_unparseable_sql(
+    ctx: AppContext,
+    frozen_clock: FrozenClock,
+) -> None:
     """Unparseable SQL is a no-op — later pipeline layers surface the error."""
+    _register_mv(ctx, frozen_clock)
     # Must not raise: the parse failure short-circuits the MV walk.
     await refresh_dependent_mvs("p", "this is not valid sql @@@", ctx)
 
@@ -118,12 +147,17 @@ async def test_refresh_dependent_mvs_skips_plain_table(
 ) -> None:
     """A query over a non-materialized-view table triggers no refresh."""
     _seed_table(ctx, frozen_clock)
+    _register_mv(ctx, frozen_clock)
     # No MaterializedViewError / no mutation: a plain table is left alone.
     await refresh_dependent_mvs("p", "SELECT id FROM ds.t", ctx)
 
 
-async def test_refresh_dependent_mvs_skips_unqualified_refs(ctx: AppContext) -> None:
+async def test_refresh_dependent_mvs_skips_unqualified_refs(
+    ctx: AppContext,
+    frozen_clock: FrozenClock,
+) -> None:
     """A bare table reference (e.g. a CTE) has no dataset and is skipped."""
+    _register_mv(ctx, frozen_clock)
     # ``cte`` has a name but no dataset, so the MV lookup is bypassed.
     await refresh_dependent_mvs("p", "WITH cte AS (SELECT 1 AS id) SELECT id FROM cte", ctx)
 
@@ -134,6 +168,7 @@ async def test_refresh_dependent_mvs_dedups_repeated_refs(
 ) -> None:
     """A table referenced more than once (self-join) is visited at most once."""
     _seed_table(ctx, frozen_clock)
+    _register_mv(ctx, frozen_clock)
     # ``ds.t`` appears twice; the second occurrence hits the dedup guard.
     await refresh_dependent_mvs(
         "p",

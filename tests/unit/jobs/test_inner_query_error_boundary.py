@@ -57,6 +57,8 @@ async def ctx(ephemeral_settings: Settings) -> AsyncIterator[AppContext]:
     engine = DuckDBEngine(ephemeral_settings)
     await engine.start()
     catalog = MemoryCatalogRepository()
+    clock = FrozenClock(_NOW)
+    events = EventBus()
     catalog.create_dataset(
         DatasetMeta(
             project_id="p",
@@ -81,20 +83,20 @@ async def ctx(ephemeral_settings: Settings) -> AsyncIterator[AppContext]:
     engine.execute('CREATE TABLE "p__ds"."t" (id BIGINT)')
     context = AppContext(
         settings=ephemeral_settings,
-        clock=FrozenClock(_NOW),
+        clock=clock,
         engine=engine,
         catalog=catalog,
         metrics=MetricsRegistry(),
-        events=EventBus(),
+        events=events,
         udf_registry=None,
         snapshots=SnapshotManager(
             engine=engine,
             catalog=catalog,
-            clock=FrozenClock(_NOW),
-            events=EventBus(),
+            clock=clock,
+            events=events,
             retention_days=7,
         ),
-        row_access=RowAccessPolicyManager(catalog=catalog, clock=FrozenClock(_NOW)),
+        row_access=RowAccessPolicyManager(catalog=catalog, clock=clock),
     )
     try:
         yield context

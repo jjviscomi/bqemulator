@@ -53,6 +53,13 @@ async def refresh_dependent_mvs(project_id: str, bq_sql: str, ctx: AppContext) -
     MV manager to ``refresh_if_stale``. No-op when the query touches no
     materialized view.
     """
+    # When the catalog holds no materialized views at all, refresh is a
+    # guaranteed no-op, so skip parsing entirely. This keeps the hot path
+    # cheap for the common no-MV case — notably for scripted statements,
+    # which now route every statement through this chain.
+    if not ctx.catalog.list_all_materialized_views():
+        return
+
     import sqlglot
     from sqlglot import exp
 
