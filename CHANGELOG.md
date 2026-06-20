@@ -23,6 +23,17 @@ new release.
 See [`docs/architecture/contributing/documentation-style-guide.md`](docs/architecture/contributing/documentation-style-guide.md)
 for the full entry-form rules and worked examples.
 
+## [1.3.0] - 2026-06-19
+
+### Changed
+
+- Adopt `starlette 1.x` to clear security advisories without pulling in `httpx 2.x`.
+- Bump GitHub Actions: `actions/checkout` 6.0.3 → 7.0.0, `softprops/action-gh-release` 3.0.0 → 3.0.1, `actions/setup-java` 5.2.0 → 5.3.0, `codecov/codecov-action` 6.0.1 → 7.0.0.
+
+### Added
+
+- Infer the schema for `autodetect` CSV and JSON load jobs from the source data via DuckDB, with full BigQuery parity for nested types: a JSON object maps to a `RECORD`, an array to a `REPEATED` field, and an array of objects to a `REPEATED RECORD`, recursively, using the legacy REST type names and rejecting an array of arrays that BigQuery cannot represent ([ADR 0045](docs/adr/0045-autodetect-schema-inference.md)).
+
 ## [1.2.0] - 2026-06-08
 
 ### Changed

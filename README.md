@@ -10,9 +10,9 @@ DuckDB-backed, SQLGlot-powered, and tested against the real service. Point the o
 [![E2E](https://github.com/jjviscomi/bqemulator/actions/workflows/e2e.yml/badge.svg)](https://github.com/jjviscomi/bqemulator/actions/workflows/e2e.yml)
 [![Conformance](https://github.com/jjviscomi/bqemulator/actions/workflows/conformance.yml/badge.svg)](https://github.com/jjviscomi/bqemulator/actions/workflows/conformance.yml)
 [![Docs](https://github.com/jjviscomi/bqemulator/actions/workflows/docs.yml/badge.svg)](https://jjviscomi.github.io/bqemulator/)
-[![PyPI](https://img.shields.io/pypi/v/bqemulator.svg?cacheSeconds=120&v=1.2.0)](https://pypi.org/project/bqemulator/)
-[![Python](https://img.shields.io/pypi/pyversions/bqemulator.svg?cacheSeconds=120&v=1.2.0)](https://pypi.org/project/bqemulator/)
-[![OpenSSF Scorecard](https://api.securityscorecards.dev/projects/github.com/jjviscomi/bqemulator/badge?v=1.2.0)](https://scorecard.dev/viewer/?uri=github.com/jjviscomi/bqemulator)
+[![PyPI](https://img.shields.io/pypi/v/bqemulator.svg?cacheSeconds=120&v=1.3.0)](https://pypi.org/project/bqemulator/)
+[![Python](https://img.shields.io/pypi/pyversions/bqemulator.svg?cacheSeconds=120&v=1.3.0)](https://pypi.org/project/bqemulator/)
+[![OpenSSF Scorecard](https://api.securityscorecards.dev/projects/github.com/jjviscomi/bqemulator/badge?v=1.3.0)](https://scorecard.dev/viewer/?uri=github.com/jjviscomi/bqemulator)
 [![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](LICENSE)
 [![Ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json)](https://github.com/astral-sh/ruff)
 [![Checked with mypy](https://www.mypy-lang.org/static/mypy_badge.svg)](https://mypy-lang.org/)
@@ -201,7 +201,7 @@ See the [`docker-compose/full-stack`](docs/examples/docker-compose/full-stack/) 
 
 ## What works today
 
-`bqemulator` is at **v1.2.0** — second minor on the production-stable
+`bqemulator` is at **v1.3.0** — third minor on the production-stable
 line. SemVer applies: breaking changes ship only in MAJOR,
 deprecations live ≥2 MINOR or 6 months. The [compatibility matrix](https://jjviscomi.github.io/bqemulator/latest/reference/compatibility-matrix/) is auto-generated from the conformance corpus on every CI run; the [conformance coverage matrix](https://jjviscomi.github.io/bqemulator/latest/reference/conformance-coverage-matrix/) breaks down support by surface item.
 
@@ -272,7 +272,7 @@ Every example under [`docs/examples/`](docs/examples/) is a complete, runnable p
 
 ## Project status
 
-`bqemulator` is at **v1.2.0** — second minor on the production-stable
+`bqemulator` is at **v1.3.0** — third minor on the production-stable
 line. SemVer applies: breaking changes ship only in MAJOR
 versions, preceded by ≥1 MINOR with deprecation warnings;
 deprecated APIs remain for ≥2 MINOR versions or 6 months.
@@ -287,8 +287,8 @@ Maturity signals:
 - ✅ Fuzz-tier (`Atheris`) harnesses on the SQL translator, dynamic-protobuf decoder, and Arrow bridge.
 - ✅ Differential-tier row-order perturbation of the entire conformance corpus passes.
 - ✅ Performance baselines committed for `darwin-arm64`, with regression gates (`pytest-benchmark` `--benchmark-compare-fail=median:10%`).
-- ✅ PyPI publish via Trusted Publishing (sigstore-attested wheels) — `pip install bqemulator==1.2.0` resolves from [PyPI](https://pypi.org/project/bqemulator/).
-- ✅ GHCR publish with keyless cosign signatures — `docker pull ghcr.io/jjviscomi/bqemulator:1.2.0` resolves and the image is cosign-verifiable.
+- ✅ PyPI publish via Trusted Publishing (sigstore-attested wheels) — `pip install bqemulator==1.3.0` resolves from [PyPI](https://pypi.org/project/bqemulator/).
+- ✅ GHCR publish with keyless cosign signatures — `docker pull ghcr.io/jjviscomi/bqemulator:1.3.0` resolves and the image is cosign-verifiable.
 
 See [`CHANGELOG.md`](CHANGELOG.md) for the complete release-by-release inventory.
 
