@@ -29,7 +29,7 @@ Check the health endpoint:
 
 ```bash
 curl http://localhost:9050/healthz
-# {"status":"ok","version":"1.2.0"}
+# {"status":"ok","version":"1.3.0"}
 ```
 
 ## Point a client at it
