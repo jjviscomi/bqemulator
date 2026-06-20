@@ -10,13 +10,13 @@
       
       
       
-        <link rel="canonical" href="https://jjviscomi.github.io/bqemulator/main/guides/dbt-integration/">
+        <link rel="canonical" href="https://jjviscomi.github.io/bqemulator/main/adr/0046-unified-inner-query-pipeline/">
       
       
-        <link rel="prev" href="../ci-cd-patterns/">
+        <link rel="prev" href="../0045-autodetect-schema-inference/">
       
       
-        <link rel="next" href="../airflow-integration/">
+        <link rel="next" href="../../rfcs/">
       
       
         
@@ -27,7 +27,7 @@
     
     
       
-        <title>dbt integration - bqemulator</title>
+        <title>0046 Unified inner-query rewrite pipeline - bqemulator</title>
       
     
     
@@ -80,7 +80,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#dbt-integration" class="md-skip">
+        <a href="#adr-0046-unified-inner-query-rewrite-pipeline" class="md-skip">
           Skip to content
         </a>
       
@@ -118,7 +118,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              dbt integration
+              0046 Unified inner-query rewrite pipeline
             
           </span>
         </div>
@@ -294,13 +294,11 @@
   
   
   
-    
-  
   
     
     
-      <li class="md-tabs__item md-tabs__item--active">
-        <a href="../loading-data/" class="md-tabs__link">
+      <li class="md-tabs__item">
+        <a href="../../guides/loading-data/" class="md-tabs__link">
           
   
   
@@ -362,11 +360,13 @@
   
   
   
+    
+  
   
     
     
-      <li class="md-tabs__item">
-        <a href="../../adr/0001-use-duckdb/" class="md-tabs__link">
+      <li class="md-tabs__item md-tabs__item--active">
+        <a href="../0001-use-duckdb/" class="md-tabs__link">
           
   
   
@@ -817,10 +817,8 @@
       
   
   
-    
   
   
-  
     
     
       
@@ -884,22 +882,19 @@
     
     
       
-        
-        
-      
       
         
       
     
     
-    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--nested">
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" checked>
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" >
         
           
-          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="">
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="0">
             
   
   
@@ -917,7 +912,7 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="true">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
           <label class="md-nav__title" for="__nav_4">
             <span class="md-nav__icon md-icon"></span>
             
@@ -935,7 +930,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../loading-data/" class="md-nav__link">
+      <a href="../../guides/loading-data/" class="md-nav__link">
         
   
   
@@ -963,7 +958,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../loading-from-local-files/" class="md-nav__link">
+      <a href="../../guides/loading-from-local-files/" class="md-nav__link">
         
   
   
@@ -991,7 +986,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../exporting-data/" class="md-nav__link">
+      <a href="../../guides/exporting-data/" class="md-nav__link">
         
   
   
@@ -1019,7 +1014,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../querying/" class="md-nav__link">
+      <a href="../../guides/querying/" class="md-nav__link">
         
   
   
@@ -1047,7 +1042,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../query-parameters/" class="md-nav__link">
+      <a href="../../guides/query-parameters/" class="md-nav__link">
         
   
   
@@ -1075,7 +1070,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../streaming-inserts/" class="md-nav__link">
+      <a href="../../guides/streaming-inserts/" class="md-nav__link">
         
   
   
@@ -1103,7 +1098,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../storage-api/" class="md-nav__link">
+      <a href="../../guides/storage-api/" class="md-nav__link">
         
   
   
@@ -1131,7 +1126,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../routines-udfs/" class="md-nav__link">
+      <a href="../../guides/routines-udfs/" class="md-nav__link">
         
   
   
@@ -1159,7 +1154,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../scripting/" class="md-nav__link">
+      <a href="../../guides/scripting/" class="md-nav__link">
         
   
   
@@ -1187,7 +1182,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../partitioning-clustering/" class="md-nav__link">
+      <a href="../../guides/partitioning-clustering/" class="md-nav__link">
         
   
   
@@ -1215,7 +1210,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../time-travel/" class="md-nav__link">
+      <a href="../../guides/time-travel/" class="md-nav__link">
         
   
   
@@ -1243,7 +1238,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../materialized-views/" class="md-nav__link">
+      <a href="../../guides/materialized-views/" class="md-nav__link">
         
   
   
@@ -1271,7 +1266,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../row-access-policies/" class="md-nav__link">
+      <a href="../../guides/row-access-policies/" class="md-nav__link">
         
   
   
@@ -1299,7 +1294,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../authorized-views/" class="md-nav__link">
+      <a href="../../guides/authorized-views/" class="md-nav__link">
         
   
   
@@ -1327,7 +1322,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../information-schema/" class="md-nav__link">
+      <a href="../../guides/information-schema/" class="md-nav__link">
         
   
   
@@ -1355,7 +1350,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../geography-spatial/" class="md-nav__link">
+      <a href="../../guides/geography-spatial/" class="md-nav__link">
         
   
   
@@ -1383,7 +1378,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../range-types/" class="md-nav__link">
+      <a href="../../guides/range-types/" class="md-nav__link">
         
   
   
@@ -1411,7 +1406,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../interval-arithmetic/" class="md-nav__link">
+      <a href="../../guides/interval-arithmetic/" class="md-nav__link">
         
   
   
@@ -1439,7 +1434,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../import-from-real-project/" class="md-nav__link">
+      <a href="../../guides/import-from-real-project/" class="md-nav__link">
         
   
   
@@ -1467,7 +1462,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../admin-endpoints/" class="md-nav__link">
+      <a href="../../guides/admin-endpoints/" class="md-nav__link">
         
   
   
@@ -1495,7 +1490,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../backup-restore/" class="md-nav__link">
+      <a href="../../guides/backup-restore/" class="md-nav__link">
         
   
   
@@ -1523,7 +1518,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../conformance-corpus/" class="md-nav__link">
+      <a href="../../guides/conformance-corpus/" class="md-nav__link">
         
   
   
@@ -1551,7 +1546,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../ci-cd-patterns/" class="md-nav__link">
+      <a href="../../guides/ci-cd-patterns/" class="md-nav__link">
         
   
   
@@ -1576,37 +1571,10 @@
                 
   
   
-    
   
   
-  
-    <li class="md-nav__item md-nav__item--active">
-      
-      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
-      
-      
-        
-      
-      
-        <label class="md-nav__link md-nav__link--active" for="__toc">
-          
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    dbt integration
-  
-
-    
-  </span>
-  
-  
-
-          <span class="md-nav__icon md-icon"></span>
-        </label>
-      
-      <a href="./" class="md-nav__link md-nav__link--active">
+    <li class="md-nav__item">
+      <a href="../../guides/dbt-integration/" class="md-nav__link">
         
   
   
@@ -1622,48 +1590,6 @@
   
 
       </a>
-      
-        
-
-<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
-  
-  
-  
-    
-  
-  
-    <label class="md-nav__title" for="__toc">
-      <span class="md-nav__icon md-icon"></span>
-      Table of contents
-    </label>
-    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#version-compatibility" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Version compatibility
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#profile" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Profile
-      
-    </span>
-  </a>
-  
-</li>
-      
-    </ul>
-  
-</nav>
-      
     </li>
   
 
@@ -1676,7 +1602,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../airflow-integration/" class="md-nav__link">
+      <a href="../../guides/airflow-integration/" class="md-nav__link">
         
   
   
@@ -1704,7 +1630,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../spark-integration/" class="md-nav__link">
+      <a href="../../guides/spark-integration/" class="md-nav__link">
         
   
   
@@ -1732,7 +1658,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../using-bq-cli/" class="md-nav__link">
+      <a href="../../guides/using-bq-cli/" class="md-nav__link">
         
   
   
@@ -1760,7 +1686,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../observability/" class="md-nav__link">
+      <a href="../../guides/observability/" class="md-nav__link">
         
   
   
@@ -2968,8 +2894,10 @@
       
   
   
+    
   
   
+  
     
     
       
@@ -3069,19 +2997,22 @@
     
     
       
+        
+        
+      
       
         
       
     
     
-    <li class="md-nav__item md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_7" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_7" checked>
         
           
-          <label class="md-nav__link" for="__nav_7" id="__nav_7_label" tabindex="0">
+          <label class="md-nav__link" for="__nav_7" id="__nav_7_label" tabindex="">
             
   
   
@@ -3099,7 +3030,7 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_7_label" aria-expanded="false">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_7_label" aria-expanded="true">
           <label class="md-nav__title" for="__nav_7">
             <span class="md-nav__icon md-icon"></span>
             
@@ -3117,7 +3048,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../adr/0001-use-duckdb/" class="md-nav__link">
+      <a href="../0001-use-duckdb/" class="md-nav__link">
         
   
   
@@ -3145,7 +3076,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../adr/0002-python-over-go-rust/" class="md-nav__link">
+      <a href="../0002-python-over-go-rust/" class="md-nav__link">
         
   
   
@@ -3173,7 +3104,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../adr/0003-sqlglot-for-translation/" class="md-nav__link">
+      <a href="../0003-sqlglot-for-translation/" class="md-nav__link">
         
   
   
@@ -3201,7 +3132,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../adr/0004-hexagonal-architecture/" class="md-nav__link">
+      <a href="../0004-hexagonal-architecture/" class="md-nav__link">
         
   
   
@@ -3229,7 +3160,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../adr/0005-fastapi-grpcaio-single-process/" class="md-nav__link">
+      <a href="../0005-fastapi-grpcaio-single-process/" class="md-nav__link">
         
   
   
@@ -3257,7 +3188,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../adr/0006-catalog-in-reserved-schema/" class="md-nav__link">
+      <a href="../0006-catalog-in-reserved-schema/" class="md-nav__link">
         
   
   
@@ -3285,7 +3216,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../adr/0007-pytest-fixture-as-dx/" class="md-nav__link">
+      <a href="../0007-pytest-fixture-as-dx/" class="md-nav__link">
         
   
   
@@ -3313,7 +3244,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../adr/0008-snapshot-storage-read-api/" class="md-nav__link">
+      <a href="../0008-snapshot-storage-read-api/" class="md-nav__link">
         
   
   
@@ -3341,7 +3272,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../adr/0009-snapshot-layer-time-travel/" class="md-nav__link">
+      <a href="../0009-snapshot-layer-time-travel/" class="md-nav__link">
         
   
   
@@ -3369,7 +3300,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../adr/0010-py-mini-racer-for-js-udfs/" class="md-nav__link">
+      <a href="../0010-py-mini-racer-for-js-udfs/" class="md-nav__link">
         
   
   
@@ -3397,7 +3328,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../adr/0011-tree-walking-scripting-interpreter/" class="md-nav__link">
+      <a href="../0011-tree-walking-scripting-interpreter/" class="md-nav__link">
         
   
   
@@ -3425,7 +3356,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../adr/0012-bqml-out-of-scope/" class="md-nav__link">
+      <a href="../0012-bqml-out-of-scope/" class="md-nav__link">
         
   
   
@@ -3453,7 +3384,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../adr/0013-write-api-strategies/" class="md-nav__link">
+      <a href="../0013-write-api-strategies/" class="md-nav__link">
         
   
   
@@ -3481,7 +3412,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../adr/0014-udf-materialization-strategy/" class="md-nav__link">
+      <a href="../0014-udf-materialization-strategy/" class="md-nav__link">
         
   
   
@@ -3509,7 +3440,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../adr/0015-scripting-execution-model/" class="md-nav__link">
+      <a href="../0015-scripting-execution-model/" class="md-nav__link">
         
   
   
@@ -3537,7 +3468,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../adr/0016-snapshot-time-semantics/" class="md-nav__link">
+      <a href="../0016-snapshot-time-semantics/" class="md-nav__link">
         
   
   
@@ -3565,7 +3496,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../adr/0017-materialized-view-refresh/" class="md-nav__link">
+      <a href="../0017-materialized-view-refresh/" class="md-nav__link">
         
   
   
@@ -3593,7 +3524,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../adr/0018-caller-identity-and-row-access-enforcement/" class="md-nav__link">
+      <a href="../0018-caller-identity-and-row-access-enforcement/" class="md-nav__link">
         
   
   
@@ -3621,7 +3552,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../adr/0019-specialized-types/" class="md-nav__link">
+      <a href="../0019-specialized-types/" class="md-nav__link">
         
   
   
@@ -3649,7 +3580,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../adr/0020-admin-import-export/" class="md-nav__link">
+      <a href="../0020-admin-import-export/" class="md-nav__link">
         
   
   
@@ -3677,7 +3608,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../adr/0021-chaos-tier-design-contract/" class="md-nav__link">
+      <a href="../0021-chaos-tier-design-contract/" class="md-nav__link">
         
   
   
@@ -3705,7 +3636,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../adr/0022-conformance-corpus-design/" class="md-nav__link">
+      <a href="../0022-conformance-corpus-design/" class="md-nav__link">
         
   
   
@@ -3733,7 +3664,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../adr/0023-conformance-divergence-baseline/" class="md-nav__link">
+      <a href="../0023-conformance-divergence-baseline/" class="md-nav__link">
         
   
   
@@ -3761,7 +3692,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../adr/0024-hll-count-support-strategy/" class="md-nav__link">
+      <a href="../0024-hll-count-support-strategy/" class="md-nav__link">
         
   
   
@@ -3789,7 +3720,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../adr/0025-perf-tier-design-contract/" class="md-nav__link">
+      <a href="../0025-perf-tier-design-contract/" class="md-nav__link">
         
   
   
@@ -3817,7 +3748,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../adr/0026-mutation-tier-design-contract/" class="md-nav__link">
+      <a href="../0026-mutation-tier-design-contract/" class="md-nav__link">
         
   
   
@@ -3845,7 +3776,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../adr/0027-load-extract-avro-orc/" class="md-nav__link">
+      <a href="../0027-load-extract-avro-orc/" class="md-nav__link">
         
   
   
@@ -3873,7 +3804,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../adr/0028-differential-tier-design-contract/" class="md-nav__link">
+      <a href="../0028-differential-tier-design-contract/" class="md-nav__link">
         
   
   
@@ -3901,7 +3832,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../adr/0029-upload-host-endpoints/" class="md-nav__link">
+      <a href="../0029-upload-host-endpoints/" class="md-nav__link">
         
   
   
@@ -3929,7 +3860,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../adr/0030-storage-read-avro-format/" class="md-nav__link">
+      <a href="../0030-storage-read-avro-format/" class="md-nav__link">
         
   
   
@@ -3957,7 +3888,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../adr/0031-fuzz-tier-design-contract/" class="md-nav__link">
+      <a href="../0031-fuzz-tier-design-contract/" class="md-nav__link">
         
   
   
@@ -3985,7 +3916,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../adr/0032-bq-cli-conformance-client/" class="md-nav__link">
+      <a href="../0032-bq-cli-conformance-client/" class="md-nav__link">
         
   
   
@@ -4013,7 +3944,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../adr/0033-storage-read-arrow-ipc-bare-message-contract/" class="md-nav__link">
+      <a href="../0033-storage-read-arrow-ipc-bare-message-contract/" class="md-nav__link">
         
   
   
@@ -4041,7 +3972,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../adr/0034-scio-beam-emulator-routing/" class="md-nav__link">
+      <a href="../0034-scio-beam-emulator-routing/" class="md-nav__link">
         
   
   
@@ -4069,7 +4000,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../adr/0035-code-quality-gates/" class="md-nav__link">
+      <a href="../0035-code-quality-gates/" class="md-nav__link">
         
   
   
@@ -4097,7 +4028,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../adr/0036-complexity-ratchet-to-c/" class="md-nav__link">
+      <a href="../0036-complexity-ratchet-to-c/" class="md-nav__link">
         
   
   
@@ -4125,7 +4056,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../adr/0037-openssf-scorecard/" class="md-nav__link">
+      <a href="../0037-openssf-scorecard/" class="md-nav__link">
         
   
   
@@ -4153,7 +4084,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../adr/0038-session-user/" class="md-nav__link">
+      <a href="../0038-session-user/" class="md-nav__link">
         
   
   
@@ -4181,7 +4112,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../adr/0039-artifact-attestations/" class="md-nav__link">
+      <a href="../0039-artifact-attestations/" class="md-nav__link">
         
   
   
@@ -4209,7 +4140,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../adr/0040-session-user-coverage-closure/" class="md-nav__link">
+      <a href="../0040-session-user-coverage-closure/" class="md-nav__link">
         
   
   
@@ -4237,7 +4168,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../adr/0041-complexity-ratchet-to-b/" class="md-nav__link">
+      <a href="../0041-complexity-ratchet-to-b/" class="md-nav__link">
         
   
   
@@ -4265,7 +4196,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../adr/0042-module-ceiling-ratchet-to-b/" class="md-nav__link">
+      <a href="../0042-module-ceiling-ratchet-to-b/" class="md-nav__link">
         
   
   
@@ -4293,7 +4224,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../adr/0043-export-data-statement/" class="md-nav__link">
+      <a href="../0043-export-data-statement/" class="md-nav__link">
         
   
   
@@ -4321,7 +4252,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../adr/0044-starlette-1x-adoption/" class="md-nav__link">
+      <a href="../0044-starlette-1x-adoption/" class="md-nav__link">
         
   
   
@@ -4349,7 +4280,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../adr/0045-autodetect-schema-inference/" class="md-nav__link">
+      <a href="../0045-autodetect-schema-inference/" class="md-nav__link">
         
   
   
@@ -4374,10 +4305,37 @@
                 
   
   
+    
   
   
-    <li class="md-nav__item">
-      <a href="../../adr/0046-unified-inner-query-pipeline/" class="md-nav__link">
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0046 Unified inner-query rewrite pipeline
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
         
   
   
@@ -4393,6 +4351,70 @@
   
 
       </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#status" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Status
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#context" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Context
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#decision" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Decision
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#consequences" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Consequences
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
     </li>
   
 
@@ -5431,10 +5453,10 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#version-compatibility" class="md-nav__link">
+  <a href="#status" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Version compatibility
+        Status
       
     </span>
   </a>
@@ -5442,10 +5464,32 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#profile" class="md-nav__link">
+  <a href="#context" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Profile
+        Context
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#decision" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Decision
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#consequences" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Consequences
       
     </span>
   </a>
@@ -5469,7 +5513,7 @@
 
 
   
-    <a href="https://github.com/jjviscomi/bqemulator/edit/main/docs/guides/dbt-integration.md" title="Edit this page" class="md-content__button md-icon" rel="edit">
+    <a href="https://github.com/jjviscomi/bqemulator/edit/main/docs/adr/0046-unified-inner-query-pipeline.md" title="Edit this page" class="md-content__button md-icon" rel="edit">
       
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M10 20H6V4h7v5h5v3.1l2-2V8l-6-6H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h4zm10.2-7c.1 0 .3.1.4.2l1.3 1.3c.2.2.2.6 0 .8l-1 1-2.1-2.1 1-1c.1-.1.2-.2.4-.2m0 3.9L14.1 23H12v-2.1l6.1-6.1z"/></svg>
     </a>
@@ -5478,52 +5522,112 @@
     
       
     
-    <a href="https://github.com/jjviscomi/bqemulator/raw/main/docs/guides/dbt-integration.md" title="View source of this page" class="md-content__button md-icon">
+    <a href="https://github.com/jjviscomi/bqemulator/raw/main/docs/adr/0046-unified-inner-query-pipeline.md" title="View source of this page" class="md-content__button md-icon">
       
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M17 18c.56 0 1 .44 1 1s-.44 1-1 1-1-.44-1-1 .44-1 1-1m0-3c-2.73 0-5.06 1.66-6 4 .94 2.34 3.27 4 6 4s5.06-1.66 6-4c-.94-2.34-3.27-4-6-4m0 6.5a2.5 2.5 0 0 1-2.5-2.5 2.5 2.5 0 0 1 2.5-2.5 2.5 2.5 0 0 1 2.5 2.5 2.5 2.5 0 0 1-2.5 2.5M9.27 20H6V4h7v5h5v4.07c.7.08 1.36.25 2 .49V8l-6-6H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h4.5a8.2 8.2 0 0 1-1.23-2"/></svg>
     </a>
   
 
 
-<h1 id="dbt-integration">dbt integration<a class="headerlink" href="#dbt-integration" title="Permanent link">&para;</a></h1>
-<p>Status: shipped (runnable example in <code>docs/examples/python/dbt-local/</code>).</p>
-<h2 id="version-compatibility">Version compatibility<a class="headerlink" href="#version-compatibility" title="Permanent link">&para;</a></h2>
-<p>Both dbt-bigquery <strong>1.9.x</strong> and <strong>1.10.x</strong> work. bqemulator's SQL
-table-rewriter collapses dbt's <code>CREATE SCHEMA \</code>proj`.`ds`<code>two-part identifiers into a single</code>"proj__ds"<code>schema; earlier
-v1.0 release candidates produced</code>"proj__ds".""<code>with an empty
-trailing identifier and DuckDB rejected the SQL with</code>zero-length delimited identifier`.</p>
-<h2 id="profile">Profile<a class="headerlink" href="#profile" title="Permanent link">&para;</a></h2>
-<div class="language-yaml highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nt">bqemu</span><span class="p">:</span>
-</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="w">  </span><span class="nt">target</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">dev</span>
-</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="w">  </span><span class="nt">outputs</span><span class="p">:</span>
-</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="w">    </span><span class="nt">dev</span><span class="p">:</span>
-</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="w">      </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">bigquery</span>
-</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="w">      </span><span class="c1"># ``oauth-secrets`` is the one auth path that never hits</span>
-</span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a><span class="w">      </span><span class="c1"># ``oauth2.googleapis.com/token`` — it builds a static</span>
-</span><span id="__span-0-8"><a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a><span class="w">      </span><span class="c1"># ``Credentials(token=…)`` and uses the literal bearer.</span>
-</span><span id="__span-0-9"><a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a><span class="w">      </span><span class="c1"># bqemulator accepts any token, so a constant placeholder</span>
-</span><span id="__span-0-10"><a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a><span class="w">      </span><span class="c1"># is fine.</span>
-</span><span id="__span-0-11"><a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a><span class="w">      </span><span class="nt">method</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">oauth-secrets</span>
-</span><span id="__span-0-12"><a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a><span class="w">      </span><span class="nt">token</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">bqemu-fake-token</span>
-</span><span id="__span-0-13"><a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a><span class="w">      </span><span class="nt">project</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">test-project</span>
-</span><span id="__span-0-14"><a id="__codelineno-0-14" name="__codelineno-0-14" href="#__codelineno-0-14"></a><span class="w">      </span><span class="nt">dataset</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">analytics</span>
-</span><span id="__span-0-15"><a id="__codelineno-0-15" name="__codelineno-0-15" href="#__codelineno-0-15"></a><span class="w">      </span><span class="nt">threads</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">4</span>
-</span><span id="__span-0-16"><a id="__codelineno-0-16" name="__codelineno-0-16" href="#__codelineno-0-16"></a><span class="w">      </span><span class="nt">location</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">US</span>
-</span><span id="__span-0-17"><a id="__codelineno-0-17" name="__codelineno-0-17" href="#__codelineno-0-17"></a><span class="w">      </span><span class="nt">priority</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">interactive</span>
-</span><span id="__span-0-18"><a id="__codelineno-0-18" name="__codelineno-0-18" href="#__codelineno-0-18"></a><span class="w">      </span><span class="nt">timeout_seconds</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">300</span>
-</span></code></pre></div>
-<p>Start the emulator and export</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="nb">export</span><span class="w"> </span><span class="nv">BIGQUERY_EMULATOR_HOST</span><span class="o">=</span><span class="s2">&quot;http://localhost:9050&quot;</span>
-</span></code></pre></div>
-<p>The <code>http://</code> scheme is <strong>required</strong> — dbt-bigquery forwards
-<code>BIGQUERY_EMULATOR_HOST</code> verbatim into <code>client_options.api_endpoint</code>
-without prepending a scheme, and <code>requests</code> aborts with
-<code>No connection adapters were found for 'localhost:9050/...'</code> if it's
-missing. The bare <code>google-cloud-bigquery</code> client auto-injects the
-scheme, but dbt-bigquery's wrapper bypasses that branch.</p>
-<p>Then run <code>dbt run --profiles-dir.</code> against the local target.</p>
-<p>A fully-wired example lives in
-<code>docs/examples/python/dbt-local/</code> and is CI-verified.</p>
+<h1 id="adr-0046-unified-inner-query-rewrite-pipeline">ADR 0046: Unified Inner-Query Rewrite Pipeline<a class="headerlink" href="#adr-0046-unified-inner-query-rewrite-pipeline" title="Permanent link">&para;</a></h1>
+<h2 id="status">Status<a class="headerlink" href="#status" title="Permanent link">&para;</a></h2>
+<p>Accepted</p>
+<h2 id="context">Context<a class="headerlink" href="#context" title="Permanent link">&para;</a></h2>
+<p>A BigQuery <code>SELECT</code> reaches DuckDB through one of two execution chains,
+chosen by whether the job is a single statement or a multi-statement /
+control-flow script:</p>
+<ul>
+<li><strong>Standalone</strong> (<code>jobs/executor.py</code>): <code>execute_query_job</code> to
+  <code>_run_query_body</code> to <code>_run_single_sql</code>, which applies the canonical
+  rewrite chain before translation.</li>
+<li><strong>Scripted</strong> (<code>scripting/interpreter.py</code>): <code>_exec_sql</code> dispatches to
+  <code>_run_query</code> / <code>_run_statement_with_params</code> / <code>_run_query_with_params</code>,
+  each of which re-implemented the rewrite chain inline.</li>
+</ul>
+<p>The two chains drifted. The scripted chain re-implemented row-access
+enforcement, <code>INFORMATION_SCHEMA</code> expansion, <code>UNNEST</code> offset rewriting,
+and wildcard-table expansion, but omitted three steps the standalone
+chain applied:</p>
+<ol>
+<li><strong>Materialized-view refresh</strong> (<code>refresh_dependent_mvs</code>): a script that
+   read a stale materialized view returned stale rows.</li>
+<li><strong>Time-travel resolution</strong> (<code>rewrite_for_system_time</code>): <code>FOR
+   SYSTEM_TIME AS OF</code> inside a script was passed through untranslated, so
+   the clause reached DuckDB (which has no such syntax) and the query
+   silently returned the wrong rows instead of the historical snapshot.</li>
+<li><strong>Schema-annotated translation</strong> (<code>build_catalog_schema</code> plus the
+   translator's <code>schema=</code> argument): scripted SELECTs translated without
+   the per-table type snapshot, so type-directed rules such as
+   <code>AvgDecimalRule</code> did not fire.</li>
+</ol>
+<p>This affected the scripted path generally, and the <code>EXPORT DATA</code> inner
+SELECT specifically, which the interpreter runs through <code>_run_query</code>.</p>
+<h2 id="decision">Decision<a class="headerlink" href="#decision" title="Permanent link">&para;</a></h2>
+<p>Extract the canonical chain into a single shared module,
+<code>sql/inner_query.py</code>, with two functions:</p>
+<ul>
+<li><code>refresh_dependent_mvs(project_id, bq_sql, ctx)</code>: walks the BigQuery
+  AST and refreshes any stale materialized view the query reads.</li>
+<li><code>rewrite_and_translate_statement(bq_sql, *, project_id, ctx, caller,
+  translator)</code>: runs the full chain in order (materialized-view refresh,
+  time-travel resolution, row-access enforcement, <code>INFORMATION_SCHEMA</code>
+  expansion, <code>UNNEST</code> offset rewriting, wildcard-table expansion, and
+  schema-annotated BigQuery to DuckDB translation) and returns the
+  translated DuckDB SQL.</li>
+</ul>
+<p>Both <code>_run_single_sql</code> and the three interpreter methods call this shared
+function. Concerns that genuinely differ between the two paths stay at
+the call site, layered on top of the shared chain:</p>
+<ul>
+<li><strong>Scripting-specific pre-rewrites</strong> run in the interpreter before the
+  shared chain: temp-routine call qualification (<code>_rewrite_temp_calls</code>)
+  and <code>@var</code> to positional-placeholder substitution
+  (<code>_rewrite_vars_to_params</code>).</li>
+<li><strong>Table-reference qualification, parameter binding, and execution</strong>
+  remain caller-owned. Standalone qualifies refs (<code>rewrite_table_refs</code>),
+  binds BigQuery named query parameters, and fetches Arrow; the
+  interpreter qualifies refs, prepends the positional parameters its
+  <code>@var</code> and <code>USING</code> handling emits, and chooses <code>fetch_arrow</code>
+  (row-producing) or <code>execute</code> (dynamic DDL/DML, with last-statement-wins
+  shaping). Keeping qualification at the call site is deliberate: a
+  malformed-id <code>ValidationError</code> from <code>rewrite_table_refs</code> is a
+  pre-execution domain error that the caller's <code>try</code> reshapes via
+  <code>translate_runtime_error</code>, whereas a translation failure raised by the
+  shared helper (e.g. an unsupported feature) must surface unwrapped as a
+  <code>501</code>, so it is raised before the caller's <code>try</code>.</li>
+</ul>
+<p>No RFC accompanies this change: there is no change to public API, SQL
+semantics, persistence format, or governance. The observable effect is
+that scripted SELECTs now match standalone SELECTs, which is the
+documented intent.</p>
+<h2 id="consequences">Consequences<a class="headerlink" href="#consequences" title="Permanent link">&para;</a></h2>
+<ul>
+<li><strong>Positive:</strong> The shared rewrite + translation chain cannot drift
+  again, because there is one implementation. Materialized-view reads,
+  <code>FOR SYSTEM_TIME AS OF</code> time-travel, and type-directed translation
+  rules now behave identically whether a SELECT runs standalone or inside
+  a script (including the <code>EXPORT DATA</code> inner SELECT). A regression suite
+  (<code>tests/integration/test_scripted_inner_query_parity.py</code>) pins the
+  parity directly.</li>
+<li><strong>Negative / limitations:</strong></li>
+<li>Scripting-specific pre-rewrites run before the shared chain, so a
+    declared script variable used inside a <code>FOR SYSTEM_TIME AS OF</code>
+    expression is substituted to a placeholder before time-travel
+    resolution and is not evaluated as a timestamp. Literal and
+    expression <code>AS OF</code> targets (the common case) resolve correctly; a
+    variable <code>AS OF</code> target was non-functional before this change as well.</li>
+<li>The shared chain covers the rewrite and translation steps, not the
+    error-shaping that follows. The standalone path runs table-reference
+    qualification inside its error mapper, so a malformed-id
+    <code>ValidationError</code> is reshaped to BigQuery's <code>Function not found</code>
+    envelope; the scripted path raises that qualification error before
+    its execution <code>try</code>, so it surfaces unmapped. This pre-existing
+    difference is preserved, not introduced here, and is narrow (it only
+    affects the wire shape of a malformed-identifier error in a script).</li>
+<li>The shared chain parses the statement for materialized-view and
+    time-travel detection; both short-circuit when their markers are
+    absent, so the cost is bounded for queries that use neither.</li>
+</ul>
 
 
 
