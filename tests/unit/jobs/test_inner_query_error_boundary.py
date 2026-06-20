@@ -43,6 +43,7 @@ from bqemulator.observability.metrics import MetricsRegistry
 from bqemulator.row_access.identity import CallerIdentity
 from bqemulator.row_access.policy import RowAccessPolicyManager
 from bqemulator.storage.engine import DuckDBEngine
+from bqemulator.udf.runtime import UDFRegistry
 from bqemulator.versioning.snapshots import SnapshotManager
 
 pytestmark = pytest.mark.unit
@@ -88,7 +89,7 @@ async def ctx(ephemeral_settings: Settings) -> AsyncIterator[AppContext]:
         catalog=catalog,
         metrics=MetricsRegistry(),
         events=events,
-        udf_registry=None,
+        udf_registry=UDFRegistry(ephemeral_settings),
         snapshots=SnapshotManager(
             engine=engine,
             catalog=catalog,
