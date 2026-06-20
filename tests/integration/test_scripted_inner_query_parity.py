@@ -107,12 +107,15 @@ async def test_scripted_mv_refreshed_like_standalone(
     await _run(client, "INSERT INTO ds.orders VALUES (2, 90)")
 
     # The scripted read must be the first reader of the stale MV: a
-    # standalone read would refresh it as a side effect and mask the gap.
-    # Standalone auto-refresh on read is pinned by test_materialized_views.
+    # standalone read first would refresh it as a side effect and mask a
+    # missing scripted refresh. Run standalone after, when the MV is
+    # already fresh, only to confirm the two paths agree.
     select = "SELECT total FROM ds.totals"
     scripted = await _run(client, _as_script(select))
+    standalone = await _run(client, select)
 
     assert _rows(scripted) == [["100"]]
+    assert _rows(standalone) == _rows(scripted)
 
 
 async def test_scripted_time_travel_matches_standalone(
@@ -145,12 +148,12 @@ async def test_scripted_execute_immediate_dml_matches_standalone(
 ) -> None:
     """Dynamic ``EXECUTE IMMEDIATE`` DML matches the standalone statement.
 
-    The shared chain now runs schema-annotated translation on the
-    scripted path too. For an ``INSERT INTO <existing> SELECT ...`` the
-    target table exists, so the annotation pass can re-serialize the
-    statement through SQLGlot. This pins that a dynamic ``EXECUTE
-    IMMEDIATE`` DML lands the same rows as the standalone statement, so
-    the annotation does not silently rewrite the DML.
+    The shared chain runs schema-annotated translation on the scripted
+    path. For an ``INSERT INTO <existing> SELECT ...`` the target table
+    exists, so the annotation pass can re-serialize the statement through
+    SQLGlot. This pins that a dynamic ``EXECUTE IMMEDIATE`` DML lands the
+    same rows as the standalone statement, so the annotation does not
+    silently rewrite the DML.
     """
     await _run(client, "INSERT INTO ds.orders VALUES (1, 10), (2, 20), (3, 5)")
     await _run(client, "CREATE TABLE ds.copy_direct (id INT64, amount INT64)")

@@ -1,22 +1,20 @@
 """Characterization tests for ``_run_single_sql``'s pre-execution error boundary.
 
-The unify refactor (ADR 0046) moved the rewrite + translate chain into a
-shared helper. These tests pin the error-shaping contract that move must
-preserve, and that a review caught regressing:
+``_run_single_sql`` runs the rewrite + translate chain, then qualifies
+table references, binds parameters, and executes. Its error boundary is
+deliberate, and these tests pin both halves:
 
 * a pre-execution domain error from table-reference qualification
   (``rewrite_table_refs``) is reshaped by ``translate_runtime_error``
-  into BigQuery's wire form, so it must run *inside* the caller's
-  ``try``; and
-* a translation failure (an unsupported feature) must surface
-  *unwrapped*, keeping its own ``501`` reason, so it must be raised
-  *before* the ``try`` (routing it through the mapper rewraps it into a
-  generic ``invalidQuery``).
+  into BigQuery's wire form, so qualification runs *inside* the
+  execution ``try``; and
+* a translation failure (an unsupported feature) surfaces *unwrapped*,
+  keeping its own ``501`` reason, so translation is raised *before* the
+  ``try`` (routing it through the mapper would rewrap it into a generic
+  ``invalidQuery``).
 
-Coverage alone never caught this: the ``except`` block executed under
-other tests, but nothing asserted *which* errors it shapes. Both halves
-of the boundary are pinned here so moving either across the ``try`` is
-caught.
+Both behaviours share lines with the happy path, so line coverage does
+not pin them; the assertions here do.
 """
 
 from __future__ import annotations
@@ -110,9 +108,8 @@ async def test_qualification_validation_error_is_reshaped(
 ) -> None:
     """A ``ValidationError`` from ``rewrite_table_refs`` is mapped to BQ shape.
 
-    Qualification runs inside the caller's ``try``; if it ever moves
-    outside (as it briefly did in the unify refactor), the raw
-    ``ValidationError`` escapes unmapped and this fails.
+    Qualification runs inside the execution ``try``, so a raw
+    ``ValidationError`` is reshaped rather than escaping unmapped.
     """
 
     def _raise_validation(*_args: object, **_kwargs: object) -> str:
@@ -134,10 +131,10 @@ async def test_unsupported_feature_translation_error_surfaces_unwrapped(
 ) -> None:
     """An unsupported-feature translation error keeps its ``501`` type.
 
-    The translation step is raised before the caller's ``try``; if it
-    moves inside, ``translate_runtime_error`` rewraps the
-    ``UnsupportedFeatureError`` into a generic ``InvalidQueryError``
-    (``400``) and this fails.
+    Translation is raised before the execution ``try``, so an
+    ``UnsupportedFeatureError`` surfaces unwrapped rather than being
+    rewrapped by ``translate_runtime_error`` into a generic
+    ``InvalidQueryError`` (``400``).
     """
     with pytest.raises(UnsupportedFeatureError):
         await _run_single_sql(

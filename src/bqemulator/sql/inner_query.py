@@ -62,6 +62,7 @@ async def refresh_dependent_mvs(project_id: str, bq_sql: str, ctx: AppContext) -
         return
 
     manager = MaterializedViewManager(ctx)
+    seen: set[tuple[str, str, str]] = set()
     for table_node in tree.find_all(exp.Table):
         if isinstance(table_node.this, exp.Anonymous):
             continue
@@ -70,6 +71,11 @@ async def refresh_dependent_mvs(project_id: str, bq_sql: str, ctx: AppContext) -
         if not name or not dataset:
             continue
         proj = table_node.catalog or project_id
+        # A query may reference the same view more than once (self-join,
+        # repeated subquery); refresh each distinct view at most once.
+        if (proj, dataset, name) in seen:
+            continue
+        seen.add((proj, dataset, name))
         meta = ctx.catalog.get_table(proj, dataset, name)
         if meta is None or meta.table_type != "MATERIALIZED_VIEW":
             continue

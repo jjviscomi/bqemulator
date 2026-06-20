@@ -128,6 +128,20 @@ async def test_refresh_dependent_mvs_skips_unqualified_refs(ctx: AppContext) -> 
     await refresh_dependent_mvs("p", "WITH cte AS (SELECT 1 AS id) SELECT id FROM cte", ctx)
 
 
+async def test_refresh_dependent_mvs_dedups_repeated_refs(
+    ctx: AppContext,
+    frozen_clock: FrozenClock,
+) -> None:
+    """A table referenced more than once (self-join) is visited at most once."""
+    _seed_table(ctx, frozen_clock)
+    # ``ds.t`` appears twice; the second occurrence hits the dedup guard.
+    await refresh_dependent_mvs(
+        "p",
+        "SELECT a.id FROM ds.t AS a JOIN ds.t AS b ON a.id = b.id",
+        ctx,
+    )
+
+
 async def test_rewrite_and_translate_statement_returns_duckdb_sql(
     ctx: AppContext,
     frozen_clock: FrozenClock,
