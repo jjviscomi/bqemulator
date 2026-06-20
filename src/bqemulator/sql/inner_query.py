@@ -41,6 +41,8 @@ from bqemulator.versioning.materialized_views import MaterializedViewManager
 from bqemulator.versioning.time_travel import rewrite_for_system_time
 
 if TYPE_CHECKING:
+    from collections.abc import Iterator
+
     from bqemulator.api.dependencies import AppContext
     from bqemulator.row_access.identity import CallerIdentity
     from bqemulator.sql.translator import SQLTranslator
@@ -49,9 +51,9 @@ if TYPE_CHECKING:
 async def refresh_dependent_mvs(project_id: str, bq_sql: str, ctx: AppContext) -> None:
     """Refresh any materialized view this query reads, if stale.
 
-    Walks the BigQuery AST, collects every table reference, and asks the
-    MV manager to ``refresh_if_stale``. No-op when the query touches no
-    materialized view.
+    Walks the BigQuery AST, collects every materialized view referenced,
+    and asks the MV manager to ``refresh_if_stale``. No-op when the query
+    touches no materialized view.
     """
     # When the catalog holds no materialized views at all, refresh is a
     # guaranteed no-op, so skip parsing entirely. This keeps the hot path
@@ -60,6 +62,22 @@ async def refresh_dependent_mvs(project_id: str, bq_sql: str, ctx: AppContext) -
     if not ctx.catalog.list_all_materialized_views():
         return
 
+    manager = MaterializedViewManager(ctx)
+    for proj, dataset, name in _referenced_materialized_views(bq_sql, project_id, ctx):
+        await manager.refresh_if_stale(proj, dataset, name)
+
+
+def _referenced_materialized_views(
+    bq_sql: str,
+    project_id: str,
+    ctx: AppContext,
+) -> Iterator[tuple[str, str, str]]:
+    """Yield each distinct materialized view referenced by ``bq_sql``.
+
+    Each ``(project, dataset, table)`` is yielded at most once, so a view
+    referenced more than once (self-join, repeated subquery) is refreshed
+    a single time. Unparseable SQL yields nothing.
+    """
     import sqlglot
     from sqlglot import exp
 
@@ -68,7 +86,6 @@ async def refresh_dependent_mvs(project_id: str, bq_sql: str, ctx: AppContext) -
     except Exception:  # noqa: BLE001 — fall through so later layers error cleanly
         return
 
-    manager = MaterializedViewManager(ctx)
     seen: set[tuple[str, str, str]] = set()
     for table_node in tree.find_all(exp.Table):
         if isinstance(table_node.this, exp.Anonymous):
@@ -77,16 +94,14 @@ async def refresh_dependent_mvs(project_id: str, bq_sql: str, ctx: AppContext) -
         dataset = table_node.db
         if not name or not dataset:
             continue
-        proj = table_node.catalog or project_id
-        # A query may reference the same view more than once (self-join,
-        # repeated subquery); refresh each distinct view at most once.
-        if (proj, dataset, name) in seen:
+        ref = (table_node.catalog or project_id, dataset, name)
+        if ref in seen:
             continue
-        seen.add((proj, dataset, name))
-        meta = ctx.catalog.get_table(proj, dataset, name)
+        seen.add(ref)
+        meta = ctx.catalog.get_table(*ref)
         if meta is None or meta.table_type != "MATERIALIZED_VIEW":
             continue
-        await manager.refresh_if_stale(proj, dataset, name)
+        yield ref
 
 
 async def rewrite_and_translate_statement(
