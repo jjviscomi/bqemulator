@@ -23,7 +23,7 @@ new release.
 See [`docs/architecture/contributing/documentation-style-guide.md`](docs/architecture/contributing/documentation-style-guide.md)
 for the full entry-form rules and worked examples.
 
-## [1.3.0] - 2026-06-19
+## [1.3.0] - 2026-06-20
 
 ### Changed
 
