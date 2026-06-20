@@ -7,15 +7,22 @@ of whether it runs as a standalone single-statement job
 module is that single chain so the two execution paths cannot drift:
 materialized-view refresh, ``FOR SYSTEM_TIME AS OF`` time-travel
 resolution, row-access enforcement, ``INFORMATION_SCHEMA`` expansion,
-``UNNEST`` offset rewriting, wildcard-table expansion, schema-annotated
-BigQuery to DuckDB translation, and table-reference qualification.
+``UNNEST`` offset rewriting, wildcard-table expansion, and
+schema-annotated BigQuery to DuckDB translation.
 
-Callers layer their own concerns on top of the DuckDB SQL it returns:
+Callers layer their own concerns on top of the translated SQL it
+returns: table-reference qualification (``rewrite_table_refs``),
 parameter binding (named query parameters for standalone jobs, the
 positional placeholders the scripting interpreter emits for ``@var``
 substitution and ``USING`` values), execution (``fetch_arrow`` for
 row-producing statements, ``execute`` for dynamic DDL/DML), and
-error-shaping. Scripting-specific pre-rewrites (``_rewrite_temp_calls``,
+error-shaping. Qualification, binding, and execution stay at the call
+site so each caller wraps them in its own ``try`` — the standalone path
+reshapes a malformed-id ``ValidationError`` from qualification via
+``translate_runtime_error``, whereas an unsupported-feature error from
+the translation step inside this helper must surface unwrapped (as a
+``501``), so it is deliberately raised before the caller's ``try``.
+Scripting-specific pre-rewrites (``_rewrite_temp_calls``,
 ``_rewrite_vars_to_params``) run in the interpreter before the SQL is
 handed to :func:`rewrite_and_translate_statement`.
 """
@@ -30,7 +37,6 @@ from bqemulator.sql.rewriter.information_schema import expand_information_schema
 from bqemulator.sql.rewriter.row_access_filter import rewrite_for_row_access
 from bqemulator.sql.rewriter.unnest_offset import rewrite_unnest_offset
 from bqemulator.sql.rewriter.wildcard_expander import expand_wildcard_tables
-from bqemulator.sql.table_rewriter import rewrite_table_refs
 from bqemulator.versioning.materialized_views import MaterializedViewManager
 from bqemulator.versioning.time_travel import rewrite_for_system_time
 
@@ -90,12 +96,15 @@ async def rewrite_and_translate_statement(
     Applies, in order: materialized-view refresh, ``FOR SYSTEM_TIME AS
     OF`` time-travel resolution, row-access enforcement,
     ``INFORMATION_SCHEMA`` expansion, ``UNNEST`` offset rewriting,
-    wildcard-table expansion, schema-annotated BigQuery to DuckDB
-    translation, and table-reference qualification.
+    wildcard-table expansion, and schema-annotated BigQuery to DuckDB
+    translation. Returns the translated DuckDB SQL.
 
-    Raises the translator's error on a failed translation. Parameter
-    binding and execution (and their runtime error-shaping) are the
-    caller's responsibility.
+    Table-reference qualification (``rewrite_table_refs``), parameter
+    binding, and execution are the caller's responsibility, so the
+    caller's ``try`` can shape their failures. A failed translation is
+    raised here, before the caller's ``try``, so an unsupported-feature
+    error reaches the wire unwrapped as a ``501`` rather than being
+    reshaped into a generic ``invalidQuery``.
     """
     # Refresh any stale materialized views this statement reads.
     await refresh_dependent_mvs(project_id, bq_sql, ctx)
@@ -121,7 +130,7 @@ async def rewrite_and_translate_statement(
             raise error
         case Ok(duckdb_sql):
             pass
-    return rewrite_table_refs(duckdb_sql, project_id)
+    return duckdb_sql
 
 
 __all__ = ["refresh_dependent_mvs", "rewrite_and_translate_statement"]

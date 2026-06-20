@@ -57,6 +57,7 @@ from bqemulator.scripting.interpreter import ScriptInterpreter
 from bqemulator.scripting.parser import parse_script
 from bqemulator.sql.inner_query import rewrite_and_translate_statement
 from bqemulator.sql.parameters import bind_parameters
+from bqemulator.sql.table_rewriter import rewrite_table_refs
 from bqemulator.sql.translator import SQLTranslator
 from bqemulator.storage.sql_identifiers import quoted_table_ref
 from bqemulator.versioning.ddl import (
@@ -833,14 +834,23 @@ async def _run_single_sql(
     caller: CallerIdentity,
 ) -> pa.Table:
     """Legacy fast path for a single SQL statement with BQ query params."""
-    duckdb_sql = await rewrite_and_translate_statement(
+    # Run the rewrite + translate chain BEFORE the try so a translation
+    # failure (e.g. an unsupported feature -> UnsupportedFeatureError)
+    # surfaces unwrapped as its own ``501`` rather than being reshaped by
+    # translate_runtime_error into a generic ``invalidQuery``.
+    translated_sql = await rewrite_and_translate_statement(
         bq_sql,
         project_id=project_id,
         ctx=ctx,
         caller=caller,
         translator=_translator,
     )
+    duckdb_sql = translated_sql
     try:
+        # Table-ref qualification stays inside the try: a malformed-id
+        # ValidationError from rewrite_table_refs is a pre-execution
+        # domain error that must be shaped by translate_runtime_error.
+        duckdb_sql = rewrite_table_refs(translated_sql, project_id)
         duckdb_sql, param_values = bind_parameters(duckdb_sql, query_params)
         return ctx.engine.fetch_arrow(duckdb_sql, param_values or None)
     except DomainError as exc:

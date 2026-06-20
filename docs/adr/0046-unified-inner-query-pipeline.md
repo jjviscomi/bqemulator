@@ -46,9 +46,9 @@ Extract the canonical chain into a single shared module,
 - `rewrite_and_translate_statement(bq_sql, *, project_id, ctx, caller,
   translator)`: runs the full chain in order (materialized-view refresh,
   time-travel resolution, row-access enforcement, `INFORMATION_SCHEMA`
-  expansion, `UNNEST` offset rewriting, wildcard-table expansion,
-  schema-annotated BigQuery to DuckDB translation, table-reference
-  qualification) and returns executable DuckDB SQL.
+  expansion, `UNNEST` offset rewriting, wildcard-table expansion, and
+  schema-annotated BigQuery to DuckDB translation) and returns the
+  translated DuckDB SQL.
 
 Both `_run_single_sql` and the three interpreter methods call this shared
 function. Concerns that genuinely differ between the two paths stay at
@@ -58,11 +58,18 @@ the call site, layered on top of the shared chain:
   shared chain: temp-routine call qualification (`_rewrite_temp_calls`)
   and `@var` to positional-placeholder substitution
   (`_rewrite_vars_to_params`).
-- **Parameter binding and execution** remain caller-owned: standalone
-  binds BigQuery named query parameters and fetches Arrow; the
-  interpreter prepends the positional parameters its `@var` and `USING`
-  handling emits, and chooses `fetch_arrow` (row-producing) or `execute`
-  (dynamic DDL/DML, with last-statement-wins shaping).
+- **Table-reference qualification, parameter binding, and execution**
+  remain caller-owned. Standalone qualifies refs (`rewrite_table_refs`),
+  binds BigQuery named query parameters, and fetches Arrow; the
+  interpreter qualifies refs, prepends the positional parameters its
+  `@var` and `USING` handling emits, and chooses `fetch_arrow`
+  (row-producing) or `execute` (dynamic DDL/DML, with last-statement-wins
+  shaping). Keeping qualification at the call site is deliberate: a
+  malformed-id `ValidationError` from `rewrite_table_refs` is a
+  pre-execution domain error that the caller's `try` reshapes via
+  `translate_runtime_error`, whereas a translation failure raised by the
+  shared helper (e.g. an unsupported feature) must surface unwrapped as a
+  `501`, so it is raised before the caller's `try`.
 
 No RFC accompanies this change: there is no change to public API, SQL
 semantics, persistence format, or governance. The observable effect is

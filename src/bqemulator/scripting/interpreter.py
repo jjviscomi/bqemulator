@@ -72,6 +72,7 @@ from bqemulator.scripting.frames import FrameStack
 from bqemulator.scripting.parser import parse_script
 from bqemulator.sql.inner_query import rewrite_and_translate_statement
 from bqemulator.sql.parameters import bind_parameters
+from bqemulator.sql.table_rewriter import rewrite_table_refs
 from bqemulator.sql.translator import SQLTranslator
 from bqemulator.udf.temp_registry import TempRoutineRegistry
 from bqemulator.versioning.ddl import (
@@ -850,13 +851,14 @@ class ScriptInterpreter:
         """Translate + execute a BigQuery SELECT, returning an Arrow table."""
         bq_sql = self._rewrite_temp_calls(bq_sql)
         rewritten, param_values = _rewrite_vars_to_params(bq_sql, self._frames)
-        duckdb_sql = await rewrite_and_translate_statement(
+        translated = await rewrite_and_translate_statement(
             rewritten,
             project_id=self._project_id,
             ctx=self._ctx,
             caller=self._caller,
             translator=self._translator,
         )
+        duckdb_sql = rewrite_table_refs(translated, self._project_id)
         duckdb_sql, final_params = bind_parameters(duckdb_sql, None)
         # Merge the script variable positional params with any placeholders
         # bind_parameters emitted (none in practice for script SQL).
@@ -884,13 +886,14 @@ class ScriptInterpreter:
         # Translate first, then merge any @var substitutions AND the using_values.
         bq_sql = self._rewrite_temp_calls(bq_sql)
         rewritten, script_params = _rewrite_vars_to_params(bq_sql, self._frames)
-        duckdb_sql = await rewrite_and_translate_statement(
+        translated = await rewrite_and_translate_statement(
             rewritten,
             project_id=self._project_id,
             ctx=self._ctx,
             caller=self._caller,
             translator=self._translator,
         )
+        duckdb_sql = rewrite_table_refs(translated, self._project_id)
         # The using_values land on the original ?'s; our @-substitutions emit
         # additional ?'s at the front. Concatenation preserves order because
         # _rewrite_vars_to_params visits left-to-right.
@@ -917,13 +920,14 @@ class ScriptInterpreter:
         """Execute a SELECT with positional USING parameters and return the result."""
         bq_sql = self._rewrite_temp_calls(bq_sql)
         rewritten, script_params = _rewrite_vars_to_params(bq_sql, self._frames)
-        duckdb_sql = await rewrite_and_translate_statement(
+        translated = await rewrite_and_translate_statement(
             rewritten,
             project_id=self._project_id,
             ctx=self._ctx,
             caller=self._caller,
             translator=self._translator,
         )
+        duckdb_sql = rewrite_table_refs(translated, self._project_id)
         combined = script_params + using_values
         return self._ctx.engine.fetch_arrow(duckdb_sql, combined or None)
 

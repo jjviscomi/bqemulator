@@ -32,6 +32,7 @@ from bqemulator.sql.inner_query import (
     refresh_dependent_mvs,
     rewrite_and_translate_statement,
 )
+from bqemulator.sql.table_rewriter import rewrite_table_refs
 from bqemulator.sql.translator import SQLTranslator
 from bqemulator.storage.engine import DuckDBEngine
 from bqemulator.storage.sql_identifiers import quoted_schema, quoted_table_ref
@@ -131,16 +132,17 @@ async def test_rewrite_and_translate_statement_returns_duckdb_sql(
     ctx: AppContext,
     frozen_clock: FrozenClock,
 ) -> None:
-    """The happy path returns table-ref-qualified, executable DuckDB SQL."""
+    """The happy path returns translated DuckDB SQL the caller can qualify and run."""
     _seed_table(ctx, frozen_clock)
-    duckdb_sql = await rewrite_and_translate_statement(
+    translated = await rewrite_and_translate_statement(
         "SELECT id FROM ds.t",
         project_id="p",
         ctx=ctx,
         caller=_ANON,
         translator=SQLTranslator(),
     )
-    # Table refs are qualified to the DuckDB schema and the SQL runs.
+    # The helper translates; the caller qualifies table refs, after which it runs.
+    duckdb_sql = rewrite_table_refs(translated, "p")
     assert quoted_table_ref("p", "ds", "t") in duckdb_sql
     assert ctx.engine.fetch_arrow(duckdb_sql).to_pylist() == [{"id": 1}]
 
@@ -172,7 +174,7 @@ async def test_rewrite_and_translate_statement_ok_branch_with_stub(
     ctx: AppContext,
     frozen_clock: FrozenClock,
 ) -> None:
-    """The Ok branch returns the table-ref rewrite of the translated SQL."""
+    """The Ok branch returns the translator's output unchanged (no qualification)."""
     _seed_table(ctx, frozen_clock)
 
     class _OkTranslator:
@@ -186,4 +188,6 @@ async def test_rewrite_and_translate_statement_ok_branch_with_stub(
         caller=_ANON,
         translator=_OkTranslator(),  # type: ignore[arg-type]
     )
-    assert quoted_table_ref("p", "ds", "t") in result
+    # Table-ref qualification is the caller's step, so the helper returns
+    # the translated SQL verbatim.
+    assert result == "SELECT id FROM p.ds.t"
