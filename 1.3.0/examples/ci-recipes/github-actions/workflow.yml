@@ -1,0 +1,63 @@
+# Reference GitHub Actions workflow for running tests against bqemulator.
+# Copy to .github/workflows/ in your repo and adapt the "Run tests" step.
+
+name: Tests with bqemulator
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+env:
+  BQEMU_IMAGE: ghcr.io/jjviscomi/bqemulator:dev
+
+jobs:
+  service-container:
+    name: Pattern A — service container
+    runs-on: ubuntu-latest
+
+    # The services block boots bqemulator once per job and exposes it
+    # on the runner localhost. Tests connect via http://localhost:9050.
+    services:
+      bqemulator:
+        image: ghcr.io/jjviscomi/bqemulator:dev
+        ports:
+          - 9050:9050
+          - 9060:9060
+        env:
+          BQEMU_REST_HOST: 0.0.0.0
+          BQEMU_GRPC_HOST: 0.0.0.0
+          BQEMU_ADMIN_ENABLED: "1"
+        options: >-
+          --health-cmd="curl -sf http://localhost:9050/healthz"
+          --health-interval=2s
+          --health-timeout=2s
+          --health-retries=30
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install
+        run: pip install google-cloud-bigquery pytest
+      - name: Run tests
+        env:
+          BIGQUERY_EMULATOR_HOST: localhost:9050
+        run: pytest tests/
+
+  testcontainers:
+    name: Pattern B — Testcontainers
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+          cache: maven
+      # The Testcontainers wrapper starts/stops bqemulator per test class.
+      # Docker is available on ubuntu-latest by default.
+      - name: Run integration tests
+        env:
+          BQEMU_IMAGE: ${{ env.BQEMU_IMAGE }}
+        run: mvn -B verify
