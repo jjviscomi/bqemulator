@@ -518,7 +518,15 @@ filterwarnings = [
     # ignore to this exact message so any other starlette deprecation
     # still surfaces. Revisit if starlette removes the httpx fallback
     # or once httpx2 is vetted for the dependency graph. See ADR 0044.
-    "ignore:Using `httpx` with `starlette.testclient` is deprecated:starlette.exceptions.StarletteDeprecationWarning",
+    #
+    # Matched by message ONLY (no category): pytest resolves a filter's
+    # category by importing it at startup, so naming
+    # ``starlette.exceptions.StarletteDeprecationWarning`` makes pytest
+    # hard-fail to even collect on any installed starlette that lacks
+    # the class (e.g. a stale or pre-1.x interpreter). Message matching
+    # cannot fail that way: it stays precise to this one warning and
+    # simply goes inert when the warning is not emitted.
+    "ignore:Using `httpx` with `starlette.testclient` is deprecated",
 ]
 
 [tool.coverage.run]

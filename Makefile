@@ -8,8 +8,37 @@ SHELL := /bin/bash
 .ONESHELL:
 .SHELLFLAGS := -eu -o pipefail -c
 
-PYTHON := python3
+# Prefer the project virtualenv's tools when ``.venv`` exists, so every
+# target runs against the pinned interpreter regardless of which Python
+# is active on PATH (asdf, pyenv, system). Without this, bare ``pytest``
+# / ``mypy`` resolve to whatever the shell points at, which drifts from
+# the dependency pins and produces confusing failures: a stale starlette
+# breaking pytest startup, or an editable install resolving to a
+# different checkout's ``src``.
+#
+# These are explicit tool variables rather than a ``PATH`` export on
+# purpose: macOS still ships GNU Make 3.81, whose ``export PATH :=
+# …$(PATH)`` handling is unreliable (recipes intermittently fall back to
+# the shell interpreter), so each tool is invoked by its absolute venv
+# path directly. ``$(CURDIR)`` keeps it absolute so recipes that ``cd``
+# into subdirectories still resolve it. CI installs into the runner
+# interpreter and has no ``.venv``, so ``VENV_BIN`` is empty there and
+# the bare names resolve exactly as before. Tools that are not pip
+# packages (docker, go, node, npm, mvn, bq, typos, lychee, npx) are
+# invoked by bare name and fall through to the system PATH.
+VENV_BIN := $(if $(wildcard .venv/bin),$(CURDIR)/.venv/bin/,)
+PYTHON := $(VENV_BIN)python3
 PIP := $(PYTHON) -m pip
+PYTEST := $(VENV_BIN)pytest
+MYPY := $(VENV_BIN)mypy
+RUFF := $(VENV_BIN)ruff
+BANDIT := $(VENV_BIN)bandit
+PIP_AUDIT := $(VENV_BIN)pip-audit
+INTERROGATE := $(VENV_BIN)interrogate
+XENON := $(VENV_BIN)xenon
+DIFF_COVER := $(VENV_BIN)diff-cover
+MKDOCS := $(VENV_BIN)mkdocs
+PRE_COMMIT := $(VENV_BIN)pre-commit
 UV := uv
 DOCKER_IMAGE := ghcr.io/jjviscomi/bqemulator
 DOCKER_TAG ?= dev
@@ -28,12 +57,17 @@ help: ## Show this help
 # ---------------------------------------------------------------------------
 
 .PHONY: dev-setup
-dev-setup: ## Install dependencies and pre-commit hooks
-	$(PIP) install --upgrade pip
-	$(PIP) install -e ".[dev]"
-	pre-commit install --install-hooks
-	pre-commit install --hook-type commit-msg
-	@echo "Dev environment ready."
+dev-setup: ## Create .venv, install dependencies and pre-commit hooks
+	# Own the virtualenv so every other target runs against a known,
+	# pinned interpreter (see the tool variables above). Re-running is safe:
+	# the venv is reused and dependencies are re-resolved against the
+	# current pins, which also repairs an env that has drifted below them.
+	test -d .venv || $(PYTHON) -m venv .venv
+	.venv/bin/python -m pip install --upgrade pip
+	.venv/bin/python -m pip install -e ".[dev]"
+	.venv/bin/pre-commit install --install-hooks
+	.venv/bin/pre-commit install --hook-type commit-msg
+	@echo "Dev environment ready in .venv. Activate with: source .venv/bin/activate"
 
 .PHONY: clean
 clean: ## Remove build and test artifacts
@@ -49,21 +83,21 @@ clean: ## Remove build and test artifacts
 
 .PHONY: format
 format: ## Auto-format with ruff
-	ruff format src tests scripts
-	ruff check --fix src tests scripts
+	$(RUFF) format src tests scripts
+	$(RUFF) check --fix src tests scripts
 
 .PHONY: lint
 lint: ## Lint + typecheck + security scan
-	ruff check src tests scripts
-	ruff format --check src tests scripts
-	mypy src
-	bandit -c pyproject.toml -r src -ll -q
+	$(RUFF) check src tests scripts
+	$(RUFF) format --check src tests scripts
+	$(MYPY) src
+	$(BANDIT) -c pyproject.toml -r src -ll -q
 	# Filter ``.pip-audit-ignore`` for advisory IDs only (skip comments
 	# + blank lines) and feed each as a ``--ignore-vuln`` flag. The
 	# previous form used ``xargs -a <file>`` which is GNU-only and
 	# silently treated comment lines as advisory IDs on BSD systems.
-	awk '/^(PYSEC|CVE|GHSA)-/ {printf "--ignore-vuln %s\n", $$1}' .pip-audit-ignore | xargs pip-audit
-	interrogate src
+	awk '/^(PYSEC|CVE|GHSA)-/ {printf "--ignore-vuln %s\n", $$1}' .pip-audit-ignore | xargs $(PIP_AUDIT)
+	$(INTERROGATE) src
 	typos .
 
 linkcheck: ## Run lychee with the workspace-aware self-link remap (CI parity)
@@ -135,7 +169,7 @@ quality-complexity: ## Cyclomatic-complexity ceiling via xenon — REQUIRED gate
 	# ``--exclude`` carve-out (a new bucket-C irreducibility verdict —
 	# bar is genuine domain-shaped complexity, not accumulated cruft;
 	# the empirical bucket-C rate across PR-1…PR-11 was 0%).
-	xenon --max-absolute B --max-modules B --max-average A src/bqemulator
+	$(XENON) --max-absolute B --max-modules B --max-average A src/bqemulator
 
 .PHONY: quality-duplication
 quality-duplication: ## Cross-file DRY check via jscpd (non-blocking)
@@ -160,19 +194,19 @@ quality: quality-complexity quality-duplication quality-dead-code ## Run all qua
 
 .PHONY: test-unit
 test-unit: ## Fast hermetic unit tests (no coverage gate — see test-coverage)
-	pytest tests/unit -m unit
+	$(PYTEST) tests/unit -m unit
 
 .PHONY: test-property
 test-property: ## Hypothesis property-based tests
-	pytest tests/property -m property
+	$(PYTEST) tests/property -m property
 
 .PHONY: test-integration
 test-integration: ## In-process emulator + client integration tests
-	pytest tests/integration -m integration
+	$(PYTEST) tests/integration -m integration
 
 .PHONY: test-coverage
 test-coverage: ## Combined U+P+I coverage gate (90% line+branch; matches STATUS.md methodology)
-	pytest tests/unit tests/property tests/integration \
+	$(PYTEST) tests/unit tests/property tests/integration \
 		--cov=bqemulator --cov-branch \
 		--cov-report=term --cov-report=xml \
 		--cov-fail-under=90
@@ -191,7 +225,7 @@ test-patch-coverage: ## Patch coverage on lines added vs main (≥70%); needs pr
 	    echo "ERROR: coverage.xml missing — run 'make test-coverage' first." >&2; \
 	    exit 1; \
 	fi
-	diff-cover coverage.xml \
+	$(DIFF_COVER) coverage.xml \
 		--compare-branch=$(PATCH_COVERAGE_BASE) \
 		--fail-under=70 \
 		--include-untracked
@@ -201,7 +235,7 @@ test-e2e: test-e2e-python test-e2e-nodejs test-e2e-go test-e2e-java test-e2e-bq-
 
 .PHONY: test-e2e-python
 test-e2e-python: docker-build ## E2E — Python client (uses testcontainers; auto-manages container lifecycle)
-	BQEMU_IMAGE="$(DOCKER_IMAGE):$(DOCKER_TAG)" pytest tests/e2e/python_client -m e2e
+	BQEMU_IMAGE="$(DOCKER_IMAGE):$(DOCKER_TAG)" $(PYTEST) tests/e2e/python_client -m e2e
 
 # The Node/Go/Java suites read BQEMU_REST_URL / BQEMU_GRPC_ENDPOINT and
 # expect a container already running on those endpoints. Each recipe
@@ -299,47 +333,47 @@ test-e2e-bq-cli: docker-build ## E2E — bq CLI (live container; requires google
 	    echo "  https://cloud.google.com/sdk/docs/install" ; \
 	    exit 1 ; \
 	}
-	BQEMU_IMAGE="$(DOCKER_IMAGE):$(DOCKER_TAG)" pytest tests/e2e/bq_cli_client -m e2e
+	BQEMU_IMAGE="$(DOCKER_IMAGE):$(DOCKER_TAG)" $(PYTEST) tests/e2e/bq_cli_client -m e2e
 
 .PHONY: test-conformance
 test-conformance: ## Replay conformance corpus against in-process emulator (offline; no creds needed)
-	pytest tests/conformance -m conformance
+	$(PYTEST) tests/conformance -m conformance
 
 .PHONY: coverage-matrix
 coverage-matrix: ## Regenerate docs/reference/conformance-coverage-matrix.md from the surface inventory + corpus
-	python scripts/generate_coverage_matrix.py
+	$(PYTHON) scripts/generate_coverage_matrix.py
 
 .PHONY: coverage-matrix-check
 coverage-matrix-check: ## CI gate — fail if the committed matrix has drifted from the inventory or corpus
-	python scripts/generate_coverage_matrix.py --check
+	$(PYTHON) scripts/generate_coverage_matrix.py --check
 
 .PHONY: compat-matrix
 compat-matrix: ## Regenerate the conformance snapshot inside docs/reference/compatibility-matrix.md
-	python scripts/generate_compatibility_matrix.py
+	$(PYTHON) scripts/generate_compatibility_matrix.py
 
 .PHONY: compat-matrix-check
 compat-matrix-check: ## CI gate — fail if the committed compatibility-matrix snapshot has drifted from the corpus
-	python scripts/generate_compatibility_matrix.py --check
+	$(PYTHON) scripts/generate_compatibility_matrix.py --check
 
 .PHONY: function-mapping
 function-mapping: ## Regenerate the rule registry inside docs/reference/sql-function-mapping.md
-	python scripts/generate_function_mapping.py
+	$(PYTHON) scripts/generate_function_mapping.py
 
 .PHONY: function-mapping-check
 function-mapping-check: ## CI gate — fail if the committed function-mapping registry has drifted from the live rules
-	python scripts/generate_function_mapping.py --check
+	$(PYTHON) scripts/generate_function_mapping.py --check
 
 .PHONY: api-coverage
 api-coverage: ## Regenerate the REST + gRPC inventory inside docs/reference/api-coverage.md
-	python scripts/generate_api_coverage.py
+	$(PYTHON) scripts/generate_api_coverage.py
 
 .PHONY: api-coverage-check
 api-coverage-check: ## CI gate — fail if the committed API inventory has drifted from the live route handlers
-	python scripts/generate_api_coverage.py --check
+	$(PYTHON) scripts/generate_api_coverage.py --check
 
 .PHONY: generate-avro-fixtures
 generate-avro-fixtures: ## Regenerate the reference .avro OCFs under tests/fixtures/avro/ (G3 / ADR 0030)
-	python scripts/generate_avro_fixtures.py
+	$(PYTHON) scripts/generate_avro_fixtures.py
 
 .PHONY: record-conformance
 record-conformance: ## Re-record conformance baselines from real BigQuery (local-only; requires GOOGLE_APPLICATION_CREDENTIALS)
@@ -347,7 +381,7 @@ record-conformance: ## Re-record conformance baselines from real BigQuery (local
 	  || (echo "GOOGLE_APPLICATION_CREDENTIALS not set — recording requires a real-BQ service-account JSON" && exit 1)
 	@test -n "$${BQEMU_CONFORMANCE_PROJECT:-}" \
 	  || (echo "BQEMU_CONFORMANCE_PROJECT not set — supply a BQ project you control to bill the recording jobs to" && exit 1)
-	python scripts/record_conformance_fixtures.py \
+	$(PYTHON) scripts/record_conformance_fixtures.py \
 	  --project "$${BQEMU_CONFORMANCE_PROJECT}" \
 	  --location "$${BQEMU_CONFORMANCE_LOCATION:-US}"
 
@@ -357,20 +391,20 @@ test-perf: ## Performance benchmarks (Tier 6; compares against committed baselin
 	baseline=tests/perf/baselines/$$arch.json ; \
 	if [ -f $$baseline ] ; then \
 	    echo "Comparing perf against committed baseline: $$baseline" ; \
-	    pytest tests/perf -m perf --benchmark-only ; \
+	    $(PYTEST) tests/perf -m perf --benchmark-only ; \
 	else \
 	    echo "No committed baseline for $$arch yet — running without comparison gate." ; \
 	    echo "Record one with: pytest tests/perf --benchmark-save=$$arch && python scripts/normalize_perf_baseline.py .benchmarks/<latest>.json $$baseline" ; \
-	    pytest tests/perf -m perf --benchmark-only ; \
+	    $(PYTEST) tests/perf -m perf --benchmark-only ; \
 	fi
 
 .PHONY: test-chaos
 test-chaos: ## Chaos tier — deliberately disruptive (Phase 11; nightly in CI)
-	pytest tests/chaos -m chaos --timeout=60
+	$(PYTEST) tests/chaos -m chaos --timeout=60
 
 .PHONY: test-differential
 test-differential: ## Differential tier — row-order perturbation of the conformance corpus (P8.f; manual-only CI per ADR 0028)
-	pytest tests/conformance/test_corpus_row_order_perturbed.py \
+	$(PYTEST) tests/conformance/test_corpus_row_order_perturbed.py \
 	    -m differential \
 	    --junit-xml=differential-results.xml
 
@@ -403,20 +437,20 @@ test-fuzz: ## Fuzz tier — Atheris coverage-guided fuzzing of translator + dyn-
 test-mutation: ## Mutation testing (slow — nightly; fails when score drops >2pp vs baseline)
 	mutmut run
 	mutmut export-cicd-stats
-	python scripts/check_mutation_baseline.py
+	$(PYTHON) scripts/check_mutation_baseline.py
 
 .PHONY: test-mutation-baseline
 test-mutation-baseline: ## Run mutmut and overwrite tests/mutation/baseline.json (operator action)
 	mutmut run
 	mutmut export-cicd-stats
-	python scripts/check_mutation_baseline.py --update-baseline
+	$(PYTHON) scripts/check_mutation_baseline.py --update-baseline
 
 .PHONY: test
 test: test-unit test-property test-integration ## Unit + property + integration
 
 .PHONY: coverage-report
 coverage-report: ## Generate HTML coverage report
-	pytest tests/unit tests/property tests/integration \
+	$(PYTEST) tests/unit tests/property tests/integration \
 		--cov=bqemulator --cov-branch --cov-report=html --cov-report=term
 	@echo "Open htmlcov/index.html"
 
@@ -442,11 +476,11 @@ docker-run: ## Run the built container locally
 
 .PHONY: docs-serve
 docs-serve: ## Live-reload documentation site
-	mkdocs serve
+	$(MKDOCS) serve
 
 .PHONY: docs-build
 docs-build: ## Build documentation site (strict)
-	mkdocs build --strict
+	$(MKDOCS) build --strict
 
 .PHONY: docs-deploy
 docs-deploy: ## Deploy docs to GitHub Pages via mike
