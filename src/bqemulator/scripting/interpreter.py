@@ -41,7 +41,6 @@ from bqemulator.domain.errors import (
     ResourceRef,
     resource_not_found,
 )
-from bqemulator.domain.result import Err, Ok
 from bqemulator.observability.logging_ import get_logger
 from bqemulator.row_access.identity import CallerIdentity
 from bqemulator.scripting.ast import (
@@ -71,14 +70,8 @@ from bqemulator.scripting.exceptions import (
 )
 from bqemulator.scripting.frames import FrameStack
 from bqemulator.scripting.parser import parse_script
+from bqemulator.sql.inner_query import rewrite_and_translate_select
 from bqemulator.sql.parameters import bind_parameters
-from bqemulator.sql.rewriter.information_schema import (
-    expand_information_schema,
-)
-from bqemulator.sql.rewriter.row_access_filter import rewrite_for_row_access
-from bqemulator.sql.rewriter.unnest_offset import rewrite_unnest_offset
-from bqemulator.sql.rewriter.wildcard_expander import expand_wildcard_tables
-from bqemulator.sql.table_rewriter import rewrite_table_refs
 from bqemulator.sql.translator import SQLTranslator
 from bqemulator.udf.temp_registry import TempRoutineRegistry
 from bqemulator.versioning.ddl import (
@@ -857,25 +850,13 @@ class ScriptInterpreter:
         """Translate + execute a BigQuery SELECT, returning an Arrow table."""
         bq_sql = self._rewrite_temp_calls(bq_sql)
         rewritten, param_values = _rewrite_vars_to_params(bq_sql, self._frames)
-        rewritten = rewrite_for_row_access(
+        duckdb_sql = await rewrite_and_translate_select(
             rewritten,
             project_id=self._project_id,
+            ctx=self._ctx,
             caller=self._caller,
-            catalog=self._ctx.catalog,
+            translator=self._translator,
         )
-        rewritten = expand_information_schema(
-            rewritten,
-            self._project_id,
-            self._ctx.catalog,
-        )
-        rewritten = rewrite_unnest_offset(rewritten)
-        expanded = expand_wildcard_tables(rewritten, self._project_id, self._ctx.catalog)
-        match self._translator.translate(expanded, caller=self._caller):
-            case Ok(duckdb_sql):
-                pass
-            case Err(error):
-                raise error
-        duckdb_sql = rewrite_table_refs(duckdb_sql, self._project_id)
         duckdb_sql, final_params = bind_parameters(duckdb_sql, None)
         # Merge the script variable positional params with any placeholders
         # bind_parameters emitted (none in practice for script SQL).
@@ -903,25 +884,13 @@ class ScriptInterpreter:
         # Translate first, then merge any @var substitutions AND the using_values.
         bq_sql = self._rewrite_temp_calls(bq_sql)
         rewritten, script_params = _rewrite_vars_to_params(bq_sql, self._frames)
-        rewritten = rewrite_for_row_access(
+        duckdb_sql = await rewrite_and_translate_select(
             rewritten,
             project_id=self._project_id,
+            ctx=self._ctx,
             caller=self._caller,
-            catalog=self._ctx.catalog,
+            translator=self._translator,
         )
-        rewritten = expand_information_schema(
-            rewritten,
-            self._project_id,
-            self._ctx.catalog,
-        )
-        rewritten = rewrite_unnest_offset(rewritten)
-        expanded = expand_wildcard_tables(rewritten, self._project_id, self._ctx.catalog)
-        match self._translator.translate(expanded, caller=self._caller):
-            case Ok(duckdb_sql):
-                pass
-            case Err(error):
-                raise error
-        duckdb_sql = rewrite_table_refs(duckdb_sql, self._project_id)
         # The using_values land on the original ?'s; our @-substitutions emit
         # additional ?'s at the front. Concatenation preserves order because
         # _rewrite_vars_to_params visits left-to-right.
@@ -948,25 +917,13 @@ class ScriptInterpreter:
         """Execute a SELECT with positional USING parameters and return the result."""
         bq_sql = self._rewrite_temp_calls(bq_sql)
         rewritten, script_params = _rewrite_vars_to_params(bq_sql, self._frames)
-        rewritten = rewrite_for_row_access(
+        duckdb_sql = await rewrite_and_translate_select(
             rewritten,
             project_id=self._project_id,
+            ctx=self._ctx,
             caller=self._caller,
-            catalog=self._ctx.catalog,
+            translator=self._translator,
         )
-        rewritten = expand_information_schema(
-            rewritten,
-            self._project_id,
-            self._ctx.catalog,
-        )
-        rewritten = rewrite_unnest_offset(rewritten)
-        expanded = expand_wildcard_tables(rewritten, self._project_id, self._ctx.catalog)
-        match self._translator.translate(expanded, caller=self._caller):
-            case Ok(duckdb_sql):
-                pass
-            case Err(error):
-                raise error
-        duckdb_sql = rewrite_table_refs(duckdb_sql, self._project_id)
         combined = script_params + using_values
         return self._ctx.engine.fetch_arrow(duckdb_sql, combined or None)
 

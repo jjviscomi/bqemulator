@@ -33,7 +33,6 @@ from bqemulator.domain.errors import (
     resource_not_found,
 )
 from bqemulator.domain.events import TableDataChanged
-from bqemulator.domain.result import Err, Ok
 from bqemulator.jobs.avro_reader import (
     is_decimal_logical_avro,
     read_avro_to_arrow,
@@ -56,10 +55,8 @@ from bqemulator.row_access.identity import CallerIdentity
 from bqemulator.scripting.ast import SqlStmt
 from bqemulator.scripting.interpreter import ScriptInterpreter
 from bqemulator.scripting.parser import parse_script
-from bqemulator.sql.catalog_schema import build_catalog_schema
+from bqemulator.sql.inner_query import rewrite_and_translate_select
 from bqemulator.sql.parameters import bind_parameters
-from bqemulator.sql.rewriter.row_access_filter import rewrite_for_row_access
-from bqemulator.sql.table_rewriter import rewrite_table_refs
 from bqemulator.sql.translator import SQLTranslator
 from bqemulator.storage.sql_identifiers import quoted_table_ref
 from bqemulator.versioning.ddl import (
@@ -67,8 +64,6 @@ from bqemulator.versioning.ddl import (
     execute_versioning_ddl,
     is_versioning_ddl,
 )
-from bqemulator.versioning.materialized_views import MaterializedViewManager
-from bqemulator.versioning.time_travel import rewrite_for_system_time
 
 if TYPE_CHECKING:
     from bqemulator.api.dependencies import AppContext
@@ -838,43 +833,14 @@ async def _run_single_sql(
     caller: CallerIdentity,
 ) -> pa.Table:
     """Legacy fast path for a single SQL statement with BQ query params."""
-    from bqemulator.sql.rewriter.information_schema import (
-        expand_information_schema,
-    )
-    from bqemulator.sql.rewriter.unnest_offset import rewrite_unnest_offset
-    from bqemulator.sql.rewriter.wildcard_expander import expand_wildcard_tables
-
-    # Refresh any stale materialized views this query reads.
-    await _refresh_dependent_mvs(project_id, bq_sql, ctx)
-    # Resolve FOR SYSTEM_TIME AS OF before the translator runs.
-    bq_sql = rewrite_for_system_time(bq_sql, project_id, ctx.snapshots, ctx.engine)
-    # Enforce row access policies before any other rewrite.
-    bq_sql = rewrite_for_row_access(
+    duckdb_sql = await rewrite_and_translate_select(
         bq_sql,
         project_id=project_id,
+        ctx=ctx,
         caller=caller,
-        catalog=ctx.catalog,
+        translator=_translator,
     )
-    bq_sql = expand_information_schema(bq_sql, project_id, ctx.catalog)
-    bq_sql = rewrite_unnest_offset(bq_sql)
-    bq_sql = expand_wildcard_tables(bq_sql, project_id, ctx.catalog)
-    # ADR 0023 §1.B: build a per-table schema snapshot so the translator's
-    # ``annotate_types`` pass can resolve column types — the
-    # ``AvgDecimalRule`` consults the annotated operand type to decide
-    # whether to wrap ``AVG`` in a DECIMAL cast.
-    schema_dict = build_catalog_schema(bq_sql, project_id=project_id, catalog=ctx.catalog)
-    translate_result = _translator.translate(
-        bq_sql,
-        schema=schema_dict or None,
-        caller=caller,
-    )
-    match translate_result:
-        case Err(error):
-            raise error
-        case Ok(duckdb_sql):
-            pass
     try:
-        duckdb_sql = rewrite_table_refs(duckdb_sql, project_id)
         duckdb_sql, param_values = bind_parameters(duckdb_sql, query_params)
         return ctx.engine.fetch_arrow(duckdb_sql, param_values or None)
     except DomainError as exc:
@@ -2784,40 +2750,6 @@ def _parse_fallback_tables(body: str) -> list[Any]:
     except Exception:  # noqa: BLE001
         return []
     return list(parsed.find_all(_exp.Table))
-
-
-async def _refresh_dependent_mvs(
-    project_id: str,
-    bq_sql: str,
-    ctx: AppContext,
-) -> None:
-    """Refresh any materialized view this query reads, if stale.
-
-    Walks the BigQuery AST, collects every table reference, and asks
-    the MV manager to refresh_if_stale. No-op when the query touches no
-    MV.
-    """
-    import sqlglot
-    from sqlglot import exp
-
-    try:
-        tree = sqlglot.parse_one(bq_sql, read="bigquery")
-    except Exception:  # noqa: BLE001
-        return
-
-    manager = MaterializedViewManager(ctx)
-    for table_node in tree.find_all(exp.Table):
-        if isinstance(table_node.this, exp.Anonymous):
-            continue
-        name = table_node.name
-        dataset = table_node.db
-        if not name or not dataset:
-            continue
-        proj = table_node.catalog or project_id
-        meta = ctx.catalog.get_table(proj, dataset, name)
-        if meta is None or meta.table_type != "MATERIALIZED_VIEW":
-            continue
-        await manager.refresh_if_stale(proj, dataset, name)
 
 
 __all__ = [
