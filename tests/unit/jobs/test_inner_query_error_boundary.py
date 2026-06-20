@@ -139,7 +139,7 @@ async def test_unsupported_feature_translation_error_surfaces_unwrapped(
     rewrapped by ``translate_runtime_error`` into a generic
     ``InvalidQueryError`` (``400``).
     """
-    with pytest.raises(UnsupportedFeatureError):
+    with pytest.raises(UnsupportedFeatureError) as excinfo:
         await _run_single_sql(
             "p",
             "SELECT * FROM ML.PREDICT(MODEL m, TABLE t)",
@@ -147,3 +147,5 @@ async def test_unsupported_feature_translation_error_surfaces_unwrapped(
             ctx,
             caller=_ANON,
         )
+    # The unsupported feature itself is the cause, not some later failure.
+    assert "ML.PREDICT" in str(excinfo.value)

@@ -37,6 +37,7 @@ from bqemulator.sql.translator import SQLTranslator
 from bqemulator.storage.engine import DuckDBEngine
 from bqemulator.storage.sql_identifiers import quoted_schema, quoted_table_ref
 from bqemulator.udf.runtime import UDFRegistry
+from bqemulator.versioning.materialized_views import MaterializedViewManager
 from bqemulator.versioning.snapshots import SnapshotManager
 
 pytestmark = pytest.mark.unit
@@ -78,8 +79,10 @@ async def ctx(
         await engine.stop()
 
 
-def _seed_table(ctx: AppContext, frozen_clock: FrozenClock) -> None:
-    """Create a plain ``p.ds.t`` table with one row."""
+def _ensure_dataset(ctx: AppContext, frozen_clock: FrozenClock) -> None:
+    """Idempotently create dataset ``p.ds`` and its DuckDB schema."""
+    if ctx.catalog.get_dataset("p", "ds") is not None:
+        return
     now = frozen_clock.now()
     ctx.catalog.create_dataset(
         DatasetMeta(
@@ -90,6 +93,13 @@ def _seed_table(ctx: AppContext, frozen_clock: FrozenClock) -> None:
             etag=generate_etag("p", "ds", str(now)),
         ),
     )
+    ctx.engine.execute(f"CREATE SCHEMA IF NOT EXISTS {quoted_schema('p', 'ds')}")
+
+
+def _seed_table(ctx: AppContext, frozen_clock: FrozenClock) -> None:
+    """Create a plain ``p.ds.t`` table with one row."""
+    _ensure_dataset(ctx, frozen_clock)
+    now = frozen_clock.now()
     ctx.catalog.create_table(
         TableMeta(
             project_id="p",
@@ -101,80 +111,142 @@ def _seed_table(ctx: AppContext, frozen_clock: FrozenClock) -> None:
             etag=generate_etag("p", "ds", "t", str(now)),
         ),
     )
-    ctx.engine.execute(f"CREATE SCHEMA IF NOT EXISTS {quoted_schema('p', 'ds')}")
     ctx.engine.execute(f"CREATE TABLE {quoted_table_ref('p', 'ds', 't')} (id BIGINT)")
     ctx.engine.execute(f"INSERT INTO {quoted_table_ref('p', 'ds', 't')} VALUES (1)")
 
 
 def _register_mv(ctx: AppContext, frozen_clock: FrozenClock) -> None:
-    """Register a materialized view so the refresh walk runs past the no-MV short-circuit.
+    """Register materialized view ``p.ds.mv`` the way production does.
 
-    The registered view is never referenced by the test queries; its mere
-    presence in the catalog is what makes ``refresh_dependent_mvs`` parse
-    and walk the statement instead of short-circuiting.
+    ``MaterializedViewManager.create`` writes BOTH a ``TableMeta`` with
+    ``table_type="MATERIALIZED_VIEW"`` (so ``get_table`` resolves it) AND
+    a ``MaterializedViewMeta`` (so ``list_all_materialized_views`` sees
+    it). Mirroring both is what lets ``refresh_dependent_mvs`` classify a
+    reference to ``ds.mv`` as a view and yield it for refresh.
     """
+    _ensure_dataset(ctx, frozen_clock)
+    now = frozen_clock.now()
+    ctx.catalog.create_table(
+        TableMeta(
+            project_id="p",
+            dataset_id="ds",
+            table_id="mv",
+            table_type="MATERIALIZED_VIEW",
+            creation_time=now,
+            last_modified_time=now,
+            etag=generate_etag("p", "ds", "mv", str(now)),
+        ),
+    )
     ctx.catalog.upsert_materialized_view(
         MaterializedViewMeta(
             project_id="p",
             dataset_id="ds",
             table_id="mv",
-            view_query="SELECT 1",
+            view_query="SELECT 1 AS id",
             base_tables=(),
-            last_refresh_time=frozen_clock.now(),
+            last_refresh_time=now,
         ),
     )
 
 
-async def test_refresh_dependent_mvs_short_circuits_without_views(ctx: AppContext) -> None:
+@pytest.fixture
+def refresh_calls(monkeypatch: pytest.MonkeyPatch) -> list[tuple[str, ...]]:
+    """Record each ``refresh_if_stale`` call instead of performing it.
+
+    Returns the list of ``(project, dataset, table)`` tuples the walk
+    asked to refresh, so tests can assert exactly which views (and how
+    many times) the chain refreshes.
+    """
+    calls: list[tuple[str, ...]] = []
+
+    async def _spy(_self: object, *ref: str) -> None:
+        calls.append(ref)
+
+    monkeypatch.setattr(MaterializedViewManager, "refresh_if_stale", _spy)
+    return calls
+
+
+async def test_refresh_dependent_mvs_short_circuits_without_views(
+    ctx: AppContext,
+    refresh_calls: list[tuple[str, ...]],
+) -> None:
     """With no materialized views in the catalog, the walk is skipped entirely."""
     # No MV registered: returns before parsing, so even malformed SQL is a no-op.
     await refresh_dependent_mvs("p", "this is not valid sql @@@", ctx)
+    assert refresh_calls == []
 
 
 async def test_refresh_dependent_mvs_ignores_unparseable_sql(
     ctx: AppContext,
     frozen_clock: FrozenClock,
+    refresh_calls: list[tuple[str, ...]],
 ) -> None:
-    """Unparseable SQL is a no-op — later pipeline layers surface the error."""
+    """Unparseable SQL refreshes nothing; later pipeline layers surface the error."""
     _register_mv(ctx, frozen_clock)
-    # Must not raise: the parse failure short-circuits the MV walk.
     await refresh_dependent_mvs("p", "this is not valid sql @@@", ctx)
+    assert refresh_calls == []
 
 
 async def test_refresh_dependent_mvs_skips_plain_table(
     ctx: AppContext,
     frozen_clock: FrozenClock,
+    refresh_calls: list[tuple[str, ...]],
 ) -> None:
     """A query over a non-materialized-view table triggers no refresh."""
     _seed_table(ctx, frozen_clock)
     _register_mv(ctx, frozen_clock)
-    # No MaterializedViewError / no mutation: a plain table is left alone.
     await refresh_dependent_mvs("p", "SELECT id FROM ds.t", ctx)
+    assert refresh_calls == []
 
 
 async def test_refresh_dependent_mvs_skips_unqualified_refs(
     ctx: AppContext,
     frozen_clock: FrozenClock,
+    refresh_calls: list[tuple[str, ...]],
 ) -> None:
     """A bare table reference (e.g. a CTE) has no dataset and is skipped."""
     _register_mv(ctx, frozen_clock)
-    # ``cte`` has a name but no dataset, so the MV lookup is bypassed.
     await refresh_dependent_mvs("p", "WITH cte AS (SELECT 1 AS id) SELECT id FROM cte", ctx)
+    assert refresh_calls == []
+
+
+async def test_refresh_dependent_mvs_skips_anonymous_table_function(
+    ctx: AppContext,
+    frozen_clock: FrozenClock,
+    refresh_calls: list[tuple[str, ...]],
+) -> None:
+    """A table-function call (``Anonymous`` node) is skipped, not treated as a table."""
+    _register_mv(ctx, frozen_clock)
+    # ``ds.tvf(1)`` parses as a Table whose ``this`` is an Anonymous call.
+    await refresh_dependent_mvs("p", "SELECT * FROM ds.tvf(1)", ctx)
+    assert refresh_calls == []
+
+
+async def test_refresh_dependent_mvs_refreshes_referenced_view(
+    ctx: AppContext,
+    frozen_clock: FrozenClock,
+    refresh_calls: list[tuple[str, ...]],
+) -> None:
+    """A query reading a materialized view refreshes exactly that view."""
+    _register_mv(ctx, frozen_clock)
+    await refresh_dependent_mvs("p", "SELECT id FROM ds.mv", ctx)
+    assert refresh_calls == [("p", "ds", "mv")]
 
 
 async def test_refresh_dependent_mvs_dedups_repeated_refs(
     ctx: AppContext,
     frozen_clock: FrozenClock,
+    refresh_calls: list[tuple[str, ...]],
 ) -> None:
-    """A table referenced more than once (self-join) is visited at most once."""
-    _seed_table(ctx, frozen_clock)
+    """A view referenced more than once (self-join) is refreshed exactly once."""
     _register_mv(ctx, frozen_clock)
-    # ``ds.t`` appears twice; the second occurrence hits the dedup guard.
+    # ``ds.mv`` appears twice; the second occurrence hits the dedup guard.
     await refresh_dependent_mvs(
         "p",
-        "SELECT a.id FROM ds.t AS a JOIN ds.t AS b ON a.id = b.id",
+        "SELECT a.id FROM ds.mv AS a JOIN ds.mv AS b ON a.id = b.id",
         ctx,
     )
+    assert refresh_calls == [("p", "ds", "mv")]
 
 
 async def test_rewrite_and_translate_statement_returns_duckdb_sql(

@@ -4,11 +4,12 @@ A BigQuery statement reaches DuckDB through one rewrite chain regardless
 of whether it runs as a standalone single-statement job
 (:func:`bqemulator.jobs.executor._run_single_sql`) or inside a script
 (:class:`bqemulator.scripting.interpreter.ScriptInterpreter`). This
-module is that single chain so the two execution paths cannot drift:
-materialized-view refresh, ``FOR SYSTEM_TIME AS OF`` time-travel
-resolution, row-access enforcement, ``INFORMATION_SCHEMA`` expansion,
-``UNNEST`` offset rewriting, wildcard-table expansion, and
-schema-annotated BigQuery to DuckDB translation.
+module is the single shared chain both execution paths run, so their
+rewrite and translation behaviour stays identical: materialized-view
+refresh, ``FOR SYSTEM_TIME AS OF`` time-travel resolution, row-access
+enforcement, ``INFORMATION_SCHEMA`` expansion, ``UNNEST`` offset
+rewriting, wildcard-table expansion, and schema-annotated BigQuery to
+DuckDB translation.
 
 Callers layer their own concerns on top of the translated SQL it
 returns: table-reference qualification (``rewrite_table_refs``),
@@ -17,11 +18,11 @@ positional placeholders the scripting interpreter emits for ``@var``
 substitution and ``USING`` values), execution (``fetch_arrow`` for
 row-producing statements, ``execute`` for dynamic DDL/DML), and
 error-shaping. Qualification, binding, and execution stay at the call
-site so each caller wraps them in its own ``try`` — the standalone path
+site so each caller wraps them in its own ``try``. The standalone path
 reshapes a malformed-id ``ValidationError`` from qualification via
 ``translate_runtime_error``, whereas an unsupported-feature error from
 the translation step inside this helper must surface unwrapped (as a
-``501``), so it is deliberately raised before the caller's ``try``.
+``501``), so it is raised before the caller's ``try``.
 Scripting-specific pre-rewrites (``_rewrite_temp_calls``,
 ``_rewrite_vars_to_params``) run in the interpreter before the SQL is
 handed to :func:`rewrite_and_translate_statement`.
@@ -57,8 +58,8 @@ async def refresh_dependent_mvs(project_id: str, bq_sql: str, ctx: AppContext) -
     """
     # When the catalog holds no materialized views at all, refresh is a
     # guaranteed no-op, so skip parsing entirely. This keeps the hot path
-    # cheap for the common no-MV case — notably for scripted statements,
-    # which now route every statement through this chain.
+    # cheap for the common no-MV case, notably for scripted statements,
+    # which route every statement through this chain.
     if not ctx.catalog.list_all_materialized_views():
         return
 
@@ -83,7 +84,7 @@ def _referenced_materialized_views(
 
     try:
         tree = sqlglot.parse_one(bq_sql, read="bigquery")
-    except Exception:  # noqa: BLE001 — fall through so later layers error cleanly
+    except Exception:  # noqa: BLE001  (parse failure falls through to later layers)
         return
 
     seen: set[tuple[str, str, str]] = set()
@@ -149,7 +150,7 @@ async def rewrite_and_translate_statement(
     bq_sql = rewrite_unnest_offset(bq_sql)
     bq_sql = expand_wildcard_tables(bq_sql, project_id, ctx.catalog)
     # ADR 0023 §1.B: build a per-table schema snapshot so the translator's
-    # ``annotate_types`` pass can resolve column types — the
+    # ``annotate_types`` pass can resolve column types; the
     # ``AvgDecimalRule`` consults the annotated operand type to decide
     # whether to wrap ``AVG`` in a DECIMAL cast.
     schema_dict = build_catalog_schema(bq_sql, project_id=project_id, catalog=ctx.catalog)
