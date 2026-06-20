@@ -138,3 +138,37 @@ async def test_scripted_time_travel_matches_standalone(
     # Both must see only the pre-boundary row, not the live table.
     assert [row[0] for row in _rows(standalone)] == ["1"]
     assert [row[0] for row in _rows(scripted)] == ["1"]
+
+
+async def test_scripted_execute_immediate_dml_matches_standalone(
+    client: httpx.AsyncClient,
+) -> None:
+    """Dynamic ``EXECUTE IMMEDIATE`` DML matches the standalone statement.
+
+    The shared chain now runs schema-annotated translation on the
+    scripted path too. For an ``INSERT INTO <existing> SELECT ...`` the
+    target table exists, so the annotation pass can re-serialize the
+    statement through SQLGlot. This pins that a dynamic ``EXECUTE
+    IMMEDIATE`` DML lands the same rows as the standalone statement, so
+    the annotation does not silently rewrite the DML.
+    """
+    await _run(client, "INSERT INTO ds.orders VALUES (1, 10), (2, 20), (3, 5)")
+    await _run(client, "CREATE TABLE ds.copy_direct (id INT64, amount INT64)")
+    await _run(client, "CREATE TABLE ds.copy_script (id INT64, amount INT64)")
+
+    inner = "INSERT INTO ds.{dest} SELECT id, amount FROM ds.orders WHERE amount >= 10"
+
+    # Standalone single-statement INSERT...SELECT (the reference).
+    await _run(client, inner.format(dest="copy_direct"))
+    # Same DML run dynamically; EXECUTE IMMEDIATE is not a plain SqlStmt,
+    # so the job routes through the scripting interpreter.
+    await _run(
+        client,
+        f"EXECUTE IMMEDIATE '{inner.format(dest='copy_script')}'",
+    )
+
+    direct = await _run(client, "SELECT id, amount FROM ds.copy_direct ORDER BY id")
+    scripted = await _run(client, "SELECT id, amount FROM ds.copy_script ORDER BY id")
+
+    assert _rows(scripted) == _rows(direct)
+    assert _rows(scripted) == [["1", "10"], ["2", "20"]]

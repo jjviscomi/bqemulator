@@ -78,11 +78,11 @@ documented intent.
 
 ## Consequences
 
-- **Positive:** The two execution paths cannot drift again, because there
-  is one rewrite chain. Materialized-view reads, `FOR SYSTEM_TIME AS OF`
-  time-travel, and type-directed translation rules now behave identically
-  whether a SELECT runs standalone or inside a script (including the
-  `EXPORT DATA` inner SELECT). A regression suite
+- **Positive:** The shared rewrite + translation chain cannot drift
+  again, because there is one implementation. Materialized-view reads,
+  `FOR SYSTEM_TIME AS OF` time-travel, and type-directed translation
+  rules now behave identically whether a SELECT runs standalone or inside
+  a script (including the `EXPORT DATA` inner SELECT). A regression suite
   (`tests/integration/test_scripted_inner_query_parity.py`) pins the
   parity directly.
 - **Negative / limitations:**
@@ -92,6 +92,14 @@ documented intent.
     resolution and is not evaluated as a timestamp. Literal and
     expression `AS OF` targets (the common case) resolve correctly; a
     variable `AS OF` target was non-functional before this change as well.
+  - The shared chain covers the rewrite and translation steps, not the
+    error-shaping that follows. The standalone path runs table-reference
+    qualification inside its error mapper, so a malformed-id
+    `ValidationError` is reshaped to BigQuery's `Function not found`
+    envelope; the scripted path raises that qualification error before
+    its execution `try`, so it surfaces unmapped. This pre-existing
+    difference is preserved, not introduced here, and is narrow (it only
+    affects the wire shape of a malformed-identifier error in a script).
   - The shared chain parses the statement for materialized-view and
     time-travel detection; both short-circuit when their markers are
     absent, so the cost is bounded for queries that use neither.
