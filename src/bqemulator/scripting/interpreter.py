@@ -70,7 +70,7 @@ from bqemulator.scripting.exceptions import (
 )
 from bqemulator.scripting.frames import FrameStack
 from bqemulator.scripting.parser import parse_script
-from bqemulator.sql.inner_query import rewrite_and_translate_select
+from bqemulator.sql.inner_query import rewrite_and_translate_statement
 from bqemulator.sql.parameters import bind_parameters
 from bqemulator.sql.translator import SQLTranslator
 from bqemulator.udf.temp_registry import TempRoutineRegistry
@@ -850,7 +850,7 @@ class ScriptInterpreter:
         """Translate + execute a BigQuery SELECT, returning an Arrow table."""
         bq_sql = self._rewrite_temp_calls(bq_sql)
         rewritten, param_values = _rewrite_vars_to_params(bq_sql, self._frames)
-        duckdb_sql = await rewrite_and_translate_select(
+        duckdb_sql = await rewrite_and_translate_statement(
             rewritten,
             project_id=self._project_id,
             ctx=self._ctx,
@@ -884,7 +884,7 @@ class ScriptInterpreter:
         # Translate first, then merge any @var substitutions AND the using_values.
         bq_sql = self._rewrite_temp_calls(bq_sql)
         rewritten, script_params = _rewrite_vars_to_params(bq_sql, self._frames)
-        duckdb_sql = await rewrite_and_translate_select(
+        duckdb_sql = await rewrite_and_translate_statement(
             rewritten,
             project_id=self._project_id,
             ctx=self._ctx,
@@ -917,7 +917,7 @@ class ScriptInterpreter:
         """Execute a SELECT with positional USING parameters and return the result."""
         bq_sql = self._rewrite_temp_calls(bq_sql)
         rewritten, script_params = _rewrite_vars_to_params(bq_sql, self._frames)
-        duckdb_sql = await rewrite_and_translate_select(
+        duckdb_sql = await rewrite_and_translate_statement(
             rewritten,
             project_id=self._project_id,
             ctx=self._ctx,

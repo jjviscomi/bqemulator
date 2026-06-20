@@ -1,7 +1,7 @@
 """Canonical inner-query rewrite and translation pipeline.
 
-A BigQuery ``SELECT`` reaches DuckDB through one rewrite chain
-regardless of whether it runs as a standalone single-statement job
+A BigQuery statement reaches DuckDB through one rewrite chain regardless
+of whether it runs as a standalone single-statement job
 (:func:`bqemulator.jobs.executor._run_single_sql`) or inside a script
 (:class:`bqemulator.scripting.interpreter.ScriptInterpreter`). This
 module is that single chain so the two execution paths cannot drift:
@@ -17,7 +17,7 @@ substitution and ``USING`` values), execution (``fetch_arrow`` for
 row-producing statements, ``execute`` for dynamic DDL/DML), and
 error-shaping. Scripting-specific pre-rewrites (``_rewrite_temp_calls``,
 ``_rewrite_vars_to_params``) run in the interpreter before the SQL is
-handed to :func:`rewrite_and_translate_select`.
+handed to :func:`rewrite_and_translate_statement`.
 """
 
 from __future__ import annotations
@@ -70,7 +70,7 @@ async def refresh_dependent_mvs(project_id: str, bq_sql: str, ctx: AppContext) -
         await manager.refresh_if_stale(proj, dataset, name)
 
 
-async def rewrite_and_translate_select(
+async def rewrite_and_translate_statement(
     bq_sql: str,
     *,
     project_id: str,
@@ -78,7 +78,14 @@ async def rewrite_and_translate_select(
     caller: CallerIdentity,
     translator: SQLTranslator,
 ) -> str:
-    """Run the canonical rewrite chain and return executable DuckDB SQL.
+    """Run the canonical rewrite chain on one statement, returning DuckDB SQL.
+
+    Handles any single BigQuery statement, not only ``SELECT``: the
+    standalone job path and the scripting interpreter (including
+    ``EXECUTE IMMEDIATE`` dynamic DDL/DML) both route through here. The
+    materialized-view refresh and time-travel passes are no-ops for a
+    statement that reads no table or carries no ``FOR SYSTEM_TIME``
+    clause, so applying the full chain uniformly is safe.
 
     Applies, in order: materialized-view refresh, ``FOR SYSTEM_TIME AS
     OF`` time-travel resolution, row-access enforcement,
@@ -90,7 +97,7 @@ async def rewrite_and_translate_select(
     binding and execution (and their runtime error-shaping) are the
     caller's responsibility.
     """
-    # Refresh any stale materialized views this query reads.
+    # Refresh any stale materialized views this statement reads.
     await refresh_dependent_mvs(project_id, bq_sql, ctx)
     # Resolve FOR SYSTEM_TIME AS OF before the translator runs.
     bq_sql = rewrite_for_system_time(bq_sql, project_id, ctx.snapshots, ctx.engine)
@@ -117,4 +124,4 @@ async def rewrite_and_translate_select(
     return rewrite_table_refs(duckdb_sql, project_id)
 
 
-__all__ = ["refresh_dependent_mvs", "rewrite_and_translate_select"]
+__all__ = ["refresh_dependent_mvs", "rewrite_and_translate_statement"]

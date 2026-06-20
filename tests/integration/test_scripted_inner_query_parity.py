@@ -1,17 +1,17 @@
 """Parity between standalone and scripted inner-query execution.
 
-A BigQuery ``SELECT`` reaches DuckDB through one of two execution
+A BigQuery statement reaches DuckDB through one of two execution
 chains: the standalone single-statement path
 (``jobs.executor._run_single_sql``) and the scripted path
 (``scripting.interpreter.ScriptInterpreter._run_query``), chosen by
 whether the job is a multi-statement / control-flow script.
 
-Both chains must apply the same pre-translation rewrites so a SELECT
+Both chains apply the same pre-translation rewrites so a statement
 behaves identically regardless of which path runs it. These tests pin
-the two rewrites the scripted path historically skipped — materialized
-view refresh and ``FOR SYSTEM_TIME AS OF`` time-travel — by running the
-same query standalone and as the final statement of a script and
-asserting identical results.
+the two rewrites that must stay consistent across both paths
+(materialized view refresh and ``FOR SYSTEM_TIME AS OF`` time-travel) by
+running the same query standalone and as the final statement of a
+script and asserting identical results.
 """
 
 from __future__ import annotations
@@ -42,11 +42,14 @@ async def client() -> AsyncIterator[httpx.AsyncClient]:
     await s.start()
     try:
         async with httpx.AsyncClient(base_url=s.rest_url, timeout=20.0) as c:
-            await c.post(
+            # raise_for_status on the bootstrap calls so a setup failure
+            # surfaces here rather than as a misleading assertion later.
+            r = await c.post(
                 "/bigquery/v2/projects/p/datasets",
                 json={"datasetReference": {"projectId": "p", "datasetId": "ds"}},
             )
-            await c.post(
+            r.raise_for_status()
+            r = await c.post(
                 "/bigquery/v2/projects/p/datasets/ds/tables",
                 json={
                     "tableReference": {
@@ -62,6 +65,7 @@ async def client() -> AsyncIterator[httpx.AsyncClient]:
                     },
                 },
             )
+            r.raise_for_status()
             yield c
     finally:
         await s.stop()

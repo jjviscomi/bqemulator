@@ -55,7 +55,7 @@ from bqemulator.row_access.identity import CallerIdentity
 from bqemulator.scripting.ast import SqlStmt
 from bqemulator.scripting.interpreter import ScriptInterpreter
 from bqemulator.scripting.parser import parse_script
-from bqemulator.sql.inner_query import rewrite_and_translate_select
+from bqemulator.sql.inner_query import rewrite_and_translate_statement
 from bqemulator.sql.parameters import bind_parameters
 from bqemulator.sql.translator import SQLTranslator
 from bqemulator.storage.sql_identifiers import quoted_table_ref
@@ -833,7 +833,7 @@ async def _run_single_sql(
     caller: CallerIdentity,
 ) -> pa.Table:
     """Legacy fast path for a single SQL statement with BQ query params."""
-    duckdb_sql = await rewrite_and_translate_select(
+    duckdb_sql = await rewrite_and_translate_statement(
         bq_sql,
         project_id=project_id,
         ctx=ctx,

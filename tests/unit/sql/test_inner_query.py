@@ -6,7 +6,7 @@ interpreter. End-to-end behaviour (MV refresh, time-travel, row-access)
 is pinned by the integration suites; these tests cover the module's own
 branches: the parse-failure short-circuit in
 :func:`refresh_dependent_mvs` and the translation-error path in
-:func:`rewrite_and_translate_select`.
+:func:`rewrite_and_translate_statement`.
 """
 
 from __future__ import annotations
@@ -30,7 +30,7 @@ from bqemulator.row_access.identity import CallerIdentity
 from bqemulator.row_access.policy import RowAccessPolicyManager
 from bqemulator.sql.inner_query import (
     refresh_dependent_mvs,
-    rewrite_and_translate_select,
+    rewrite_and_translate_statement,
 )
 from bqemulator.sql.translator import SQLTranslator
 from bqemulator.storage.engine import DuckDBEngine
@@ -127,13 +127,13 @@ async def test_refresh_dependent_mvs_skips_unqualified_refs(ctx: AppContext) -> 
     await refresh_dependent_mvs("p", "WITH cte AS (SELECT 1 AS id) SELECT id FROM cte", ctx)
 
 
-async def test_rewrite_and_translate_select_returns_duckdb_sql(
+async def test_rewrite_and_translate_statement_returns_duckdb_sql(
     ctx: AppContext,
     frozen_clock: FrozenClock,
 ) -> None:
     """The happy path returns table-ref-qualified, executable DuckDB SQL."""
     _seed_table(ctx, frozen_clock)
-    duckdb_sql = await rewrite_and_translate_select(
+    duckdb_sql = await rewrite_and_translate_statement(
         "SELECT id FROM ds.t",
         project_id="p",
         ctx=ctx,
@@ -145,7 +145,7 @@ async def test_rewrite_and_translate_select_returns_duckdb_sql(
     assert ctx.engine.fetch_arrow(duckdb_sql).to_pylist() == [{"id": 1}]
 
 
-async def test_rewrite_and_translate_select_raises_translator_error(
+async def test_rewrite_and_translate_statement_raises_translator_error(
     ctx: AppContext,
     frozen_clock: FrozenClock,
 ) -> None:
@@ -158,7 +158,7 @@ async def test_rewrite_and_translate_select_raises_translator_error(
             return Err(sentinel)
 
     with pytest.raises(InvalidQueryError) as excinfo:
-        await rewrite_and_translate_select(
+        await rewrite_and_translate_statement(
             "SELECT id FROM ds.t",
             project_id="p",
             ctx=ctx,
@@ -168,7 +168,7 @@ async def test_rewrite_and_translate_select_raises_translator_error(
     assert excinfo.value is sentinel
 
 
-async def test_rewrite_and_translate_select_ok_branch_with_stub(
+async def test_rewrite_and_translate_statement_ok_branch_with_stub(
     ctx: AppContext,
     frozen_clock: FrozenClock,
 ) -> None:
@@ -179,7 +179,7 @@ async def test_rewrite_and_translate_select_ok_branch_with_stub(
         def translate(self, *_args: object, **_kwargs: object) -> Ok:
             return Ok("SELECT id FROM p.ds.t")
 
-    result = await rewrite_and_translate_select(
+    result = await rewrite_and_translate_statement(
         "SELECT id FROM ds.t",
         project_id="p",
         ctx=ctx,

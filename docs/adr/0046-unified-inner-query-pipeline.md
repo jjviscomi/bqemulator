@@ -43,7 +43,7 @@ Extract the canonical chain into a single shared module,
 
 - `refresh_dependent_mvs(project_id, bq_sql, ctx)`: walks the BigQuery
   AST and refreshes any stale materialized view the query reads.
-- `rewrite_and_translate_select(bq_sql, *, project_id, ctx, caller,
+- `rewrite_and_translate_statement(bq_sql, *, project_id, ctx, caller,
   translator)`: runs the full chain in order (materialized-view refresh,
   time-travel resolution, row-access enforcement, `INFORMATION_SCHEMA`
   expansion, `UNNEST` offset rewriting, wildcard-table expansion,
