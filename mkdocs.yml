@@ -231,6 +231,7 @@ nav:
       - "0043 EXPORT DATA statement (Cloud Storage)": adr/0043-export-data-statement.md
       - "0044 Adopt starlette 1.x (security) without adopting httpx2": adr/0044-starlette-1x-adoption.md
       - "0045 Autodetect schema inference via DuckDB": adr/0045-autodetect-schema-inference.md
+      - "0046 Unified inner-query rewrite pipeline": adr/0046-unified-inner-query-pipeline.md
   - RFCs:
       - Overview: rfcs/README.md
       - "0001 EXPORT DATA statement (Cloud Storage)": rfcs/0001-export-data-statement.md
