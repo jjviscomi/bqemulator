@@ -199,7 +199,7 @@ DDL = SurfaceCategory(
             name="CREATE TABLE … (schema) AS SELECT (combined)",
             bq_docs="https://docs.cloud.google.com/bigquery/docs/reference/standard-sql/data-definition-language#create_table_statement",
             detect=_re(r"\bcreate\s+(?:or\s+replace\s+)?table\b\s+\S+\s*\([^)]*\)\s*as\s+select"),
-            notes=("Combined form requires the CTAS-with-schema rewriter (closed 2026-05-18)."),
+            notes=("Combined form requires the CTAS-with-schema rewriter."),
         ),
         SurfaceItem(
             id="ddl.create_view",
