@@ -99,7 +99,7 @@ the error message).
 
 BigQuery itself does **not** support ORC as a destination extract
 format ([BigQuery extract docs:
-formats](https://cloud.google.com/bigquery/docs/exporting-data#export_formats_and_compression_types)
+formats](https://docs.cloud.google.com/bigquery/docs/exporting-data#export_formats_and_compression_types)
 list AVRO, CSV, JSON, PARQUET only). Adding ORC write would put
 the emulator *ahead* of BigQuery on a surface where parity matters
 — a user who extracts to ORC against the emulator and then tries
@@ -218,7 +218,7 @@ flow through the standard BigQuery-shape translator unchanged.
 ## References
 
 - [DuckDB `avro` extension](https://duckdb.org/docs/extensions/avro)
-- [BigQuery extract destination formats](https://cloud.google.com/bigquery/docs/exporting-data#export_formats_and_compression_types)
+- [BigQuery extract destination formats](https://docs.cloud.google.com/bigquery/docs/exporting-data#export_formats_and_compression_types)
 - [Apache `pyorc`](https://github.com/noirello/pyorc)
-- [BigQuery Avro export details](https://cloud.google.com/bigquery/docs/exporting-data#avro_export_details)
+- [BigQuery Avro export details](https://docs.cloud.google.com/bigquery/docs/exporting-data#avro_export_details)
 - [goccy `bigquery-emulator` FEATURE.md](https://github.com/goccy/bigquery-emulator/blob/main/docs/feature-support.md)

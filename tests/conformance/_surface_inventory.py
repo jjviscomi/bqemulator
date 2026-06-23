@@ -116,7 +116,7 @@ def _kw(name: str) -> re.Pattern[str]:
 DML = SurfaceCategory(
     id="dml",
     name="Data Manipulation (DML)",
-    bq_docs="https://cloud.google.com/bigquery/docs/reference/standard-sql/dml-syntax",
+    bq_docs="https://docs.cloud.google.com/bigquery/docs/reference/standard-sql/dml-syntax",
     description=(
         "BigQuery's DML statements. Coverage must include happy-path + "
         "rows-affected reporting + interaction with row-access policies "
@@ -126,43 +126,43 @@ DML = SurfaceCategory(
         SurfaceItem(
             id="dml.insert_values",
             name="INSERT … VALUES",
-            bq_docs="https://cloud.google.com/bigquery/docs/reference/standard-sql/dml-syntax#insert_statement",
+            bq_docs="https://docs.cloud.google.com/bigquery/docs/reference/standard-sql/dml-syntax#insert_statement",
             detect=_re(r"\binsert\s+into\b[^;]*?\bvalues\b"),
         ),
         SurfaceItem(
             id="dml.insert_select",
             name="INSERT … SELECT",
-            bq_docs="https://cloud.google.com/bigquery/docs/reference/standard-sql/dml-syntax#insert_statement",
+            bq_docs="https://docs.cloud.google.com/bigquery/docs/reference/standard-sql/dml-syntax#insert_statement",
             detect=_re(r"\binsert\s+into\b[^;]*?\bselect\b"),
         ),
         SurfaceItem(
             id="dml.update",
             name="UPDATE",
-            bq_docs="https://cloud.google.com/bigquery/docs/reference/standard-sql/dml-syntax#update_statement",
+            bq_docs="https://docs.cloud.google.com/bigquery/docs/reference/standard-sql/dml-syntax#update_statement",
             detect=_kw("UPDATE"),
         ),
         SurfaceItem(
             id="dml.update_from",
             name="UPDATE … FROM",
-            bq_docs="https://cloud.google.com/bigquery/docs/reference/standard-sql/dml-syntax#update_statement",
+            bq_docs="https://docs.cloud.google.com/bigquery/docs/reference/standard-sql/dml-syntax#update_statement",
             detect=_re(r"\bupdate\b[^;]*?\bset\b[^;]*?\bfrom\b"),
         ),
         SurfaceItem(
             id="dml.delete",
             name="DELETE",
-            bq_docs="https://cloud.google.com/bigquery/docs/reference/standard-sql/dml-syntax#delete_statement",
+            bq_docs="https://docs.cloud.google.com/bigquery/docs/reference/standard-sql/dml-syntax#delete_statement",
             detect=_re(r"\bdelete\s+from\b"),
         ),
         SurfaceItem(
             id="dml.merge",
             name="MERGE",
-            bq_docs="https://cloud.google.com/bigquery/docs/reference/standard-sql/dml-syntax#merge_statement",
+            bq_docs="https://docs.cloud.google.com/bigquery/docs/reference/standard-sql/dml-syntax#merge_statement",
             detect=_re(r"\bmerge\s+(?:into\s+)?"),
         ),
         SurfaceItem(
             id="dml.truncate",
             name="TRUNCATE TABLE",
-            bq_docs="https://cloud.google.com/bigquery/docs/reference/standard-sql/dml-syntax#truncate_table_statement",
+            bq_docs="https://docs.cloud.google.com/bigquery/docs/reference/standard-sql/dml-syntax#truncate_table_statement",
             detect=_re(r"\btruncate\s+table\b"),
         ),
     ),
@@ -174,7 +174,7 @@ DML = SurfaceCategory(
 DDL = SurfaceCategory(
     id="ddl",
     name="Data Definition (DDL)",
-    bq_docs="https://cloud.google.com/bigquery/docs/reference/standard-sql/data-definition-language",
+    bq_docs="https://docs.cloud.google.com/bigquery/docs/reference/standard-sql/data-definition-language",
     description=(
         "Schema-mutating DDL. Each form has wire-format implications "
         "(REST tables.insert / tables.patch / tables.delete) — coverage "
@@ -185,159 +185,159 @@ DDL = SurfaceCategory(
         SurfaceItem(
             id="ddl.create_table",
             name="CREATE TABLE",
-            bq_docs="https://cloud.google.com/bigquery/docs/reference/standard-sql/data-definition-language#create_table_statement",
+            bq_docs="https://docs.cloud.google.com/bigquery/docs/reference/standard-sql/data-definition-language#create_table_statement",
             detect=_re(r"\bcreate\s+(?:or\s+replace\s+)?table\b(?!\s+(?:snapshot|clone))"),
         ),
         SurfaceItem(
             id="ddl.create_table_as_select",
             name="CREATE TABLE … AS SELECT (CTAS)",
-            bq_docs="https://cloud.google.com/bigquery/docs/reference/standard-sql/data-definition-language#create_table_statement",
+            bq_docs="https://docs.cloud.google.com/bigquery/docs/reference/standard-sql/data-definition-language#create_table_statement",
             detect=_re(r"\bcreate\s+(?:or\s+replace\s+)?table\b[^;]*?\bas\b[^;]*?\bselect\b"),
         ),
         SurfaceItem(
             id="ddl.create_table_schema",
             name="CREATE TABLE … (schema) AS SELECT (combined)",
-            bq_docs="https://cloud.google.com/bigquery/docs/reference/standard-sql/data-definition-language#create_table_statement",
+            bq_docs="https://docs.cloud.google.com/bigquery/docs/reference/standard-sql/data-definition-language#create_table_statement",
             detect=_re(r"\bcreate\s+(?:or\s+replace\s+)?table\b\s+\S+\s*\([^)]*\)\s*as\s+select"),
-            notes=("Combined form requires the CTAS-with-schema rewriter (closed 2026-05-18)."),
+            notes=("Combined form requires the CTAS-with-schema rewriter."),
         ),
         SurfaceItem(
             id="ddl.create_view",
             name="CREATE VIEW",
-            bq_docs="https://cloud.google.com/bigquery/docs/reference/standard-sql/data-definition-language#create_view_statement",
+            bq_docs="https://docs.cloud.google.com/bigquery/docs/reference/standard-sql/data-definition-language#create_view_statement",
             detect=_re(r"\bcreate\s+(?:or\s+replace\s+)?view\b"),
         ),
         SurfaceItem(
             id="ddl.create_materialized_view",
             name="CREATE MATERIALIZED VIEW",
-            bq_docs="https://cloud.google.com/bigquery/docs/reference/standard-sql/data-definition-language#create_materialized_view_statement",
+            bq_docs="https://docs.cloud.google.com/bigquery/docs/reference/standard-sql/data-definition-language#create_materialized_view_statement",
             detect=_re(r"\bcreate\s+(?:or\s+replace\s+)?materialized\s+view\b"),
         ),
         SurfaceItem(
             id="ddl.refresh_mv",
             name="REFRESH MATERIALIZED VIEW / CALL BQ.REFRESH_MATERIALIZED_VIEW",
-            bq_docs="https://cloud.google.com/bigquery/docs/materialized-views-manage#refresh",
+            bq_docs="https://docs.cloud.google.com/bigquery/docs/materialized-views-manage#refresh",
             detect=_re(r"\b(refresh\s+materialized\s+view|bq\.refresh_materialized_view)\b"),
         ),
         SurfaceItem(
             id="ddl.create_snapshot",
             name="CREATE SNAPSHOT TABLE",
-            bq_docs="https://cloud.google.com/bigquery/docs/reference/standard-sql/data-definition-language#create_snapshot_table_statement",
+            bq_docs="https://docs.cloud.google.com/bigquery/docs/reference/standard-sql/data-definition-language#create_snapshot_table_statement",
             detect=_re(r"\bcreate\s+snapshot\s+table\b"),
         ),
         SurfaceItem(
             id="ddl.create_clone",
             name="CREATE TABLE … CLONE",
-            bq_docs="https://cloud.google.com/bigquery/docs/table-clones-create",
+            bq_docs="https://docs.cloud.google.com/bigquery/docs/table-clones-create",
             detect=_re(r"\bcreate\s+(?:or\s+replace\s+)?table\b[^;]*?\bclone\b"),
         ),
         SurfaceItem(
             id="ddl.create_schema",
             name="CREATE SCHEMA",
-            bq_docs="https://cloud.google.com/bigquery/docs/reference/standard-sql/data-definition-language#create_schema_statement",
+            bq_docs="https://docs.cloud.google.com/bigquery/docs/reference/standard-sql/data-definition-language#create_schema_statement",
             detect=_re(r"\bcreate\s+schema\b"),
         ),
         SurfaceItem(
             id="ddl.drop_schema",
             name="DROP SCHEMA",
-            bq_docs="https://cloud.google.com/bigquery/docs/reference/standard-sql/data-definition-language#drop_schema_statement",
+            bq_docs="https://docs.cloud.google.com/bigquery/docs/reference/standard-sql/data-definition-language#drop_schema_statement",
             detect=_re(r"\bdrop\s+schema\b"),
         ),
         SurfaceItem(
             id="ddl.drop_table",
             name="DROP TABLE",
-            bq_docs="https://cloud.google.com/bigquery/docs/reference/standard-sql/data-definition-language#drop_table_statement",
+            bq_docs="https://docs.cloud.google.com/bigquery/docs/reference/standard-sql/data-definition-language#drop_table_statement",
             detect=_re(r"\bdrop\s+table\b"),
         ),
         SurfaceItem(
             id="ddl.drop_view",
             name="DROP VIEW",
-            bq_docs="https://cloud.google.com/bigquery/docs/reference/standard-sql/data-definition-language#drop_view_statement",
+            bq_docs="https://docs.cloud.google.com/bigquery/docs/reference/standard-sql/data-definition-language#drop_view_statement",
             detect=_re(r"\bdrop\s+view\b"),
         ),
         SurfaceItem(
             id="ddl.drop_mv",
             name="DROP MATERIALIZED VIEW",
-            bq_docs="https://cloud.google.com/bigquery/docs/reference/standard-sql/data-definition-language#drop_materialized_view_statement",
+            bq_docs="https://docs.cloud.google.com/bigquery/docs/reference/standard-sql/data-definition-language#drop_materialized_view_statement",
             detect=_re(r"\bdrop\s+materialized\s+view\b"),
         ),
         SurfaceItem(
             id="ddl.drop_snapshot",
             name="DROP SNAPSHOT TABLE",
-            bq_docs="https://cloud.google.com/bigquery/docs/reference/standard-sql/data-definition-language#drop_snapshot_table_statement",
+            bq_docs="https://docs.cloud.google.com/bigquery/docs/reference/standard-sql/data-definition-language#drop_snapshot_table_statement",
             detect=_re(r"\bdrop\s+snapshot\s+table\b"),
         ),
         SurfaceItem(
             id="ddl.alter_table_add_column",
             name="ALTER TABLE ADD COLUMN",
-            bq_docs="https://cloud.google.com/bigquery/docs/reference/standard-sql/data-definition-language#alter_table_add_column_statement",
+            bq_docs="https://docs.cloud.google.com/bigquery/docs/reference/standard-sql/data-definition-language#alter_table_add_column_statement",
             detect=_re(r"\balter\s+table\b[^;]*?\badd\s+column\b"),
         ),
         SurfaceItem(
             id="ddl.alter_table_drop_column",
             name="ALTER TABLE DROP COLUMN",
-            bq_docs="https://cloud.google.com/bigquery/docs/reference/standard-sql/data-definition-language#alter_table_drop_column_statement",
+            bq_docs="https://docs.cloud.google.com/bigquery/docs/reference/standard-sql/data-definition-language#alter_table_drop_column_statement",
             detect=_re(r"\balter\s+table\b[^;]*?\bdrop\s+column\b"),
         ),
         SurfaceItem(
             id="ddl.alter_table_rename",
             name="ALTER TABLE RENAME",
-            bq_docs="https://cloud.google.com/bigquery/docs/reference/standard-sql/data-definition-language#alter_table_rename_to_statement",
+            bq_docs="https://docs.cloud.google.com/bigquery/docs/reference/standard-sql/data-definition-language#alter_table_rename_to_statement",
             detect=_re(r"\balter\s+table\b[^;]*?\brename\s+to\b"),
         ),
         SurfaceItem(
             id="ddl.create_function",
             name="CREATE FUNCTION (SQL UDF)",
-            bq_docs="https://cloud.google.com/bigquery/docs/reference/standard-sql/data-definition-language#create_function_statement",
+            bq_docs="https://docs.cloud.google.com/bigquery/docs/reference/standard-sql/data-definition-language#create_function_statement",
             detect=_re(r"\bcreate\s+(?:temp(?:orary)?\s+)?(?:or\s+replace\s+)?function\b"),
         ),
         SurfaceItem(
             id="ddl.create_function_js",
             name="CREATE FUNCTION (JS UDF)",
-            bq_docs="https://cloud.google.com/bigquery/docs/reference/standard-sql/user-defined-functions",
+            bq_docs="https://docs.cloud.google.com/bigquery/docs/reference/standard-sql/user-defined-functions",
             detect=_re(r"\blanguage\s+(?:js|javascript)\b"),
         ),
         SurfaceItem(
             id="ddl.create_table_function",
             name="CREATE TABLE FUNCTION (TVF)",
-            bq_docs="https://cloud.google.com/bigquery/docs/reference/standard-sql/data-definition-language#create_table_function_statement",
+            bq_docs="https://docs.cloud.google.com/bigquery/docs/reference/standard-sql/data-definition-language#create_table_function_statement",
             detect=_re(r"\bcreate\s+(?:or\s+replace\s+)?table\s+function\b"),
         ),
         SurfaceItem(
             id="ddl.create_procedure",
             name="CREATE PROCEDURE",
-            bq_docs="https://cloud.google.com/bigquery/docs/reference/standard-sql/data-definition-language#create_procedure",
+            bq_docs="https://docs.cloud.google.com/bigquery/docs/reference/standard-sql/data-definition-language#create_procedure",
             detect=_re(r"\bcreate\s+(?:or\s+replace\s+)?procedure\b"),
         ),
         SurfaceItem(
             id="ddl.drop_function",
             name="DROP FUNCTION",
-            bq_docs="https://cloud.google.com/bigquery/docs/reference/standard-sql/data-definition-language#drop_function_statement",
+            bq_docs="https://docs.cloud.google.com/bigquery/docs/reference/standard-sql/data-definition-language#drop_function_statement",
             detect=_re(r"\bdrop\s+function\b"),
         ),
         SurfaceItem(
             id="ddl.drop_table_function",
             name="DROP TABLE FUNCTION",
-            bq_docs="https://cloud.google.com/bigquery/docs/reference/standard-sql/data-definition-language#drop_table_function_statement",
+            bq_docs="https://docs.cloud.google.com/bigquery/docs/reference/standard-sql/data-definition-language#drop_table_function_statement",
             detect=_re(r"\bdrop\s+table\s+function\b"),
         ),
         SurfaceItem(
             id="ddl.drop_procedure",
             name="DROP PROCEDURE",
-            bq_docs="https://cloud.google.com/bigquery/docs/reference/standard-sql/data-definition-language#drop_procedure_statement",
+            bq_docs="https://docs.cloud.google.com/bigquery/docs/reference/standard-sql/data-definition-language#drop_procedure_statement",
             detect=_re(r"\bdrop\s+procedure\b"),
         ),
         SurfaceItem(
             id="ddl.create_row_access_policy",
             name="CREATE ROW ACCESS POLICY (REST)",
-            bq_docs="https://cloud.google.com/bigquery/docs/reference/rest/v2/rowAccessPolicies/insert",
+            bq_docs="https://docs.cloud.google.com/bigquery/docs/reference/rest/v2/rowAccessPolicies/insert",
             detect=_re(r"rowAccessPolicies"),
             notes="Setup happens via setup_rest.json POST, not SQL.",
         ),
         SurfaceItem(
             id="ddl.export_data",
             name="EXPORT DATA",
-            bq_docs="https://cloud.google.com/bigquery/docs/reference/standard-sql/export-statements",
+            bq_docs="https://docs.cloud.google.com/bigquery/docs/reference/standard-sql/export-statements",
             detect=_re(r"\bexport\s+data\b"),
             notes=(
                 "GoogleSQL EXPORT DATA OPTIONS(...) AS SELECT → Cloud "
@@ -358,7 +358,7 @@ DDL = SurfaceCategory(
 QUERY = SurfaceCategory(
     id="query",
     name="Query language",
-    bq_docs="https://cloud.google.com/bigquery/docs/reference/standard-sql/query-syntax",
+    bq_docs="https://docs.cloud.google.com/bigquery/docs/reference/standard-sql/query-syntax",
     description=(
         "Composite SELECT shapes (joins, set ops, subqueries, window "
         "functions). Coverage depth here drives confidence that the "
@@ -368,175 +368,175 @@ QUERY = SurfaceCategory(
         SurfaceItem(
             id="query.select",
             name="SELECT",
-            bq_docs="https://cloud.google.com/bigquery/docs/reference/standard-sql/query-syntax#select_list",
+            bq_docs="https://docs.cloud.google.com/bigquery/docs/reference/standard-sql/query-syntax#select_list",
             detect=_kw("SELECT"),
         ),
         SurfaceItem(
             id="query.where",
             name="WHERE",
-            bq_docs="https://cloud.google.com/bigquery/docs/reference/standard-sql/query-syntax#where_clause",
+            bq_docs="https://docs.cloud.google.com/bigquery/docs/reference/standard-sql/query-syntax#where_clause",
             detect=_re(r"\bwhere\b"),
         ),
         SurfaceItem(
             id="query.group_by",
             name="GROUP BY",
-            bq_docs="https://cloud.google.com/bigquery/docs/reference/standard-sql/query-syntax#group_by_clause",
+            bq_docs="https://docs.cloud.google.com/bigquery/docs/reference/standard-sql/query-syntax#group_by_clause",
             detect=_re(r"\bgroup\s+by\b"),
         ),
         SurfaceItem(
             id="query.having",
             name="HAVING",
-            bq_docs="https://cloud.google.com/bigquery/docs/reference/standard-sql/query-syntax#having_clause",
+            bq_docs="https://docs.cloud.google.com/bigquery/docs/reference/standard-sql/query-syntax#having_clause",
             detect=_re(r"\bhaving\b"),
         ),
         SurfaceItem(
             id="query.qualify",
             name="QUALIFY",
-            bq_docs="https://cloud.google.com/bigquery/docs/reference/standard-sql/query-syntax#qualify_clause",
+            bq_docs="https://docs.cloud.google.com/bigquery/docs/reference/standard-sql/query-syntax#qualify_clause",
             detect=_re(r"\bqualify\b"),
         ),
         SurfaceItem(
             id="query.order_by",
             name="ORDER BY",
-            bq_docs="https://cloud.google.com/bigquery/docs/reference/standard-sql/query-syntax#order_by_clause",
+            bq_docs="https://docs.cloud.google.com/bigquery/docs/reference/standard-sql/query-syntax#order_by_clause",
             detect=_re(r"\border\s+by\b"),
         ),
         SurfaceItem(
             id="query.limit",
             name="LIMIT",
-            bq_docs="https://cloud.google.com/bigquery/docs/reference/standard-sql/query-syntax#limit_and_offset_clause",
+            bq_docs="https://docs.cloud.google.com/bigquery/docs/reference/standard-sql/query-syntax#limit_and_offset_clause",
             detect=_re(r"\blimit\b\s+\d"),
         ),
         SurfaceItem(
             id="query.offset",
             name="OFFSET",
-            bq_docs="https://cloud.google.com/bigquery/docs/reference/standard-sql/query-syntax#limit_and_offset_clause",
+            bq_docs="https://docs.cloud.google.com/bigquery/docs/reference/standard-sql/query-syntax#limit_and_offset_clause",
             detect=_re(r"\boffset\b\s+\d"),
         ),
         SurfaceItem(
             id="query.distinct",
             name="SELECT DISTINCT",
-            bq_docs="https://cloud.google.com/bigquery/docs/reference/standard-sql/query-syntax#select_distinct",
+            bq_docs="https://docs.cloud.google.com/bigquery/docs/reference/standard-sql/query-syntax#select_distinct",
             detect=_re(r"\bselect\s+distinct\b"),
         ),
         SurfaceItem(
             id="query.union_all",
             name="UNION ALL",
-            bq_docs="https://cloud.google.com/bigquery/docs/reference/standard-sql/query-syntax#set_operators",
+            bq_docs="https://docs.cloud.google.com/bigquery/docs/reference/standard-sql/query-syntax#set_operators",
             detect=_re(r"\bunion\s+all\b"),
         ),
         SurfaceItem(
             id="query.union_distinct",
             name="UNION DISTINCT",
-            bq_docs="https://cloud.google.com/bigquery/docs/reference/standard-sql/query-syntax#set_operators",
+            bq_docs="https://docs.cloud.google.com/bigquery/docs/reference/standard-sql/query-syntax#set_operators",
             detect=_re(r"\bunion\s+distinct\b"),
         ),
         SurfaceItem(
             id="query.intersect",
             name="INTERSECT",
-            bq_docs="https://cloud.google.com/bigquery/docs/reference/standard-sql/query-syntax#set_operators",
+            bq_docs="https://docs.cloud.google.com/bigquery/docs/reference/standard-sql/query-syntax#set_operators",
             detect=_re(r"\bintersect\s+(?:all|distinct)\b"),
         ),
         SurfaceItem(
             id="query.except",
             name="EXCEPT",
-            bq_docs="https://cloud.google.com/bigquery/docs/reference/standard-sql/query-syntax#set_operators",
+            bq_docs="https://docs.cloud.google.com/bigquery/docs/reference/standard-sql/query-syntax#set_operators",
             detect=_re(r"\bexcept\s+(?:all|distinct)\b"),
         ),
         SurfaceItem(
             id="query.inner_join",
             name="INNER JOIN",
-            bq_docs="https://cloud.google.com/bigquery/docs/reference/standard-sql/query-syntax#inner_join",
+            bq_docs="https://docs.cloud.google.com/bigquery/docs/reference/standard-sql/query-syntax#inner_join",
             detect=_re(r"\b(?:inner\s+)?join\b(?!\s+(?:left|right|full|cross))"),
         ),
         SurfaceItem(
             id="query.left_join",
             name="LEFT JOIN",
-            bq_docs="https://cloud.google.com/bigquery/docs/reference/standard-sql/query-syntax#left_outer_join",
+            bq_docs="https://docs.cloud.google.com/bigquery/docs/reference/standard-sql/query-syntax#left_outer_join",
             detect=_re(r"\bleft\s+(?:outer\s+)?join\b"),
         ),
         SurfaceItem(
             id="query.right_join",
             name="RIGHT JOIN",
-            bq_docs="https://cloud.google.com/bigquery/docs/reference/standard-sql/query-syntax#right_outer_join",
+            bq_docs="https://docs.cloud.google.com/bigquery/docs/reference/standard-sql/query-syntax#right_outer_join",
             detect=_re(r"\bright\s+(?:outer\s+)?join\b"),
         ),
         SurfaceItem(
             id="query.full_join",
             name="FULL OUTER JOIN",
-            bq_docs="https://cloud.google.com/bigquery/docs/reference/standard-sql/query-syntax#full_outer_join",
+            bq_docs="https://docs.cloud.google.com/bigquery/docs/reference/standard-sql/query-syntax#full_outer_join",
             detect=_re(r"\bfull\s+(?:outer\s+)?join\b"),
         ),
         SurfaceItem(
             id="query.cross_join",
             name="CROSS JOIN",
-            bq_docs="https://cloud.google.com/bigquery/docs/reference/standard-sql/query-syntax#cross_join",
+            bq_docs="https://docs.cloud.google.com/bigquery/docs/reference/standard-sql/query-syntax#cross_join",
             detect=_re(r"\bcross\s+join\b"),
         ),
         SurfaceItem(
             id="query.unnest",
             name="UNNEST",
-            bq_docs="https://cloud.google.com/bigquery/docs/reference/standard-sql/query-syntax#unnest_operator",
+            bq_docs="https://docs.cloud.google.com/bigquery/docs/reference/standard-sql/query-syntax#unnest_operator",
             detect=_fn("UNNEST"),
         ),
         SurfaceItem(
             id="query.with_cte",
             name="WITH (CTE)",
-            bq_docs="https://cloud.google.com/bigquery/docs/reference/standard-sql/query-syntax#with_clause",
+            bq_docs="https://docs.cloud.google.com/bigquery/docs/reference/standard-sql/query-syntax#with_clause",
             detect=_re(r"\bwith\b\s+\w+\s+as\b"),
         ),
         SurfaceItem(
             id="query.recursive_cte",
             name="WITH RECURSIVE",
-            bq_docs="https://cloud.google.com/bigquery/docs/reference/standard-sql/query-syntax#recursive_cte",
+            bq_docs="https://docs.cloud.google.com/bigquery/docs/reference/standard-sql/query-syntax#recursive_cte",
             detect=_re(r"\bwith\s+recursive\b"),
         ),
         SurfaceItem(
             id="query.window_over",
             name="Window functions (OVER)",
-            bq_docs="https://cloud.google.com/bigquery/docs/reference/standard-sql/window-function-calls",
+            bq_docs="https://docs.cloud.google.com/bigquery/docs/reference/standard-sql/window-function-calls",
             detect=_re(r"\bover\s*\("),
         ),
         SurfaceItem(
             id="query.case_when",
             name="CASE WHEN",
-            bq_docs="https://cloud.google.com/bigquery/docs/reference/standard-sql/conditional_expressions#case_when",
+            bq_docs="https://docs.cloud.google.com/bigquery/docs/reference/standard-sql/conditional_expressions#case_when",
             detect=_re(r"\bcase\s+when\b"),
         ),
         SurfaceItem(
             id="query.exists",
             name="EXISTS",
-            bq_docs="https://cloud.google.com/bigquery/docs/reference/standard-sql/expression_subqueries#exists_subquery",
+            bq_docs="https://docs.cloud.google.com/bigquery/docs/reference/standard-sql/expression_subqueries#exists_subquery",
             detect=_re(r"\bexists\s*\("),
         ),
         SurfaceItem(
             id="query.in_subquery",
             name="IN (subquery)",
-            bq_docs="https://cloud.google.com/bigquery/docs/reference/standard-sql/expression_subqueries#in_subquery",
+            bq_docs="https://docs.cloud.google.com/bigquery/docs/reference/standard-sql/expression_subqueries#in_subquery",
             detect=_re(r"\bin\s*\(\s*select\b"),
         ),
         SurfaceItem(
             id="query.wildcard_table",
             name="Wildcard tables (`prefix_*`)",
-            bq_docs="https://cloud.google.com/bigquery/docs/querying-wildcard-tables",
+            bq_docs="https://docs.cloud.google.com/bigquery/docs/querying-wildcard-tables",
             detect=_re(r"`[^`]*\*[^`]*`"),
         ),
         SurfaceItem(
             id="query.table_suffix",
             name="_TABLE_SUFFIX pseudo-column",
-            bq_docs="https://cloud.google.com/bigquery/docs/querying-wildcard-tables#filtering_selected_tables_using_table_suffix",
+            bq_docs="https://docs.cloud.google.com/bigquery/docs/querying-wildcard-tables#filtering_selected_tables_using_table_suffix",
             detect=_kw("_TABLE_SUFFIX"),
         ),
         SurfaceItem(
             id="query.partition_pruning",
             name="Partition pruning (WHERE on partition col)",
-            bq_docs="https://cloud.google.com/bigquery/docs/partitioned-tables",
+            bq_docs="https://docs.cloud.google.com/bigquery/docs/partitioned-tables",
             detect=_re(r"\b(_PARTITIONDATE|_PARTITIONTIME)\b"),
         ),
         SurfaceItem(
             id="query.for_system_time_as_of",
             name="FOR SYSTEM_TIME AS OF (time travel)",
-            bq_docs="https://cloud.google.com/bigquery/docs/time-travel",
+            bq_docs="https://docs.cloud.google.com/bigquery/docs/time-travel",
             detect=_re(r"\bfor\s+system_time\s+as\s+of\b"),
             nondeterministic=True,
             notes=(
@@ -549,7 +549,7 @@ QUERY = SurfaceCategory(
         SurfaceItem(
             id="query.tablesample",
             name="TABLESAMPLE",
-            bq_docs="https://cloud.google.com/bigquery/docs/table-sampling",
+            bq_docs="https://docs.cloud.google.com/bigquery/docs/table-sampling",
             detect=_re(r"\btablesample\s+system\b"),
             nondeterministic=True,
             notes=(
@@ -561,13 +561,13 @@ QUERY = SurfaceCategory(
         SurfaceItem(
             id="query.pivot",
             name="PIVOT",
-            bq_docs="https://cloud.google.com/bigquery/docs/reference/standard-sql/query-syntax#pivot_operator",
+            bq_docs="https://docs.cloud.google.com/bigquery/docs/reference/standard-sql/query-syntax#pivot_operator",
             detect=_kw("PIVOT"),
         ),
         SurfaceItem(
             id="query.unpivot",
             name="UNPIVOT",
-            bq_docs="https://cloud.google.com/bigquery/docs/reference/standard-sql/query-syntax#unpivot_operator",
+            bq_docs="https://docs.cloud.google.com/bigquery/docs/reference/standard-sql/query-syntax#unpivot_operator",
             detect=_kw("UNPIVOT"),
         ),
     ),
@@ -579,7 +579,7 @@ QUERY = SurfaceCategory(
 SCRIPTING = SurfaceCategory(
     id="scripting",
     name="Procedural scripting",
-    bq_docs="https://cloud.google.com/bigquery/docs/reference/standard-sql/procedural-language",
+    bq_docs="https://docs.cloud.google.com/bigquery/docs/reference/standard-sql/procedural-language",
     description=(
         "Multi-statement scripting features — the interpreter at "
         "src/bqemulator/scripting/interpreter.py."
@@ -588,85 +588,85 @@ SCRIPTING = SurfaceCategory(
         SurfaceItem(
             id="scripting.declare",
             name="DECLARE",
-            bq_docs="https://cloud.google.com/bigquery/docs/reference/standard-sql/procedural-language#declare",
+            bq_docs="https://docs.cloud.google.com/bigquery/docs/reference/standard-sql/procedural-language#declare",
             detect=_re(r"\bdeclare\b"),
         ),
         SurfaceItem(
             id="scripting.set",
             name="SET (script variable)",
-            bq_docs="https://cloud.google.com/bigquery/docs/reference/standard-sql/procedural-language#set",
+            bq_docs="https://docs.cloud.google.com/bigquery/docs/reference/standard-sql/procedural-language#set",
             detect=_re(r"\bset\s+\w+\s*="),
         ),
         SurfaceItem(
             id="scripting.if",
             name="IF / ELSEIF / ELSE",
-            bq_docs="https://cloud.google.com/bigquery/docs/reference/standard-sql/procedural-language#if",
+            bq_docs="https://docs.cloud.google.com/bigquery/docs/reference/standard-sql/procedural-language#if",
             detect=_re(r"\bif\b[^;]*?\bthen\b"),
         ),
         SurfaceItem(
             id="scripting.while",
             name="WHILE",
-            bq_docs="https://cloud.google.com/bigquery/docs/reference/standard-sql/procedural-language#while",
+            bq_docs="https://docs.cloud.google.com/bigquery/docs/reference/standard-sql/procedural-language#while",
             detect=_re(r"\bwhile\b[^;]*?\bdo\b"),
         ),
         SurfaceItem(
             id="scripting.loop",
             name="LOOP",
-            bq_docs="https://cloud.google.com/bigquery/docs/reference/standard-sql/procedural-language#loop",
+            bq_docs="https://docs.cloud.google.com/bigquery/docs/reference/standard-sql/procedural-language#loop",
             detect=_re(r"^\s*loop\b"),
         ),
         SurfaceItem(
             id="scripting.for",
             name="FOR (loop)",
-            bq_docs="https://cloud.google.com/bigquery/docs/reference/standard-sql/procedural-language#for_in",
+            bq_docs="https://docs.cloud.google.com/bigquery/docs/reference/standard-sql/procedural-language#for_in",
             detect=_re(r"\bfor\b[^;]*?\bin\b[^;]*?\bdo\b"),
         ),
         SurfaceItem(
             id="scripting.break_continue",
             name="BREAK / CONTINUE",
-            bq_docs="https://cloud.google.com/bigquery/docs/reference/standard-sql/procedural-language#break",
+            bq_docs="https://docs.cloud.google.com/bigquery/docs/reference/standard-sql/procedural-language#break",
             detect=_re(r"\b(break|continue|leave|iterate)\b"),
         ),
         SurfaceItem(
             id="scripting.begin_end",
             name="BEGIN … END (block)",
-            bq_docs="https://cloud.google.com/bigquery/docs/reference/standard-sql/procedural-language#beginend",
+            bq_docs="https://docs.cloud.google.com/bigquery/docs/reference/standard-sql/procedural-language#beginend",
             detect=_re(r"\bbegin\b(?!\s+transaction)"),
         ),
         SurfaceItem(
             id="scripting.exception",
             name="BEGIN … EXCEPTION WHEN ERROR",
-            bq_docs="https://cloud.google.com/bigquery/docs/reference/standard-sql/procedural-language#beginexception",
+            bq_docs="https://docs.cloud.google.com/bigquery/docs/reference/standard-sql/procedural-language#beginexception",
             detect=_re(r"\bexception\s+when\s+error\b"),
         ),
         SurfaceItem(
             id="scripting.raise",
             name="RAISE",
-            bq_docs="https://cloud.google.com/bigquery/docs/reference/standard-sql/procedural-language#raise",
+            bq_docs="https://docs.cloud.google.com/bigquery/docs/reference/standard-sql/procedural-language#raise",
             detect=_re(r"\braise\b"),
         ),
         SurfaceItem(
             id="scripting.call",
             name="CALL (procedure)",
-            bq_docs="https://cloud.google.com/bigquery/docs/reference/standard-sql/procedural-language#call",
+            bq_docs="https://docs.cloud.google.com/bigquery/docs/reference/standard-sql/procedural-language#call",
             detect=_re(r"^\s*call\b"),
         ),
         SurfaceItem(
             id="scripting.execute_immediate",
             name="EXECUTE IMMEDIATE",
-            bq_docs="https://cloud.google.com/bigquery/docs/reference/standard-sql/procedural-language#execute_immediate",
+            bq_docs="https://docs.cloud.google.com/bigquery/docs/reference/standard-sql/procedural-language#execute_immediate",
             detect=_re(r"\bexecute\s+immediate\b"),
         ),
         SurfaceItem(
             id="scripting.return",
             name="RETURN",
-            bq_docs="https://cloud.google.com/bigquery/docs/reference/standard-sql/procedural-language#return",
+            bq_docs="https://docs.cloud.google.com/bigquery/docs/reference/standard-sql/procedural-language#return",
             detect=_re(r"\breturn\b"),
         ),
         SurfaceItem(
             id="scripting.begin_transaction",
             name="BEGIN TRANSACTION / COMMIT / ROLLBACK",
-            bq_docs="https://cloud.google.com/bigquery/docs/reference/standard-sql/transactions",
+            bq_docs="https://docs.cloud.google.com/bigquery/docs/reference/standard-sql/transactions",
             detect=_re(r"\b(begin\s+transaction|commit\s+transaction|rollback\s+transaction)\b"),
         ),
     ),
@@ -678,7 +678,7 @@ SCRIPTING = SurfaceCategory(
 TYPES = SurfaceCategory(
     id="types",
     name="Data types",
-    bq_docs="https://cloud.google.com/bigquery/docs/reference/standard-sql/data-types",
+    bq_docs="https://docs.cloud.google.com/bigquery/docs/reference/standard-sql/data-types",
     description=(
         "Every BigQuery scalar + compound type. Coverage should "
         "exercise the type as a column type, in a literal, and through "
@@ -688,103 +688,103 @@ TYPES = SurfaceCategory(
         SurfaceItem(
             id="types.int64",
             name="INT64",
-            bq_docs="https://cloud.google.com/bigquery/docs/reference/standard-sql/data-types#integer_type",
+            bq_docs="https://docs.cloud.google.com/bigquery/docs/reference/standard-sql/data-types#integer_type",
             detect=_re(r"\bint64\b"),
         ),
         SurfaceItem(
             id="types.float64",
             name="FLOAT64",
-            bq_docs="https://cloud.google.com/bigquery/docs/reference/standard-sql/data-types#floating_point_types",
+            bq_docs="https://docs.cloud.google.com/bigquery/docs/reference/standard-sql/data-types#floating_point_types",
             detect=_re(r"\bfloat64\b"),
         ),
         SurfaceItem(
             id="types.numeric",
             name="NUMERIC",
-            bq_docs="https://cloud.google.com/bigquery/docs/reference/standard-sql/data-types#decimal_types",
+            bq_docs="https://docs.cloud.google.com/bigquery/docs/reference/standard-sql/data-types#decimal_types",
             detect=_re(r"\bnumeric\b"),
         ),
         SurfaceItem(
             id="types.bignumeric",
             name="BIGNUMERIC",
-            bq_docs="https://cloud.google.com/bigquery/docs/reference/standard-sql/data-types#decimal_types",
+            bq_docs="https://docs.cloud.google.com/bigquery/docs/reference/standard-sql/data-types#decimal_types",
             detect=_re(r"\bbignumeric\b"),
         ),
         SurfaceItem(
             id="types.bool",
             name="BOOL",
-            bq_docs="https://cloud.google.com/bigquery/docs/reference/standard-sql/data-types#boolean_type",
+            bq_docs="https://docs.cloud.google.com/bigquery/docs/reference/standard-sql/data-types#boolean_type",
             detect=_re(r"\bbool\b"),
         ),
         SurfaceItem(
             id="types.string",
             name="STRING",
-            bq_docs="https://cloud.google.com/bigquery/docs/reference/standard-sql/data-types#string_type",
+            bq_docs="https://docs.cloud.google.com/bigquery/docs/reference/standard-sql/data-types#string_type",
             detect=_re(r"\bstring\b"),
         ),
         SurfaceItem(
             id="types.bytes",
             name="BYTES",
-            bq_docs="https://cloud.google.com/bigquery/docs/reference/standard-sql/data-types#bytes_type",
+            bq_docs="https://docs.cloud.google.com/bigquery/docs/reference/standard-sql/data-types#bytes_type",
             detect=_re(r"\bbytes\b"),
         ),
         SurfaceItem(
             id="types.date",
             name="DATE",
-            bq_docs="https://cloud.google.com/bigquery/docs/reference/standard-sql/data-types#date_type",
+            bq_docs="https://docs.cloud.google.com/bigquery/docs/reference/standard-sql/data-types#date_type",
             detect=_re(r"\bdate\b"),
         ),
         SurfaceItem(
             id="types.time",
             name="TIME",
-            bq_docs="https://cloud.google.com/bigquery/docs/reference/standard-sql/data-types#time_type",
+            bq_docs="https://docs.cloud.google.com/bigquery/docs/reference/standard-sql/data-types#time_type",
             detect=_re(r"\btime\b"),
         ),
         SurfaceItem(
             id="types.datetime",
             name="DATETIME",
-            bq_docs="https://cloud.google.com/bigquery/docs/reference/standard-sql/data-types#datetime_type",
+            bq_docs="https://docs.cloud.google.com/bigquery/docs/reference/standard-sql/data-types#datetime_type",
             detect=_re(r"\bdatetime\b"),
         ),
         SurfaceItem(
             id="types.timestamp",
             name="TIMESTAMP",
-            bq_docs="https://cloud.google.com/bigquery/docs/reference/standard-sql/data-types#timestamp_type",
+            bq_docs="https://docs.cloud.google.com/bigquery/docs/reference/standard-sql/data-types#timestamp_type",
             detect=_re(r"\btimestamp\b"),
         ),
         SurfaceItem(
             id="types.interval",
             name="INTERVAL",
-            bq_docs="https://cloud.google.com/bigquery/docs/reference/standard-sql/data-types#interval_type",
+            bq_docs="https://docs.cloud.google.com/bigquery/docs/reference/standard-sql/data-types#interval_type",
             detect=_re(r"\binterval\b"),
         ),
         SurfaceItem(
             id="types.range",
             name="RANGE<T>",
-            bq_docs="https://cloud.google.com/bigquery/docs/reference/standard-sql/data-types#range_type",
+            bq_docs="https://docs.cloud.google.com/bigquery/docs/reference/standard-sql/data-types#range_type",
             detect=_re(r"\brange\s*<"),
         ),
         SurfaceItem(
             id="types.geography",
             name="GEOGRAPHY",
-            bq_docs="https://cloud.google.com/bigquery/docs/reference/standard-sql/data-types#geography_type",
+            bq_docs="https://docs.cloud.google.com/bigquery/docs/reference/standard-sql/data-types#geography_type",
             detect=_re(r"\bgeography\b"),
         ),
         SurfaceItem(
             id="types.json",
             name="JSON",
-            bq_docs="https://cloud.google.com/bigquery/docs/reference/standard-sql/data-types#json_type",
+            bq_docs="https://docs.cloud.google.com/bigquery/docs/reference/standard-sql/data-types#json_type",
             detect=_re(r"\bjson\b"),
         ),
         SurfaceItem(
             id="types.array",
             name="ARRAY<T>",
-            bq_docs="https://cloud.google.com/bigquery/docs/reference/standard-sql/data-types#array_type",
+            bq_docs="https://docs.cloud.google.com/bigquery/docs/reference/standard-sql/data-types#array_type",
             detect=_re(r"\barray\s*<"),
         ),
         SurfaceItem(
             id="types.struct",
             name="STRUCT<...>",
-            bq_docs="https://cloud.google.com/bigquery/docs/reference/standard-sql/data-types#struct_type",
+            bq_docs="https://docs.cloud.google.com/bigquery/docs/reference/standard-sql/data-types#struct_type",
             detect=_re(r"\bstruct\s*<"),
         ),
     ),
@@ -796,12 +796,12 @@ TYPES = SurfaceCategory(
 FUNCTIONS_STRING = SurfaceCategory(
     id="functions_string",
     name="String functions",
-    bq_docs="https://cloud.google.com/bigquery/docs/reference/standard-sql/string_functions",
+    bq_docs="https://docs.cloud.google.com/bigquery/docs/reference/standard-sql/string_functions",
     items=tuple(
         SurfaceItem(
             id=f"functions_string.{name.lower()}",
             name=name,
-            bq_docs=f"https://cloud.google.com/bigquery/docs/reference/standard-sql/string_functions#{name.lower()}",
+            bq_docs=f"https://docs.cloud.google.com/bigquery/docs/reference/standard-sql/string_functions#{name.lower()}",
             detect=_fn(name),
         )
         for name in (
@@ -871,12 +871,12 @@ _NONDETERMINISTIC_NUMERIC: dict[str, str] = {
 FUNCTIONS_NUMERIC = SurfaceCategory(
     id="functions_numeric",
     name="Numeric / math functions",
-    bq_docs="https://cloud.google.com/bigquery/docs/reference/standard-sql/mathematical_functions",
+    bq_docs="https://docs.cloud.google.com/bigquery/docs/reference/standard-sql/mathematical_functions",
     items=tuple(
         SurfaceItem(
             id=f"functions_numeric.{name.lower()}",
             name=name,
-            bq_docs=f"https://cloud.google.com/bigquery/docs/reference/standard-sql/mathematical_functions#{name.lower()}",
+            bq_docs=f"https://docs.cloud.google.com/bigquery/docs/reference/standard-sql/mathematical_functions#{name.lower()}",
             detect=_fn(name),
             nondeterministic=name in _NONDETERMINISTIC_NUMERIC,
             notes=_NONDETERMINISTIC_NUMERIC.get(name, ""),
@@ -937,12 +937,12 @@ FUNCTIONS_NUMERIC = SurfaceCategory(
 FUNCTIONS_AGGREGATE = SurfaceCategory(
     id="functions_aggregate",
     name="Aggregate functions",
-    bq_docs="https://cloud.google.com/bigquery/docs/reference/standard-sql/aggregate_functions",
+    bq_docs="https://docs.cloud.google.com/bigquery/docs/reference/standard-sql/aggregate_functions",
     items=tuple(
         SurfaceItem(
             id=f"functions_aggregate.{name.lower()}",
             name=name,
-            bq_docs=f"https://cloud.google.com/bigquery/docs/reference/standard-sql/aggregate_functions#{name.lower()}",
+            bq_docs=f"https://docs.cloud.google.com/bigquery/docs/reference/standard-sql/aggregate_functions#{name.lower()}",
             detect=_fn(name),
         )
         for name in (
@@ -1007,12 +1007,12 @@ _NONDETERMINISTIC_DATETIME: dict[str, str] = {
 FUNCTIONS_DATETIME = SurfaceCategory(
     id="functions_datetime",
     name="Date / time / timestamp / datetime functions",
-    bq_docs="https://cloud.google.com/bigquery/docs/reference/standard-sql/date_functions",
+    bq_docs="https://docs.cloud.google.com/bigquery/docs/reference/standard-sql/date_functions",
     items=tuple(
         SurfaceItem(
             id=f"functions_datetime.{name.lower().replace('.', '_')}",
             name=name,
-            bq_docs="https://cloud.google.com/bigquery/docs/reference/standard-sql/date_functions",
+            bq_docs="https://docs.cloud.google.com/bigquery/docs/reference/standard-sql/date_functions",
             detect=_fn(name),
             nondeterministic=name in _NONDETERMINISTIC_DATETIME,
             notes=_NONDETERMINISTIC_DATETIME.get(name, ""),
@@ -1075,12 +1075,12 @@ FUNCTIONS_DATETIME = SurfaceCategory(
 FUNCTIONS_ARRAY = SurfaceCategory(
     id="functions_array",
     name="Array functions",
-    bq_docs="https://cloud.google.com/bigquery/docs/reference/standard-sql/array_functions",
+    bq_docs="https://docs.cloud.google.com/bigquery/docs/reference/standard-sql/array_functions",
     items=tuple(
         SurfaceItem(
             id=f"functions_array.{name.lower()}",
             name=name,
-            bq_docs=f"https://cloud.google.com/bigquery/docs/reference/standard-sql/array_functions#{name.lower()}",
+            bq_docs=f"https://docs.cloud.google.com/bigquery/docs/reference/standard-sql/array_functions#{name.lower()}",
             detect=_fn(name),
         )
         for name in (
@@ -1110,12 +1110,12 @@ FUNCTIONS_ARRAY = SurfaceCategory(
 FUNCTIONS_JSON = SurfaceCategory(
     id="functions_json",
     name="JSON functions",
-    bq_docs="https://cloud.google.com/bigquery/docs/reference/standard-sql/json_functions",
+    bq_docs="https://docs.cloud.google.com/bigquery/docs/reference/standard-sql/json_functions",
     items=tuple(
         SurfaceItem(
             id=f"functions_json.{name.lower().replace('.', '_')}",
             name=name,
-            bq_docs="https://cloud.google.com/bigquery/docs/reference/standard-sql/json_functions",
+            bq_docs="https://docs.cloud.google.com/bigquery/docs/reference/standard-sql/json_functions",
             detect=_fn(name),
         )
         for name in (
@@ -1153,7 +1153,7 @@ FUNCTIONS_JSON = SurfaceCategory(
 FUNCTIONS_GEOGRAPHY = SurfaceCategory(
     id="functions_geography",
     name="GEOGRAPHY functions",
-    bq_docs="https://cloud.google.com/bigquery/docs/reference/standard-sql/geography_functions",
+    bq_docs="https://docs.cloud.google.com/bigquery/docs/reference/standard-sql/geography_functions",
     description=(
         "Spheroidal-vs-planar divergences here are documented in "
         "ADR 0019 and out-of-scope.md (continental-scale comparisons "
@@ -1163,7 +1163,7 @@ FUNCTIONS_GEOGRAPHY = SurfaceCategory(
         SurfaceItem(
             id=f"functions_geography.{name.lower()}",
             name=name,
-            bq_docs="https://cloud.google.com/bigquery/docs/reference/standard-sql/geography_functions",
+            bq_docs="https://docs.cloud.google.com/bigquery/docs/reference/standard-sql/geography_functions",
             detect=_fn(name),
         )
         for name in (
@@ -1221,12 +1221,12 @@ FUNCTIONS_GEOGRAPHY = SurfaceCategory(
 FUNCTIONS_CONVERSION = SurfaceCategory(
     id="functions_conversion",
     name="Conversion / type functions",
-    bq_docs="https://cloud.google.com/bigquery/docs/reference/standard-sql/conversion_functions",
+    bq_docs="https://docs.cloud.google.com/bigquery/docs/reference/standard-sql/conversion_functions",
     items=tuple(
         SurfaceItem(
             id=f"functions_conversion.{name.lower()}",
             name=name,
-            bq_docs="https://cloud.google.com/bigquery/docs/reference/standard-sql/conversion_functions",
+            bq_docs="https://docs.cloud.google.com/bigquery/docs/reference/standard-sql/conversion_functions",
             detect=_fn(name),
         )
         for name in (
@@ -1241,12 +1241,12 @@ FUNCTIONS_CONVERSION = SurfaceCategory(
 FUNCTIONS_CONDITIONAL = SurfaceCategory(
     id="functions_conditional",
     name="Conditional functions",
-    bq_docs="https://cloud.google.com/bigquery/docs/reference/standard-sql/conditional_expressions",
+    bq_docs="https://docs.cloud.google.com/bigquery/docs/reference/standard-sql/conditional_expressions",
     items=tuple(
         SurfaceItem(
             id=f"functions_conditional.{name.lower()}",
             name=name,
-            bq_docs="https://cloud.google.com/bigquery/docs/reference/standard-sql/conditional_expressions",
+            bq_docs="https://docs.cloud.google.com/bigquery/docs/reference/standard-sql/conditional_expressions",
             detect=_fn(name),
         )
         for name in (
@@ -1290,12 +1290,12 @@ _NONDETERMINISTIC_HASH: dict[str, str] = {
 FUNCTIONS_HASH = SurfaceCategory(
     id="functions_hash",
     name="Hash / security functions",
-    bq_docs="https://cloud.google.com/bigquery/docs/reference/standard-sql/hash_functions",
+    bq_docs="https://docs.cloud.google.com/bigquery/docs/reference/standard-sql/hash_functions",
     items=tuple(
         SurfaceItem(
             id=f"functions_hash.{name.lower()}",
             name=name,
-            bq_docs="https://cloud.google.com/bigquery/docs/reference/standard-sql/hash_functions",
+            bq_docs="https://docs.cloud.google.com/bigquery/docs/reference/standard-sql/hash_functions",
             detect=_fn(name),
             nondeterministic=name in _NONDETERMINISTIC_HASH,
             notes=_NONDETERMINISTIC_HASH.get(name, ""),
@@ -1316,12 +1316,12 @@ FUNCTIONS_HASH = SurfaceCategory(
 FUNCTIONS_WINDOW = SurfaceCategory(
     id="functions_window",
     name="Window / navigation functions",
-    bq_docs="https://cloud.google.com/bigquery/docs/reference/standard-sql/navigation_functions",
+    bq_docs="https://docs.cloud.google.com/bigquery/docs/reference/standard-sql/navigation_functions",
     items=tuple(
         SurfaceItem(
             id=f"functions_window.{name.lower()}",
             name=name,
-            bq_docs="https://cloud.google.com/bigquery/docs/reference/standard-sql/navigation_functions",
+            bq_docs="https://docs.cloud.google.com/bigquery/docs/reference/standard-sql/navigation_functions",
             detect=_fn(name),
         )
         for name in (
@@ -1345,12 +1345,12 @@ FUNCTIONS_WINDOW = SurfaceCategory(
 FUNCTIONS_INTERVAL = SurfaceCategory(
     id="functions_interval",
     name="INTERVAL / RANGE functions",
-    bq_docs="https://cloud.google.com/bigquery/docs/reference/standard-sql/interval_functions",
+    bq_docs="https://docs.cloud.google.com/bigquery/docs/reference/standard-sql/interval_functions",
     items=tuple(
         SurfaceItem(
             id=f"functions_interval.{name.lower()}",
             name=name,
-            bq_docs="https://cloud.google.com/bigquery/docs/reference/standard-sql/interval_functions",
+            bq_docs="https://docs.cloud.google.com/bigquery/docs/reference/standard-sql/interval_functions",
             detect=_fn(name),
         )
         for name in (
@@ -1379,7 +1379,7 @@ FUNCTIONS_INTERVAL = SurfaceCategory(
 INFORMATION_SCHEMA = SurfaceCategory(
     id="information_schema",
     name="INFORMATION_SCHEMA virtual views",
-    bq_docs="https://cloud.google.com/bigquery/docs/information-schema-intro",
+    bq_docs="https://docs.cloud.google.com/bigquery/docs/information-schema-intro",
     description=(
         "BigQuery's INFORMATION_SCHEMA family of virtual tables. The "
         "emulator's pre-translation rewriter materialises each view as "
@@ -1393,37 +1393,37 @@ INFORMATION_SCHEMA = SurfaceCategory(
         SurfaceItem(
             id="information_schema.schemata",
             name="INFORMATION_SCHEMA.SCHEMATA",
-            bq_docs="https://cloud.google.com/bigquery/docs/information-schema-intro",
+            bq_docs="https://docs.cloud.google.com/bigquery/docs/information-schema-intro",
             detect=_re(r"INFORMATION_SCHEMA\s*\.\s*SCHEMATA\b"),
         ),
         SurfaceItem(
             id="information_schema.tables",
             name="INFORMATION_SCHEMA.TABLES",
-            bq_docs="https://cloud.google.com/bigquery/docs/information-schema-tables",
+            bq_docs="https://docs.cloud.google.com/bigquery/docs/information-schema-tables",
             detect=_re(r"INFORMATION_SCHEMA\s*\.\s*TABLES\b"),
         ),
         SurfaceItem(
             id="information_schema.columns",
             name="INFORMATION_SCHEMA.COLUMNS",
-            bq_docs="https://cloud.google.com/bigquery/docs/information-schema-columns",
+            bq_docs="https://docs.cloud.google.com/bigquery/docs/information-schema-columns",
             detect=_re(r"INFORMATION_SCHEMA\s*\.\s*COLUMNS\b"),
         ),
         SurfaceItem(
             id="information_schema.table_options",
             name="INFORMATION_SCHEMA.TABLE_OPTIONS",
-            bq_docs="https://cloud.google.com/bigquery/docs/information-schema-table-options",
+            bq_docs="https://docs.cloud.google.com/bigquery/docs/information-schema-table-options",
             detect=_re(r"INFORMATION_SCHEMA\s*\.\s*TABLE_OPTIONS\b"),
         ),
         SurfaceItem(
             id="information_schema.views",
             name="INFORMATION_SCHEMA.VIEWS",
-            bq_docs="https://cloud.google.com/bigquery/docs/information-schema-views",
+            bq_docs="https://docs.cloud.google.com/bigquery/docs/information-schema-views",
             detect=_re(r"INFORMATION_SCHEMA\s*\.\s*VIEWS\b"),
         ),
         SurfaceItem(
             id="information_schema.partitions",
             name="INFORMATION_SCHEMA.PARTITIONS",
-            bq_docs="https://cloud.google.com/bigquery/docs/information-schema-partitions",
+            bq_docs="https://docs.cloud.google.com/bigquery/docs/information-schema-partitions",
             detect=_re(r"INFORMATION_SCHEMA\s*\.\s*PARTITIONS\b"),
         ),
     ),
@@ -1433,7 +1433,7 @@ INFORMATION_SCHEMA = SurfaceCategory(
 WIRE_FORMAT = SurfaceCategory(
     id="wire_format",
     name="REST / wire-format response shapes",
-    bq_docs="https://cloud.google.com/bigquery/docs/reference/rest",
+    bq_docs="https://docs.cloud.google.com/bigquery/docs/reference/rest",
     description=(
         "Shape-level concerns about the JSON BigQuery returns. The "
         "conformance corpus diffs ``schema`` + ``rows`` against recorded "
@@ -1445,26 +1445,26 @@ WIRE_FORMAT = SurfaceCategory(
         SurfaceItem(
             id="wire_format.repeated_field",
             name="REPEATED mode schema field",
-            bq_docs="https://cloud.google.com/bigquery/docs/reference/rest/v2/tables#TableFieldSchema",
+            bq_docs="https://docs.cloud.google.com/bigquery/docs/reference/rest/v2/tables#TableFieldSchema",
             detect=_re(r"\barray\s*<"),
             notes="REPEATED is the wire form of ARRAY<T>.",
         ),
         SurfaceItem(
             id="wire_format.nested_struct",
             name="Nested RECORD/STRUCT schema field",
-            bq_docs="https://cloud.google.com/bigquery/docs/reference/rest/v2/tables#TableFieldSchema",
+            bq_docs="https://docs.cloud.google.com/bigquery/docs/reference/rest/v2/tables#TableFieldSchema",
             detect=_re(r"\bstruct\s*<"),
         ),
         SurfaceItem(
             id="wire_format.null_row",
             name="NULL in row payload",
-            bq_docs="https://cloud.google.com/bigquery/docs/reference/rest/v2/jobs/query#response-body",
+            bq_docs="https://docs.cloud.google.com/bigquery/docs/reference/rest/v2/jobs/query#response-body",
             detect=_re(r"\bnull\b"),
         ),
         SurfaceItem(
             id="wire_format.query_parameters_named",
             name='Named queryParameters (mode="named")',
-            bq_docs="https://cloud.google.com/bigquery/docs/parameterized-queries#bigquery_query_parameters_via_rest-python",
+            bq_docs="https://docs.cloud.google.com/bigquery/docs/parameterized-queries#bigquery_query_parameters_via_rest-python",
             detect=_re(r'"mode"\s*:\s*"named"'),
             notes=(
                 "Parameter-bound queries via ``QueryJobConfig.query_parameters``."
@@ -1474,7 +1474,7 @@ WIRE_FORMAT = SurfaceCategory(
         SurfaceItem(
             id="wire_format.query_parameters_positional",
             name='Positional queryParameters (mode="positional")',
-            bq_docs="https://cloud.google.com/bigquery/docs/parameterized-queries#bigquery_query_parameters_via_rest-python",
+            bq_docs="https://docs.cloud.google.com/bigquery/docs/parameterized-queries#bigquery_query_parameters_via_rest-python",
             detect=_re(r'"mode"\s*:\s*"positional"'),
             notes=(
                 "Parameter-bound queries via ``QueryJobConfig.query_parameters``"
@@ -1484,7 +1484,7 @@ WIRE_FORMAT = SurfaceCategory(
         SurfaceItem(
             id="wire_format.query_parameter_array",
             name="ARRAY queryParameter",
-            bq_docs="https://cloud.google.com/bigquery/docs/parameterized-queries#array_parameters",
+            bq_docs="https://docs.cloud.google.com/bigquery/docs/parameterized-queries#array_parameters",
             detect=_re(r'"type"\s*:\s*"ARRAY"'),
             notes=(
                 "``arrayType`` parameter shape. Detected by ``parameters.json``"
@@ -1494,7 +1494,7 @@ WIRE_FORMAT = SurfaceCategory(
         SurfaceItem(
             id="wire_format.query_parameter_struct",
             name="STRUCT queryParameter",
-            bq_docs="https://cloud.google.com/bigquery/docs/parameterized-queries#struct_parameters",
+            bq_docs="https://docs.cloud.google.com/bigquery/docs/parameterized-queries#struct_parameters",
             detect=_re(r'"type"\s*:\s*"STRUCT"'),
             notes=(
                 "``structTypes`` parameter shape. Detected by ``parameters.json``"
@@ -1504,7 +1504,7 @@ WIRE_FORMAT = SurfaceCategory(
         SurfaceItem(
             id="wire_format.query_parameter_null",
             name="NULL-valued queryParameter",
-            bq_docs="https://cloud.google.com/bigquery/docs/parameterized-queries#using_null_values",
+            bq_docs="https://docs.cloud.google.com/bigquery/docs/parameterized-queries#using_null_values",
             detect=_re(r'"value"\s*:\s*null'),
             notes=(
                 "A typed parameter with no value — exercises BQ's typed-NULL"
@@ -1521,7 +1521,7 @@ WIRE_FORMAT = SurfaceCategory(
 ERRORS = SurfaceCategory(
     id="errors",
     name="Error response parity",
-    bq_docs="https://cloud.google.com/bigquery/docs/reference/rest/v2/ErrorProto",
+    bq_docs="https://docs.cloud.google.com/bigquery/docs/reference/rest/v2/ErrorProto",
     description=(
         "Recorded error envelopes (``error.reason`` / ``http_status`` / "
         "``message_pattern``). Coverage lives in recorded "
@@ -1531,25 +1531,25 @@ ERRORS = SurfaceCategory(
         SurfaceItem(
             id="errors.invalid",
             name="reason=invalid (syntax / argument)",
-            bq_docs="https://cloud.google.com/bigquery/docs/reference/rest/v2/ErrorProto",
+            bq_docs="https://docs.cloud.google.com/bigquery/docs/reference/rest/v2/ErrorProto",
             detect=_re(r'"reason"\s*:\s*"invalid"'),
         ),
         SurfaceItem(
             id="errors.not_found",
             name="reason=notFound",
-            bq_docs="https://cloud.google.com/bigquery/docs/reference/rest/v2/ErrorProto",
+            bq_docs="https://docs.cloud.google.com/bigquery/docs/reference/rest/v2/ErrorProto",
             detect=_re(r'"reason"\s*:\s*"notFound"'),
         ),
         SurfaceItem(
             id="errors.duplicate",
             name="reason=duplicate (already exists)",
-            bq_docs="https://cloud.google.com/bigquery/docs/reference/rest/v2/ErrorProto",
+            bq_docs="https://docs.cloud.google.com/bigquery/docs/reference/rest/v2/ErrorProto",
             detect=_re(r'"reason"\s*:\s*"duplicate"'),
         ),
         SurfaceItem(
             id="errors.access_denied",
             name="reason=accessDenied",
-            bq_docs="https://cloud.google.com/bigquery/docs/reference/rest/v2/ErrorProto",
+            bq_docs="https://docs.cloud.google.com/bigquery/docs/reference/rest/v2/ErrorProto",
             detect=_re(r'"reason"\s*:\s*"accessDenied"'),
         ),
         # ``reason=outOfRange`` is listed in the BigQuery REST API
@@ -1578,7 +1578,7 @@ ERRORS = SurfaceCategory(
 JOBS = SurfaceCategory(
     id="jobs",
     name="BigQuery Jobs",
-    bq_docs="https://cloud.google.com/bigquery/docs/reference/rest/v2/jobs",
+    bq_docs="https://docs.cloud.google.com/bigquery/docs/reference/rest/v2/jobs",
     description=(
         "Job execution configurations and behaviors, such as load jobs, "
         "query configurations, and extract jobs."
@@ -1587,7 +1587,7 @@ JOBS = SurfaceCategory(
         SurfaceItem(
             id="jobs.load_autodetect",
             name="Load Job: Schema Autodetect",
-            bq_docs="https://cloud.google.com/bigquery/docs/reference/rest/v2/Job#JobConfigurationLoad.autodetect",
+            bq_docs="https://docs.cloud.google.com/bigquery/docs/reference/rest/v2/Job#JobConfigurationLoad.autodetect",
             detect=_re(r'"load"\s*:\s*\{[\s\S]{0,400}?"autodetect"\s*:\s*true'),
             notes="Schema auto-detection for CSV/JSON loads.",
         ),

@@ -219,8 +219,8 @@ Both are surfaced to users in the
 
 ## References
 
-- [BigQuery: Export statements (GoogleSQL)](https://cloud.google.com/bigquery/docs/reference/standard-sql/export-statements)
-- [BigQuery: Export table data to Cloud Storage](https://cloud.google.com/bigquery/docs/exporting-data)
-- [BigQuery: export formats and compression types](https://cloud.google.com/bigquery/docs/exporting-data#export_formats_and_compression_types)
+- [BigQuery: Export statements (GoogleSQL)](https://docs.cloud.google.com/bigquery/docs/reference/standard-sql/export-statements)
+- [BigQuery: Export table data to Cloud Storage](https://docs.cloud.google.com/bigquery/docs/exporting-data)
+- [BigQuery: export formats and compression types](https://docs.cloud.google.com/bigquery/docs/exporting-data#export_formats_and_compression_types)
 - [DuckDB `COPY` statement](https://duckdb.org/docs/sql/statements/copy)
 - [DuckDB `avro` extension](https://duckdb.org/docs/extensions/avro)

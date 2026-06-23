@@ -5,7 +5,7 @@ Endpoints:
     GET  /bigquery/v2/projects/{p}/datasets/{d}/tables/{t}/data
 
 Reference:
-    https://cloud.google.com/bigquery/docs/reference/rest/v2/tabledata
+    https://docs.cloud.google.com/bigquery/docs/reference/rest/v2/tabledata
 """
 
 from __future__ import annotations

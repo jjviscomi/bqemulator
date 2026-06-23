@@ -245,7 +245,7 @@ conformance fixtures (P2.d follow-up #1): both
 same-dataset and cross-dataset authorized-view recordings returned 0
 rows from real BQ when the calling user had no matching RAP grant,
 matching the documented BQ behaviour at
-[cloud.google.com/bigquery/docs/row-level-security-intro](https://cloud.google.com/bigquery/docs/row-level-security-intro)
+[docs.cloud.google.com/bigquery/docs/row-level-security-intro](https://docs.cloud.google.com/bigquery/docs/row-level-security-intro)
 ("Row-level access policies applied to the source table are still
 enforced" when the user queries through an authorized view).
 

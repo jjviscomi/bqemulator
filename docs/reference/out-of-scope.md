@@ -483,7 +483,7 @@ recommends) and submit it with `useLegacySql=false` (the default).
 
 BigQuery itself does **not** support ORC as a destination extract
 format. The
-[documented set](https://cloud.google.com/bigquery/docs/exporting-data#export_formats_and_compression_types)
+[documented set](https://docs.cloud.google.com/bigquery/docs/exporting-data#export_formats_and_compression_types)
 is `CSV`, `JSON`, `PARQUET`, `AVRO` only. Shipping ORC extract in
 the emulator would put bqemulator *ahead* of BigQuery on a surface
 where parity matters — a user who extracts to ORC against the

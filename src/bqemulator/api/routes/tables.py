@@ -9,7 +9,7 @@ Endpoints:
     DELETE /bigquery/v2/projects/{p}/datasets/{d}/tables/{t}     — delete
 
 Reference:
-    https://cloud.google.com/bigquery/docs/reference/rest/v2/tables
+    https://docs.cloud.google.com/bigquery/docs/reference/rest/v2/tables
 """
 
 from __future__ import annotations

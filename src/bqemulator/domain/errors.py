@@ -4,7 +4,7 @@ Every expected error in the emulator inherits from :class:`DomainError` and
 maps to the exact JSON shape the real BigQuery service returns via
 :meth:`DomainError.to_bigquery_error`.
 
-Reference: https://cloud.google.com/bigquery/docs/error-messages
+Reference: https://docs.cloud.google.com/bigquery/docs/error-messages
 
 The HTTP status code, BigQuery ``reason`` string, and gRPC canonical
 status code are attached at the subclass level and used by adapter layers

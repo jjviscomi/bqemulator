@@ -26,8 +26,8 @@ under ``Settings.upload_staging_dir`` and then passed to
 
 Reference docs:
 
-* https://cloud.google.com/bigquery/docs/loading-data-local
-* https://cloud.google.com/bigquery/docs/reference/rest/v2/jobs#parameters
+* https://docs.cloud.google.com/bigquery/docs/loading-data-local
+* https://docs.cloud.google.com/bigquery/docs/reference/rest/v2/jobs#parameters
 """
 
 from __future__ import annotations

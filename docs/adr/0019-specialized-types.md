@@ -137,7 +137,7 @@ real BigQuery (`range_sessionize_basic`, `range_sessionize_grouped`,
   the BigQuery-canonical `Y-M D H:M:S[.ffffff]` string.
 * `RANGE`: requires a `rangeElementType: { type: "DATE" | "DATETIME"
   | "TIMESTAMP" }` sub-field. Matches the shape documented in
-  the [BigQuery REST `TableFieldSchema` reference](https://cloud.google.com/bigquery/docs/reference/rest/v2/tables)
+  the [BigQuery REST `TableFieldSchema` reference](https://docs.cloud.google.com/bigquery/docs/reference/rest/v2/tables)
   and confirmed against the
   [google-cloud-go schema.go](https://github.com/googleapis/google-cloud-go/blob/main/bigquery/schema.go)
   before locking.

@@ -13,7 +13,7 @@ rot.
 
 1. `bqemulator` on PATH (`pip install bqemulator`).
 2. `bq` on PATH (install the
-   [gcloud SDK](https://cloud.google.com/sdk/docs/install)).
+   [gcloud SDK](https://docs.cloud.google.com/sdk/docs/install)).
 
 ## Run
 

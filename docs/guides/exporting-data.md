@@ -97,7 +97,7 @@ mismatches (`header` or `field_delimiter` on a non-CSV format,
 ## Formats and compression
 
 Four destination formats are supported, matching BigQuery's
-[documented export set](https://cloud.google.com/bigquery/docs/exporting-data#export_formats_and_compression_types).
+[documented export set](https://docs.cloud.google.com/bigquery/docs/exporting-data#export_formats_and_compression_types).
 The `compression` value is validated against the chosen format:
 
 | Format | `compression` values | Applied? |

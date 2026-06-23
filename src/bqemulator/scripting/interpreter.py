@@ -144,7 +144,7 @@ class ScriptInterpreter:
             if udf_registry is not None
             else None
         )
-        # BigQuery transactions ([`BEGIN TRANSACTION`](https://cloud.google.com/bigquery/docs/reference/standard-sql/transactions))
+        # BigQuery transactions ([`BEGIN TRANSACTION`](https://docs.cloud.google.com/bigquery/docs/reference/standard-sql/transactions))
         # are implemented at the emulator level rather than through
         # DuckDB's native transactions because DuckDB's transaction
         # model is incompatible with BigQuery's semantic of preserving

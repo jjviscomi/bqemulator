@@ -243,8 +243,8 @@ Exact envelopes are pinned by recorded conformance fixtures
   statement-dispatch model that routes scripted `EXPORT DATA` through the shared
   path.
 - Real BigQuery:
-  [Export statements](https://cloud.google.com/bigquery/docs/reference/standard-sql/export-statements)
-  and [Exporting data to Cloud Storage](https://cloud.google.com/bigquery/docs/exporting-data).
+  [Export statements](https://docs.cloud.google.com/bigquery/docs/reference/standard-sql/export-statements)
+  and [Exporting data to Cloud Storage](https://docs.cloud.google.com/bigquery/docs/exporting-data).
 
 ## Unresolved questions
 
