@@ -8,7 +8,7 @@
 > policies (RAP) on the base tables are evaluated against the calling
 > user for every read, including reads that route through an
 > authorized view. This matches real BigQuery: see
-> [cloud.google.com/bigquery/docs/row-level-security-intro](https://cloud.google.com/bigquery/docs/row-level-security-intro)
+> [cloud.google.com/bigquery/docs/row-level-security-intro](https://docs.cloud.google.com/bigquery/docs/row-level-security-intro)
 > ("Row-level access policies applied to the source table are still
 > enforced" when querying through an authorized view). ADR 0018 was
 > originally drafted with the opposite assumption and was revised on

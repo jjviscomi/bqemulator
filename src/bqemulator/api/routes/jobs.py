@@ -11,7 +11,7 @@ Endpoints:
     DELETE /bigquery/v2/projects/{p}/jobs/{j}             — jobs.delete (legacy alias)
 
 Reference:
-    https://cloud.google.com/bigquery/docs/reference/rest/v2/jobs
+    https://docs.cloud.google.com/bigquery/docs/reference/rest/v2/jobs
 """
 
 from __future__ import annotations
@@ -332,7 +332,7 @@ def _attach_query_metadata(response: dict[str, Any], job_meta: JobMeta) -> None:
     ``QueryJob.cache_hit`` / ``.statement_type`` /
     ``.num_dml_affected_rows`` properties read from these top-level
     fields when the job is created via the sync path. See:
-    https://cloud.google.com/bigquery/docs/reference/rest/v2/jobs/query
+    https://docs.cloud.google.com/bigquery/docs/reference/rest/v2/jobs/query
     """
     query_stats = job_meta.statistics.get("query", {}) if job_meta.statistics else {}
     if "cacheHit" in query_stats:
@@ -1636,7 +1636,7 @@ def delete_job_canonical(
 ) -> dict[str, Any]:
     """Delete a job (canonical BigQuery REST API path with ``/delete`` suffix).
 
-    See https://cloud.google.com/bigquery/docs/reference/rest/v2/jobs/delete.
+    See https://docs.cloud.google.com/bigquery/docs/reference/rest/v2/jobs/delete.
     Real BigQuery returns ``200 OK`` with an empty JSON body (``{}``)
     on the ``/delete``-suffixed path. The :func:`delete_job` alias
     below carries the short form for back-compat.

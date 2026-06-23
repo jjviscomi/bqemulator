@@ -9,7 +9,7 @@ Endpoints:
     DELETE /bigquery/v2/projects/{p}/datasets/{d}/routines/{r}   — delete
 
 Reference:
-    https://cloud.google.com/bigquery/docs/reference/rest/v2/routines
+    https://docs.cloud.google.com/bigquery/docs/reference/rest/v2/routines
 """
 
 from __future__ import annotations

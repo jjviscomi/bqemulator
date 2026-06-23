@@ -1,6 +1,6 @@
 # Using the `bq` CLI against bqemulator
 
-[`bq`](https://cloud.google.com/bigquery/docs/reference/bq-cli-reference)
+[`bq`](https://docs.cloud.google.com/bigquery/docs/reference/bq-cli-reference)
 is Google's official command-line tool for BigQuery. It ships as
 part of the `google-cloud-cli` package and is the canonical CLI
 surface for data engineers, DBAs, CI pipelines, and ad-hoc shell
@@ -19,7 +19,7 @@ quickstart you can copy-paste.
 ## Prerequisites
 
 1. **Install the gcloud SDK.** Follow the [official install
-   docs](https://cloud.google.com/sdk/docs/install). After install:
+   docs](https://docs.cloud.google.com/sdk/docs/install). After install:
 
  ```bash
     bq version

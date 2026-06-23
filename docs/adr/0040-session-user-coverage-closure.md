@@ -191,4 +191,4 @@ is ~30 lines plus invisible coupling.
 
 * [ADR 0022 — Conformance corpus design](0022-conformance-corpus-design.md) §1.2 (non-determinism exclusions).
 * [ADR 0038 — ``SESSION_USER()`` pre-translator substitution](0038-session-user.md).
-* [BigQuery security-functions reference](https://cloud.google.com/bigquery/docs/reference/standard-sql/security_functions).
+* [BigQuery security-functions reference](https://docs.cloud.google.com/bigquery/docs/reference/standard-sql/security_functions).

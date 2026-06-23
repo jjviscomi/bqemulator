@@ -23,7 +23,7 @@ Arrow so the gap was invisible there; in Java, it was blocking.
 
 The wire-format contract the Storage Read API obeys (per
 [BigQuery's Storage Read API
-docs](https://cloud.google.com/bigquery/docs/reference/storage#avro)):
+docs](https://docs.cloud.google.com/bigquery/docs/reference/storage#avro)):
 
 * `ReadSession.avro_schema.schema` carries the writer schema as a
   JSON string (Avro schema is itself JSON).
@@ -85,7 +85,7 @@ working out-of-the-box.
 
 The schema converter (`arrow_schema_to_avro_json`) implements
 Google's documented [BigQuery → Avro export
-mapping](https://cloud.google.com/bigquery/docs/exporting-data#avro_export_details):
+mapping](https://docs.cloud.google.com/bigquery/docs/exporting-data#avro_export_details):
 
 | BigQuery | Avro |
 |---|---|
@@ -240,10 +240,10 @@ in lock-step with any future schema-mapping change.
 ## References
 
 * [BigQuery Storage Read API — Avro
-  format](https://cloud.google.com/bigquery/docs/reference/storage#avro)
+  format](https://docs.cloud.google.com/bigquery/docs/reference/storage#avro)
   — the wire-format contract.
 * [BigQuery → Avro export
-  mapping](https://cloud.google.com/bigquery/docs/exporting-data#avro_export_details)
+  mapping](https://docs.cloud.google.com/bigquery/docs/exporting-data#avro_export_details)
   — the BQ-to-Avro type table.
 * [ADR 0022](0022-conformance-corpus-design.md) — recorded-baseline
   design + FLOAT64 / numeric tolerance rules.

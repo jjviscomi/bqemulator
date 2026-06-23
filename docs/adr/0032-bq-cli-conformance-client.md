@@ -15,7 +15,7 @@ language."
 
 But four SDKs is not the full canonical client population.
 Google's
-[`bq` command-line tool](https://cloud.google.com/bigquery/docs/reference/bq-cli-reference)
+[`bq` command-line tool](https://docs.cloud.google.com/bigquery/docs/reference/bq-cli-reference)
 is the BigQuery CLI — distributed as part of the
 `google-cloud-cli` package, used daily by data engineers, DBAs, CI
 pipelines, ad-hoc shell scripts, and `dbt`/`Airflow`/`Looker`

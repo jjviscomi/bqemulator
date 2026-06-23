@@ -22,7 +22,7 @@ const [rows] = await bigquery.query(
 console.log(rows);
 ```
 
-See the [Node.js client reference](https://cloud.google.com/nodejs/docs/reference/bigquery/latest)
+See the [Node.js client reference](https://docs.cloud.google.com/nodejs/docs/reference/bigquery/latest)
 for the full API surface. All operations supported by the REST backend
 work against bqemulator. See the
 [compatibility matrix](../reference/compatibility-matrix.md).

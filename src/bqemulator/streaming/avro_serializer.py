@@ -21,7 +21,7 @@ This module exposes two public functions matching that contract:
 
 * :func:`arrow_schema_to_avro_json` — convert a pyarrow Schema to the
   Avro JSON shape Google's BigQuery → Avro type mapping defines
-  (`<https://cloud.google.com/bigquery/docs/exporting-data#avro_export_details>`_).
+  (`<https://docs.cloud.google.com/bigquery/docs/exporting-data#avro_export_details>`_).
 * :func:`serialize_arrow_table_to_avro_rows` — encode every row of a
   pyarrow Table into naked Avro binary rows using
   :func:`fastavro.schemaless_writer`.

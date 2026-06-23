@@ -13,7 +13,7 @@ resource as documented in the discovery doc):
     POST   /…/{p}/datasets/{d}/tables/{t}/rowAccessPolicies/{policyId}:testIamPermissions
 
 Reference:
-    https://cloud.google.com/bigquery/docs/reference/rest/v2/rowAccessPolicies
+    https://docs.cloud.google.com/bigquery/docs/reference/rest/v2/rowAccessPolicies
 """
 
 from __future__ import annotations

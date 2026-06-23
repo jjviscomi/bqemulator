@@ -16,7 +16,7 @@ The :class:`RowAccessPolicyManager` is the only place that mutates
 * ``grantees`` are valid IAM-member strings. Empty grantee lists are
   allowed but produce a policy that matches *no* caller.
 
-[1]: https://cloud.google.com/bigquery/docs/reference/rest/v2/rowAccessPolicies
+[1]: https://docs.cloud.google.com/bigquery/docs/reference/rest/v2/rowAccessPolicies
 """
 
 from __future__ import annotations

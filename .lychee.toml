@@ -33,9 +33,11 @@ timeout = 20
 # ``reference/rest`` and ``standard-sql/date_functions``: the
 # ``cloud.google.com`` host now issues a 301 to ``docs.cloud.google.com``
 # (a permanent host move), adding one hop on top of the locale chain,
-# so 20 → 25. If this recurs, the next step is migrating the source
-# URLs to ``docs.cloud.google.com`` (the new canonical host) rather
-# than raising the cap further.
+# so 20 → 25. The source URLs have since been migrated to the canonical
+# ``docs.cloud.google.com`` host, so the host-move 301 no longer sits in
+# the chain and the references resolve directly; this cap now only needs to
+# absorb any residual locale hop, and is kept high as headroom against
+# pathological CDN loops.
 # Same URLs resolve fine in a browser; the hop count from the runner
 # egress region is the variable. 25 absorbs the latest observed chain
 # with headroom; infinite-loop CDNs cap out much higher (40+) so we

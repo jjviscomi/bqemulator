@@ -12,7 +12,7 @@ The request/response shapes match the BigQuery REST API v2 exactly so
 the official ``google-cloud-bigquery`` client can talk to us unmodified.
 
 Reference:
-    https://cloud.google.com/bigquery/docs/reference/rest/v2/datasets
+    https://docs.cloud.google.com/bigquery/docs/reference/rest/v2/datasets
 """
 
 from __future__ import annotations

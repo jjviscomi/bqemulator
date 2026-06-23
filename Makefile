@@ -330,7 +330,7 @@ test-e2e-java: docker-build ## E2E — Java client (live container)
 test-e2e-bq-cli: docker-build ## E2E — bq CLI (live container; requires google-cloud-sdk on PATH)
 	@command -v bq >/dev/null 2>&1 || { \
 	    echo "ERROR: bq CLI not installed. Install google-cloud-sdk:" ; \
-	    echo "  https://cloud.google.com/sdk/docs/install" ; \
+	    echo "  https://docs.cloud.google.com/sdk/docs/install" ; \
 	    exit 1 ; \
 	}
 	BQEMU_IMAGE="$(DOCKER_IMAGE):$(DOCKER_TAG)" $(PYTEST) tests/e2e/bq_cli_client -m e2e

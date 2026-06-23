@@ -25,7 +25,7 @@ import re
 #: Legacy SQL type-cast functions and their standard-SQL replacement
 #: type. Each entry rewrites ``LEGACY_NAME(<arg>)`` →
 #: ``CAST(<arg> AS <STANDARD_TYPE>)``. Documented at
-#: https://cloud.google.com/bigquery/docs/reference/legacy-sql#type-conversion-functions.
+#: https://docs.cloud.google.com/bigquery/docs/reference/legacy-sql#type-conversion-functions.
 _LEGACY_CAST_FUNCTIONS: dict[str, str] = {
     "INTEGER": "INT64",
     "FLOAT": "FLOAT64",

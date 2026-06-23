@@ -5,7 +5,7 @@ Endpoints:
     GET /bigquery/v2/projects/{p}/serviceAccount          — getServiceAccount
 
 Reference:
-    https://cloud.google.com/bigquery/docs/reference/rest/v2/projects
+    https://docs.cloud.google.com/bigquery/docs/reference/rest/v2/projects
 """
 
 from __future__ import annotations

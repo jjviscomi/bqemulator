@@ -13,7 +13,7 @@ result responses) and JSON row payloads back to Arrow (for
 ``tabledata.insertAll`` ingestion).
 
 Reference:
-https://cloud.google.com/bigquery/docs/reference/rest/v2/tabledata/list#response-body
+https://docs.cloud.google.com/bigquery/docs/reference/rest/v2/tabledata/list#response-body
 """
 
 from __future__ import annotations

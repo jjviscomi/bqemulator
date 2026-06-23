@@ -62,14 +62,14 @@ bqemulator 1.3.0
 
 ## Using Google's `bq` CLI against the emulator
 
-Google's [`bq`](https://cloud.google.com/bigquery/docs/reference/bq-cli-reference)
+Google's [`bq`](https://docs.cloud.google.com/bigquery/docs/reference/bq-cli-reference)
 command-line tool talks to bqemulator unchanged. The full
 configuration recipe — three endpoint-override paths, the
 required auth bypass, a runnable five-command quickstart — lives
 in the [Using the bq CLI](../guides/using-bq-cli.md) guide.
 
 `bq` is a separate binary from `bqemulator`; install it via the
-[gcloud SDK](https://cloud.google.com/sdk/docs/install). The
+[gcloud SDK](https://docs.cloud.google.com/sdk/docs/install). The
 quickest first call:
 
 ```bash

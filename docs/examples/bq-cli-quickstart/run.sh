@@ -15,7 +15,7 @@ fi
 
 if ! command -v bq >/dev/null 2>&1; then
     echo "ERROR: bq CLI not on PATH. Install the gcloud SDK:" >&2
-    echo "  https://cloud.google.com/sdk/docs/install" >&2
+    echo "  https://docs.cloud.google.com/sdk/docs/install" >&2
     exit 1
 fi
 
