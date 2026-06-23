@@ -26,18 +26,9 @@ updates:
           - "pip-audit"
           - "interrogate"
     ignore:
-      # Apache Airflow 3.x introduces breaking changes to the test
-      # runtime (the SDK task-runner reads connections from the
-      # metadata DB instead of ``AIRFLOW_CONN_*`` env vars; the
-      # airflow-dag-test conftest's ``dag.test()`` driver path needs
-      # a significant rework to match). Pin to the 2.x line until
-      # that rework lands. Also suppress release-candidate auto-bumps
-      # (``-rc.N`` / ``-beta.N`` / ``-alpha.N``) which Dependabot
-      # otherwise treats as legitimate updates.
-      - dependency-name: "apache-airflow"
-        update-types: ["version-update:semver-major"]
-      - dependency-name: "apache-airflow-providers-google"
-        update-types: ["version-update:semver-major"]
+      # apache-airflow is not a root dependency; it lives only in the
+      # docs/examples/python/airflow-dag-test example, so its version cap
+      # belongs in the example ecosystem block below, not here.
       # Starlette 1.x's ``starlette.testclient`` imports ``httpx2``
       # (``import httpx2 as httpx``), which this project does not depend
       # on, so FastAPI's ``TestClient`` (which re-exports it) fails to
@@ -103,6 +94,25 @@ updates:
         applies-to: security-updates
         patterns:
           - "*"
+    ignore:
+      # apache-airflow lives only in the airflow-dag-test example, which is
+      # managed by this block, so the cap belongs here. Airflow 3.x breaks
+      # the example's test runtime (the SDK task-runner reads connections
+      # from the metadata DB instead of ``AIRFLOW_CONN_*`` env vars; the
+      # conftest's ``dag.test()`` driver path needs a significant rework),
+      # and we will not adopt a release candidate. A
+      # ``version-update:semver-major`` ignore is not enough on its own:
+      # this is a security-update group (``applies-to: security-updates``),
+      # and security updates bypass ``update-types`` ignores. A ``versions``
+      # range IS honoured by security updates, so cap by range to hold
+      # airflow on the 2.x line (this also covers 3.x pre-releases such as
+      # ``3.2.1rc1``) while still letting 2.x security patches through.
+      # apache-airflow-providers-google 11.x pairs with airflow 2.x; block
+      # its airflow-3-era 12.x line for the same reason.
+      - dependency-name: "apache-airflow"
+        versions: [">=3.0.0"]
+      - dependency-name: "apache-airflow-providers-google"
+        versions: [">=12.0.0"]
     commit-message:
       prefix: "chore(deps)"
 
