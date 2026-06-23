@@ -5596,13 +5596,13 @@ catalog. No row data is copied.</p>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>bqemulator 1.3.0
 </span></code></pre></div>
 <h2 id="using-googles-bq-cli-against-the-emulator">Using Google's <code>bq</code> CLI against the emulator<a class="headerlink" href="#using-googles-bq-cli-against-the-emulator" title="Permanent link">&para;</a></h2>
-<p>Google's <a href="https://cloud.google.com/bigquery/docs/reference/bq-cli-reference"><code>bq</code></a>
+<p>Google's <a href="https://docs.cloud.google.com/bigquery/docs/reference/bq-cli-reference"><code>bq</code></a>
 command-line tool talks to bqemulator unchanged. The full
 configuration recipe — three endpoint-override paths, the
 required auth bypass, a runnable five-command quickstart — lives
 in the <a href="../../guides/using-bq-cli/">Using the bq CLI</a> guide.</p>
 <p><code>bq</code> is a separate binary from <code>bqemulator</code>; install it via the
-<a href="https://cloud.google.com/sdk/docs/install">gcloud SDK</a>. The
+<a href="https://docs.cloud.google.com/sdk/docs/install">gcloud SDK</a>. The
 quickest first call:</p>
 <div class="language-bash highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="nb">export</span><span class="w"> </span><span class="nv">CLOUDSDK_AUTH_DISABLE_CREDENTIALS</span><span class="o">=</span><span class="nb">true</span>
 </span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a>bq<span class="w"> </span>--api<span class="o">=</span>http://localhost:9050<span class="w"> </span>query<span class="w"> </span>--use_legacy_sql<span class="o">=</span><span class="nb">false</span><span class="w"> </span><span class="s1">&#39;SELECT 1&#39;</span>
