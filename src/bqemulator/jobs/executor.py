@@ -2598,8 +2598,10 @@ def register_model(
 
     The training query's output columns become the model's feature/label
     columns (those named in ``input_label_cols`` are labels, the rest are
-    features) as ``StandardSqlField`` dicts. No model is trained. Must be called
-    under the engine write lock (it writes the catalog).
+    features) as ``StandardSqlField`` dicts. No model is trained. This writes the
+    catalog but does not take the engine write lock itself; the async job and
+    scripting callers hold it around this call to serialise DuckDB-backed catalog
+    writes (test and property callers invoke it directly).
     """
     proj = request.project_id or project_id
     feature_columns, label_columns = _split_feature_label_columns(
