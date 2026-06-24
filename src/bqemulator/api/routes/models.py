@@ -1,0 +1,217 @@
+"""Models (BigQuery ML) REST routes.
+
+Endpoints:
+    GET    /bigquery/v2/projects/{p}/datasets/{d}/models           — list
+    GET    /bigquery/v2/projects/{p}/datasets/{d}/models/{m}       — get
+    PATCH  /bigquery/v2/projects/{p}/datasets/{d}/models/{m}       — patch
+    DELETE /bigquery/v2/projects/{p}/datasets/{d}/models/{m}       — delete
+
+The BigQuery Models REST resource has **no** ``insert`` method — models
+are created only by ``CREATE MODEL`` jobs (wired in a later change).
+Only the mutable fields documented by the official client
+(``description``, ``friendlyName``, ``labels``, ``expirationTime``,
+``encryptionConfiguration``) are accepted on ``PATCH``; ``modelType``,
+``featureColumns``, ``labelColumns``, ``creationTime``, and ``location``
+are read-only and carried through unchanged. See ADR 0047 / RFC 0002 for
+the surface-only BigQuery ML scope.
+
+Reference:
+    https://docs.cloud.google.com/bigquery/docs/reference/rest/v2/models
+"""
+
+from __future__ import annotations
+
+from datetime import UTC, datetime
+from typing import Annotated, Any
+
+from fastapi import APIRouter, Depends, Request, Response, status
+
+from bqemulator.api.dependencies import AppContext, get_context
+from bqemulator.api.routes._rest_helpers import body_or_existing
+from bqemulator.catalog.etag import generate_etag
+from bqemulator.catalog.models import ModelMeta
+from bqemulator.domain.errors import ResourceRef, resource_not_found
+
+router = APIRouter(prefix="/bigquery/v2", tags=["models"])
+
+_Ctx = Annotated[AppContext, Depends(get_context)]
+
+#: Default page size when a client does not supply ``maxResults``. Mirrors
+#: the datasets route's generous default so a single page returns every
+#: model in any realistic local dataset.
+_DEFAULT_PAGE_SIZE = 1000
+
+
+# ---------------------------------------------------------------------------
+# Serialization helpers
+# ---------------------------------------------------------------------------
+
+
+def _to_millis(value: datetime) -> str:
+    """Render a datetime as BigQuery's millisecond-epoch string."""
+    return str(int(value.timestamp() * 1000))
+
+
+def _from_millis(value: str | int) -> datetime:
+    """Parse a BigQuery millisecond-epoch value into a UTC datetime."""
+    return datetime.fromtimestamp(int(value) / 1000, tz=UTC)
+
+
+def _model_to_rest(m: ModelMeta) -> dict[str, Any]:
+    """Serialize a :class:`ModelMeta` to the BigQuery REST shape.
+
+    Emits only documented BigQuery fields. ``training_query`` is internal
+    provenance and is intentionally never surfaced. A top-level ``kind``
+    is intentionally omitted: the documented Model resource carries none,
+    and the conformance corpus (recorded from real BigQuery) is the
+    source of truth for the exact response envelope.
+    """
+    body: dict[str, Any] = {
+        "etag": m.etag,
+        "modelReference": {
+            "projectId": m.project_id,
+            "datasetId": m.dataset_id,
+            "modelId": m.model_id,
+        },
+        "creationTime": _to_millis(m.creation_time),
+        "lastModifiedTime": _to_millis(m.last_modified_time),
+        "modelType": m.model_type,
+        "location": m.location,
+    }
+    if m.friendly_name:
+        body["friendlyName"] = m.friendly_name
+    if m.description:
+        body["description"] = m.description
+    if m.labels:
+        body["labels"] = dict(m.labels)
+    if m.expiration_time is not None:
+        body["expirationTime"] = _to_millis(m.expiration_time)
+    if m.feature_columns:
+        body["featureColumns"] = [dict(c) for c in m.feature_columns]
+    if m.label_columns:
+        body["labelColumns"] = [dict(c) for c in m.label_columns]
+    if m.encryption_configuration is not None:
+        body["encryptionConfiguration"] = dict(m.encryption_configuration)
+    return body
+
+
+def _patched_expiration(body: dict[str, Any], existing: ModelMeta) -> datetime | None:
+    """Resolve ``expirationTime`` for a PATCH, honouring explicit null.
+
+    A body value of ``null`` clears the expiry; an absent key leaves the
+    existing value untouched; a millis value sets it.
+    """
+    if "expirationTime" not in body:
+        return existing.expiration_time
+    raw = body["expirationTime"]
+    return None if raw is None else _from_millis(raw)
+
+
+def _rest_to_model_meta(
+    body: dict[str, Any],
+    clock: Any,
+    existing: ModelMeta,
+) -> ModelMeta:
+    """Apply a PATCH body to an existing model, returning the updated meta.
+
+    Only the mutable fields are read from ``body``; every read-only field
+    (identity, ``model_type``, feature/label columns, ``location``,
+    ``creation_time``, training-query provenance) is preserved from
+    ``existing`` via :meth:`ModelMeta.model_copy`.
+    """
+    now = clock.now()
+    return existing.model_copy(
+        update={
+            "friendly_name": body_or_existing(
+                body, "friendlyName", existing, "friendly_name", None
+            ),
+            "description": body_or_existing(body, "description", existing, "description", None),
+            "labels": body_or_existing(body, "labels", existing, "labels", {}),
+            "expiration_time": _patched_expiration(body, existing),
+            "encryption_configuration": body_or_existing(
+                body, "encryptionConfiguration", existing, "encryption_configuration", None
+            ),
+            "last_modified_time": now,
+            "etag": generate_etag(
+                existing.project_id, existing.dataset_id, existing.model_id, str(now)
+            ),
+        },
+    )
+
+
+# ---------------------------------------------------------------------------
+# Endpoints
+# ---------------------------------------------------------------------------
+
+
+@router.get("/projects/{project_id}/datasets/{dataset_id}/models")
+def list_models(
+    project_id: str,
+    dataset_id: str,
+    ctx: _Ctx,
+) -> dict[str, Any]:
+    """List the models in a dataset.
+
+    Returns every model in a single ``models`` array, ordered by
+    ``model_id`` for a stable response. This mirrors BigQuery's
+    single-page ``ListModelsResponse`` (which carries ``models`` and an
+    optional ``nextPageToken``) for the page sizes a local emulator
+    serves; the codebase's other list endpoints do not paginate either.
+    """
+    models = sorted(
+        ctx.catalog.list_models(project_id, dataset_id),
+        key=lambda m: m.model_id,
+    )
+    return {"models": [_model_to_rest(m) for m in models]}
+
+
+@router.get("/projects/{project_id}/datasets/{dataset_id}/models/{model_id}")
+def get_model(
+    project_id: str,
+    dataset_id: str,
+    model_id: str,
+    ctx: _Ctx,
+) -> dict[str, Any]:
+    """Get a model by ID."""
+    m = ctx.catalog.get_model(project_id, dataset_id, model_id)
+    if m is None:
+        raise resource_not_found(ResourceRef("model", project_id, dataset_id, model_id))
+    return _model_to_rest(m)
+
+
+@router.patch("/projects/{project_id}/datasets/{dataset_id}/models/{model_id}")
+async def patch_model(
+    project_id: str,
+    dataset_id: str,
+    model_id: str,
+    request: Request,
+    ctx: _Ctx,
+) -> dict[str, Any]:
+    """Partial update of a model's mutable metadata."""
+    existing = ctx.catalog.get_model(project_id, dataset_id, model_id)
+    if existing is None:
+        raise resource_not_found(ResourceRef("model", project_id, dataset_id, model_id))
+    body = await request.json()
+    updated = _rest_to_model_meta(body, ctx.clock, existing)
+    async with ctx.engine.write_lock():
+        result = ctx.catalog.update_model(updated)
+    return _model_to_rest(result)
+
+
+@router.delete(
+    "/projects/{project_id}/datasets/{dataset_id}/models/{model_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+)
+async def delete_model(
+    project_id: str,
+    dataset_id: str,
+    model_id: str,
+    ctx: _Ctx,
+) -> Response:
+    """Delete a model."""
+    existing = ctx.catalog.get_model(project_id, dataset_id, model_id)
+    if existing is None:
+        raise resource_not_found(ResourceRef("model", project_id, dataset_id, model_id))
+    async with ctx.engine.write_lock():
+        ctx.catalog.delete_model(project_id, dataset_id, model_id)
+    return Response(status_code=status.HTTP_204_NO_CONTENT)

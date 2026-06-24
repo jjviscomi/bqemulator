@@ -20,6 +20,7 @@ from bqemulator.catalog.memory_repository import MemoryCatalogRepository
 from bqemulator.catalog.models import (
     DatasetMeta,
     JobMeta,
+    ModelMeta,
     RoutineMeta,
     TableMeta,
 )
@@ -31,6 +32,7 @@ __all__ = [
     "DuckDBCatalogRepository",
     "JobMeta",
     "MemoryCatalogRepository",
+    "ModelMeta",
     "RoutineMeta",
     "TableMeta",
     "generate_etag",

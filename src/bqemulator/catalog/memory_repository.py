@@ -13,6 +13,7 @@ from bqemulator.catalog.models import (
     DatasetMeta,
     JobMeta,
     MaterializedViewMeta,
+    ModelMeta,
     PartitionMeta,
     RoutineMeta,
     RowAccessPolicyMeta,
@@ -48,6 +49,7 @@ class MemoryCatalogRepository(CatalogRepository):
         self._datasets: dict[tuple[str, str], DatasetMeta] = {}
         self._tables: dict[tuple[str, str, str], TableMeta] = {}
         self._routines: dict[tuple[str, str, str], RoutineMeta] = {}
+        self._models: dict[tuple[str, str, str], ModelMeta] = {}
         self._jobs: dict[tuple[str, str], JobMeta] = {}
         self._snapshots: dict[str, SnapshotMeta] = {}
         self._mviews: dict[tuple[str, str, str], MaterializedViewMeta] = {}
@@ -101,13 +103,16 @@ class MemoryCatalogRepository(CatalogRepository):
             raise resource_not_found(ResourceRef("dataset", project_id, dataset_id))
 
         # Contents check — block the drop unless caller opted into
-        # cascade. Only tables + routines count toward "non-empty" for
-        # this gate; row-access policies / mviews / snapshots cascade
-        # silently because BigQuery itself doesn't surface them as
-        # blocking children.
+        # cascade. Tables, routines, and models count toward "non-empty"
+        # for this gate because they are top-level, user-visible dataset
+        # children (a bare ``bq rm`` / ``deleteContents=false`` fails on
+        # any of them in real BigQuery). Row-access policies / mviews /
+        # snapshots cascade silently because BigQuery does not surface
+        # them as blocking children.
         table_keys = self._keys_in_dataset(self._tables, project_id, dataset_id)
         routine_keys = self._keys_in_dataset(self._routines, project_id, dataset_id)
-        if (table_keys or routine_keys) and not delete_contents:
+        model_keys = self._keys_in_dataset(self._models, project_id, dataset_id)
+        if (table_keys or routine_keys or model_keys) and not delete_contents:
             raise NotFoundError(
                 f"Dataset {project_id}.{dataset_id} is not empty; "
                 "use delete_contents=True to cascade.",
@@ -124,6 +129,7 @@ class MemoryCatalogRepository(CatalogRepository):
         # in-memory catalog mirror needs its own cascade.
         self._delete_keys(self._tables, table_keys)
         self._delete_keys(self._routines, routine_keys)
+        self._delete_keys(self._models, model_keys)
         self._delete_keys(
             self._row_access,
             self._keys_in_dataset(self._row_access, project_id, dataset_id),
@@ -326,6 +332,58 @@ class MemoryCatalogRepository(CatalogRepository):
                 return
             raise resource_not_found(ResourceRef("routine", project_id, dataset_id, routine_id))
         del self._routines[key]
+
+    # -- Models -----------------------------------------------------------
+
+    def list_models(
+        self,
+        project_id: str,
+        dataset_id: str,
+    ) -> tuple[ModelMeta, ...]:
+        return tuple(
+            m for (p, d, _m), m in self._models.items() if p == project_id and d == dataset_id
+        )
+
+    def get_model(
+        self,
+        project_id: str,
+        dataset_id: str,
+        model_id: str,
+    ) -> ModelMeta | None:
+        return self._models.get((project_id, dataset_id, model_id))
+
+    def create_model(self, model: ModelMeta) -> ModelMeta:
+        key = (model.project_id, model.dataset_id, model.model_id)
+        if key in self._models:
+            raise resource_already_exists(ResourceRef("model", *key))
+        if (model.project_id, model.dataset_id) not in self._datasets:
+            raise resource_not_found(
+                ResourceRef("dataset", model.project_id, model.dataset_id),
+            )
+        self._models[key] = model
+        return model
+
+    def update_model(self, model: ModelMeta) -> ModelMeta:
+        key = (model.project_id, model.dataset_id, model.model_id)
+        if key not in self._models:
+            raise resource_not_found(ResourceRef("model", *key))
+        self._models[key] = model
+        return model
+
+    def delete_model(
+        self,
+        project_id: str,
+        dataset_id: str,
+        model_id: str,
+        *,
+        not_found_ok: bool = False,
+    ) -> None:
+        key = (project_id, dataset_id, model_id)
+        if key not in self._models:
+            if not_found_ok:
+                return
+            raise resource_not_found(ResourceRef("model", project_id, dataset_id, model_id))
+        del self._models[key]
 
     # -- Jobs -------------------------------------------------------------
 

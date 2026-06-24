@@ -15,6 +15,7 @@ from bqemulator.catalog.duckdb_repository import DuckDBCatalogRepository
 from bqemulator.catalog.models import (
     DatasetMeta,
     MaterializedViewMeta,
+    ModelMeta,
     RoutineMeta,
     RowAccessPolicyMeta,
     SnapshotMeta,
@@ -66,6 +67,25 @@ def _routine(
         routine_type="SCALAR_FUNCTION",
         language="SQL",
         definition_body="x",
+        creation_time=NOW,
+        last_modified_time=NOW,
+        etag="e",
+    )
+
+
+def _model(
+    project: str = "p",
+    dataset: str = "sales",
+    model: str = "m1",
+) -> ModelMeta:
+    return ModelMeta(
+        project_id=project,
+        dataset_id=dataset,
+        model_id=model,
+        model_type="LINEAR_REGRESSION",
+        feature_columns=({"name": "x", "type": {"typeKind": "FLOAT64"}},),
+        label_columns=({"name": "y", "type": {"typeKind": "FLOAT64"}},),
+        training_query="SELECT x, y FROM p.sales.t",
         creation_time=NOW,
         last_modified_time=NOW,
         etag="e",
@@ -150,6 +170,58 @@ async def test_routine_crud_roundtrips(ephemeral_settings: Settings) -> None:
 
 
 @pytest.mark.asyncio
+async def test_model_crud_roundtrips(ephemeral_settings: Settings) -> None:
+    engine = DuckDBEngine(ephemeral_settings)
+    await engine.start()
+    try:
+        repo = DuckDBCatalogRepository(engine)
+        repo.create_dataset(_ds())
+        m = repo.create_model(_model())
+        assert repo.get_model("p", "sales", "m1") == m
+        assert repo.list_models("p", "sales") == (m,)
+
+        updated = _model().model_copy(update={"description": "d"})
+        repo.update_model(updated)
+        assert repo.get_model("p", "sales", "m1").description == "d"  # type: ignore[union-attr]
+
+        repo.delete_model("p", "sales", "m1")
+        assert repo.get_model("p", "sales", "m1") is None
+    finally:
+        await engine.stop()
+
+
+@pytest.mark.asyncio
+async def test_model_persists_across_engine_reopen(persistent_settings: Settings) -> None:
+    """A model written to disk rehydrates from a fresh engine + repo.
+
+    Exercises the on-disk persistence path end to end: a second engine
+    opened on the same data directory must reconstruct the full
+    :class:`ModelMeta` — including the opaque feature/label column shapes
+    and the internal training-query provenance — from the JSON column.
+    """
+    engine = DuckDBEngine(persistent_settings)
+    await engine.start()
+    try:
+        repo = DuckDBCatalogRepository(engine)
+        repo.create_dataset(_ds())
+        repo.create_model(_model())
+    finally:
+        await engine.stop()
+
+    reopened = DuckDBEngine(persistent_settings)
+    await reopened.start()
+    try:
+        repo = DuckDBCatalogRepository(reopened)
+        got = repo.get_model("p", "sales", "m1")
+        assert got is not None
+        assert got.model_type == "LINEAR_REGRESSION"
+        assert got.feature_columns == ({"name": "x", "type": {"typeKind": "FLOAT64"}},)
+        assert got.training_query == "SELECT x, y FROM p.sales.t"
+    finally:
+        await reopened.stop()
+
+
+@pytest.mark.asyncio
 async def test_jobs_upsert_and_list(ephemeral_settings: Settings) -> None:
     from bqemulator.catalog.models import JobMeta
 
@@ -188,6 +260,7 @@ async def test_delete_dataset_not_found_ok(ephemeral_settings: Settings) -> None
         repo.delete_dataset("p", "missing", not_found_ok=True)
         repo.delete_table("p", "missing", "tbl", not_found_ok=True)
         repo.delete_routine("p", "missing", "r", not_found_ok=True)
+        repo.delete_model("p", "missing", "m", not_found_ok=True)
     finally:
         await engine.stop()
 
@@ -256,6 +329,7 @@ async def test_delete_dataset_cascades_through_persistent_tables(
                 last_refresh_time=NOW,
             ),
         )
+        repo.create_model(_model())
 
         # Drop the dataset — every dependent row should go with it.
         repo.delete_dataset("p", "sales", delete_contents=True)
@@ -264,6 +338,7 @@ async def test_delete_dataset_cascades_through_persistent_tables(
         assert repo.list_row_access_policies("p", "sales", "orders") == ()
         assert repo.list_snapshots_for_table("p", "sales", "orders") == ()
         assert repo.get_materialized_view("p", "sales", "orders_mv") is None
+        assert repo.list_models("p", "sales") == ()
 
         # The persistent DuckDB-side rows must also be cleared so a
         # fresh repo on the same engine doesn't rehydrate stale state.
@@ -271,5 +346,6 @@ async def test_delete_dataset_cascades_through_persistent_tables(
         assert rebuilt.list_row_access_policies("p", "sales", "orders") == ()
         assert rebuilt.list_snapshots_for_table("p", "sales", "orders") == ()
         assert rebuilt.get_materialized_view("p", "sales", "orders_mv") is None
+        assert rebuilt.list_models("p", "sales") == ()
     finally:
         await engine.stop()

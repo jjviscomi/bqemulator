@@ -335,6 +335,53 @@ class RoutineMeta(_Frozen):
 
 
 # ---------------------------------------------------------------------------
+# Model (BigQuery ML)
+# ---------------------------------------------------------------------------
+
+
+class ModelMeta(_Frozen):
+    """Metadata for a BigQuery ML model (surface-only registration).
+
+    The emulator registers a model's *metadata* so the Models REST
+    resource, ``CREATE MODEL`` DDL, and ``ML.PREDICT`` output *shape*
+    can be exercised locally. It does **not** train a model or store
+    learned weights — ``feature_columns`` / ``label_columns`` describe
+    the model's input/output *shape* only. See ADR 0047 / RFC 0002.
+
+    ``model_type`` is a free-form string rather than a closed
+    :data:`Literal`: BigQuery's ``modelType`` enum is large and grows
+    with each BQML release, and the surface registers any declared type
+    as metadata without interpreting it. The official client likewise
+    treats it as a plain string defaulting to ``MODEL_TYPE_UNSPECIFIED``.
+
+    ``feature_columns`` and ``label_columns`` are stored as opaque
+    ``StandardSqlField`` dicts (``{"name": ..., "type": {"typeKind":
+    ...}}``), mirroring how :class:`RoutineMeta` stores ``return_type``
+    and argument data types. ``training_query`` is bqemulator-internal
+    provenance (the ``AS SELECT`` text a ``CREATE MODEL`` was derived
+    from); it is persisted but never emitted in the REST representation,
+    which carries only documented BigQuery fields.
+    """
+
+    project_id: str
+    dataset_id: str
+    model_id: str
+    model_type: str = "MODEL_TYPE_UNSPECIFIED"
+    friendly_name: str | None = None
+    description: str | None = None
+    labels: dict[str, str] = Field(default_factory=dict)
+    location: str = "US"
+    expiration_time: datetime | None = None
+    feature_columns: tuple[dict[str, Any], ...] = ()
+    label_columns: tuple[dict[str, Any], ...] = ()
+    encryption_configuration: dict[str, Any] | None = None
+    training_query: str | None = None  # bqemulator provenance; not a REST field
+    creation_time: datetime
+    last_modified_time: datetime
+    etag: str
+
+
+# ---------------------------------------------------------------------------
 # Job
 # ---------------------------------------------------------------------------
 
@@ -369,6 +416,7 @@ __all__ = [
     "JobState",
     "JobType",
     "MaterializedViewMeta",
+    "ModelMeta",
     "PartitionMeta",
     "PartitionType",
     "RangePartitioning",

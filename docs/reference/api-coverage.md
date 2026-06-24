@@ -18,7 +18,7 @@ committed inventory has drifted from the source.
 
 > **Auto-generated.** Edit route handlers under [`src/bqemulator/api/routes/`](https://github.com/jjviscomi/bqemulator/blob/main/src/bqemulator/api/routes/) (or the root-level health router under [`src/bqemulator/api/health.py`](https://github.com/jjviscomi/bqemulator/blob/main/src/bqemulator/api/health.py)) and run `make api-coverage` to regenerate this block. `make verify` calls `--check` to refuse merging a PR whose committed inventory has drifted from the live source. Endpoint counts in this block are facts about the codebase; ship-status (v1.0.0 release-quality across all surfaces) is asserted in the [compatibility matrix](compatibility-matrix.md) and gated by the conformance corpus on every PR.
 
-- **Total REST endpoints**: 42 across 9 route modules
+- **Total REST endpoints**: 46 across 10 route modules
 
 | Group | Path | Methods |
 |---|---|---|
@@ -40,6 +40,8 @@ committed inventory has drifted from the source.
 | Jobs | `/bigquery/v2/projects/{project_id}/jobs/{job_id}/delete` | DELETE |
 | Routines | `/bigquery/v2/projects/{project_id}/datasets/{dataset_id}/routines` | GET POST |
 | Routines | `/bigquery/v2/projects/{project_id}/datasets/{dataset_id}/routines/{routine_id}` | GET PUT PATCH DELETE |
+| Models | `/bigquery/v2/projects/{project_id}/datasets/{dataset_id}/models` | GET |
+| Models | `/bigquery/v2/projects/{project_id}/datasets/{dataset_id}/models/{model_id}` | GET PATCH DELETE |
 | RowAccessPolicies | `/bigquery/v2/projects/{project_id}/datasets/{dataset_id}/tables/{table_id}/rowAccessPolicies` | GET POST |
 | RowAccessPolicies | `/bigquery/v2/projects/{project_id}/datasets/{dataset_id}/tables/{table_id}/rowAccessPolicies:batchDelete` | POST |
 | RowAccessPolicies | `/bigquery/v2/projects/{project_id}/datasets/{dataset_id}/tables/{table_id}/rowAccessPolicies/{policy_id}` | GET PUT DELETE |

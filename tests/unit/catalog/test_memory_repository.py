@@ -14,6 +14,7 @@ from bqemulator.catalog.memory_repository import MemoryCatalogRepository
 from bqemulator.catalog.models import (
     DatasetMeta,
     MaterializedViewMeta,
+    ModelMeta,
     RoutineMeta,
     RowAccessPolicyMeta,
     SnapshotMeta,
@@ -48,6 +49,22 @@ def make_table(
         creation_time=NOW,
         last_modified_time=NOW,
         etag=f"etag-{table}",
+    )
+
+
+def make_model(
+    project: str = "p",
+    dataset: str = "sales",
+    model: str = "churn",
+) -> ModelMeta:
+    return ModelMeta(
+        project_id=project,
+        dataset_id=dataset,
+        model_id=model,
+        model_type="LOGISTIC_REGRESSION",
+        creation_time=NOW,
+        last_modified_time=NOW,
+        etag=f"etag-{model}",
     )
 
 
@@ -171,6 +188,24 @@ class TestDatasetCrud:
         repo.delete_dataset("p", "sales", delete_contents=True)
         assert repo.get_materialized_view("p", "sales", "orders_mv") is None
 
+    def test_delete_with_only_a_model_requires_cascade(self) -> None:
+        """A model is a blocking child, like a table or routine."""
+        repo = MemoryCatalogRepository()
+        repo.create_dataset(make_dataset())
+        repo.create_model(make_model())
+        with pytest.raises(NotFoundError):
+            repo.delete_dataset("p", "sales")
+
+    def test_delete_contents_cascades_models(self) -> None:
+        """``delete_dataset(delete_contents=True)`` must cascade to models."""
+        repo = MemoryCatalogRepository()
+        repo.create_dataset(make_dataset())
+        repo.create_model(make_model())
+        assert repo.list_models("p", "sales")
+
+        repo.delete_dataset("p", "sales", delete_contents=True)
+        assert repo.list_models("p", "sales") == ()
+
     def test_delete_contents_cascades_snapshots(self) -> None:
         """``delete_dataset(delete_contents=True)`` must cascade to snapshots."""
         repo = MemoryCatalogRepository()
@@ -268,6 +303,60 @@ class TestRoutineCrud:
         assert repo.list_routines("p", "sales") == (r,)
         repo.delete_routine("p", "sales", "SafeDivide")
         assert repo.get_routine("p", "sales", "SafeDivide") is None
+
+
+class TestModelCrud:
+    def test_create_requires_parent_dataset(self) -> None:
+        repo = MemoryCatalogRepository()
+        with pytest.raises(NotFoundError):
+            repo.create_model(make_model())
+
+    def test_crud_roundtrip(self) -> None:
+        repo = MemoryCatalogRepository()
+        repo.create_dataset(make_dataset())
+        m = repo.create_model(make_model())
+        assert repo.get_model("p", "sales", "churn") == m
+        assert repo.list_models("p", "sales") == (m,)
+        repo.delete_model("p", "sales", "churn")
+        assert repo.get_model("p", "sales", "churn") is None
+
+    def test_create_duplicate_raises(self) -> None:
+        repo = MemoryCatalogRepository()
+        repo.create_dataset(make_dataset())
+        repo.create_model(make_model())
+        with pytest.raises(AlreadyExistsError):
+            repo.create_model(make_model())
+
+    def test_update_replaces(self) -> None:
+        repo = MemoryCatalogRepository()
+        repo.create_dataset(make_dataset())
+        repo.create_model(make_model())
+        updated = make_model().model_copy(update={"description": "d"})
+        repo.update_model(updated)
+        got = repo.get_model("p", "sales", "churn")
+        assert got is not None and got.description == "d"
+
+    def test_update_missing_raises(self) -> None:
+        repo = MemoryCatalogRepository()
+        with pytest.raises(NotFoundError):
+            repo.update_model(make_model())
+
+    def test_list_scoped_by_dataset(self) -> None:
+        repo = MemoryCatalogRepository()
+        repo.create_dataset(make_dataset())
+        repo.create_dataset(make_dataset(dataset="other"))
+        repo.create_model(make_model())
+        repo.create_model(make_model(dataset="other", model="m2"))
+        assert {m.model_id for m in repo.list_models("p", "sales")} == {"churn"}
+
+    def test_delete_missing_raises_by_default(self) -> None:
+        repo = MemoryCatalogRepository()
+        with pytest.raises(NotFoundError):
+            repo.delete_model("p", "sales", "nope")
+
+    def test_delete_missing_not_found_ok(self) -> None:
+        repo = MemoryCatalogRepository()
+        repo.delete_model("p", "sales", "nope", not_found_ok=True)  # no raise
 
 
 class TestJobRegistry:
