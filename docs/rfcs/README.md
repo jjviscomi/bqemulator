@@ -31,3 +31,4 @@ for the PR mechanics.
 | RFC | Title | Status |
 |---|---|---|
 | [0001](0001-export-data-statement.md) | EXPORT DATA statement (Cloud Storage) | Accepted |
+| [0002](0002-bigquery-ml-surface.md) | BigQuery ML surface (metadata, Models REST, ML.PREDICT shape) | Accepted |

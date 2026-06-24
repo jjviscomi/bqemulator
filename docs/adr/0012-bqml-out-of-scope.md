@@ -1,6 +1,13 @@
 # ADR 0012: BigQuery ML explicitly out of scope for v1
 
-- **Status**: Accepted
+- **Status**: Accepted (partially superseded by [ADR 0047](0047-bigquery-ml-surface.md))
+- **Superseded by**: 0047 (surface-only slice: `CREATE MODEL` metadata, Models
+  REST `list`/`get`/`patch`/`delete`, and `ML.PREDICT` output shape move into
+  scope; training, evaluation, forecasting, generation, and prediction accuracy
+  remain out of scope under this ADR). Note: this ADR's claim that "Models
+  resource CRUD ... insert ... is supported" was never accurate (the Models
+  surface was unimplemented, and BigQuery has no `models.insert`); ADR 0047
+  implements `list`/`get`/`patch`/`delete` only.
 
 ## Context
 
