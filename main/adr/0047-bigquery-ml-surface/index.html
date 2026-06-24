@@ -10,13 +10,13 @@
       
       
       
-        <link rel="canonical" href="https://jjviscomi.github.io/bqemulator/main/architecture/scripting/">
+        <link rel="canonical" href="https://jjviscomi.github.io/bqemulator/main/adr/0047-bigquery-ml-surface/">
       
       
-        <link rel="prev" href="../storage-write-api/">
+        <link rel="prev" href="../0046-unified-inner-query-pipeline/">
       
       
-        <link rel="next" href="../udfs/">
+        <link rel="next" href="../../rfcs/">
       
       
         
@@ -27,7 +27,7 @@
     
     
       
-        <title>Scripting - bqemulator</title>
+        <title>0047 BigQuery ML surface (metadata, Models REST, ML.PREDICT shape) - bqemulator</title>
       
     
     
@@ -80,7 +80,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#scripting-interpreter" class="md-skip">
+        <a href="#adr-0047-bigquery-ml-surface-metadata-models-rest-mlpredict-shape" class="md-skip">
           Skip to content
         </a>
       
@@ -118,7 +118,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Scripting
+              0047 BigQuery ML surface (metadata, Models REST, ML.PREDICT shape)
             
           </span>
         </div>
@@ -338,13 +338,11 @@
   
   
   
-    
-  
   
     
     
-      <li class="md-tabs__item md-tabs__item--active">
-        <a href="../overview/" class="md-tabs__link">
+      <li class="md-tabs__item">
+        <a href="../../architecture/overview/" class="md-tabs__link">
           
   
   
@@ -362,11 +360,13 @@
   
   
   
+    
+  
   
     
     
-      <li class="md-tabs__item">
-        <a href="../../adr/0001-use-duckdb/" class="md-tabs__link">
+      <li class="md-tabs__item md-tabs__item--active">
+        <a href="../0001-use-duckdb/" class="md-tabs__link">
           
   
   
@@ -2079,10 +2079,8 @@
       
   
   
-    
   
   
-  
     
     
       
@@ -2122,22 +2120,19 @@
     
     
       
-        
-        
-      
       
         
       
     
     
-    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--nested">
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_6" checked>
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_6" >
         
           
-          <label class="md-nav__link" for="__nav_6" id="__nav_6_label" tabindex="">
+          <label class="md-nav__link" for="__nav_6" id="__nav_6_label" tabindex="0">
             
   
   
@@ -2155,7 +2150,7 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_6_label" aria-expanded="true">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_6_label" aria-expanded="false">
           <label class="md-nav__title" for="__nav_6">
             <span class="md-nav__icon md-icon"></span>
             
@@ -2173,7 +2168,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../overview/" class="md-nav__link">
+      <a href="../../architecture/overview/" class="md-nav__link">
         
   
   
@@ -2201,7 +2196,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../storage-model/" class="md-nav__link">
+      <a href="../../architecture/storage-model/" class="md-nav__link">
         
   
   
@@ -2229,7 +2224,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../sql-translation/" class="md-nav__link">
+      <a href="../../architecture/sql-translation/" class="md-nav__link">
         
   
   
@@ -2257,7 +2252,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../jobs-lifecycle/" class="md-nav__link">
+      <a href="../../architecture/jobs-lifecycle/" class="md-nav__link">
         
   
   
@@ -2285,7 +2280,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../storage-read-api/" class="md-nav__link">
+      <a href="../../architecture/storage-read-api/" class="md-nav__link">
         
   
   
@@ -2313,7 +2308,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../storage-write-api/" class="md-nav__link">
+      <a href="../../architecture/storage-write-api/" class="md-nav__link">
         
   
   
@@ -2338,37 +2333,10 @@
                 
   
   
-    
   
   
-  
-    <li class="md-nav__item md-nav__item--active">
-      
-      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
-      
-      
-        
-      
-      
-        <label class="md-nav__link md-nav__link--active" for="__toc">
-          
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Scripting
-  
-
-    
-  </span>
-  
-  
-
-          <span class="md-nav__icon md-icon"></span>
-        </label>
-      
-      <a href="./" class="md-nav__link md-nav__link--active">
+    <li class="md-nav__item">
+      <a href="../../architecture/scripting/" class="md-nav__link">
         
   
   
@@ -2384,70 +2352,6 @@
   
 
       </a>
-      
-        
-
-<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
-  
-  
-  
-    
-  
-  
-    <label class="md-nav__title" for="__toc">
-      <span class="md-nav__icon md-icon"></span>
-      Table of contents
-    </label>
-    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#parse" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Parse
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#interpret" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Interpret
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#scoping" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Scoping
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#error-mapping" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Error mapping
-      
-    </span>
-  </a>
-  
-</li>
-      
-    </ul>
-  
-</nav>
-      
     </li>
   
 
@@ -2460,7 +2364,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../udfs/" class="md-nav__link">
+      <a href="../../architecture/udfs/" class="md-nav__link">
         
   
   
@@ -2488,7 +2392,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../versioning-and-snapshots/" class="md-nav__link">
+      <a href="../../architecture/versioning-and-snapshots/" class="md-nav__link">
         
   
   
@@ -2516,7 +2420,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../row-access-policies/" class="md-nav__link">
+      <a href="../../architecture/row-access-policies/" class="md-nav__link">
         
   
   
@@ -2544,7 +2448,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../specialized-types/" class="md-nav__link">
+      <a href="../../architecture/specialized-types/" class="md-nav__link">
         
   
   
@@ -2572,7 +2476,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../admin-and-import-export/" class="md-nav__link">
+      <a href="../../architecture/admin-and-import-export/" class="md-nav__link">
         
   
   
@@ -2600,7 +2504,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../observability/" class="md-nav__link">
+      <a href="../../architecture/observability/" class="md-nav__link">
         
   
   
@@ -2628,7 +2532,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../testing-strategy/" class="md-nav__link">
+      <a href="../../architecture/testing-strategy/" class="md-nav__link">
         
   
   
@@ -2656,7 +2560,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../conformance-tier/" class="md-nav__link">
+      <a href="../../architecture/conformance-tier/" class="md-nav__link">
         
   
   
@@ -2708,20 +2612,17 @@
       
       
         
-          
-          
-        
       
     
     
-    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--nested">
       
         
         
         <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_6_16" >
         
           
-          <label class="md-nav__link" for="__nav_6_16" id="__nav_6_16_label" tabindex="">
+          <label class="md-nav__link" for="__nav_6_16" id="__nav_6_16_label" tabindex="0">
             
   
   
@@ -2757,7 +2658,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../contributing/dev-environment/" class="md-nav__link">
+      <a href="../../architecture/contributing/dev-environment/" class="md-nav__link">
         
   
   
@@ -2785,7 +2686,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../contributing/documentation-style-guide/" class="md-nav__link">
+      <a href="../../architecture/contributing/documentation-style-guide/" class="md-nav__link">
         
   
   
@@ -2813,7 +2714,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../contributing/release-process/" class="md-nav__link">
+      <a href="../../architecture/contributing/release-process/" class="md-nav__link">
         
   
   
@@ -2841,7 +2742,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../contributing/adding-sql-functions/" class="md-nav__link">
+      <a href="../../architecture/contributing/adding-sql-functions/" class="md-nav__link">
         
   
   
@@ -2869,7 +2770,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../contributing/adding-udf-runtimes/" class="md-nav__link">
+      <a href="../../architecture/contributing/adding-udf-runtimes/" class="md-nav__link">
         
   
   
@@ -2897,7 +2798,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../contributing/adding-conformance-cases/" class="md-nav__link">
+      <a href="../../architecture/contributing/adding-conformance-cases/" class="md-nav__link">
         
   
   
@@ -2925,7 +2826,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../contributing/tpcds-expansion-plan/" class="md-nav__link">
+      <a href="../../architecture/contributing/tpcds-expansion-plan/" class="md-nav__link">
         
   
   
@@ -2953,7 +2854,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../contributing/debugging/" class="md-nav__link">
+      <a href="../../architecture/contributing/debugging/" class="md-nav__link">
         
   
   
@@ -2993,8 +2894,10 @@
       
   
   
+    
   
   
+  
     
     
       
@@ -3096,19 +2999,22 @@
     
     
       
+        
+        
+      
       
         
       
     
     
-    <li class="md-nav__item md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_7" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_7" checked>
         
           
-          <label class="md-nav__link" for="__nav_7" id="__nav_7_label" tabindex="0">
+          <label class="md-nav__link" for="__nav_7" id="__nav_7_label" tabindex="">
             
   
   
@@ -3126,7 +3032,7 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_7_label" aria-expanded="false">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_7_label" aria-expanded="true">
           <label class="md-nav__title" for="__nav_7">
             <span class="md-nav__icon md-icon"></span>
             
@@ -3144,7 +3050,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../adr/0001-use-duckdb/" class="md-nav__link">
+      <a href="../0001-use-duckdb/" class="md-nav__link">
         
   
   
@@ -3172,7 +3078,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../adr/0002-python-over-go-rust/" class="md-nav__link">
+      <a href="../0002-python-over-go-rust/" class="md-nav__link">
         
   
   
@@ -3200,7 +3106,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../adr/0003-sqlglot-for-translation/" class="md-nav__link">
+      <a href="../0003-sqlglot-for-translation/" class="md-nav__link">
         
   
   
@@ -3228,7 +3134,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../adr/0004-hexagonal-architecture/" class="md-nav__link">
+      <a href="../0004-hexagonal-architecture/" class="md-nav__link">
         
   
   
@@ -3256,7 +3162,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../adr/0005-fastapi-grpcaio-single-process/" class="md-nav__link">
+      <a href="../0005-fastapi-grpcaio-single-process/" class="md-nav__link">
         
   
   
@@ -3284,7 +3190,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../adr/0006-catalog-in-reserved-schema/" class="md-nav__link">
+      <a href="../0006-catalog-in-reserved-schema/" class="md-nav__link">
         
   
   
@@ -3312,7 +3218,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../adr/0007-pytest-fixture-as-dx/" class="md-nav__link">
+      <a href="../0007-pytest-fixture-as-dx/" class="md-nav__link">
         
   
   
@@ -3340,7 +3246,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../adr/0008-snapshot-storage-read-api/" class="md-nav__link">
+      <a href="../0008-snapshot-storage-read-api/" class="md-nav__link">
         
   
   
@@ -3368,7 +3274,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../adr/0009-snapshot-layer-time-travel/" class="md-nav__link">
+      <a href="../0009-snapshot-layer-time-travel/" class="md-nav__link">
         
   
   
@@ -3396,7 +3302,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../adr/0010-py-mini-racer-for-js-udfs/" class="md-nav__link">
+      <a href="../0010-py-mini-racer-for-js-udfs/" class="md-nav__link">
         
   
   
@@ -3424,7 +3330,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../adr/0011-tree-walking-scripting-interpreter/" class="md-nav__link">
+      <a href="../0011-tree-walking-scripting-interpreter/" class="md-nav__link">
         
   
   
@@ -3452,7 +3358,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../adr/0012-bqml-out-of-scope/" class="md-nav__link">
+      <a href="../0012-bqml-out-of-scope/" class="md-nav__link">
         
   
   
@@ -3480,7 +3386,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../adr/0013-write-api-strategies/" class="md-nav__link">
+      <a href="../0013-write-api-strategies/" class="md-nav__link">
         
   
   
@@ -3508,7 +3414,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../adr/0014-udf-materialization-strategy/" class="md-nav__link">
+      <a href="../0014-udf-materialization-strategy/" class="md-nav__link">
         
   
   
@@ -3536,7 +3442,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../adr/0015-scripting-execution-model/" class="md-nav__link">
+      <a href="../0015-scripting-execution-model/" class="md-nav__link">
         
   
   
@@ -3564,7 +3470,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../adr/0016-snapshot-time-semantics/" class="md-nav__link">
+      <a href="../0016-snapshot-time-semantics/" class="md-nav__link">
         
   
   
@@ -3592,7 +3498,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../adr/0017-materialized-view-refresh/" class="md-nav__link">
+      <a href="../0017-materialized-view-refresh/" class="md-nav__link">
         
   
   
@@ -3620,7 +3526,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../adr/0018-caller-identity-and-row-access-enforcement/" class="md-nav__link">
+      <a href="../0018-caller-identity-and-row-access-enforcement/" class="md-nav__link">
         
   
   
@@ -3648,7 +3554,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../adr/0019-specialized-types/" class="md-nav__link">
+      <a href="../0019-specialized-types/" class="md-nav__link">
         
   
   
@@ -3676,7 +3582,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../adr/0020-admin-import-export/" class="md-nav__link">
+      <a href="../0020-admin-import-export/" class="md-nav__link">
         
   
   
@@ -3704,7 +3610,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../adr/0021-chaos-tier-design-contract/" class="md-nav__link">
+      <a href="../0021-chaos-tier-design-contract/" class="md-nav__link">
         
   
   
@@ -3732,7 +3638,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../adr/0022-conformance-corpus-design/" class="md-nav__link">
+      <a href="../0022-conformance-corpus-design/" class="md-nav__link">
         
   
   
@@ -3760,7 +3666,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../adr/0023-conformance-divergence-baseline/" class="md-nav__link">
+      <a href="../0023-conformance-divergence-baseline/" class="md-nav__link">
         
   
   
@@ -3788,7 +3694,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../adr/0024-hll-count-support-strategy/" class="md-nav__link">
+      <a href="../0024-hll-count-support-strategy/" class="md-nav__link">
         
   
   
@@ -3816,7 +3722,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../adr/0025-perf-tier-design-contract/" class="md-nav__link">
+      <a href="../0025-perf-tier-design-contract/" class="md-nav__link">
         
   
   
@@ -3844,7 +3750,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../adr/0026-mutation-tier-design-contract/" class="md-nav__link">
+      <a href="../0026-mutation-tier-design-contract/" class="md-nav__link">
         
   
   
@@ -3872,7 +3778,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../adr/0027-load-extract-avro-orc/" class="md-nav__link">
+      <a href="../0027-load-extract-avro-orc/" class="md-nav__link">
         
   
   
@@ -3900,7 +3806,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../adr/0028-differential-tier-design-contract/" class="md-nav__link">
+      <a href="../0028-differential-tier-design-contract/" class="md-nav__link">
         
   
   
@@ -3928,7 +3834,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../adr/0029-upload-host-endpoints/" class="md-nav__link">
+      <a href="../0029-upload-host-endpoints/" class="md-nav__link">
         
   
   
@@ -3956,7 +3862,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../adr/0030-storage-read-avro-format/" class="md-nav__link">
+      <a href="../0030-storage-read-avro-format/" class="md-nav__link">
         
   
   
@@ -3984,7 +3890,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../adr/0031-fuzz-tier-design-contract/" class="md-nav__link">
+      <a href="../0031-fuzz-tier-design-contract/" class="md-nav__link">
         
   
   
@@ -4012,7 +3918,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../adr/0032-bq-cli-conformance-client/" class="md-nav__link">
+      <a href="../0032-bq-cli-conformance-client/" class="md-nav__link">
         
   
   
@@ -4040,7 +3946,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../adr/0033-storage-read-arrow-ipc-bare-message-contract/" class="md-nav__link">
+      <a href="../0033-storage-read-arrow-ipc-bare-message-contract/" class="md-nav__link">
         
   
   
@@ -4068,7 +3974,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../adr/0034-scio-beam-emulator-routing/" class="md-nav__link">
+      <a href="../0034-scio-beam-emulator-routing/" class="md-nav__link">
         
   
   
@@ -4096,7 +4002,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../adr/0035-code-quality-gates/" class="md-nav__link">
+      <a href="../0035-code-quality-gates/" class="md-nav__link">
         
   
   
@@ -4124,7 +4030,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../adr/0036-complexity-ratchet-to-c/" class="md-nav__link">
+      <a href="../0036-complexity-ratchet-to-c/" class="md-nav__link">
         
   
   
@@ -4152,7 +4058,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../adr/0037-openssf-scorecard/" class="md-nav__link">
+      <a href="../0037-openssf-scorecard/" class="md-nav__link">
         
   
   
@@ -4180,7 +4086,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../adr/0038-session-user/" class="md-nav__link">
+      <a href="../0038-session-user/" class="md-nav__link">
         
   
   
@@ -4208,7 +4114,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../adr/0039-artifact-attestations/" class="md-nav__link">
+      <a href="../0039-artifact-attestations/" class="md-nav__link">
         
   
   
@@ -4236,7 +4142,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../adr/0040-session-user-coverage-closure/" class="md-nav__link">
+      <a href="../0040-session-user-coverage-closure/" class="md-nav__link">
         
   
   
@@ -4264,7 +4170,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../adr/0041-complexity-ratchet-to-b/" class="md-nav__link">
+      <a href="../0041-complexity-ratchet-to-b/" class="md-nav__link">
         
   
   
@@ -4292,7 +4198,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../adr/0042-module-ceiling-ratchet-to-b/" class="md-nav__link">
+      <a href="../0042-module-ceiling-ratchet-to-b/" class="md-nav__link">
         
   
   
@@ -4320,7 +4226,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../adr/0043-export-data-statement/" class="md-nav__link">
+      <a href="../0043-export-data-statement/" class="md-nav__link">
         
   
   
@@ -4348,7 +4254,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../adr/0044-starlette-1x-adoption/" class="md-nav__link">
+      <a href="../0044-starlette-1x-adoption/" class="md-nav__link">
         
   
   
@@ -4376,7 +4282,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../adr/0045-autodetect-schema-inference/" class="md-nav__link">
+      <a href="../0045-autodetect-schema-inference/" class="md-nav__link">
         
   
   
@@ -4404,7 +4310,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../adr/0046-unified-inner-query-pipeline/" class="md-nav__link">
+      <a href="../0046-unified-inner-query-pipeline/" class="md-nav__link">
         
   
   
@@ -4429,10 +4335,37 @@
                 
   
   
+    
   
   
-    <li class="md-nav__item">
-      <a href="../../adr/0047-bigquery-ml-surface/" class="md-nav__link">
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0047 BigQuery ML surface (metadata, Models REST, ML.PREDICT shape)
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
         
   
   
@@ -4448,6 +4381,203 @@
   
 
       </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#context" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Context
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#decisions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Decisions
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Decisions">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#1-surface-only-scope-training-stays-out" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. Surface-only scope; training stays out
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#2-intercept-expcreatekindmodel-and-exppredict-pre-translation-dual-wired" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. Intercept exp.Create(kind=MODEL) and exp.Predict pre-translation, dual-wired
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#3-modelmeta-catalog-entity-models-rest-resource-no-insert" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. ModelMeta catalog entity + Models REST resource (no insert)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#4-faithful-shapes-recorded-mlpredict-values-are-a-documented-divergence" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4. Faithful shapes recorded; ML.PREDICT values are a documented divergence
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#5-disposition-error-parity" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5. Disposition + error parity
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#consequences" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Consequences
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Consequences">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#capability-matrix-shift" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Capability matrix shift
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#coverage-test-surface" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Coverage + test surface
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#honesty-about-prediction-values" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Honesty about prediction values
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#unresolved-questions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Unresolved questions
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#alternatives-considered" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Alternatives considered
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#related-work" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Related work
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#references" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        References
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
     </li>
   
 
@@ -5523,10 +5653,10 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#parse" class="md-nav__link">
+  <a href="#context" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Parse
+        Context
       
     </span>
   </a>
@@ -5534,10 +5664,132 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#interpret" class="md-nav__link">
+  <a href="#decisions" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Interpret
+        Decisions
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Decisions">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#1-surface-only-scope-training-stays-out" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. Surface-only scope; training stays out
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#2-intercept-expcreatekindmodel-and-exppredict-pre-translation-dual-wired" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. Intercept exp.Create(kind=MODEL) and exp.Predict pre-translation, dual-wired
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#3-modelmeta-catalog-entity-models-rest-resource-no-insert" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. ModelMeta catalog entity + Models REST resource (no insert)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#4-faithful-shapes-recorded-mlpredict-values-are-a-documented-divergence" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4. Faithful shapes recorded; ML.PREDICT values are a documented divergence
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#5-disposition-error-parity" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5. Disposition + error parity
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#consequences" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Consequences
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Consequences">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#capability-matrix-shift" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Capability matrix shift
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#coverage-test-surface" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Coverage + test surface
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#honesty-about-prediction-values" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Honesty about prediction values
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#unresolved-questions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Unresolved questions
       
     </span>
   </a>
@@ -5545,10 +5797,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#scoping" class="md-nav__link">
+  <a href="#alternatives-considered" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Scoping
+        Alternatives considered
       
     </span>
   </a>
@@ -5556,10 +5808,21 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#error-mapping" class="md-nav__link">
+  <a href="#related-work" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Error mapping
+        Related work
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#references" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        References
       
     </span>
   </a>
@@ -5583,7 +5846,7 @@
 
 
   
-    <a href="https://github.com/jjviscomi/bqemulator/edit/main/docs/architecture/scripting.md" title="Edit this page" class="md-content__button md-icon" rel="edit">
+    <a href="https://github.com/jjviscomi/bqemulator/edit/main/docs/adr/0047-bigquery-ml-surface.md" title="Edit this page" class="md-content__button md-icon" rel="edit">
       
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M10 20H6V4h7v5h5v3.1l2-2V8l-6-6H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h4zm10.2-7c.1 0 .3.1.4.2l1.3 1.3c.2.2.2.6 0 .8l-1 1-2.1-2.1 1-1c.1-.1.2-.2.4-.2m0 3.9L14.1 23H12v-2.1l6.1-6.1z"/></svg>
     </a>
@@ -5592,47 +5855,133 @@
     
       
     
-    <a href="https://github.com/jjviscomi/bqemulator/raw/main/docs/architecture/scripting.md" title="View source of this page" class="md-content__button md-icon">
+    <a href="https://github.com/jjviscomi/bqemulator/raw/main/docs/adr/0047-bigquery-ml-surface.md" title="View source of this page" class="md-content__button md-icon">
       
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M17 18c.56 0 1 .44 1 1s-.44 1-1 1-1-.44-1-1 .44-1 1-1m0-3c-2.73 0-5.06 1.66-6 4 .94 2.34 3.27 4 6 4s5.06-1.66 6-4c-.94-2.34-3.27-4-6-4m0 6.5a2.5 2.5 0 0 1-2.5-2.5 2.5 2.5 0 0 1 2.5-2.5 2.5 2.5 0 0 1 2.5 2.5 2.5 2.5 0 0 1-2.5 2.5M9.27 20H6V4h7v5h5v4.07c.7.08 1.36.25 2 .49V8l-6-6H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h4.5a8.2 8.2 0 0 1-1.23-2"/></svg>
     </a>
   
 
 
-<h1 id="scripting-interpreter">Scripting interpreter<a class="headerlink" href="#scripting-interpreter" title="Permanent link">&para;</a></h1>
-<p>Implementation in <code>src/bqemulator/scripting/</code>. See
-<a href="../../adr/0011-tree-walking-scripting-interpreter/">ADR 0011</a>.</p>
-<h2 id="parse">Parse<a class="headerlink" href="#parse" title="Permanent link">&para;</a></h2>
-<p><code>parser.py</code> uses SQLGlot's BigQuery dialect to parse the entire script
-into a single AST rooted at a <code>Script</code> node. Multi-statement scripts
-produce a tree with child statements.</p>
-<h2 id="interpret">Interpret<a class="headerlink" href="#interpret" title="Permanent link">&para;</a></h2>
-<p><code>interpreter.py</code> walks the tree. For each node:</p>
+<h1 id="adr-0047-bigquery-ml-surface-metadata-models-rest-mlpredict-shape">ADR 0047: BigQuery ML surface (metadata, Models REST, ML.PREDICT shape)<a class="headerlink" href="#adr-0047-bigquery-ml-surface-metadata-models-rest-mlpredict-shape" title="Permanent link">&para;</a></h1>
 <ul>
-<li><strong>DECLARE</strong>: allocate a variable in the current frame with the
-  declared type; initialize if a DEFAULT clause is present.</li>
-<li><strong>SET</strong>: evaluate an expression and assign to a named variable.</li>
-<li><strong>IF / ELSEIF / ELSE</strong>: evaluate the predicate; execute the matching
-  branch.</li>
-<li><strong>WHILE / LOOP / FOR</strong>: Python-level loop driving the body.</li>
-<li><strong>BREAK / CONTINUE</strong>: thrown as typed exceptions caught by the
-  enclosing loop.</li>
-<li><strong>BEGIN … EXCEPTION WHEN … END</strong>: exception boundary; raised errors
-  are matched against WHEN handlers and routed.</li>
-<li><strong>CALL</strong>: invoke a stored procedure (resolved from the catalog).</li>
-<li><strong>EXECUTE IMMEDIATE</strong>: translate + execute a dynamic SQL string.</li>
-<li><strong>RETURN</strong>: exit the enclosing procedure.</li>
-<li><strong>SQL statement</strong> (SELECT, INSERT, UPDATE, …): translate and execute
-  through the standard SQL pipeline.</li>
+<li><strong>Status</strong>: Accepted</li>
+<li><strong>Supersedes</strong>: 0012 (partially: the surface-only slice below moves into scope;
+  real training, evaluation, and inference accuracy remain out of scope)</li>
+<li><strong>Superseded by</strong>: none</li>
 </ul>
-<h2 id="scoping">Scoping<a class="headerlink" href="#scoping" title="Permanent link">&para;</a></h2>
-<p><code>frames.py</code> maintains a stack of lexical scopes. Each BEGIN/END and each
-procedure invocation pushes a new frame. Variable resolution walks the
-stack outward.</p>
-<h2 id="error-mapping">Error mapping<a class="headerlink" href="#error-mapping" title="Permanent link">&para;</a></h2>
-<p>Uncaught script errors map to <code>InvalidQueryError</code> (syntax) or the
-appropriate domain error subclass. Errors caught by a handler are
-swallowed and execution continues with the handler block.</p>
+<h2 id="context">Context<a class="headerlink" href="#context" title="Permanent link">&para;</a></h2>
+<p><a href="../../rfcs/0002-bigquery-ml-surface/">RFC 0002</a> proposes a <strong>surface-only</strong> slice
+of BigQuery ML: register model metadata from <code>CREATE MODEL</code>, serve it through the
+Models REST resource, and make <code>ML.PREDICT</code> return correctly-shaped but
+deterministic, non-real output. This ADR records the implementation decisions.</p>
+<p><a href="../0012-bqml-out-of-scope/">ADR 0012</a> put all of BQML out of scope for v1 and
+returned <code>UnsupportedFeatureError</code> (HTTP 501) for <code>CREATE MODEL</code> / <code>ML.*</code>. It also
+stated that "Models resource CRUD ... is supported." Two corrections of record:
+the Models surface was <strong>never implemented</strong> (no route, no catalog entity), and
+the real BigQuery Models REST API has <strong>no <code>insert</code> method</strong> (models are created
+only via <code>CREATE MODEL</code> query jobs). ADR 0012 noted the decision was
+"reconsiderable for v2"; this ADR is that reconsideration, scoped to the surface
+only.</p>
+<p><code>CREATE MODEL</code> and <code>ML.PREDICT</code> are addressable in the SQLGlot AST (<code>exp.Create</code>
+with <code>kind == "MODEL"</code>, and the dedicated <code>exp.Predict</code> node), so they can be
+intercepted exactly the way <code>EXPORT DATA</code> (<code>exp.Export</code>) is
+(<a href="../0043-export-data-statement/">ADR 0043</a>). <code>ML.EVALUATE</code> / <code>ML.FORECAST</code> do not
+parse and stay on the 501 path.</p>
+<h2 id="decisions">Decisions<a class="headerlink" href="#decisions" title="Permanent link">&para;</a></h2>
+<h3 id="1-surface-only-scope-training-stays-out">1. Surface-only scope; training stays out<a class="headerlink" href="#1-surface-only-scope-training-stays-out" title="Permanent link">&para;</a></h3>
+<p><code>CREATE MODEL</code> registers metadata and derives the feature/label schema by
+planning the training query; it does <strong>not</strong> train. <code>ML.PREDICT</code> returns
+deterministic, intentionally non-real prediction values. <code>ML.EVALUATE</code>,
+<code>ML.FORECAST</code>, <code>ML.GENERATE_*</code>, <code>ML.WEIGHTS</code>, and <code>TRANSFORM()</code> remain out of
+scope (still 501). This supersedes ADR 0012 only for the surface; ADR 0012's
+training/inference exclusion still governs.</p>
+<h3 id="2-intercept-expcreatekindmodel-and-exppredict-pre-translation-dual-wired">2. Intercept <code>exp.Create(kind=MODEL)</code> and <code>exp.Predict</code> pre-translation, dual-wired<a class="headerlink" href="#2-intercept-expcreatekindmodel-and-exppredict-pre-translation-dual-wired" title="Permanent link">&para;</a></h3>
+<p>Classification (<code>_classify_parsed_tree</code>) maps <code>exp.Create</code> with <code>kind == "MODEL"</code>
+to <code>"CREATE_MODEL"</code>. Shared <code>parse_create_model</code> / <code>_execute_create_model_job</code>
+and <code>_execute_predict</code> helpers live in <code>src/bqemulator/jobs/executor.py</code> and are
+invoked from both <code>execute_query_job</code> (standalone) and the scripting interpreter,
+mirroring the <code>EXPORT DATA</code> dual-wiring. <code>"CREATE MODEL"</code> and <code>"ML.PREDICT"</code> are
+removed from <code>_UNSUPPORTED_KEYWORDS</code> in <code>src/bqemulator/sql/translator.py</code>; the
+AST interception replaces the keyword reject. The training query and the
+<code>ML.PREDICT</code> input query run through the shared
+<code>sql/inner_query.py::rewrite_and_translate_statement</code> pipeline so every rewrite
+rule, row-access policy, and parameter applies as to a bare <code>SELECT</code>.</p>
+<h3 id="3-modelmeta-catalog-entity-models-rest-resource-no-insert">3. <code>ModelMeta</code> catalog entity + Models REST resource (no insert)<a class="headerlink" href="#3-modelmeta-catalog-entity-models-rest-resource-no-insert" title="Permanent link">&para;</a></h3>
+<p>A frozen, dataset-scoped <code>ModelMeta</code> (<code>(project_id, dataset_id, model_id)</code>) is
+added to <code>catalog/models.py</code>, with <code>list/get/create/update/delete_models</code> across
+the repository protocol and its in-memory and DuckDB-backed implementations, a
+<code>_bqemulator_catalog.models</code> persistence table, and cascade-delete on dataset
+drop. <code>src/bqemulator/api/routes/models.py</code> exposes <code>list</code> / <code>get</code> / <code>patch</code> /
+<code>delete</code> (no <code>insert</code>, matching BigQuery), modeled on the Routines resource. The
+resource is REST-only; the gRPC adapter is untouched.</p>
+<h3 id="4-faithful-shapes-recorded-mlpredict-values-are-a-documented-divergence">4. Faithful shapes recorded; <code>ML.PREDICT</code> values are a documented divergence<a class="headerlink" href="#4-faithful-shapes-recorded-mlpredict-values-are-a-documented-divergence" title="Permanent link">&para;</a></h3>
+<p>The Models REST shape, the <code>CREATE_MODEL</code> job/statementType, the <code>ML.PREDICT</code>
+output column shape, and the error envelopes are recorded from real BigQuery and
+asserted exactly. <code>ML.PREDICT</code> numeric values cannot match (no training), so
+those fixtures are pinned in <code>tests/conformance/divergences.py</code> as
+<code>xfail(strict=True)</code> citing this ADR, per
+<a href="../0023-conformance-divergence-baseline/">ADR 0023</a>. Removing the entry when a
+future accuracy slice lands makes the fixture pass.</p>
+<h3 id="5-disposition-error-parity">5. Disposition + error parity<a class="headerlink" href="#5-disposition-error-parity" title="Permanent link">&para;</a></h3>
+<p><code>CREATE MODEL</code> onto an existing model errors <code>duplicate</code> (HTTP 409);
+<code>IF NOT EXISTS</code> is a no-op; <code>OR REPLACE</code> replaces. Missing parent dataset errors
+<code>notFound</code> (HTTP 404). <code>ML.PREDICT</code> on a missing model errors <code>notFound</code>
+(HTTP 404). Unknown/invalid OPTIONS error <code>invalidQuery</code> (HTTP 400). These
+envelopes are pinned by recorded conformance fixtures.</p>
+<h2 id="consequences">Consequences<a class="headerlink" href="#consequences" title="Permanent link">&para;</a></h2>
+<h3 id="capability-matrix-shift">Capability matrix shift<a class="headerlink" href="#capability-matrix-shift" title="Permanent link">&para;</a></h3>
+<p><code>CREATE MODEL</code> (metadata), the Models REST resource (<code>list</code>/<code>get</code>/<code>patch</code>/
+<code>delete</code>), and <code>ML.PREDICT</code> (shape) move from unsupported to supported-surface.
+<code>out-of-scope.md</code> is updated: the BQML section keeps training, evaluation,
+forecasting, generation, and prediction-accuracy out of scope and removes the
+inaccurate "Models insert is supported" claim.</p>
+<h3 id="coverage-test-surface">Coverage + test surface<a class="headerlink" href="#coverage-test-surface" title="Permanent link">&para;</a></h3>
+<p>New modules target complete branch coverage; every error path is tested; the
+<code>CREATE MODEL</code> / <code>ML.PREDICT</code> execution logic and the Models repository join the
+mutation tier (<a href="../0026-mutation-tier-design-contract/">ADR 0026</a>). Property tests
+cover <code>CREATE OR REPLACE</code> idempotency, <code>ModelMeta</code> REST round-trip, persistence
+save/reload round-trip, and the <code>ML.PREDICT</code> row-count and passthrough
+invariants. Scripted <code>CREATE MODEL</code> / <code>ML.PREDICT</code> tests prove the dual-wiring.</p>
+<h3 id="honesty-about-prediction-values">Honesty about prediction values<a class="headerlink" href="#honesty-about-prediction-values" title="Permanent link">&para;</a></h3>
+<p><code>ML.PREDICT</code> values are deterministic placeholders, not real predictions. The
+guide and the reference docs carry a prominent callout; the value is chosen to be
+obviously synthetic so it is not mistaken for accurate output.</p>
+<h2 id="unresolved-questions">Unresolved questions<a class="headerlink" href="#unresolved-questions" title="Permanent link">&para;</a></h2>
+<ul>
+<li>The exact <code>statistics.query</code> field set for <code>CREATE_MODEL</code> and the precise
+  <code>ML.PREDICT</code> output column names/types per model task, resolved by recording.</li>
+<li>The fixed placeholder value for <code>ML.PREDICT</code> predictions.</li>
+<li>Which OPTIONS BigQuery echoes on the model resource versus drops as
+  training-only.</li>
+</ul>
+<h2 id="alternatives-considered">Alternatives considered<a class="headerlink" href="#alternatives-considered" title="Permanent link">&para;</a></h2>
+<ul>
+<li><strong>Full BQML training</strong> (rejected here): comparable to the rest of the emulator
+  in effort; left to a future RFC.</li>
+<li><strong>Keep the clean 501</strong> (rejected): blocks Models API and SQL-shape testing,
+  which is the common local need.</li>
+<li><strong>Plausible prediction values</strong> (rejected): invites mistaking stubs for real
+  output; a clearly-synthetic deterministic value is safer.</li>
+<li><strong>Add a Models <code>insert</code></strong> (rejected): BigQuery has none; it would be a
+  non-parity invention.</li>
+</ul>
+<h2 id="related-work">Related work<a class="headerlink" href="#related-work" title="Permanent link">&para;</a></h2>
+<ul>
+<li><a href="../0012-bqml-out-of-scope/">ADR 0012</a>: superseded in part by this ADR.</li>
+<li><a href="../0043-export-data-statement/">ADR 0043</a>: the statement-interception pattern
+  reused here.</li>
+<li><a href="../0023-conformance-divergence-baseline/">ADR 0023</a>: the divergence mechanism
+  for <code>ML.PREDICT</code> values.</li>
+<li><a href="../0026-mutation-tier-design-contract/">ADR 0026</a>: the mutation tier the new
+  logic joins.</li>
+</ul>
+<h2 id="references">References<a class="headerlink" href="#references" title="Permanent link">&para;</a></h2>
+<ul>
+<li><a href="../../rfcs/0002-bigquery-ml-surface/">RFC 0002</a>.</li>
+<li><a href="https://docs.cloud.google.com/bigquery/docs/reference/rest/v2/models">BigQuery Models REST resource</a>,
+  <a href="https://docs.cloud.google.com/bigquery/docs/reference/standard-sql/bigqueryml-syntax-create">CREATE MODEL</a>,
+  <a href="https://docs.cloud.google.com/bigquery/docs/reference/standard-sql/bigqueryml-syntax-predict">ML.PREDICT</a>.</li>
+</ul>
 
 
 

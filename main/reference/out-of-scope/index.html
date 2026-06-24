@@ -3346,6 +3346,8 @@
       
         
       
+        
+      
     
     
     
@@ -4679,6 +4681,34 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../adr/0047-bigquery-ml-surface/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0047 BigQuery ML surface (metadata, Models REST, ML.PREDICT shape)
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -4697,6 +4727,8 @@
       
         
           
+        
+      
         
       
         
@@ -4770,6 +4802,41 @@
     
   
     0001 EXPORT DATA statement (Cloud Storage)
+  
+
+    
+  </span>
+  
+  
+    
+  
+  
+    <span class="md-status md-status--Accepted"></span>
+  
+
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../rfcs/0002-bigquery-ml-surface/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0002 BigQuery ML surface (metadata, Models REST, ML.PREDICT shape)
   
 
     
@@ -6057,13 +6124,22 @@ decision, typically via an <a href="../../rfcs/">RFC</a>.</p>
 encountered, with a link back to this page.</p>
 <h2 id="excluded-in-v100">Excluded in v1.0.0<a class="headerlink" href="#excluded-in-v100" title="Permanent link">&para;</a></h2>
 <h3 id="bigquery-ml">BigQuery ML<a class="headerlink" href="#bigquery-ml" title="Permanent link">&para;</a></h3>
-<p><code>CREATE MODEL</code>, <code>ML.PREDICT</code>, <code>ML.EVALUATE</code>, <code>ML.FORECAST</code>, <code>ML.GENERATE_*</code>,
-and all ML-related model types (ARIMA, k-means, matrix factorization, DNN,
-boosted trees, AutoML).</p>
-<p>Only <strong>Models resource CRUD</strong> — list / get / insert / patch / update / delete
-of model metadata — is supported.</p>
-<p><em>Rationale</em>: full BQML would be a project of comparable size to the rest
-of the emulator. See <a href="../../adr/0012-bqml-out-of-scope/">ADR 0012</a>.</p>
+<p>Model <strong>training</strong> and prediction <strong>accuracy</strong> are out of scope: the numeric
+output of any model type (ARIMA, k-means, matrix factorization, DNN, boosted
+trees, AutoML, regression), and <code>ML.EVALUATE</code>, <code>ML.FORECAST</code>, <code>ML.GENERATE_*</code>,
+<code>ML.WEIGHTS</code>, and the <code>TRANSFORM()</code> clause.</p>
+<p>In scope is a <strong>surface-only</strong> slice, defined in
+<a href="../../rfcs/0002-bigquery-ml-surface/">RFC 0002</a> and
+<a href="../../adr/0047-bigquery-ml-surface/">ADR 0047</a>: model-metadata registration via
+<code>CREATE MODEL</code> (the feature/label schema is derived from the training query),
+the Models REST resource (<code>list</code> / <code>get</code> / <code>patch</code> / <code>delete</code>; BigQuery has no
+<code>insert</code>), and the <code>ML.PREDICT</code> output shape (values are deterministic and not
+real predictions).</p>
+<p><em>Rationale</em>: full BQML training would be a project of comparable size to the
+rest of the emulator; the surface-only slice unblocks SQL-parsing, Models-API,
+and pipeline-shape testing without it. See
+<a href="../../adr/0012-bqml-out-of-scope/">ADR 0012</a> (the original exclusion, partially
+superseded by <a href="../../adr/0047-bigquery-ml-surface/">ADR 0047</a>).</p>
 <h3 id="bi-engine">BI Engine<a class="headerlink" href="#bi-engine" title="Permanent link">&para;</a></h3>
 <p>BigQuery's in-memory acceleration tier.</p>
 <p><em>Rationale</em>: a performance optimization with no observable semantic effect.

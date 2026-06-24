@@ -10,13 +10,13 @@
       
       
       
-        <link rel="canonical" href="https://jjviscomi.github.io/bqemulator/main/architecture/scripting/">
+        <link rel="canonical" href="https://jjviscomi.github.io/bqemulator/main/rfcs/0002-bigquery-ml-surface/">
       
       
-        <link rel="prev" href="../storage-write-api/">
+        <link rel="prev" href="../0001-export-data-statement/">
       
       
-        <link rel="next" href="../udfs/">
+        <link rel="next" href="../../examples/">
       
       
         
@@ -27,7 +27,7 @@
     
     
       
-        <title>Scripting - bqemulator</title>
+        <title>BigQuery ML surface (metadata, Models REST, ML.PREDICT shape) - bqemulator</title>
       
     
     
@@ -80,7 +80,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#scripting-interpreter" class="md-skip">
+        <a href="#rfc-0002-bigquery-ml-surface-metadata-models-rest-mlpredict-shape" class="md-skip">
           Skip to content
         </a>
       
@@ -118,7 +118,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Scripting
+              BigQuery ML surface (metadata, Models REST, ML.PREDICT shape)
             
           </span>
         </div>
@@ -338,13 +338,11 @@
   
   
   
-    
-  
   
     
     
-      <li class="md-tabs__item md-tabs__item--active">
-        <a href="../overview/" class="md-tabs__link">
+      <li class="md-tabs__item">
+        <a href="../../architecture/overview/" class="md-tabs__link">
           
   
   
@@ -384,11 +382,13 @@
   
   
   
+    
+  
   
     
     
-      <li class="md-tabs__item">
-        <a href="../../rfcs/" class="md-tabs__link">
+      <li class="md-tabs__item md-tabs__item--active">
+        <a href="../" class="md-tabs__link">
           
   
   
@@ -2079,10 +2079,8 @@
       
   
   
-    
   
   
-  
     
     
       
@@ -2122,22 +2120,19 @@
     
     
       
-        
-        
-      
       
         
       
     
     
-    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--nested">
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_6" checked>
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_6" >
         
           
-          <label class="md-nav__link" for="__nav_6" id="__nav_6_label" tabindex="">
+          <label class="md-nav__link" for="__nav_6" id="__nav_6_label" tabindex="0">
             
   
   
@@ -2155,7 +2150,7 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_6_label" aria-expanded="true">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_6_label" aria-expanded="false">
           <label class="md-nav__title" for="__nav_6">
             <span class="md-nav__icon md-icon"></span>
             
@@ -2173,7 +2168,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../overview/" class="md-nav__link">
+      <a href="../../architecture/overview/" class="md-nav__link">
         
   
   
@@ -2201,7 +2196,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../storage-model/" class="md-nav__link">
+      <a href="../../architecture/storage-model/" class="md-nav__link">
         
   
   
@@ -2229,7 +2224,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../sql-translation/" class="md-nav__link">
+      <a href="../../architecture/sql-translation/" class="md-nav__link">
         
   
   
@@ -2257,7 +2252,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../jobs-lifecycle/" class="md-nav__link">
+      <a href="../../architecture/jobs-lifecycle/" class="md-nav__link">
         
   
   
@@ -2285,7 +2280,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../storage-read-api/" class="md-nav__link">
+      <a href="../../architecture/storage-read-api/" class="md-nav__link">
         
   
   
@@ -2313,7 +2308,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../storage-write-api/" class="md-nav__link">
+      <a href="../../architecture/storage-write-api/" class="md-nav__link">
         
   
   
@@ -2338,37 +2333,10 @@
                 
   
   
-    
   
   
-  
-    <li class="md-nav__item md-nav__item--active">
-      
-      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
-      
-      
-        
-      
-      
-        <label class="md-nav__link md-nav__link--active" for="__toc">
-          
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Scripting
-  
-
-    
-  </span>
-  
-  
-
-          <span class="md-nav__icon md-icon"></span>
-        </label>
-      
-      <a href="./" class="md-nav__link md-nav__link--active">
+    <li class="md-nav__item">
+      <a href="../../architecture/scripting/" class="md-nav__link">
         
   
   
@@ -2384,70 +2352,6 @@
   
 
       </a>
-      
-        
-
-<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
-  
-  
-  
-    
-  
-  
-    <label class="md-nav__title" for="__toc">
-      <span class="md-nav__icon md-icon"></span>
-      Table of contents
-    </label>
-    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#parse" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Parse
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#interpret" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Interpret
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#scoping" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Scoping
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#error-mapping" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Error mapping
-      
-    </span>
-  </a>
-  
-</li>
-      
-    </ul>
-  
-</nav>
-      
     </li>
   
 
@@ -2460,7 +2364,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../udfs/" class="md-nav__link">
+      <a href="../../architecture/udfs/" class="md-nav__link">
         
   
   
@@ -2488,7 +2392,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../versioning-and-snapshots/" class="md-nav__link">
+      <a href="../../architecture/versioning-and-snapshots/" class="md-nav__link">
         
   
   
@@ -2516,7 +2420,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../row-access-policies/" class="md-nav__link">
+      <a href="../../architecture/row-access-policies/" class="md-nav__link">
         
   
   
@@ -2544,7 +2448,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../specialized-types/" class="md-nav__link">
+      <a href="../../architecture/specialized-types/" class="md-nav__link">
         
   
   
@@ -2572,7 +2476,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../admin-and-import-export/" class="md-nav__link">
+      <a href="../../architecture/admin-and-import-export/" class="md-nav__link">
         
   
   
@@ -2600,7 +2504,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../observability/" class="md-nav__link">
+      <a href="../../architecture/observability/" class="md-nav__link">
         
   
   
@@ -2628,7 +2532,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../testing-strategy/" class="md-nav__link">
+      <a href="../../architecture/testing-strategy/" class="md-nav__link">
         
   
   
@@ -2656,7 +2560,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../conformance-tier/" class="md-nav__link">
+      <a href="../../architecture/conformance-tier/" class="md-nav__link">
         
   
   
@@ -2708,20 +2612,17 @@
       
       
         
-          
-          
-        
       
     
     
-    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--nested">
       
         
         
         <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_6_16" >
         
           
-          <label class="md-nav__link" for="__nav_6_16" id="__nav_6_16_label" tabindex="">
+          <label class="md-nav__link" for="__nav_6_16" id="__nav_6_16_label" tabindex="0">
             
   
   
@@ -2757,7 +2658,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../contributing/dev-environment/" class="md-nav__link">
+      <a href="../../architecture/contributing/dev-environment/" class="md-nav__link">
         
   
   
@@ -2785,7 +2686,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../contributing/documentation-style-guide/" class="md-nav__link">
+      <a href="../../architecture/contributing/documentation-style-guide/" class="md-nav__link">
         
   
   
@@ -2813,7 +2714,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../contributing/release-process/" class="md-nav__link">
+      <a href="../../architecture/contributing/release-process/" class="md-nav__link">
         
   
   
@@ -2841,7 +2742,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../contributing/adding-sql-functions/" class="md-nav__link">
+      <a href="../../architecture/contributing/adding-sql-functions/" class="md-nav__link">
         
   
   
@@ -2869,7 +2770,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../contributing/adding-udf-runtimes/" class="md-nav__link">
+      <a href="../../architecture/contributing/adding-udf-runtimes/" class="md-nav__link">
         
   
   
@@ -2897,7 +2798,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../contributing/adding-conformance-cases/" class="md-nav__link">
+      <a href="../../architecture/contributing/adding-conformance-cases/" class="md-nav__link">
         
   
   
@@ -2925,7 +2826,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../contributing/tpcds-expansion-plan/" class="md-nav__link">
+      <a href="../../architecture/contributing/tpcds-expansion-plan/" class="md-nav__link">
         
   
   
@@ -2953,7 +2854,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../contributing/debugging/" class="md-nav__link">
+      <a href="../../architecture/contributing/debugging/" class="md-nav__link">
         
   
   
@@ -4464,6 +4365,8 @@
       
   
   
+    
+  
   
   
     
@@ -4481,20 +4384,23 @@
     
     
       
+        
+        
+      
       
         
       
     
     
-    <li class="md-nav__item md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_8" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_8" checked>
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="../../rfcs/" class="md-nav__link ">
+            <a href="../" class="md-nav__link ">
               
   
   
@@ -4512,13 +4418,13 @@
             </a>
             
               
-              <label class="md-nav__link " for="__nav_8" id="__nav_8_label" tabindex="0">
+              <label class="md-nav__link " for="__nav_8" id="__nav_8_label" tabindex="">
                 <span class="md-nav__icon md-icon"></span>
               </label>
             
           </div>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_8_label" aria-expanded="false">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_8_label" aria-expanded="true">
           <label class="md-nav__title" for="__nav_8">
             <span class="md-nav__icon md-icon"></span>
             
@@ -4538,7 +4444,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../rfcs/0001-export-data-statement/" class="md-nav__link">
+      <a href="../0001-export-data-statement/" class="md-nav__link">
         
   
   
@@ -4570,10 +4476,44 @@
                 
   
   
+    
   
   
-    <li class="md-nav__item">
-      <a href="../../rfcs/0002-bigquery-ml-surface/" class="md-nav__link">
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0002 BigQuery ML surface (metadata, Models REST, ML.PREDICT shape)
+  
+
+    
+  </span>
+  
+  
+    
+  
+  
+    <span class="md-status md-status--Accepted"></span>
+  
+
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
         
   
   
@@ -4596,6 +4536,197 @@
   
 
       </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#summary" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Summary
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#motivation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Motivation
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#guide-level-explanation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Guide-level explanation
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#reference-level-explanation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Reference-level explanation
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Reference-level explanation">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#interception-architecture" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Interception architecture
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#create-model" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        CREATE MODEL
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#mlpredict" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ML.PREDICT
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#models-rest-resource" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Models REST resource
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#catalog-persistence" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Catalog + persistence
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#parity-model" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Parity model
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#drawbacks" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Drawbacks
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#rationale-and-alternatives" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Rationale and alternatives
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#prior-art" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Prior art
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#unresolved-questions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Unresolved questions
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#future-possibilities" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Future possibilities
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
     </li>
   
 
@@ -5523,10 +5654,10 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#parse" class="md-nav__link">
+  <a href="#summary" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Parse
+        Summary
       
     </span>
   </a>
@@ -5534,10 +5665,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#interpret" class="md-nav__link">
+  <a href="#motivation" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Interpret
+        Motivation
       
     </span>
   </a>
@@ -5545,10 +5676,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#scoping" class="md-nav__link">
+  <a href="#guide-level-explanation" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Scoping
+        Guide-level explanation
       
     </span>
   </a>
@@ -5556,10 +5687,137 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#error-mapping" class="md-nav__link">
+  <a href="#reference-level-explanation" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Error mapping
+        Reference-level explanation
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Reference-level explanation">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#interception-architecture" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Interception architecture
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#create-model" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        CREATE MODEL
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#mlpredict" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ML.PREDICT
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#models-rest-resource" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Models REST resource
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#catalog-persistence" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Catalog + persistence
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#parity-model" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Parity model
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#drawbacks" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Drawbacks
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#rationale-and-alternatives" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Rationale and alternatives
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#prior-art" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Prior art
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#unresolved-questions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Unresolved questions
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#future-possibilities" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Future possibilities
       
     </span>
   </a>
@@ -5583,7 +5841,7 @@
 
 
   
-    <a href="https://github.com/jjviscomi/bqemulator/edit/main/docs/architecture/scripting.md" title="Edit this page" class="md-content__button md-icon" rel="edit">
+    <a href="https://github.com/jjviscomi/bqemulator/edit/main/docs/rfcs/0002-bigquery-ml-surface.md" title="Edit this page" class="md-content__button md-icon" rel="edit">
       
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M10 20H6V4h7v5h5v3.1l2-2V8l-6-6H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h4zm10.2-7c.1 0 .3.1.4.2l1.3 1.3c.2.2.2.6 0 .8l-1 1-2.1-2.1 1-1c.1-.1.2-.2.4-.2m0 3.9L14.1 23H12v-2.1l6.1-6.1z"/></svg>
     </a>
@@ -5592,53 +5850,274 @@
     
       
     
-    <a href="https://github.com/jjviscomi/bqemulator/raw/main/docs/architecture/scripting.md" title="View source of this page" class="md-content__button md-icon">
+    <a href="https://github.com/jjviscomi/bqemulator/raw/main/docs/rfcs/0002-bigquery-ml-surface.md" title="View source of this page" class="md-content__button md-icon">
       
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M17 18c.56 0 1 .44 1 1s-.44 1-1 1-1-.44-1-1 .44-1 1-1m0-3c-2.73 0-5.06 1.66-6 4 .94 2.34 3.27 4 6 4s5.06-1.66 6-4c-.94-2.34-3.27-4-6-4m0 6.5a2.5 2.5 0 0 1-2.5-2.5 2.5 2.5 0 0 1 2.5-2.5 2.5 2.5 0 0 1 2.5 2.5 2.5 2.5 0 0 1-2.5 2.5M9.27 20H6V4h7v5h5v4.07c.7.08 1.36.25 2 .49V8l-6-6H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h4.5a8.2 8.2 0 0 1-1.23-2"/></svg>
     </a>
   
 
 
-<h1 id="scripting-interpreter">Scripting interpreter<a class="headerlink" href="#scripting-interpreter" title="Permanent link">&para;</a></h1>
-<p>Implementation in <code>src/bqemulator/scripting/</code>. See
-<a href="../../adr/0011-tree-walking-scripting-interpreter/">ADR 0011</a>.</p>
-<h2 id="parse">Parse<a class="headerlink" href="#parse" title="Permanent link">&para;</a></h2>
-<p><code>parser.py</code> uses SQLGlot's BigQuery dialect to parse the entire script
-into a single AST rooted at a <code>Script</code> node. Multi-statement scripts
-produce a tree with child statements.</p>
-<h2 id="interpret">Interpret<a class="headerlink" href="#interpret" title="Permanent link">&para;</a></h2>
-<p><code>interpreter.py</code> walks the tree. For each node:</p>
+<h1 id="rfc-0002-bigquery-ml-surface-metadata-models-rest-mlpredict-shape">RFC 0002: BigQuery ML surface (metadata, Models REST, ML.PREDICT shape)<a class="headerlink" href="#rfc-0002-bigquery-ml-surface-metadata-models-rest-mlpredict-shape" title="Permanent link">&para;</a></h1>
+<blockquote>
+<p>Accepted under the maintainer fast-track described in the
+<a href="../">RFC lifecycle</a>: the design is ratified before drafting and
+implementation proceeds in a phased PR series. The implementation outcome is
+recorded in <a href="../../adr/0047-bigquery-ml-surface/">ADR 0047</a>, which partially
+supersedes <a href="../../adr/0012-bqml-out-of-scope/">ADR 0012</a>.</p>
+</blockquote>
+<h2 id="summary">Summary<a class="headerlink" href="#summary" title="Permanent link">&para;</a></h2>
+<p>Add a <strong>surface-only</strong> slice of BigQuery ML so that BQML SQL and the Models API
+can be exercised against the emulator without a real training runtime:</p>
+<ol>
+<li><code>CREATE MODEL [IF NOT EXISTS | OR REPLACE] ... OPTIONS(...) AS query_statement</code>
+   runs as a <code>QUERY</code> job (<code>statementType</code> <code>CREATE_MODEL</code>) that registers a model
+   in the catalog. The training query is parsed and validated through the normal
+   pipeline to derive the feature/label schema, but <strong>no model is trained</strong>.</li>
+<li>The BigQuery <strong>Models REST resource</strong> (<code>list</code> / <code>get</code> / <code>patch</code> / <code>delete</code>,
+   matching the real API, which has <strong>no</strong> <code>insert</code>) serves that metadata.</li>
+<li><code>ML.PREDICT(MODEL ref, (query_statement | TABLE ref))</code> runs the input query
+   and returns its rows plus deterministic, <strong>explicitly non-real</strong> prediction
+   column(s) shaped like BigQuery's output.</li>
+</ol>
+<p>Real training, evaluation, and inference accuracy stay out of scope (they remain
+governed by <a href="../../adr/0012-bqml-out-of-scope/">ADR 0012</a>). <code>ML.EVALUATE</code>,
+<code>ML.FORECAST</code>, <code>ML.GENERATE_*</code>, <code>ML.WEIGHTS</code>, the <code>TRANSFORM()</code> clause, and all
+non-trivial model types beyond metadata registration are out of scope for this
+RFC. This RFC establishes the architecture and the parity model that a later,
+separate RFC for accuracy-bearing classical models (linear/logistic regression,
+k-means) can extend.</p>
+<h2 id="motivation">Motivation<a class="headerlink" href="#motivation" title="Permanent link">&para;</a></h2>
+<p>Today <code>CREATE MODEL</code> and <code>ML.PREDICT</code> are rejected by the
+<code>_UNSUPPORTED_KEYWORDS</code> quick-reject in <code>src/bqemulator/sql/translator.py</code> with
+an <code>UnsupportedFeatureError</code> (HTTP 501). That is correct and clear, but it leaves
+two real gaps for users whose pipelines touch BQML:</p>
 <ul>
-<li><strong>DECLARE</strong>: allocate a variable in the current frame with the
-  declared type; initialize if a DEFAULT clause is present.</li>
-<li><strong>SET</strong>: evaluate an expression and assign to a named variable.</li>
-<li><strong>IF / ELSEIF / ELSE</strong>: evaluate the predicate; execute the matching
-  branch.</li>
-<li><strong>WHILE / LOOP / FOR</strong>: Python-level loop driving the body.</li>
-<li><strong>BREAK / CONTINUE</strong>: thrown as typed exceptions caught by the
-  enclosing loop.</li>
-<li><strong>BEGIN … EXCEPTION WHEN … END</strong>: exception boundary; raised errors
-  are matched against WHEN handlers and routed.</li>
-<li><strong>CALL</strong>: invoke a stored procedure (resolved from the catalog).</li>
-<li><strong>EXECUTE IMMEDIATE</strong>: translate + execute a dynamic SQL string.</li>
-<li><strong>RETURN</strong>: exit the enclosing procedure.</li>
-<li><strong>SQL statement</strong> (SELECT, INSERT, UPDATE, …): translate and execute
-  through the standard SQL pipeline.</li>
+<li><strong>No Models API at all.</strong> <a href="../../adr/0012-bqml-out-of-scope/">ADR 0012</a> states
+  that "Models resource CRUD ... is supported," but in fact <strong>no Models surface
+  exists</strong> in the codebase (no route, no catalog entity), and the BigQuery Models
+  REST API has <strong>no <code>insert</code> method</strong> (models are created only via <code>CREATE MODEL</code>
+  jobs). A pipeline that lists or reads model metadata cannot run against the
+  emulator, and the documentation overstates current support.</li>
+<li><strong>No way to exercise BQML SQL locally.</strong> A dbt model, scheduled query, or
+  orchestration DAG that contains <code>CREATE MODEL</code> or <code>ML.PREDICT</code> cannot be
+  parsed, planned, or shape-checked offline. The common local-testing need is
+  not numeric accuracy (that is validated against real BigQuery); it is "does my
+  SQL parse, does the model register, does <code>ML.PREDICT</code> return the columns my
+  downstream query expects, and does the Models API behave."</li>
 </ul>
-<h2 id="scoping">Scoping<a class="headerlink" href="#scoping" title="Permanent link">&para;</a></h2>
-<p><code>frames.py</code> maintains a stack of lexical scopes. Each BEGIN/END and each
-procedure invocation pushes a new frame. Variable resolution walks the
-stack outward.</p>
-<h2 id="error-mapping">Error mapping<a class="headerlink" href="#error-mapping" title="Permanent link">&para;</a></h2>
-<p>Uncaught script errors map to <code>InvalidQueryError</code> (syntax) or the
-appropriate domain error subclass. Errors caught by a handler are
-swallowed and execution continues with the handler block.</p>
+<p>Doing nothing keeps BQML a hard 501 wall and keeps the inaccurate "Models CRUD
+is supported" claim in <code>out-of-scope.md</code>. This RFC closes the surface gap while
+being honest that values are not real predictions.</p>
+<h2 id="guide-level-explanation">Guide-level explanation<a class="headerlink" href="#guide-level-explanation" title="Permanent link">&para;</a></h2>
+<p>Register a model from a training query, then read it back and predict with it:</p>
+<div class="language-sql highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="c1">-- Register a model (no training happens; metadata + schema only)</span>
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="k">CREATE</span><span class="w"> </span><span class="n">MODEL</span><span class="w"> </span><span class="n">my_dataset</span><span class="p">.</span><span class="n">my_model</span>
+</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="k">OPTIONS</span><span class="w"> </span><span class="p">(</span><span class="n">model_type</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;LINEAR_REG&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">input_label_cols</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">[</span><span class="s1">&#39;label&#39;</span><span class="p">])</span><span class="w"> </span><span class="k">AS</span>
+</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="k">SELECT</span><span class="w"> </span><span class="n">feature_1</span><span class="p">,</span><span class="w"> </span><span class="n">feature_2</span><span class="p">,</span><span class="w"> </span><span class="n">label</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">my_dataset</span><span class="p">.</span><span class="n">training</span><span class="p">;</span>
+</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>
+</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="c1">-- Predict: input rows are returned with prediction column(s) appended</span>
+</span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a><span class="k">SELECT</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">ML</span><span class="p">.</span><span class="n">PREDICT</span><span class="p">(</span><span class="n">MODEL</span><span class="w"> </span><span class="n">my_dataset</span><span class="p">.</span><span class="n">my_model</span><span class="p">,</span>
+</span><span id="__span-0-8"><a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a><span class="w">                         </span><span class="p">(</span><span class="k">SELECT</span><span class="w"> </span><span class="n">feature_1</span><span class="p">,</span><span class="w"> </span><span class="n">feature_2</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">my_dataset</span><span class="p">.</span><span class="n">scoring</span><span class="p">));</span>
+</span></code></pre></div>
+<p>The Models REST API serves the registered metadata:</p>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>GET    /bigquery/v2/projects/{p}/datasets/{d}/models             -&gt; list
+</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>GET    /bigquery/v2/projects/{p}/datasets/{d}/models/{m}         -&gt; get
+</span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>PATCH  /bigquery/v2/projects/{p}/datasets/{d}/models/{m}         -&gt; patch (description, labels, expirationTime)
+</span><span id="__span-1-4"><a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a>DELETE /bigquery/v2/projects/{p}/datasets/{d}/models/{m}         -&gt; delete
+</span></code></pre></div>
+<p><code>bq ls -m my_dataset</code>, <code>bq show -m my_dataset.my_model</code>, and the client-library
+<code>get_model</code> / <code>list_models</code> / <code>update_model</code> / <code>delete_model</code> calls work against
+these endpoints.</p>
+<p><strong>What is real and what is not.</strong> The model's existence, identity
+(<code>modelReference</code>), <code>modelType</code>, timestamps, ETag, and the feature/label column
+schema derived from the training query are faithful. <code>CREATE MODEL</code> runs as a
+real <code>QUERY</code> job with <code>statementType</code> <code>CREATE_MODEL</code>. <strong>The prediction values
+returned by <code>ML.PREDICT</code> are deterministic placeholders, not real model
+output</strong>, and are documented as such everywhere they appear. Use real BigQuery
+when prediction accuracy matters.</p>
+<p><code>CREATE MODEL</code> and <code>ML.PREDICT</code> also work inside scripts (<code>BEGIN ... END</code>),
+because they flow through the same statement-interception path as a standalone
+query job (the path the <code>EXPORT DATA</code> statement already uses).</p>
+<h2 id="reference-level-explanation">Reference-level explanation<a class="headerlink" href="#reference-level-explanation" title="Permanent link">&para;</a></h2>
+<h3 id="interception-architecture">Interception architecture<a class="headerlink" href="#interception-architecture" title="Permanent link">&para;</a></h3>
+<p><code>CREATE MODEL</code> and <code>ML.PREDICT</code> are intercepted <strong>before translation</strong>, mirroring
+the existing <code>EXPORT DATA</code> design (see
+<a href="../../adr/0043-export-data-statement/">ADR 0043</a>). SQLGlot parses the two
+constructs into addressable AST nodes:</p>
+<ul>
+<li><code>CREATE MODEL ...</code> parses to <code>exp.Create</code> with <code>args["kind"] == "MODEL"</code>, the
+  OPTIONS in <code>properties</code>, the training query in <code>.expression</code>, and a <code>replace</code>
+  flag for <code>CREATE OR REPLACE</code>.</li>
+<li><code>ML.PREDICT(MODEL ref, (...))</code> parses to a dedicated <code>exp.Predict</code> node holding
+  the model <code>Table</code> and the input <code>Subquery</code> or <code>TABLE</code>.</li>
+</ul>
+<p>(<code>ML.EVALUATE</code> / <code>ML.FORECAST</code> do not parse in the GoogleSQL dialect and stay on
+the <code>_UNSUPPORTED_KEYWORDS</code> 501 path.) Detection and the parse/execute helpers
+live in <code>src/bqemulator/jobs/executor.py</code> and are invoked from <strong>both</strong> the
+standalone job entry point (<code>execute_query_job</code>) <strong>and</strong> the scripting
+interpreter, the same dual-wiring <code>EXPORT DATA</code> uses, so standalone and scripted
+statements share one code path. <code>"CREATE MODEL"</code> and <code>"ML.PREDICT"</code> are removed
+from <code>_UNSUPPORTED_KEYWORDS</code>; the AST interception replaces the keyword reject.</p>
+<h3 id="create-model">CREATE MODEL<a class="headerlink" href="#create-model" title="Permanent link">&para;</a></h3>
+<ul>
+<li><strong>OPTIONS.</strong> <code>model_type</code> is required (any BigQuery model-type string is
+  accepted and stored verbatim; this RFC does not train any of them).
+  <code>input_label_cols</code> (a string array) names the label column(s); the remaining
+  output columns of the training query are the feature columns. Other OPTIONS are
+  stored as opaque metadata where BigQuery echoes them and rejected when clearly
+  invalid. Unknown top-level OPTIONS are rejected with a clear <code>InvalidQueryError</code>
+  rather than silently dropped.</li>
+<li><strong>Schema derivation.</strong> The training query (<code>.expression</code>) runs through the
+  normal single-statement pipeline
+  (<code>sql/inner_query.py::rewrite_and_translate_statement</code> plus the call-site
+  qualification and binding) to validate it and obtain its result schema. Columns
+  named in <code>input_label_cols</code> become label columns; the rest become feature
+  columns. No rows are trained on; the query is planned, not persisted as data.</li>
+<li><strong>Disposition.</strong> <code>CREATE MODEL</code> onto an existing model errors (<code>duplicate</code>,
+  HTTP 409, matching BigQuery <code>Already Exists</code>). <code>CREATE MODEL IF NOT EXISTS</code> is
+  a no-op when the model exists. <code>CREATE OR REPLACE MODEL</code> replaces it. A missing
+  parent dataset errors <code>notFound</code> (HTTP 404).</li>
+<li><strong>Result.</strong> Zero result rows; <code>statistics.query.statementType</code> is
+  <code>CREATE_MODEL</code>. The exact additional <code>statistics.query</code> fields are pinned by
+  conformance recording (see <em>Parity model</em>).</li>
+</ul>
+<h3 id="mlpredict">ML.PREDICT<a class="headerlink" href="#mlpredict" title="Permanent link">&para;</a></h3>
+<ul>
+<li><strong>Model resolution.</strong> The <code>MODEL ref</code> is resolved against the catalog. A
+  missing model errors the way BigQuery does (<code>notFound</code>, HTTP 404).</li>
+<li><strong>Execution.</strong> The input query (subquery or <code>TABLE</code>) runs through the normal
+  pipeline. Output is the input rows with prediction column(s) appended, named to
+  match BigQuery's shape for the model's task (for example <code>predicted_&lt;label&gt;</code>
+  for a regressor). Input columns are preserved (passthrough).</li>
+<li><strong>Values.</strong> Prediction values are <strong>deterministic and intentionally not
+  plausible real predictions</strong> (so they are never mistaken for accurate output).
+  The exact placeholder is fixed and documented. Row count equals the input row
+  count.</li>
+</ul>
+<h3 id="models-rest-resource">Models REST resource<a class="headerlink" href="#models-rest-resource" title="Permanent link">&para;</a></h3>
+<p><code>/bigquery/v2/projects/{projectId}/datasets/{datasetId}/models[/{modelId}]</code> with
+<code>list</code>, <code>get</code>, <code>patch</code>, <code>delete</code>, modeled on the existing Routines resource
+(<code>src/bqemulator/api/routes/routines.py</code>). <strong>No <code>insert</code></strong> (the real API has
+none; models are born from <code>CREATE MODEL</code> jobs). The wire resource uses
+<code>modelReference</code> (<code>projectId</code> / <code>datasetId</code> / <code>modelId</code>), <code>modelType</code>,
+<code>creationTime</code>, <code>lastModifiedTime</code>, <code>etag</code>, and the derived <code>featureColumns</code> /
+<code>labelColumns</code>. Patch coalesces the mutable fields BigQuery allows (description,
+labels, expirationTime). The resource is REST-only; there is no gRPC Models
+service in BigQuery, so the gRPC adapter is untouched.</p>
+<h3 id="catalog-persistence">Catalog + persistence<a class="headerlink" href="#catalog-persistence" title="Permanent link">&para;</a></h3>
+<p>A new frozen <code>ModelMeta</code> catalog entity (dataset-scoped, keyed
+<code>(project_id, dataset_id, model_id)</code>) is added with <code>list/get/create/update/
+delete_models</code> repository methods across the in-memory and DuckDB-backed
+implementations, a new <code>_bqemulator_catalog.models</code> table for persistence, and
+cascade-delete when the parent dataset is dropped with <code>delete_contents=true</code>.
+The REST resource has no create endpoint; <code>create_model</code> exists for the
+<code>CREATE MODEL</code> job and test seeding.</p>
+<h3 id="parity-model">Parity model<a class="headerlink" href="#parity-model" title="Permanent link">&para;</a></h3>
+<p>The surface that BigQuery returns <strong>shape-identically regardless of training</strong> is
+recorded faithfully from real BigQuery and asserted exactly:</p>
+<ul>
+<li>the Models REST resource shape (<code>list</code> / <code>get</code>),</li>
+<li>the <code>CREATE MODEL</code> job resource and <code>statementType</code>,</li>
+<li>the <code>ML.PREDICT</code> output <strong>column shape</strong> (names, order, types),</li>
+<li>the error envelopes (model not found, duplicate, invalid OPTIONS, missing
+  dataset).</li>
+</ul>
+<p>The one place the emulator cannot match BigQuery is the <strong>numeric value</strong> of
+<code>ML.PREDICT</code> predictions. Those fixtures are recorded from real BigQuery and
+pinned as a documented divergence in
+<code>tests/conformance/divergences.py</code> (<code>pytest.mark.xfail(strict=True)</code>, citing
+ADR 0047), exactly as other deliberate divergences are handled
+(<a href="../../adr/0023-conformance-divergence-baseline/">ADR 0023</a>). When a future RFC
+adds real classical-model inference, removing that divergence entry makes the
+fixture pass on the next run.</p>
+<h2 id="drawbacks">Drawbacks<a class="headerlink" href="#drawbacks" title="Permanent link">&para;</a></h2>
+<ul>
+<li><strong>Predictions are fake.</strong> <code>ML.PREDICT</code> returns placeholder values. This is the
+  defining limitation of the surface-only scope; it is mitigated by making the
+  values obviously non-real and documenting it prominently, but a user who does
+  not read the docs could be surprised. The alternative (no <code>ML.PREDICT</code> at all)
+  is worse for pipeline testing.</li>
+<li><strong>Partial parity is a sharper edge than a clean 501.</strong> A hard
+  <code>UnsupportedFeatureError</code> is unambiguous; a statement that "works" but returns
+  fake numbers requires the user to understand the boundary. The divergence
+  registry and docs callouts carry that weight.</li>
+<li><strong>Scope-creep gravity.</strong> Once <code>CREATE MODEL</code> registers metadata, the natural
+  pull is toward real training (Option B). This RFC draws the line explicitly and
+  leaves training to a separate, future RFC.</li>
+<li><strong>Surface coupling.</strong> <code>CREATE MODEL</code> reuses the inner-query pipeline and the
+  <code>EXPORT DATA</code> interception pattern; a regression in that shared path could
+  affect models. Mitigated by tests on both standalone and scripted paths.</li>
+</ul>
+<h2 id="rationale-and-alternatives">Rationale and alternatives<a class="headerlink" href="#rationale-and-alternatives" title="Permanent link">&para;</a></h2>
+<ul>
+<li><strong>Surface-only first</strong> (chosen) vs. full BQML vs. nothing. Full BQML training
+  is comparable in effort to the rest of the emulator
+  (<a href="../../adr/0012-bqml-out-of-scope/">ADR 0012</a>) and is not undertaken here.
+  Surface-only unblocks the most common local-testing needs (SQL parsing, Models
+  API, pipeline shape) at a fraction of the cost and lays the architecture for a
+  later accuracy slice.</li>
+<li><strong>AST interception pre-translation</strong> (chosen) vs. translator keyword pass vs. a
+  new REST job type. The chosen point preserves OPTIONS from the AST, runs the
+  inner query through the real pipeline, and covers standalone and scripted
+  statements with one path, exactly as <code>EXPORT DATA</code> does.</li>
+<li><strong>Obviously-non-real placeholder values</strong> (chosen) vs. plausible-looking
+  numbers vs. NULL. A plausible number invites mistaking stubs for real output;
+  NULL collides with legitimately-null passthrough columns and hides the
+  prediction column's presence. A fixed, clearly-synthetic value is safest.</li>
+<li><strong>Models REST without <code>insert</code></strong> (chosen, matches BigQuery) vs. adding an
+  <code>insert</code> for convenience. BigQuery has no <code>models.insert</code>; adding one would be
+  a non-parity invention.</li>
+</ul>
+<h2 id="prior-art">Prior art<a class="headerlink" href="#prior-art" title="Permanent link">&para;</a></h2>
+<ul>
+<li><a href="../../adr/0012-bqml-out-of-scope/">ADR 0012</a>: the original BQML out-of-scope
+  decision, which this RFC partially reverses (surface-only in; training out) and
+  whose inaccurate "Models insert is supported" claim it corrects.</li>
+<li><a href="../../adr/0043-export-data-statement/">ADR 0043</a> / RFC 0001: the
+  pre-translation statement-interception pattern (<code>exp.Export</code>, dual-wired into
+  standalone and scripted paths) that this RFC reuses for <code>exp.Create(kind=MODEL)</code>
+  and <code>exp.Predict</code>.</li>
+<li><a href="../../adr/0023-conformance-divergence-baseline/">ADR 0023</a>: the documented
+  <code>xfail(strict=True)</code> divergence mechanism used here for <code>ML.PREDICT</code> values.</li>
+<li><code>src/bqemulator/api/routes/routines.py</code>: the dataset-scoped REST resource
+  template the Models resource mirrors.</li>
+<li>Real BigQuery:
+  <a href="https://docs.cloud.google.com/bigquery/docs/reference/rest/v2/models">Models REST resource</a>,
+  <a href="https://docs.cloud.google.com/bigquery/docs/reference/standard-sql/bigqueryml-syntax-create">CREATE MODEL</a>,
+  and
+  <a href="https://docs.cloud.google.com/bigquery/docs/reference/standard-sql/bigqueryml-syntax-predict">ML.PREDICT</a>.</li>
+</ul>
+<h2 id="unresolved-questions">Unresolved questions<a class="headerlink" href="#unresolved-questions" title="Permanent link">&para;</a></h2>
+<ul>
+<li>The exact <code>statistics.query</code> field set for a <code>CREATE_MODEL</code> job (beyond
+  <code>statementType</code>) and the precise <code>ML.PREDICT</code> output column names/types per
+  model task are resolved by conformance recording from real BigQuery, then fed
+  back into the implementation.</li>
+<li>The precise fixed placeholder value for <code>ML.PREDICT</code> predictions (a sentinel
+  that is unambiguous yet type-compatible with the prediction column type).</li>
+<li>Which OPTIONS BigQuery echoes back on the model resource versus which are
+  training-only and dropped.</li>
+</ul>
+<h2 id="future-possibilities">Future possibilities<a class="headerlink" href="#future-possibilities" title="Permanent link">&para;</a></h2>
+<ul>
+<li>Real classical-model inference (linear/logistic regression, k-means) with
+  approximate-parity numeric output, via scikit-learn / statsmodels behind an
+  optional dependency extra (the "Option B" follow-on). This removes the
+  <code>ML.PREDICT</code>-value divergence for the covered model types.</li>
+<li><code>ML.EVALUATE</code>, <code>ML.WEIGHTS</code>, <code>ML.FEATURE_INFO</code>, <code>ML.TRAINING_INFO</code> over the
+  registered metadata.</li>
+<li><code>ML.GENERATE_*</code> (LLM-backed remote models) as a separate, network-dependent
+  surface.</li>
+</ul>
 
 
 
 
 
 
+
+  
+  
 
 
 

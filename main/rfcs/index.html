@@ -13,7 +13,7 @@
         <link rel="canonical" href="https://jjviscomi.github.io/bqemulator/main/rfcs/">
       
       
-        <link rel="prev" href="../adr/0046-unified-inner-query-pipeline/">
+        <link rel="prev" href="../adr/0047-bigquery-ml-surface/">
       
       
         <link rel="next" href="0001-export-data-statement/">
@@ -2991,6 +2991,8 @@
       
         
       
+        
+      
     
     
     
@@ -4324,6 +4326,34 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../adr/0047-bigquery-ml-surface/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0047 BigQuery ML surface (metadata, Models REST, ML.PREDICT shape)
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -4344,6 +4374,8 @@
       
         
           
+        
+      
         
       
         
@@ -4420,6 +4452,41 @@
     
   
     0001 EXPORT DATA statement (Cloud Storage)
+  
+
+    
+  </span>
+  
+  
+    
+  
+  
+    <span class="md-status md-status--Accepted"></span>
+  
+
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="0002-bigquery-ml-surface/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0002 BigQuery ML surface (metadata, Models REST, ML.PREDICT shape)
   
 
     
@@ -5370,6 +5437,23 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="Lifecycle">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#maintainer-fast-track" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Maintainer fast-track
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
         <li class="md-nav__item">
@@ -5441,6 +5525,15 @@ format, or governance go through an RFC before implementation.</p>
 <li>Accepted RFCs drive implementation PRs; the outcome is summarized in
    an ADR in <code>docs/adr/</code>.</li>
 </ol>
+<h3 id="maintainer-fast-track">Maintainer fast-track<a class="headerlink" href="#maintainer-fast-track" title="Permanent link">&para;</a></h3>
+<p>When a maintainer has already ratified a design before drafting (so the
+≥2-week review window would add no signal), the RFC may be accepted on a
+fast-track: it is authored with status <code>Accepted</code>, and implementation
+proceeds in the same phased PR series rather than waiting on a separate
+review cycle. A fast-tracked RFC says so in a note under its title and
+still records its implementation outcome in an ADR. This path is for
+maintainer-driven work with a pre-settled design; community-proposed RFCs
+follow the full lifecycle above.</p>
 <h2 id="when-to-open-an-rfc">When to open an RFC<a class="headerlink" href="#when-to-open-an-rfc" title="Permanent link">&para;</a></h2>
 <ul>
 <li>New public REST or gRPC endpoints</li>
@@ -5465,6 +5558,11 @@ for the PR mechanics.</p>
 <tr>
 <td><a href="0001-export-data-statement/">0001</a></td>
 <td>EXPORT DATA statement (Cloud Storage)</td>
+<td>Accepted</td>
+</tr>
+<tr>
+<td><a href="0002-bigquery-ml-surface/">0002</a></td>
+<td>BigQuery ML surface (metadata, Models REST, ML.PREDICT shape)</td>
 <td>Accepted</td>
 </tr>
 </tbody>
