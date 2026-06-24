@@ -13,19 +13,18 @@ encountered, with a link back to this page.
 
 ### BigQuery ML
 
-Model **training** and prediction **accuracy** are permanently out of scope: the
-numeric output of any model type (ARIMA, k-means, matrix factorization, DNN,
-boosted trees, AutoML, regression), and `ML.EVALUATE`, `ML.FORECAST`,
-`ML.GENERATE_*`, `ML.WEIGHTS`, and the `TRANSFORM()` clause.
+Model **training** and prediction **accuracy** are out of scope: the numeric
+output of any model type (ARIMA, k-means, matrix factorization, DNN, boosted
+trees, AutoML, regression), and `ML.EVALUATE`, `ML.FORECAST`, `ML.GENERATE_*`,
+`ML.WEIGHTS`, and the `TRANSFORM()` clause.
 
-A **surface-only** slice of BigQuery ML, registering model metadata from
-`CREATE MODEL` (the feature/label schema is derived from the training query; no
-training runs), serving the Models REST resource (`list` / `get` / `patch` /
-`delete`; BigQuery has no `insert`), and returning a deterministic, non-real
-`ML.PREDICT` result shape, is accepted in
+In scope is a **surface-only** slice, defined in
 [RFC 0002](../rfcs/0002-bigquery-ml-surface.md) and
-[ADR 0047](../adr/0047-bigquery-ml-surface.md) and is being implemented in
-phases.
+[ADR 0047](../adr/0047-bigquery-ml-surface.md): model-metadata registration via
+`CREATE MODEL` (the feature/label schema is derived from the training query),
+the Models REST resource (`list` / `get` / `patch` / `delete`; BigQuery has no
+`insert`), and the `ML.PREDICT` output shape (values are deterministic and not
+real predictions).
 
 *Rationale*: full BQML training would be a project of comparable size to the
 rest of the emulator; the surface-only slice unblocks SQL-parsing, Models-API,
