@@ -105,15 +105,22 @@ class TestErrorHandling:
         assert isinstance(result, Err)
         assert isinstance(result.error, UnsupportedFeatureError)
 
-    def test_create_model_detected_as_unsupported(
+    def test_create_model_no_longer_keyword_rejected(
         self,
         translator: SQLTranslator,
     ) -> None:
+        """``CREATE MODEL`` is no longer rejected by the translator guard.
+
+        ADR 0047 / RFC 0002 move ``CREATE MODEL`` to AST interception in the
+        executor (``jobs.executor.parse_create_model``), so the translator's
+        ``_UNSUPPORTED_KEYWORDS`` quick-reject no longer fires on it. The
+        translator is never called with a raw ``CREATE MODEL`` in practice;
+        this asserts the keyword guard was lifted (no ``UnsupportedFeatureError``).
+        """
         result = translator.translate(
             "CREATE MODEL my_model OPTIONS(model_type='linear_reg') AS SELECT * FROM t",
         )
-        assert isinstance(result, Err)
-        assert isinstance(result.error, UnsupportedFeatureError)
+        assert isinstance(result, Ok)
 
 
 class TestTranslatorIsStateless:

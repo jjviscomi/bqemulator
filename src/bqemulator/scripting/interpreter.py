@@ -689,6 +689,32 @@ class ScriptInterpreter:
                 write_export(exported, export_request.options, self._ctx)
             self._final_table = None
             return
+        # CREATE MODEL: register surface-only model metadata (ADR 0047 /
+        # RFC 0002). The AS SELECT runs through the standard query path to
+        # derive the feature/label schema (no training); the model is then
+        # registered. Non-row-producing, so reset ``_final_table``.
+        from bqemulator.jobs.executor import (
+            parse_create_model,
+            preflight_create_model,
+            register_model,
+        )
+
+        create_model_request = parse_create_model(sql)
+        if create_model_request is not None:
+            operation = preflight_create_model(create_model_request, self._project_id, self._ctx)
+            if operation != "SKIP":
+                trained = await self._run_query(create_model_request.select_sql)
+                async with self._ctx.engine.write_lock():
+                    register_model(
+                        create_model_request,
+                        self._project_id,
+                        trained.schema,
+                        operation=operation,
+                        now=self._ctx.clock.now(),
+                        ctx=self._ctx,
+                    )
+            self._final_table = None
+            return
         # Reject a bare / RESTRICT DROP SCHEMA on a non-empty dataset with
         # BigQuery's ``resourceInUse`` error before DuckDB runs — same guard
         # the single-statement executor path applies, so scripted drops get

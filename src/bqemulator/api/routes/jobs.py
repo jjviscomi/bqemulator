@@ -682,6 +682,7 @@ _DESTRUCTIVE_STATEMENT_TYPES = frozenset(
         "CREATE_PROCEDURE",
         "CREATE_SCHEMA",
         "CREATE_SNAPSHOT_TABLE",
+        "CREATE_MODEL",
         "DROP_TABLE",
         "DROP_VIEW",
         "DROP_FUNCTION",
