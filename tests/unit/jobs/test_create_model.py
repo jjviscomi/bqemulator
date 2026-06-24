@@ -219,13 +219,28 @@ class TestStandardSqlFieldMapping:
             ("INTEGER", "INT64"),
             ("FLOAT", "FLOAT64"),
             ("BOOLEAN", "BOOL"),
+            ("STRING", "STRING"),
+            ("BYTES", "BYTES"),
             ("NUMERIC", "NUMERIC"),
+            ("BIGNUMERIC", "BIGNUMERIC"),
+            ("TIMESTAMP", "TIMESTAMP"),
+            ("DATE", "DATE"),
+            ("TIME", "TIME"),
+            ("DATETIME", "DATETIME"),
+            ("GEOGRAPHY", "GEOGRAPHY"),
+            ("JSON", "JSON"),
+            ("INTERVAL", "INTERVAL"),
         ],
     )
     def test_scalar_type_kinds(self, bq_type: str, type_kind: str) -> None:
-        """Legacy REST scalar types map to their StandardSQL ``typeKind``."""
+        """Each legacy REST scalar type maps to its StandardSQL ``typeKind``."""
         field = _schema_field_to_standard_sql({"name": "c", "type": bq_type, "mode": "NULLABLE"})
         assert field == {"name": "c", "type": {"typeKind": type_kind}}
+
+    def test_unknown_type_passes_through(self) -> None:
+        """An unmapped legacy type falls through unchanged (defensive)."""
+        field = _schema_field_to_standard_sql({"name": "c", "type": "WHat", "mode": "NULLABLE"})
+        assert field == {"name": "c", "type": {"typeKind": "WHat"}}
 
     def test_repeated_becomes_array(self) -> None:
         """A REPEATED column renders as ``ARRAY`` of the element type."""
@@ -251,6 +266,33 @@ class TestStandardSqlFieldMapping:
         assert field["type"]["structType"]["fields"] == [
             {"name": "zip", "type": {"typeKind": "STRING"}},
         ]
+
+    def test_repeated_record_becomes_array_of_struct(self) -> None:
+        """A REPEATED RECORD nests a STRUCT inside the ARRAY element type."""
+        field = _schema_field_to_standard_sql(
+            {
+                "name": "rows",
+                "type": "RECORD",
+                "mode": "REPEATED",
+                "fields": [{"name": "n", "type": "INTEGER", "mode": "NULLABLE"}],
+            },
+        )
+        element = field["type"]["arrayElementType"]
+        assert field["type"]["typeKind"] == "ARRAY"
+        assert element["typeKind"] == "STRUCT"
+        assert element["structType"]["fields"] == [{"name": "n", "type": {"typeKind": "INT64"}}]
+
+    def test_range_carries_element_type(self) -> None:
+        """A RANGE column carries its ``rangeElementType`` as a ``typeKind``."""
+        field = _schema_field_to_standard_sql(
+            {
+                "name": "r",
+                "type": "RANGE",
+                "mode": "NULLABLE",
+                "rangeElementType": {"type": "DATE"},
+            },
+        )
+        assert field["type"] == {"typeKind": "RANGE", "rangeElementType": {"typeKind": "DATE"}}
 
 
 class TestCreateModelEndToEnd:
@@ -278,6 +320,10 @@ class TestCreateModelEndToEnd:
             assert model is not None
             assert model.model_type == "linear_reg"
             assert model.training_query == "SELECT x, y, label, flag FROM ds.t"
+            # Identity metadata: a fresh CREATE stamps both times to now + an etag.
+            assert model.etag
+            assert model.creation_time == NOW
+            assert model.last_modified_time == NOW
             # Features keep training-query order; label is split out by name.
             assert model.feature_columns == (
                 {"name": "x", "type": {"typeKind": "FLOAT64"}},
@@ -378,6 +424,45 @@ class TestCreateModelEndToEnd:
             assert meta.statistics["query"]["ddlOperationPerformed"] == "CREATE"
             assert ctx.catalog.get_model("p", "ds", "m") is not None
 
+    async def test_if_not_exists_does_not_run_training_query(self) -> None:
+        """A SKIP short-circuits before the training query runs.
+
+        The second statement's training query references a nonexistent table; if
+        SKIP truly skips execution it must NOT raise, proving the query is not run.
+        """
+        async with _model_ctx() as ctx:
+            await execute_query_job(
+                "p",
+                "j-1",
+                "CREATE MODEL ds.m OPTIONS(model_type='linear_reg') AS SELECT x FROM ds.t",
+                None,
+                ctx,
+            )
+            meta = await execute_query_job(
+                "p",
+                "j-2",
+                "CREATE MODEL IF NOT EXISTS ds.m OPTIONS(model_type='x') "
+                "AS SELECT * FROM ds.does_not_exist",
+                None,
+                ctx,
+            )
+            assert meta.statistics["query"]["ddlOperationPerformed"] == "SKIP"
+            assert ctx.catalog.get_model("p", "ds", "m").model_type == "linear_reg"
+
+    async def test_explicit_project_qualified_model(self) -> None:
+        """An explicit project in the model ref is honoured end-to-end."""
+        async with _model_ctx() as ctx:
+            await execute_query_job(
+                "p",
+                "j-proj",
+                "CREATE MODEL `p`.ds.m OPTIONS(model_type='x') AS SELECT x FROM ds.t",
+                None,
+                ctx,
+            )
+            model = ctx.catalog.get_model("p", "ds", "m")
+            assert model is not None
+            assert model.project_id == "p"
+
     async def test_missing_dataset_not_found(self) -> None:
         """A model in an absent dataset raises NotFound (404) before the query runs."""
         async with _model_ctx() as ctx:
@@ -466,6 +551,23 @@ class TestScriptedCreateModel:
                     None,
                     ctx,
                 )
+
+    async def test_execute_immediate_registers(self) -> None:
+        """``EXECUTE IMMEDIATE`` of a CREATE MODEL is intercepted (dynamic path)."""
+        async with _model_ctx() as ctx:
+            await execute_query_job(
+                "p",
+                "j-ei",
+                "BEGIN\n"
+                '  EXECUTE IMMEDIATE "CREATE MODEL ds.dyn '
+                "OPTIONS(model_type='linear_reg') AS SELECT x, y FROM ds.t\";\n"
+                "END",
+                None,
+                ctx,
+            )
+            model = ctx.catalog.get_model("p", "ds", "dyn")
+            assert model is not None
+            assert [c["name"] for c in model.feature_columns] == ["x", "y"]
 
 
 class TestDryRun:

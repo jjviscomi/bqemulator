@@ -138,3 +138,15 @@ def test_create_or_replace_is_idempotent(
     assert second is not None
     assert first.feature_columns == second.feature_columns
     assert first.label_columns == second.label_columns
+
+
+def test_replace_on_absent_model_creates() -> None:
+    """A REPLACE disposition whose model has vanished falls back to create.
+
+    Guards the race branch in ``register_model`` where ``preflight`` resolved
+    REPLACE but the model is gone by the time the write lock is held.
+    """
+    ctx = _fresh_ctx()
+    schema = pa.schema([("x", pa.float64())])
+    register_model(_request(()), "p", schema, operation="REPLACE", now=NOW, ctx=ctx)
+    assert ctx.catalog.get_model("p", "ds", "m") is not None

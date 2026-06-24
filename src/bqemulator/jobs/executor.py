@@ -2473,7 +2473,8 @@ def _standard_sql_data_type(entry: dict[str, Any]) -> dict[str, Any]:
     """Render a :func:`build_response_schema` entry as a StandardSQL data type dict.
 
     A ``REPEATED`` column becomes ``ARRAY`` of its element type; a ``RECORD``
-    column becomes ``STRUCT`` with nested fields; every other type maps through
+    column becomes ``STRUCT`` with nested fields; a ``RANGE`` column carries its
+    ``rangeElementType``; every other type maps through
     :data:`_BQ_TYPE_TO_TYPE_KIND`.
     """
     if entry.get("mode") == "REPEATED":
@@ -2483,6 +2484,12 @@ def _standard_sql_data_type(entry: dict[str, Any]) -> dict[str, Any]:
     if bq_type == "RECORD":
         fields = [_schema_field_to_standard_sql(field) for field in entry.get("fields", [])]
         return {"typeKind": "STRUCT", "structType": {"fields": fields}}
+    if bq_type == "RANGE":
+        elem = entry.get("rangeElementType", {}).get("type", "")
+        return {
+            "typeKind": "RANGE",
+            "rangeElementType": {"typeKind": _BQ_TYPE_TO_TYPE_KIND.get(elem, elem)},
+        }
     return {"typeKind": _BQ_TYPE_TO_TYPE_KIND.get(bq_type, bq_type)}
 
 
