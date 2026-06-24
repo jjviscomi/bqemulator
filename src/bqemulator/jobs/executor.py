@@ -2245,7 +2245,14 @@ async def _execute_export_data_job(
 # CREATE MODEL: surface-only model registration (ADR 0047 / RFC 0002)
 # ---------------------------------------------------------------------------
 
-_CREATE_MODEL_RE = re.compile(r"^\s*CREATE\s+(?:OR\s+REPLACE\s+)?MODEL\b", re.IGNORECASE)
+# Admits the ``TEMP`` / ``TEMPORARY`` modifier SQLGlot accepts so the gate
+# agrees with the classifier; temporary models are then rejected explicitly in
+# ``_parse_model_options`` (BigQuery ML has no temporary models) rather than
+# falling through to a misleading "Malformed" error.
+_CREATE_MODEL_RE = re.compile(
+    r"^\s*CREATE\s+(?:OR\s+REPLACE\s+)?(?:TEMP(?:ORARY)?\s+)?MODEL\b",
+    re.IGNORECASE,
+)
 
 #: Maximum dotted parts in a model reference (``project.dataset.model``).
 _MAX_MODEL_REF_PARTS = 3
@@ -2386,7 +2393,8 @@ def _parse_model_options(properties: Any) -> tuple[str, tuple[str, ...]]:
 
     ``model_type`` is required and stored verbatim (RFC 0002: any model-type
     string is accepted; none is trained). ``input_label_cols`` names the label
-    columns. The ``TRANSFORM()`` clause is rejected as unsupported (ADR 0047)
+    columns. The ``TRANSFORM()`` clause and the ``TEMP`` / ``TEMPORARY`` modifier
+    are rejected as unsupported (ADR 0047; BigQuery ML has no temporary models)
     and an unknown option name is rejected rather than silently dropped.
     """
     from sqlglot import exp
@@ -2400,6 +2408,11 @@ def _parse_model_options(properties: Any) -> tuple[str, tuple[str, ...]]:
             raise UnsupportedFeatureError(
                 "CREATE MODEL TRANSFORM(...) is not supported by the surface-only "
                 "BigQuery ML implementation (ADR 0047).",
+            )
+        if isinstance(prop, exp.TemporaryProperty):
+            raise UnsupportedFeatureError(
+                "CREATE TEMP / TEMPORARY MODEL is not supported; BigQuery ML "
+                "models are persistent.",
             )
         key = _model_property_key(prop)
         value = prop.args.get("value")

@@ -202,6 +202,19 @@ class TestClassifyAndParse:
                 "OPTIONS(model_type='linear_reg') AS SELECT x FROM ds.t",
             )
 
+    @pytest.mark.parametrize("kw", ["TEMP", "TEMPORARY"])
+    def test_temp_model_unsupported(self, kw: str) -> None:
+        """``CREATE TEMP/TEMPORARY MODEL`` is rejected cleanly, not as 'Malformed'.
+
+        SQLGlot promotes it to a CREATE MODEL (so the classifier routes it), so
+        the parser must give a clear unsupported-feature error rather than the
+        gate falling through to the executor's malformed-statement branch.
+        """
+        with pytest.raises(UnsupportedFeatureError, match="TEMP"):
+            parse_create_model(
+                f"CREATE {kw} MODEL ds.m OPTIONS(model_type='x') AS SELECT a FROM ds.t",
+            )
+
     @pytest.mark.parametrize(
         "option",
         [
