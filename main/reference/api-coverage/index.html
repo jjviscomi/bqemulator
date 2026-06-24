@@ -5570,7 +5570,7 @@ committed inventory has drifted from the source.</p>
 <p><strong>Auto-generated.</strong> Edit route handlers under <a href="https://github.com/jjviscomi/bqemulator/blob/main/src/bqemulator/api/routes/"><code>src/bqemulator/api/routes/</code></a> (or the root-level health router under <a href="https://github.com/jjviscomi/bqemulator/blob/main/src/bqemulator/api/health.py"><code>src/bqemulator/api/health.py</code></a>) and run <code>make api-coverage</code> to regenerate this block. <code>make verify</code> calls <code>--check</code> to refuse merging a PR whose committed inventory has drifted from the live source. Endpoint counts in this block are facts about the codebase; ship-status (v1.0.0 release-quality across all surfaces) is asserted in the <a href="../compatibility-matrix/">compatibility matrix</a> and gated by the conformance corpus on every PR.</p>
 </blockquote>
 <ul>
-<li><strong>Total REST endpoints</strong>: 42 across 9 route modules</li>
+<li><strong>Total REST endpoints</strong>: 46 across 10 route modules</li>
 </ul>
 <table>
 <thead>
@@ -5670,6 +5670,16 @@ committed inventory has drifted from the source.</p>
 <td>Routines</td>
 <td><code>/bigquery/v2/projects/{project_id}/datasets/{dataset_id}/routines/{routine_id}</code></td>
 <td>GET PUT PATCH DELETE</td>
+</tr>
+<tr>
+<td>Models</td>
+<td><code>/bigquery/v2/projects/{project_id}/datasets/{dataset_id}/models</code></td>
+<td>GET</td>
+</tr>
+<tr>
+<td>Models</td>
+<td><code>/bigquery/v2/projects/{project_id}/datasets/{dataset_id}/models/{model_id}</code></td>
+<td>GET PATCH DELETE</td>
 </tr>
 <tr>
 <td>RowAccessPolicies</td>
