@@ -2247,6 +2247,32 @@ async def _execute_export_data_job(
 
 _CREATE_MODEL_RE = re.compile(r"^\s*CREATE\s+(?:OR\s+REPLACE\s+)?MODEL\b", re.IGNORECASE)
 
+
+def _strip_leading_sql_comments(sql: str) -> str:
+    """Return ``sql`` with leading whitespace and ``--`` / ``/* */`` comments removed.
+
+    A linear hand-rolled scan (not a regex) so it cannot trip CodeQL's ReDoS
+    detector, mirroring the scanner in
+    :mod:`bqemulator.sql.rewriter.alter_table_set_options`. Lets the CREATE MODEL
+    regex gate match statements a tool prefixes with comments (e.g. dbt's
+    ``/* {...} */`` job tags), which SQLGlot (and therefore the statement
+    classifier) already sees through.
+    """
+    i, n = 0, len(sql)
+    while i < n:
+        if sql[i].isspace():
+            i += 1
+        elif sql.startswith("--", i):
+            nl = sql.find("\n", i + 2)
+            i = n if nl == -1 else nl + 1
+        elif sql.startswith("/*", i):
+            end = sql.find("*/", i + 2)
+            i = n if end == -1 else end + 2
+        else:
+            break
+    return sql[i:]
+
+
 #: Documented ``CREATE MODEL`` OPTIONS names (lower-cased). Surface-only
 #: BigQuery ML registers metadata without training, so these options are
 #: recognised but not acted on; ``model_type`` and ``input_label_cols`` are
@@ -2424,7 +2450,7 @@ def parse_create_model(bq_sql: str) -> _CreateModelRequest | None:
     :class:`UnsupportedFeatureError` for the out-of-scope ``TRANSFORM()``
     clause.
     """
-    if not _CREATE_MODEL_RE.match(bq_sql):
+    if not _CREATE_MODEL_RE.match(_strip_leading_sql_comments(bq_sql)):
         return None
     import sqlglot
     from sqlglot import exp

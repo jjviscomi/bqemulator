@@ -154,6 +154,15 @@ class TestClassifyAndParse:
         """A non-``CREATE MODEL`` statement returns ``None`` (defers to the normal path)."""
         assert parse_create_model(sql) is None
 
+    @pytest.mark.parametrize("prefix", ['/* {"app": "dbt"} */ ', "-- a comment\n"])
+    def test_parse_comment_prefixed(self, prefix: str) -> None:
+        """A comment-prefixed CREATE MODEL still parses (e.g. dbt job tags)."""
+        req = parse_create_model(
+            prefix + "CREATE MODEL ds.m OPTIONS(model_type='x') AS SELECT a FROM ds.t",
+        )
+        assert req is not None
+        assert (req.dataset_id, req.model_id) == ("ds", "m")
+
     @pytest.mark.parametrize(
         ("sql", "match"),
         [
@@ -338,6 +347,26 @@ class TestCreateModelEndToEnd:
             assert rest["labelColumns"] == [{"name": "label", "type": {"typeKind": "STRING"}}]
             assert "training_query" not in rest
             assert "kind" not in rest
+
+    async def test_comment_prefixed_registers(self) -> None:
+        """A comment-prefixed CREATE MODEL registers (classify + interception agree).
+
+        Reproduces the path where the classifier sees through a leading comment
+        (dbt-style ``/* ... */`` job tags) and routes to the interception, which
+        must also parse it rather than reporting a malformed statement.
+        """
+        async with _model_ctx() as ctx:
+            await execute_query_job(
+                "p",
+                "j-cmt",
+                '/* {"app": "dbt"} */ CREATE MODEL ds.m '
+                "OPTIONS(model_type='x') AS SELECT x, y FROM ds.t",
+                None,
+                ctx,
+            )
+            model = ctx.catalog.get_model("p", "ds", "m")
+            assert model is not None
+            assert [c["name"] for c in model.feature_columns] == ["x", "y"]
 
     async def test_no_label_cols_all_features(self) -> None:
         """Without ``input_label_cols`` every output column is a feature."""
