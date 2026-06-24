@@ -24,6 +24,7 @@ from bqemulator.catalog.models import (
     DatasetMeta,
     JobMeta,
     MaterializedViewMeta,
+    ModelMeta,
     PartitionMeta,
     RoutineMeta,
     RowAccessPolicyMeta,
@@ -187,6 +188,45 @@ class CatalogRepository(Protocol):
         not_found_ok: bool = False,
     ) -> None:
         """Delete a routine."""
+        ...
+
+    # -- Models -----------------------------------------------------------
+
+    def list_models(self, project_id: str, dataset_id: str) -> tuple[ModelMeta, ...]:
+        """Return all models in the dataset (possibly empty)."""
+        ...
+
+    def get_model(
+        self,
+        project_id: str,
+        dataset_id: str,
+        model_id: str,
+    ) -> ModelMeta | None:
+        """Return the model or ``None``."""
+        ...
+
+    def create_model(self, model: ModelMeta) -> ModelMeta:
+        """Insert a new model. Raises AlreadyExistsError on conflict.
+
+        Internal entry point used by ``CREATE MODEL`` execution and test
+        seeding — the Models REST resource has no ``insert`` method, so
+        this is never reached from a public HTTP route.
+        """
+        ...
+
+    def update_model(self, model: ModelMeta) -> ModelMeta:
+        """Replace an existing model. Raises NotFoundError if absent."""
+        ...
+
+    def delete_model(
+        self,
+        project_id: str,
+        dataset_id: str,
+        model_id: str,
+        *,
+        not_found_ok: bool = False,
+    ) -> None:
+        """Delete a model."""
         ...
 
     # -- Jobs -------------------------------------------------------------

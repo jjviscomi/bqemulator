@@ -5,6 +5,7 @@ Stores metadata in tables under the reserved ``_bqemulator_catalog`` schema:
 * ``_bqemulator_catalog.datasets`` — DatasetMeta (one row per dataset).
 * ``_bqemulator_catalog.tables`` — TableMeta (one row per table).
 * ``_bqemulator_catalog.routines`` — RoutineMeta.
+* ``_bqemulator_catalog.models`` — ModelMeta.
 * ``_bqemulator_catalog.jobs`` — JobMeta.
 * ``_bqemulator_catalog.snapshots`` — SnapshotMeta.
 * ``_bqemulator_catalog.materialized_views`` — MaterializedViewMeta.
@@ -35,6 +36,7 @@ from bqemulator.catalog.models import (
     DatasetMeta,
     JobMeta,
     MaterializedViewMeta,
+    ModelMeta,
     PartitionMeta,
     RoutineMeta,
     RowAccessPolicyMeta,
@@ -96,6 +98,7 @@ class DuckDBCatalogRepository(CatalogRepository):
         self._hydrate_datasets()
         self._hydrate_tables()
         self._hydrate_routines()
+        self._hydrate_models()
         self._hydrate_jobs()
         self._hydrate_snapshots()
         self._hydrate_materialized_views()
@@ -105,6 +108,7 @@ class DuckDBCatalogRepository(CatalogRepository):
             datasets=len(self._cache._datasets),  # noqa: SLF001
             tables=len(self._cache._tables),  # noqa: SLF001
             routines=len(self._cache._routines),  # noqa: SLF001
+            models=len(self._cache._models),  # noqa: SLF001
         )
 
     def _surface_corruption(
@@ -177,6 +181,20 @@ class DuckDBCatalogRepository(CatalogRepository):
                 self._surface_corruption(table="routines", row_id=row_id, exc=exc)
                 continue
             self._cache._routines[(meta.project_id, meta.dataset_id, meta.routine_id)] = meta  # noqa: SLF001
+
+    def _hydrate_models(self) -> None:
+        rows = self._engine.execute(
+            f"SELECT project_id, dataset_id, model_id, metadata_json "
+            f'FROM "{CATALOG_SCHEMA}"."models"',
+        ).fetchall()
+        for project_id, dataset_id, model_id, raw in rows:
+            row_id = f"{project_id}.{dataset_id}.{model_id}"
+            try:
+                meta = ModelMeta.model_validate_json(raw)
+            except Exception as exc:  # noqa: BLE001
+                self._surface_corruption(table="models", row_id=row_id, exc=exc)
+                continue
+            self._cache._models[(meta.project_id, meta.dataset_id, meta.model_id)] = meta  # noqa: SLF001
 
     def _hydrate_jobs(self) -> None:
         rows = self._engine.execute(
@@ -375,6 +393,11 @@ class DuckDBCatalogRepository(CatalogRepository):
                 )
                 self._engine.execute(
                     f'DELETE FROM "{CATALOG_SCHEMA}"."routines" '
+                    f"WHERE project_id = ? AND dataset_id = ?",
+                    [project_id, dataset_id],
+                )
+                self._engine.execute(
+                    f'DELETE FROM "{CATALOG_SCHEMA}"."models" '
                     f"WHERE project_id = ? AND dataset_id = ?",
                     [project_id, dataset_id],
                 )
@@ -638,6 +661,80 @@ class DuckDBCatalogRepository(CatalogRepository):
                 routine.creation_time,
                 routine.last_modified_time,
                 routine.etag,
+            ],
+        )
+
+    # ------------------------------------------------------------------
+    # Models
+    # ------------------------------------------------------------------
+
+    def list_models(
+        self,
+        project_id: str,
+        dataset_id: str,
+    ) -> tuple[ModelMeta, ...]:
+        self.ensure_ready()
+        return self._cache.list_models(project_id, dataset_id)
+
+    def get_model(
+        self,
+        project_id: str,
+        dataset_id: str,
+        model_id: str,
+    ) -> ModelMeta | None:
+        self.ensure_ready()
+        return self._cache.get_model(project_id, dataset_id, model_id)
+
+    def create_model(self, model: ModelMeta) -> ModelMeta:
+        self.ensure_ready()
+        created = self._cache.create_model(model)
+        self._write_model(created)
+        return created
+
+    def update_model(self, model: ModelMeta) -> ModelMeta:
+        self.ensure_ready()
+        updated = self._cache.update_model(model)
+        self._write_model(updated)
+        return updated
+
+    def delete_model(
+        self,
+        project_id: str,
+        dataset_id: str,
+        model_id: str,
+        *,
+        not_found_ok: bool = False,
+    ) -> None:
+        self.ensure_ready()
+        had = self._cache.get_model(project_id, dataset_id, model_id) is not None
+        self._cache.delete_model(
+            project_id,
+            dataset_id,
+            model_id,
+            not_found_ok=not_found_ok,
+        )
+        if had:
+            self._engine.execute(
+                f'DELETE FROM "{CATALOG_SCHEMA}"."models" '
+                f"WHERE project_id = ? AND dataset_id = ? AND model_id = ?",
+                [project_id, dataset_id, model_id],
+            )
+
+    def _write_model(self, model: ModelMeta) -> None:
+        self._engine.execute(
+            f'INSERT OR REPLACE INTO "{CATALOG_SCHEMA}"."models" '
+            f"(project_id, dataset_id, model_id, model_type, "
+            f"metadata_json, creation_time, last_modified_time, etag) "
+            f"VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+            [
+                model.project_id,
+                model.dataset_id,
+                model.model_id,
+                model.model_type,
+                model.model_dump_json(by_alias=True),
+                model.creation_time,
+                model.last_modified_time,
+                model.etag,
             ],
         )
 

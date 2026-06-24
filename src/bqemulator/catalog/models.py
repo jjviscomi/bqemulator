@@ -335,6 +335,43 @@ class RoutineMeta(_Frozen):
 
 
 # ---------------------------------------------------------------------------
+# Model (BigQuery ML)
+# ---------------------------------------------------------------------------
+
+
+class ModelMeta(_Frozen):
+    """Surface-only metadata for a BigQuery ML model (ADR 0047 / RFC 0002).
+
+    Registers a model's *metadata* only — no training, no learned
+    weights. ``model_type`` is a free-form string (BigQuery's enum is
+    large and evolving; the official client also treats it as a plain
+    string). ``feature_columns`` / ``label_columns`` are opaque
+    ``StandardSqlField`` dicts (``{"name", "type": {"typeKind"}}``)
+    describing input/output *shape* only, mirroring how
+    :class:`RoutineMeta` stores typed structures. ``training_query`` is
+    internal provenance (the ``CREATE MODEL`` ``AS SELECT`` text): it is
+    persisted but never emitted in the REST representation.
+    """
+
+    project_id: str
+    dataset_id: str
+    model_id: str
+    model_type: str = "MODEL_TYPE_UNSPECIFIED"
+    friendly_name: str | None = None
+    description: str | None = None
+    labels: dict[str, str] = Field(default_factory=dict)
+    location: str = "US"
+    expiration_time: datetime | None = None
+    feature_columns: tuple[dict[str, Any], ...] = ()
+    label_columns: tuple[dict[str, Any], ...] = ()
+    encryption_configuration: dict[str, Any] | None = None
+    training_query: str | None = None  # bqemulator provenance; not a REST field
+    creation_time: datetime
+    last_modified_time: datetime
+    etag: str
+
+
+# ---------------------------------------------------------------------------
 # Job
 # ---------------------------------------------------------------------------
 
@@ -369,6 +406,7 @@ __all__ = [
     "JobState",
     "JobType",
     "MaterializedViewMeta",
+    "ModelMeta",
     "PartitionMeta",
     "PartitionType",
     "RangePartitioning",

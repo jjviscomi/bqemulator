@@ -9,6 +9,7 @@ import pytest
 from bqemulator.catalog.models import (
     DatasetMeta,
     JobMeta,
+    ModelMeta,
     RoutineArgument,
     RoutineMeta,
     TableFieldSchema,
@@ -135,6 +136,49 @@ class TestRoutineMeta:
         )
         assert r.language == "SQL"
         assert len(r.arguments) == 2
+
+
+class TestModelMeta:
+    def test_minimal_defaults(self) -> None:
+        m = ModelMeta(
+            project_id="p",
+            dataset_id="ml",
+            model_id="churn",
+            creation_time=NOW,
+            last_modified_time=NOW,
+            etag="e1",
+        )
+        assert m.model_type == "MODEL_TYPE_UNSPECIFIED"
+        assert m.location == "US"
+        assert m.labels == {}
+        assert m.feature_columns == ()
+        assert m.label_columns == ()
+        assert m.expiration_time is None
+        assert m.encryption_configuration is None
+        assert m.training_query is None
+
+    def test_full_surface_fields(self) -> None:
+        m = ModelMeta(
+            project_id="p",
+            dataset_id="ml",
+            model_id="churn",
+            model_type="LOGISTIC_REGRESSION",
+            friendly_name="Churn",
+            description="surface-only model",
+            labels={"team": "ds"},
+            feature_columns=({"name": "tenure", "type": {"typeKind": "FLOAT64"}},),
+            label_columns=({"name": "churned", "type": {"typeKind": "BOOL"}},),
+            encryption_configuration={"kmsKeyName": "projects/p/keys/k"},
+            training_query="SELECT tenure, churned FROM p.ml.customers",
+            expiration_time=NOW,
+            creation_time=NOW,
+            last_modified_time=NOW,
+            etag="e1",
+        )
+        assert m.model_type == "LOGISTIC_REGRESSION"
+        assert m.feature_columns[0]["name"] == "tenure"
+        assert m.label_columns[0]["type"] == {"typeKind": "BOOL"}
+        assert m.training_query == "SELECT tenure, churned FROM p.ml.customers"
 
 
 class TestJobMeta:

@@ -230,6 +230,7 @@ def _group_label(source_file: str) -> str:
         "tabledata": "TableData",
         "jobs": "Jobs",
         "routines": "Routines",
+        "models": "Models",
         "row_access_policies": "RowAccessPolicies",
         "upload": "Upload host",
     }.get(stem, stem.title())
@@ -293,6 +294,7 @@ def _render_rest_table(endpoints: list[RestEndpoint]) -> str:
         "TableData",
         "Jobs",
         "Routines",
+        "Models",
         "RowAccessPolicies",
         "Upload host",
     ]

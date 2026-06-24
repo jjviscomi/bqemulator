@@ -23,6 +23,7 @@ from bqemulator.api.middleware import (
 )
 from bqemulator.api.routes.datasets import router as datasets_router
 from bqemulator.api.routes.jobs import router as jobs_router
+from bqemulator.api.routes.models import router as models_router
 from bqemulator.api.routes.projects import router as projects_router
 from bqemulator.api.routes.routines import router as routines_router
 from bqemulator.api.routes.row_access_policies import (
@@ -68,6 +69,7 @@ def create_app(context: AppContext) -> FastAPI:
     app.include_router(tables_router)
     app.include_router(tabledata_router)
     app.include_router(routines_router)
+    app.include_router(models_router)
     app.include_router(row_access_policies_router)
     app.include_router(jobs_router)
     # Upload host (multipart + resumable). Mounted at
