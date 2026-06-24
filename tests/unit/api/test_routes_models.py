@@ -85,7 +85,6 @@ def _seed_model(app: FastAPI, model_id: str = "m1", **overrides: object) -> Mode
         "label_columns": ({"name": "y", "type": {"typeKind": "FLOAT64"}},),
         "labels": {"team": "ds"},
         "description": "seed",
-        "training_query": "SELECT x, y FROM ds.t",
         "creation_time": NOW,
         "last_modified_time": NOW,
         "etag": f"etag-{model_id}",
@@ -172,6 +171,8 @@ class TestModelsPatch:
             {"friendlyName": 123},  # wrong type
             {"expirationTime": "not-a-number"},  # uncoercible
             {"expirationTime": "1e9999"},  # out of range
+            {"expirationTime": True},  # bool is an int subclass; reject it
+            {"expirationTime": 123.4},  # float would truncate silently
         ],
     )
     def test_invalid_patch_returns_400(

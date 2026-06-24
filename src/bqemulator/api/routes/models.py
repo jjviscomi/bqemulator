@@ -53,7 +53,9 @@ def _to_millis(value: datetime) -> str:
 
 
 def _from_millis(value: str | int) -> datetime:
-    """Parse a BigQuery millisecond-epoch value into a UTC datetime."""
+    """Parse a millisecond-epoch string/int into a UTC datetime (rejects bool/float)."""
+    if isinstance(value, bool) or not isinstance(value, str | int):
+        raise TypeError("expirationTime must be a string or integer")
     return datetime.fromtimestamp(int(value) / 1000, tz=UTC)
 
 
