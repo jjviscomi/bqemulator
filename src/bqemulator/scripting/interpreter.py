@@ -866,6 +866,7 @@ class ScriptInterpreter:
             parse_create_model,
             preflight_create_model,
             register_model,
+            training_schema_sql,
         )
 
         request = parse_create_model(sql)
@@ -873,7 +874,7 @@ class ScriptInterpreter:
             return False
         operation = preflight_create_model(request, self._project_id, self._ctx)
         if operation != "SKIP":
-            trained = await self._run_query(request.select_sql)
+            trained = await self._run_query(training_schema_sql(request.select_sql))
             async with self._ctx.engine.write_lock():
                 register_model(
                     request,

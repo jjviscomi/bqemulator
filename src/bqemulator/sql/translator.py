@@ -67,8 +67,7 @@ _UNSUPPORTED_KEYWORDS: frozenset[str] = frozenset(
         # ``CREATE MODEL`` is intercepted before translation (ADR 0047 /
         # RFC 0002): the surface-only BigQuery ML path registers model
         # metadata via ``jobs.executor.parse_create_model`` rather than
-        # failing here. ``ML.PREDICT`` follows the same interception in a
-        # later step; the remaining ML.* constructs stay unsupported.
+        # failing here. The remaining ML.* constructs stay unsupported.
         "ML.PREDICT",
         "ML.EVALUATE",
         "ML.FORECAST",

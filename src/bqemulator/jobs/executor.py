@@ -2255,8 +2255,7 @@ _CREATE_MODEL_RE = re.compile(r"^\s*CREATE\s+(?:OR\s+REPLACE\s+)?MODEL\b", re.IG
 #: dropped). The set spans the documented model types (GLM, k-means, matrix
 #: factorization, PCA, boosted-tree / random-forest, DNN / wide-and-deep,
 #: autoencoder, AutoML, ARIMA_PLUS, imported models, contribution analysis)
-#: plus the shared training, hyperparameter-tuning, and model-registry
-#: options. The conformance corpus (PR 4) is the authority that refines it.
+#: plus the shared training, hyperparameter-tuning, and model-registry options.
 # A space-separated literal (split into the set below) keeps the comprehensive
 # list compact; the grouping is documented above rather than inline.
 _CREATE_MODEL_OPTION_NAMES = (
@@ -2402,6 +2401,18 @@ def _model_target(target: Any) -> tuple[str | None, str, str]:
             "CREATE MODEL model name must be dataset-qualified (dataset.model).",
         )
     return target.catalog or None, target.db, target.name
+
+
+def training_schema_sql(select_sql: str) -> str:
+    """Wrap a training query so only its schema is materialised (zero rows).
+
+    ``CREATE MODEL`` registration needs the result *schema*, not the rows, so
+    the training query runs under ``LIMIT 0`` to avoid scanning or materialising
+    a large training set just to derive feature/label columns. Table references
+    are still planned, so a missing table surfaces the same ``notFound`` it
+    would on a normal run.
+    """
+    return f"SELECT * FROM ({select_sql}) AS _bqml_train LIMIT 0"
 
 
 def parse_create_model(bq_sql: str) -> _CreateModelRequest | None:
@@ -2599,7 +2610,7 @@ async def _execute_create_model_job(
         )
         arrow_table = await _run_query_body(
             project_id=project_id,
-            bq_sql=request.select_sql,
+            bq_sql=training_schema_sql(request.select_sql),
             query_params=query_params,
             ctx=ctx,
             is_scripted=False,
@@ -3218,5 +3229,6 @@ __all__ = [
     "parse_export_data",
     "preflight_create_model",
     "register_model",
+    "training_schema_sql",
     "write_export",
 ]
