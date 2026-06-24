@@ -14,6 +14,17 @@ format, or governance go through an RFC before implementation.
 5. Accepted RFCs drive implementation PRs; the outcome is summarized in
    an ADR in `docs/adr/`.
 
+### Maintainer fast-track
+
+When a maintainer has already ratified a design before drafting (so the
+≥2-week review window would add no signal), the RFC may be accepted on a
+fast-track: it is authored with status `Accepted`, and implementation
+proceeds in the same phased PR series rather than waiting on a separate
+review cycle. A fast-tracked RFC says so in a note under its title and
+still records its implementation outcome in an ADR. This path is for
+maintainer-driven work with a pre-settled design; community-proposed RFCs
+follow the full lifecycle above.
+
 ## When to open an RFC
 
 - New public REST or gRPC endpoints
