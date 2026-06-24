@@ -569,6 +569,22 @@ class TestScriptedCreateModel:
             assert model is not None
             assert [c["name"] for c in model.feature_columns] == ["x", "y"]
 
+    async def test_execute_immediate_using_rejected(self) -> None:
+        """A dynamic CREATE MODEL with USING params is rejected (params are not bound)."""
+        async with _model_ctx() as ctx:
+            with pytest.raises(UnsupportedFeatureError, match="USING"):
+                await execute_query_job(
+                    "p",
+                    "j-ei-using",
+                    "BEGIN\n"
+                    '  EXECUTE IMMEDIATE "CREATE MODEL ds.dyn2 '
+                    "OPTIONS(model_type='x') AS SELECT x FROM ds.t WHERE y > ?\" USING 1;\n"
+                    "END",
+                    None,
+                    ctx,
+                )
+            assert ctx.catalog.get_model("p", "ds", "dyn2") is None
+
 
 class TestDryRun:
     """A dry-run ``CREATE MODEL`` previews the classification without side effects."""

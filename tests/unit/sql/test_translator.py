@@ -115,12 +115,15 @@ class TestErrorHandling:
         executor (``jobs.executor.parse_create_model``), so the translator's
         ``_UNSUPPORTED_KEYWORDS`` quick-reject no longer fires on it. The
         translator is never called with a raw ``CREATE MODEL`` in practice;
-        this asserts the keyword guard was lifted (no ``UnsupportedFeatureError``).
+        this asserts only that the keyword guard was lifted. Whether SQLGlot
+        can transpile the statement is incidental (a future SQLGlot change could
+        return a parse ``Err`` while the guard stays lifted), so the assertion is
+        limited to "not the unsupported-feature rejection".
         """
         result = translator.translate(
             "CREATE MODEL my_model OPTIONS(model_type='linear_reg') AS SELECT * FROM t",
         )
-        assert isinstance(result, Ok)
+        assert not (isinstance(result, Err) and isinstance(result.error, UnsupportedFeatureError))
 
 
 class TestTranslatorIsStateless:

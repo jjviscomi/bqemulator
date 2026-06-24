@@ -39,6 +39,7 @@ from bqemulator.domain.errors import (
     InvalidQueryError,
     QuotaExceededError,
     ResourceRef,
+    UnsupportedFeatureError,
     resource_not_found,
 )
 from bqemulator.observability.logging_ import get_logger
@@ -850,7 +851,12 @@ class ScriptInterpreter:
             return bq_sql
         return self._temp_routines.rewrite_calls(bq_sql)
 
-    async def _maybe_register_create_model(self, sql: str) -> bool:
+    async def _maybe_register_create_model(
+        self,
+        sql: str,
+        *,
+        using_values: list[Any] | None = None,
+    ) -> bool:
         """Intercept a ``CREATE MODEL`` statement, registering it; return True if handled.
 
         Shared by the static (:meth:`_exec_sql`) and dynamic
@@ -861,6 +867,10 @@ class ScriptInterpreter:
         model skips the query and the write. Non-row-producing, so
         ``_final_table`` is reset. Returns ``False`` for any non-``CREATE MODEL``
         statement (the caller proceeds with its normal handling).
+
+        ``EXECUTE IMMEDIATE`` ``USING`` values are not bound into the training
+        query, so that combination is rejected rather than silently dropping the
+        parameters.
         """
         from bqemulator.jobs.executor import (
             parse_create_model,
@@ -872,6 +882,11 @@ class ScriptInterpreter:
         request = parse_create_model(sql)
         if request is None:
             return False
+        if using_values:
+            raise UnsupportedFeatureError(
+                "EXECUTE IMMEDIATE of CREATE MODEL does not support USING "
+                "parameters in the training query.",
+            )
         operation = preflight_create_model(request, self._project_id, self._ctx)
         if operation != "SKIP":
             trained = await self._run_query(training_schema_sql(request.select_sql))
@@ -925,9 +940,9 @@ class ScriptInterpreter:
         """Execute a statement that may contain ? placeholders from USING."""
         # CREATE MODEL is intercepted before translation on the dynamic path too
         # (EXECUTE IMMEDIATE), so it registers a model rather than reaching DuckDB
-        # as untranslatable DDL. (USING placeholders inside a training query are
-        # not bound here; that exotic form is unsupported.)
-        if await self._maybe_register_create_model(bq_sql):
+        # as untranslatable DDL. USING placeholders inside a training query are
+        # not bound, so that combination is rejected in the helper.
+        if await self._maybe_register_create_model(bq_sql, using_values=using_values):
             return
         # Translate first, then merge any @var substitutions AND the using_values.
         bq_sql = self._rewrite_temp_calls(bq_sql)
