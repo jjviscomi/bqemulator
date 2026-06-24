@@ -13,15 +13,24 @@ encountered, with a link back to this page.
 
 ### BigQuery ML
 
-`CREATE MODEL`, `ML.PREDICT`, `ML.EVALUATE`, `ML.FORECAST`, `ML.GENERATE_*`,
-and all ML-related model types (ARIMA, k-means, matrix factorization, DNN,
-boosted trees, AutoML).
+Model **training** and prediction **accuracy** are out of scope: the numeric
+output of any model type (ARIMA, k-means, matrix factorization, DNN, boosted
+trees, AutoML, regression), and `ML.EVALUATE`, `ML.FORECAST`, `ML.GENERATE_*`,
+`ML.WEIGHTS`, and the `TRANSFORM()` clause.
 
-Only **Models resource CRUD** — list / get / insert / patch / update / delete
-of model metadata — is supported.
+In scope is a **surface-only** slice, defined in
+[RFC 0002](../rfcs/0002-bigquery-ml-surface.md) and
+[ADR 0047](../adr/0047-bigquery-ml-surface.md): model-metadata registration via
+`CREATE MODEL` (the feature/label schema is derived from the training query),
+the Models REST resource (`list` / `get` / `patch` / `delete`; BigQuery has no
+`insert`), and the `ML.PREDICT` output shape (values are deterministic and not
+real predictions).
 
-*Rationale*: full BQML would be a project of comparable size to the rest
-of the emulator. See [ADR 0012](../adr/0012-bqml-out-of-scope.md).
+*Rationale*: full BQML training would be a project of comparable size to the
+rest of the emulator; the surface-only slice unblocks SQL-parsing, Models-API,
+and pipeline-shape testing without it. See
+[ADR 0012](../adr/0012-bqml-out-of-scope.md) (the original exclusion, partially
+superseded by [ADR 0047](../adr/0047-bigquery-ml-surface.md)).
 
 ### BI Engine
 
