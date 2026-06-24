@@ -82,11 +82,11 @@ SELECT * FROM ML.PREDICT(MODEL my_dataset.my_model,
 
 The Models REST API serves the registered metadata:
 
-```
-GET  /bigquery/v2/projects/{p}/datasets/{d}/models                  -> list
-GET  /bigquery/v2/projects/{p}/datasets/{d}/models/{m}              -> get
-PATCH/bigquery/v2/projects/{p}/datasets/{d}/models/{m}              -> patch (description, labels, expirationTime)
-DELETE /bigquery/v2/projects/{p}/datasets/{d}/models/{m}            -> delete
+```text
+GET    /bigquery/v2/projects/{p}/datasets/{d}/models             -> list
+GET    /bigquery/v2/projects/{p}/datasets/{d}/models/{m}         -> get
+PATCH  /bigquery/v2/projects/{p}/datasets/{d}/models/{m}         -> patch (description, labels, expirationTime)
+DELETE /bigquery/v2/projects/{p}/datasets/{d}/models/{m}         -> delete
 ```
 
 `bq ls -m my_dataset`, `bq show -m my_dataset.my_model`, and the client-library

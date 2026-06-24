@@ -13,25 +13,25 @@ encountered, with a link back to this page.
 
 ### BigQuery ML
 
-Model **training** and **inference accuracy** are out of scope: `ML.EVALUATE`,
-`ML.FORECAST`, `ML.GENERATE_*`, `ML.WEIGHTS`, the `TRANSFORM()` clause, and the
-numeric output of any model (ARIMA, k-means, matrix factorization, DNN, boosted
-trees, AutoML, regression). `ML.PREDICT` runs but returns deterministic,
-non-real placeholder values, not accurate predictions.
+Model **training** and prediction **accuracy** are permanently out of scope: the
+numeric output of any model type (ARIMA, k-means, matrix factorization, DNN,
+boosted trees, AutoML, regression), and `ML.EVALUATE`, `ML.FORECAST`,
+`ML.GENERATE_*`, `ML.WEIGHTS`, and the `TRANSFORM()` clause.
 
-A **surface-only** slice of BigQuery ML *is* supported (see
+A **surface-only** slice of BigQuery ML, registering model metadata from
+`CREATE MODEL` (the feature/label schema is derived from the training query; no
+training runs), serving the Models REST resource (`list` / `get` / `patch` /
+`delete`; BigQuery has no `insert`), and returning a deterministic, non-real
+`ML.PREDICT` result shape, is accepted in
 [RFC 0002](../rfcs/0002-bigquery-ml-surface.md) and
-[ADR 0047](../adr/0047-bigquery-ml-surface.md)): `CREATE MODEL` registers model
-metadata (the feature/label schema is derived from the training query; no
-training happens), the Models REST resource serves it (`list`, `get`, `patch`,
-`delete`, matching BigQuery, which has no `insert`), and `ML.PREDICT` returns
-correctly-shaped output.
+[ADR 0047](../adr/0047-bigquery-ml-surface.md) and is being implemented in
+phases.
 
 *Rationale*: full BQML training would be a project of comparable size to the
-rest of the emulator. The surface-only slice unblocks SQL-parsing, Models-API,
+rest of the emulator; the surface-only slice unblocks SQL-parsing, Models-API,
 and pipeline-shape testing without it. See
 [ADR 0012](../adr/0012-bqml-out-of-scope.md) (the original exclusion, partially
-superseded) and [ADR 0047](../adr/0047-bigquery-ml-surface.md).
+superseded by [ADR 0047](../adr/0047-bigquery-ml-surface.md)).
 
 ### BI Engine
 
