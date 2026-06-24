@@ -41,11 +41,6 @@ router = APIRouter(prefix="/bigquery/v2", tags=["models"])
 
 _Ctx = Annotated[AppContext, Depends(get_context)]
 
-#: Default page size when a client does not supply ``maxResults``. Mirrors
-#: the datasets route's generous default so a single page returns every
-#: model in any realistic local dataset.
-_DEFAULT_PAGE_SIZE = 1000
-
 
 # ---------------------------------------------------------------------------
 # Serialization helpers
@@ -208,6 +203,8 @@ async def patch_model(
 ) -> dict[str, Any]:
     """Partial update of a model's mutable metadata."""
     body = await request.json()
+    if not isinstance(body, dict):
+        raise ValidationError("Request body must be a JSON object")
     # Read-modify-write under the lock so concurrent PATCHes can't lose updates.
     async with ctx.engine.write_lock():
         existing = ctx.catalog.get_model(project_id, dataset_id, model_id)

@@ -188,6 +188,10 @@ class TestModelsPatch:
         client.patch(f"{_BASE}/m1", json={"labels": None})
         assert client.get(f"{_BASE}/m1").json()["labels"] == {"team": "ds"}
 
+    def test_non_dict_patch_body_returns_400(self, client: TestClient) -> None:
+        _seed_model(client.app)  # type: ignore[arg-type]
+        assert client.patch(f"{_BASE}/m1", json=[1, 2]).status_code == 400
+
 
 class TestModelsDelete:
     def test_delete_then_404(self, client: TestClient) -> None:
