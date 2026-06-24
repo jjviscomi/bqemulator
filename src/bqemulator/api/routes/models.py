@@ -6,8 +6,8 @@ Endpoints:
     PATCH  /bigquery/v2/projects/{p}/datasets/{d}/models/{m}       — patch
     DELETE /bigquery/v2/projects/{p}/datasets/{d}/models/{m}       — delete
 
-The BigQuery Models REST resource has **no** ``insert`` method — models
-are created only by ``CREATE MODEL`` jobs (wired in a later change).
+The BigQuery Models REST resource has **no** ``insert`` method: models
+are created only by ``CREATE MODEL`` jobs, not by this resource.
 Only the mutable fields documented by the official client
 (``description``, ``friendlyName``, ``labels``, ``expirationTime``,
 ``encryptionConfiguration``) are accepted on ``PATCH``; ``modelType``,
@@ -67,7 +67,7 @@ def _model_to_rest(m: ModelMeta) -> dict[str, Any]:
 
     Emits only documented BigQuery fields; the internal ``training_query``
     provenance and a top-level ``kind`` are intentionally omitted (the
-    conformance corpus pins the exact envelope in a later change).
+    conformance corpus is the source of truth for the exact envelope).
     """
     body: dict[str, Any] = {
         "etag": m.etag,
@@ -207,12 +207,13 @@ async def patch_model(
     ctx: _Ctx,
 ) -> dict[str, Any]:
     """Partial update of a model's mutable metadata."""
-    existing = ctx.catalog.get_model(project_id, dataset_id, model_id)
-    if existing is None:
-        raise resource_not_found(ResourceRef("model", project_id, dataset_id, model_id))
     body = await request.json()
-    updated = _rest_to_model_meta(body, ctx.clock, existing)
+    # Read-modify-write under the lock so concurrent PATCHes can't lose updates.
     async with ctx.engine.write_lock():
+        existing = ctx.catalog.get_model(project_id, dataset_id, model_id)
+        if existing is None:
+            raise resource_not_found(ResourceRef("model", project_id, dataset_id, model_id))
+        updated = _rest_to_model_meta(body, ctx.clock, existing)
         result = ctx.catalog.update_model(updated)
     return _model_to_rest(result)
 
@@ -228,9 +229,8 @@ async def delete_model(
     ctx: _Ctx,
 ) -> Response:
     """Delete a model."""
-    existing = ctx.catalog.get_model(project_id, dataset_id, model_id)
-    if existing is None:
-        raise resource_not_found(ResourceRef("model", project_id, dataset_id, model_id))
     async with ctx.engine.write_lock():
+        if ctx.catalog.get_model(project_id, dataset_id, model_id) is None:
+            raise resource_not_found(ResourceRef("model", project_id, dataset_id, model_id))
         ctx.catalog.delete_model(project_id, dataset_id, model_id)
     return Response(status_code=status.HTTP_204_NO_CONTENT)

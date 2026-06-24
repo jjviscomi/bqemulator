@@ -83,8 +83,11 @@ def _model(
         dataset_id=dataset,
         model_id=model,
         model_type="LINEAR_REGRESSION",
+        labels={"team": "ml"},
         feature_columns=({"name": "x", "type": {"typeKind": "FLOAT64"}},),
         label_columns=({"name": "y", "type": {"typeKind": "FLOAT64"}},),
+        encryption_configuration={"kmsKeyName": "projects/p/keys/k"},
+        expiration_time=NOW,
         training_query="SELECT x, y FROM p.sales.t",
         creation_time=NOW,
         last_modified_time=NOW,
@@ -196,10 +199,9 @@ async def test_model_crud_and_on_disk_persistence(persistent_settings: Settings)
     try:
         repo = DuckDBCatalogRepository(reopened)
         got = repo.get_model("p", "sales", "m1")
-        assert got is not None
-        assert got.description == "d"  # the update persisted across reopen
-        assert got.feature_columns == ({"name": "x", "type": {"typeKind": "FLOAT64"}},)
-        assert got.training_query == "SELECT x, y FROM p.sales.t"
+        # Full ModelMeta (including every metadata_json-backed field and the
+        # persisted update) round-trips through the on-disk reopen.
+        assert got == _model().model_copy(update={"description": "d"})
         repo.delete_model("p", "sales", "m1")
         assert repo.get_model("p", "sales", "m1") is None
     finally:

@@ -107,22 +107,16 @@ class TestModelsRead:
         assert r.status_code == 200
         assert r.json() == {"models": []}
 
-    def test_list_and_get(self, client: TestClient) -> None:
-        _seed_model(client.app)  # type: ignore[arg-type]
-        r = client.get(_BASE)
-        assert r.status_code == 200
-        body = r.json()
-        assert len(body["models"]) == 1
+    def test_list_orders_then_get(self, client: TestClient) -> None:
+        # Seed out of order; the list must come back sorted by model_id.
+        _seed_model(client.app, "m2")  # type: ignore[arg-type]
+        _seed_model(client.app, "m1")  # type: ignore[arg-type]
+        body = client.get(_BASE).json()
+        assert [m["modelReference"]["modelId"] for m in body["models"]] == ["m1", "m2"]
         assert "nextPageToken" not in body
-        assert body["models"][0]["modelReference"] == {
-            "projectId": "p",
-            "datasetId": "ds",
-            "modelId": "m1",
-        }
+        assert body["models"][0]["modelReference"]["projectId"] == "p"
 
-        r = client.get(f"{_BASE}/m1")
-        assert r.status_code == 200
-        got = r.json()
+        got = client.get(f"{_BASE}/m1").json()
         assert got["modelType"] == "LINEAR_REGRESSION"
         assert got["featureColumns"][0]["name"] == "x"
         assert got["labelColumns"][0]["type"] == {"typeKind": "FLOAT64"}
@@ -132,21 +126,26 @@ class TestModelsRead:
         assert r.status_code == 404
         assert r.json()["error"]["status"] == "NOT_FOUND"
 
-    def test_list_orders_by_model_id(self, client: TestClient) -> None:
-        _seed_model(client.app, "m2")  # type: ignore[arg-type]
-        _seed_model(client.app, "m1")  # type: ignore[arg-type]
-        ids = [m["modelReference"]["modelId"] for m in client.get(_BASE).json()["models"]]
-        assert ids == ["m1", "m2"]
-
 
 class TestModelsPatch:
-    def test_patch_updates_mutable_field(self, client: TestClient) -> None:
+    def test_patch_updates_mutable_fields(self, client: TestClient) -> None:
         _seed_model(client.app)  # type: ignore[arg-type]
-        r = client.patch(f"{_BASE}/m1", json={"description": "updated", "friendlyName": "Churn"})
+        enc = {"kmsKeyName": "projects/p/locations/us/keyRings/r/cryptoKeys/k"}
+        r = client.patch(
+            f"{_BASE}/m1",
+            json={
+                "description": "updated",
+                "friendlyName": "Churn",
+                "labels": {"env": "prod"},
+                "encryptionConfiguration": enc,
+            },
+        )
         assert r.status_code == 200
         body = r.json()
         assert body["description"] == "updated"
         assert body["friendlyName"] == "Churn"
+        assert body["labels"] == {"env": "prod"}
+        assert body["encryptionConfiguration"] == enc
 
     def test_patch_ignores_read_only_model_type(self, client: TestClient) -> None:
         _seed_model(client.app)  # type: ignore[arg-type]

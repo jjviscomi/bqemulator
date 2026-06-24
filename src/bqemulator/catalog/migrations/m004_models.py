@@ -1,10 +1,10 @@
 """BigQuery ML model catalog schema (ADR 0047 / RFC 0002).
 
-Adds the persistent ``_bqemulator_catalog.models`` table, keyed by
+Defines the persistent ``_bqemulator_catalog.models`` table, keyed by
 ``(project_id, dataset_id, model_id)``. Rich fields live in
 ``metadata_json`` so they evolve without a migration; ``model_type`` and
-``etag`` are promoted to dedicated columns, mirroring the ``routines``
-table convention.
+``etag`` are dedicated columns, mirroring the ``routines`` table
+convention.
 """
 
 from __future__ import annotations
