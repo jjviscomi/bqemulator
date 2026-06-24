@@ -176,6 +176,7 @@ class TestClassifyAndParse:
                 "Unknown CREATE MODEL option",
             ),
             ("CREATE MODEL m OPTIONS(model_type='x') AS SELECT 1 AS a", "dataset-qualified"),
+            ("CREATE MODEL a.b.c.d OPTIONS(model_type='x') AS SELECT 1 AS a", "too many parts"),
             ("CREATE MODEL ds.m OPTIONS(model_type='x')", "query_statement"),
             ("CREATE MODEL ds.m OPTIONS(model_type=1) AS SELECT 1 AS a", "string literal"),
             (

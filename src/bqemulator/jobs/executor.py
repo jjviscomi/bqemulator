@@ -2247,6 +2247,9 @@ async def _execute_export_data_job(
 
 _CREATE_MODEL_RE = re.compile(r"^\s*CREATE\s+(?:OR\s+REPLACE\s+)?MODEL\b", re.IGNORECASE)
 
+#: Maximum dotted parts in a model reference (``project.dataset.model``).
+_MAX_MODEL_REF_PARTS = 3
+
 
 def _strip_leading_sql_comments(sql: str) -> str:
     """Return ``sql`` with leading whitespace and ``--`` / ``/* */`` comments removed.
@@ -2416,7 +2419,9 @@ def _model_target(target: Any) -> tuple[str | None, str, str]:
 
     The project is ``None`` when unqualified (resolved against the job's
     project later). Raises :class:`InvalidQueryError` when the target is not a
-    dataset-qualified model identifier.
+    dataset-qualified model identifier, or carries more than the
+    ``[project.]dataset.model`` parts (an over-qualified name would otherwise
+    silently drop a component).
     """
     from sqlglot import exp
 
@@ -2425,6 +2430,10 @@ def _model_target(target: Any) -> tuple[str | None, str, str]:
     if not target.db:
         raise InvalidQueryError(
             "CREATE MODEL model name must be dataset-qualified (dataset.model).",
+        )
+    if len(target.parts) > _MAX_MODEL_REF_PARTS:
+        raise InvalidQueryError(
+            "CREATE MODEL model name has too many parts; expected [project.]dataset.model.",
         )
     return target.catalog or None, target.db, target.name
 
