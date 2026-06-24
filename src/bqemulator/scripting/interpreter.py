@@ -39,6 +39,7 @@ from bqemulator.domain.errors import (
     InvalidQueryError,
     QuotaExceededError,
     ResourceRef,
+    UnsupportedFeatureError,
     resource_not_found,
 )
 from bqemulator.observability.logging_ import get_logger
@@ -689,6 +690,9 @@ class ScriptInterpreter:
                 write_export(exported, export_request.options, self._ctx)
             self._final_table = None
             return
+        # CREATE MODEL: register surface-only model metadata (ADR 0047 / RFC 0002).
+        if await self._maybe_register_create_model(sql):
+            return
         # Reject a bare / RESTRICT DROP SCHEMA on a non-empty dataset with
         # BigQuery's ``resourceInUse`` error before DuckDB runs — same guard
         # the single-statement executor path applies, so scripted drops get
@@ -847,6 +851,57 @@ class ScriptInterpreter:
             return bq_sql
         return self._temp_routines.rewrite_calls(bq_sql)
 
+    async def _maybe_register_create_model(
+        self,
+        sql: str,
+        *,
+        using_values: list[Any] | None = None,
+    ) -> bool:
+        """Intercept a ``CREATE MODEL`` statement, registering it; return True if handled.
+
+        Shared by the static (:meth:`_exec_sql`) and dynamic
+        (:meth:`_run_statement_with_params`, i.e. ``EXECUTE IMMEDIATE``) script
+        paths so both register surface-only model metadata (ADR 0047 / RFC 0002).
+        The ``AS SELECT`` runs through the standard query path to derive the
+        feature/label schema (no training); ``IF NOT EXISTS`` on an existing
+        model skips the query and the write. Non-row-producing, so
+        ``_final_table`` is reset. Returns ``False`` for any non-``CREATE MODEL``
+        statement (the caller proceeds with its normal handling).
+
+        ``EXECUTE IMMEDIATE`` ``USING`` values are not bound into the training
+        query, so that combination is rejected rather than silently dropping the
+        parameters.
+        """
+        from bqemulator.jobs.executor import (
+            parse_create_model,
+            preflight_create_model,
+            register_model,
+            training_schema_sql,
+        )
+
+        request = parse_create_model(sql)
+        if request is None:
+            return False
+        if using_values:
+            raise UnsupportedFeatureError(
+                "EXECUTE IMMEDIATE of CREATE MODEL does not support USING "
+                "parameters in the training query.",
+            )
+        operation = preflight_create_model(request, self._project_id, self._ctx)
+        if operation != "SKIP":
+            trained = await self._run_query(training_schema_sql(request.select_sql))
+            async with self._ctx.engine.write_lock():
+                register_model(
+                    request,
+                    self._project_id,
+                    trained.schema,
+                    operation=operation,
+                    now=self._ctx.clock.now(),
+                    ctx=self._ctx,
+                )
+        self._final_table = None
+        return True
+
     async def _run_query(self, bq_sql: str) -> pa.Table:
         """Translate + execute a BigQuery SELECT, returning an Arrow table."""
         bq_sql = self._rewrite_temp_calls(bq_sql)
@@ -883,6 +938,12 @@ class ScriptInterpreter:
 
     async def _run_statement_with_params(self, bq_sql: str, using_values: list[Any]) -> None:
         """Execute a statement that may contain ? placeholders from USING."""
+        # CREATE MODEL is intercepted before translation on the dynamic path too
+        # (EXECUTE IMMEDIATE), so it registers a model rather than reaching DuckDB
+        # as untranslatable DDL. USING placeholders inside a training query are
+        # not bound, so that combination is rejected in the helper.
+        if await self._maybe_register_create_model(bq_sql, using_values=using_values):
+            return
         # Translate first, then merge any @var substitutions AND the using_values.
         bq_sql = self._rewrite_temp_calls(bq_sql)
         rewritten, script_params = _rewrite_vars_to_params(bq_sql, self._frames)

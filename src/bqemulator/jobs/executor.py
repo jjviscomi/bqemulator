@@ -24,12 +24,13 @@ from bqemulator.catalog.ddl_sync import (
     sync_dropped_object,
 )
 from bqemulator.catalog.etag import generate_etag
-from bqemulator.catalog.models import JobMeta
+from bqemulator.catalog.models import JobMeta, ModelMeta
 from bqemulator.domain.errors import (
     DomainError,
     InvalidQueryError,
     ResourceRef,
     UnsupportedFeatureError,
+    resource_already_exists,
     resource_not_found,
 )
 from bqemulator.domain.events import TableDataChanged
@@ -374,12 +375,13 @@ async def execute_query_job(
             project_id,
             ctx,
         )
-    elif statement_type == "EXPORT_DATA":
-        # EXPORT DATA runs the inner SELECT through the standard query
-        # pipeline (so row-access / MV / wildcard rewrites all apply) and
-        # then writes the result to Cloud Storage. It returns its own
-        # closing JobMeta, short-circuiting the SELECT/DML/DDL flow below.
-        return await _execute_export_data_job(
+    else:
+        # EXPORT DATA / CREATE MODEL are intercepted as self-contained jobs
+        # (each runs its inner SELECT through the standard pipeline, then
+        # performs its side effect) and return their own closing JobMeta,
+        # short-circuiting the SELECT/DML/DDL flow below.
+        intercepted = await _run_statement_interception(
+            statement_type,
             project_id=project_id,
             job_id=job_id,
             bq_sql=bq_sql,
@@ -388,7 +390,8 @@ async def execute_query_job(
             ctx=ctx,
             caller=caller,
         )
-    else:
+        if intercepted is not None:
+            return intercepted
         early_exit = await _run_query_fast_paths(
             project_id=project_id,
             job_id=job_id,
@@ -465,6 +468,48 @@ async def execute_query_job(
         end_time=ctx.clock.now(),
         etag=generate_etag(project_id, job_id, str(now)),
     )
+
+
+async def _run_statement_interception(
+    statement_type: str,
+    *,
+    project_id: str,
+    job_id: str,
+    bq_sql: str,
+    query_params: list[dict[str, Any]] | None,
+    now: Any,
+    ctx: AppContext,
+    caller: CallerIdentity | None,
+) -> JobMeta | None:
+    """Run a pre-translation intercepted statement as a job, or return ``None``.
+
+    ``EXPORT DATA`` and ``CREATE MODEL`` are handled before the normal
+    SELECT/DML/DDL flow: each runs its inner query through the standard
+    pipeline and performs its own side effect (writing files, registering a
+    model). Returns the closing :class:`JobMeta`, or ``None`` when
+    ``statement_type`` is not an intercepted statement.
+    """
+    if statement_type == "EXPORT_DATA":
+        return await _execute_export_data_job(
+            project_id=project_id,
+            job_id=job_id,
+            bq_sql=bq_sql,
+            query_params=query_params,
+            now=now,
+            ctx=ctx,
+            caller=caller,
+        )
+    if statement_type == "CREATE_MODEL":
+        return await _execute_create_model_job(
+            project_id=project_id,
+            job_id=job_id,
+            bq_sql=bq_sql,
+            query_params=query_params,
+            now=now,
+            ctx=ctx,
+            caller=caller,
+        )
+    return None
 
 
 def _guard_and_resolve_single_ddl(
@@ -2197,6 +2242,465 @@ async def _execute_export_data_job(
 
 
 # ---------------------------------------------------------------------------
+# CREATE MODEL: surface-only model registration (ADR 0047 / RFC 0002)
+# ---------------------------------------------------------------------------
+
+# Admits the ``TEMP`` / ``TEMPORARY`` modifier SQLGlot accepts so the gate
+# agrees with the classifier; temporary models are then rejected explicitly in
+# ``_parse_model_options`` (BigQuery ML has no temporary models) rather than
+# falling through to a misleading "Malformed" error.
+_CREATE_MODEL_RE = re.compile(
+    r"^\s*CREATE\s+(?:OR\s+REPLACE\s+)?(?:TEMP(?:ORARY)?\s+)?MODEL\b",
+    re.IGNORECASE,
+)
+
+#: Maximum dotted parts in a model reference (``project.dataset.model``).
+_MAX_MODEL_REF_PARTS = 3
+
+
+def _strip_leading_sql_comments(sql: str) -> str:
+    """Return ``sql`` with leading whitespace and ``--`` / ``/* */`` comments removed.
+
+    A linear hand-rolled scan (not a regex) so it cannot trip CodeQL's ReDoS
+    detector, mirroring the scanner in
+    :mod:`bqemulator.sql.rewriter.alter_table_set_options`. Lets the CREATE MODEL
+    regex gate match statements a tool prefixes with comments (e.g. dbt's
+    ``/* {...} */`` job tags), which SQLGlot (and therefore the statement
+    classifier) already sees through.
+    """
+    i, n = 0, len(sql)
+    while i < n:
+        if sql[i].isspace():
+            i += 1
+        elif sql.startswith("--", i):
+            nl = sql.find("\n", i + 2)
+            i = n if nl == -1 else nl + 1
+        elif sql.startswith("/*", i):
+            end = sql.find("*/", i + 2)
+            i = n if end == -1 else end + 2
+        else:
+            break
+    return sql[i:]
+
+
+#: Documented ``CREATE MODEL`` OPTIONS names (lower-cased). Surface-only
+#: BigQuery ML registers metadata without training, so these options are
+#: recognised but not acted on; ``model_type`` and ``input_label_cols`` are
+#: handled explicitly before this set is consulted. An option name outside
+#: the set is rejected (RFC 0002: unknown OPTIONS are an error, not silently
+#: dropped). The set spans the documented model types (GLM, k-means, matrix
+#: factorization, PCA, boosted-tree / random-forest, DNN / wide-and-deep,
+#: autoencoder, AutoML, ARIMA_PLUS, imported models, contribution analysis)
+#: plus the shared training, hyperparameter-tuning, and model-registry options.
+# A space-separated literal (split into the set below) keeps the comprehensive
+# list compact; the grouping is documented above rather than inline.
+_CREATE_MODEL_OPTION_NAMES = (
+    "model_type input_label_cols max_iterations learn_rate learn_rate_strategy "
+    "ls_init_learn_rate l1_reg l2_reg l1_reg_activation early_stop min_rel_progress "
+    "warm_start data_split_method data_split_eval_fraction data_split_test_fraction "
+    "data_split_col optimize_strategy auto_class_weights class_weights calculate_p_values "
+    "enable_global_explain fit_intercept category_encoding_method tf_version "
+    "instance_weight_col integrated_gradients_num_steps num_trials max_parallel_trials "
+    "hparam_tuning_algorithm hparam_tuning_objectives num_clusters kmeans_init_method "
+    "kmeans_init_col distance_type standardize_features feedback_type num_factors user_col "
+    "item_col rating_col wals_alpha num_principal_components pca_explained_variance_ratio "
+    "scale_features pca_solver booster_type num_parallel_tree dart_normalize_type tree_method "
+    "min_tree_child_weight colsample_bytree colsample_bylevel colsample_bynode min_split_loss "
+    "max_tree_depth subsample dropout approx_global_feature_contrib xgboost_version "
+    "hidden_units batch_size optimizer activation_fn budget_hours optimization_objective "
+    "time_series_timestamp_col time_series_data_col time_series_id_col horizon auto_arima "
+    "auto_arima_max_order auto_arima_min_order non_seasonal_order data_frequency include_drift "
+    "holiday_region clean_spikes_and_dips adjust_step_changes decompose_time_series "
+    "time_series_length_fraction min_time_series_length max_time_series_length "
+    "trend_smoothing_window_size seasonalities forecast_limit_lower_bound "
+    "forecast_limit_upper_bound model_path contribution_metric dimension_id_cols is_test_col "
+    "min_apriori_support top_k_insights_by_apriori_support pruning_method model_registry "
+    "vertex_ai_model_id vertex_ai_model_version_aliases kms_key_name"
+)
+_KNOWN_CREATE_MODEL_OPTIONS: frozenset[str] = frozenset(_CREATE_MODEL_OPTION_NAMES.split())
+
+#: Legacy BigQuery REST type name (the :func:`build_response_schema` output)
+#: → StandardSQL ``typeKind`` used by the ``StandardSqlField`` feature/label
+#: columns on the Models resource.
+_BQ_TYPE_TO_TYPE_KIND: dict[str, str] = {
+    "INTEGER": "INT64",
+    "FLOAT": "FLOAT64",
+    "BOOLEAN": "BOOL",
+    "STRING": "STRING",
+    "BYTES": "BYTES",
+    "TIMESTAMP": "TIMESTAMP",
+    "DATE": "DATE",
+    "TIME": "TIME",
+    "DATETIME": "DATETIME",
+    "NUMERIC": "NUMERIC",
+    "BIGNUMERIC": "BIGNUMERIC",
+    "GEOGRAPHY": "GEOGRAPHY",
+    "JSON": "JSON",
+    "INTERVAL": "INTERVAL",
+    "RECORD": "STRUCT",
+    "RANGE": "RANGE",
+}
+
+
+@dataclass(frozen=True)
+class _CreateModelRequest:
+    """A parsed ``CREATE MODEL`` statement: target, options, and training query."""
+
+    project_id: str | None  # None → resolve against the job's project
+    dataset_id: str
+    model_id: str
+    model_type: str
+    label_cols: tuple[str, ...]
+    select_sql: str
+    replace: bool
+    if_not_exists: bool
+
+
+def _model_property_key(prop: Any) -> str:
+    """Return the lower-cased option name of a SQLGlot ``Property`` node."""
+    this = prop.this
+    name = this.name if hasattr(this, "name") else str(this)
+    return name.lower()
+
+
+def _model_option_string(value: Any, option: str) -> str:
+    """Return the payload of a string-literal option value, or reject it."""
+    from sqlglot import exp
+
+    if isinstance(value, exp.Literal) and value.is_string:
+        return str(value.this)
+    raise InvalidQueryError(f"CREATE MODEL option '{option}' must be a string literal.")
+
+
+def _model_label_cols(value: Any) -> tuple[str, ...]:
+    """Return ``input_label_cols`` as a tuple of strings, or reject the value."""
+    from sqlglot import exp
+
+    if not isinstance(value, exp.Array):
+        raise InvalidQueryError("CREATE MODEL input_label_cols must be an array of strings.")
+    cols: list[str] = []
+    for elem in value.expressions:
+        if not (isinstance(elem, exp.Literal) and elem.is_string):
+            raise InvalidQueryError(
+                "CREATE MODEL input_label_cols must contain only string literals.",
+            )
+        cols.append(str(elem.this))
+    return tuple(cols)
+
+
+def _parse_model_options(properties: Any) -> tuple[str, tuple[str, ...]]:
+    """Extract ``(model_type, input_label_cols)`` from a ``CREATE MODEL`` OPTIONS list.
+
+    ``model_type`` is required and stored verbatim (RFC 0002: any model-type
+    string is accepted; none is trained). ``input_label_cols`` names the label
+    columns. The ``TRANSFORM()`` clause and the ``TEMP`` / ``TEMPORARY`` modifier
+    are rejected as unsupported (ADR 0047; BigQuery ML has no temporary models)
+    and an unknown option name is rejected rather than silently dropped.
+    """
+    from sqlglot import exp
+
+    if properties is None:
+        raise InvalidQueryError("CREATE MODEL requires an OPTIONS(...) list with model_type.")
+    model_type: str | None = None
+    label_cols: tuple[str, ...] = ()
+    for prop in properties.expressions:
+        if isinstance(prop, exp.TransformModelProperty):
+            raise UnsupportedFeatureError(
+                "CREATE MODEL TRANSFORM(...) is not supported by the surface-only "
+                "BigQuery ML implementation (ADR 0047).",
+            )
+        if isinstance(prop, exp.TemporaryProperty):
+            raise UnsupportedFeatureError(
+                "CREATE TEMP / TEMPORARY MODEL is not supported; BigQuery ML "
+                "models are persistent.",
+            )
+        key = _model_property_key(prop)
+        value = prop.args.get("value")
+        if key == "model_type":
+            model_type = _model_option_string(value, "model_type")
+        elif key == "input_label_cols":
+            label_cols = _model_label_cols(value)
+        elif key not in _KNOWN_CREATE_MODEL_OPTIONS:
+            raise InvalidQueryError(f"Unknown CREATE MODEL option: {key}")
+    if model_type is None:
+        raise InvalidQueryError("CREATE MODEL requires the model_type option.")
+    return model_type, label_cols
+
+
+def _model_target(target: Any) -> tuple[str | None, str, str]:
+    """Return ``(project, dataset, model)`` for a ``CREATE MODEL`` target table.
+
+    The project is ``None`` when unqualified (resolved against the job's
+    project later). Raises :class:`InvalidQueryError` when the target is not a
+    dataset-qualified model identifier, or carries more than the
+    ``[project.]dataset.model`` parts (an over-qualified name would otherwise
+    silently drop a component).
+    """
+    from sqlglot import exp
+
+    if not isinstance(target, exp.Table) or not target.name:
+        raise InvalidQueryError("CREATE MODEL requires a model identifier.")
+    if not target.db:
+        raise InvalidQueryError(
+            "CREATE MODEL model name must be dataset-qualified (dataset.model).",
+        )
+    if len(target.parts) > _MAX_MODEL_REF_PARTS:
+        raise InvalidQueryError(
+            "CREATE MODEL model name has too many parts; expected [project.]dataset.model.",
+        )
+    return target.catalog or None, target.db, target.name
+
+
+def training_schema_sql(select_sql: str) -> str:
+    """Wrap a training query so only its schema is materialised (zero rows).
+
+    ``CREATE MODEL`` registration needs the result *schema*, not the rows, so
+    the training query runs under ``LIMIT 0`` to avoid scanning or materialising
+    a large training set just to derive feature/label columns. Table references
+    are still planned, so a missing table surfaces the same ``notFound`` it
+    would on a normal run.
+    """
+    return f"SELECT * FROM ({select_sql}) AS _bqml_train LIMIT 0"
+
+
+def parse_create_model(bq_sql: str) -> _CreateModelRequest | None:
+    """Parse ``bq_sql`` as a ``CREATE MODEL`` statement, or return ``None``.
+
+    Returns ``None`` for any statement that is not ``CREATE MODEL`` (a cheap
+    regex gate precedes the full SQLGlot parse). Raises
+    :class:`InvalidQueryError` for a malformed target or OPTIONS and
+    :class:`UnsupportedFeatureError` for the out-of-scope ``TRANSFORM()``
+    clause.
+    """
+    if not _CREATE_MODEL_RE.match(_strip_leading_sql_comments(bq_sql)):
+        return None
+    import sqlglot
+    from sqlglot import exp
+
+    try:
+        tree = sqlglot.parse_one(bq_sql, read="bigquery")
+    except Exception:  # noqa: BLE001 (unparseable: defer to the normal path)
+        return None
+    if not isinstance(tree, exp.Create) or (tree.args.get("kind") or "").upper() != "MODEL":
+        return None  # pragma: no cover (regex gate already matched a CREATE MODEL)
+    project_id, dataset_id, model_id = _model_target(tree.this)
+    inner = tree.args.get("expression")
+    if not isinstance(inner, exp.Query):
+        raise InvalidQueryError("CREATE MODEL requires an 'AS query_statement'.")
+    model_type, label_cols = _parse_model_options(tree.args.get("properties"))
+    return _CreateModelRequest(
+        project_id=project_id,
+        dataset_id=dataset_id,
+        model_id=model_id,
+        model_type=model_type,
+        label_cols=label_cols,
+        select_sql=inner.sql(dialect="bigquery"),
+        replace=bool(tree.args.get("replace")),
+        if_not_exists=bool(tree.args.get("exists")),
+    )
+
+
+def preflight_create_model(
+    request: _CreateModelRequest,
+    project_id: str,
+    ctx: AppContext,
+) -> str:
+    """Resolve the ``CREATE MODEL`` disposition before the training query runs.
+
+    Returns the ``ddlOperationPerformed`` value (``CREATE`` / ``REPLACE`` /
+    ``SKIP``). Raises :class:`NotFoundError` (HTTP 404) when the parent dataset
+    is missing and :class:`AlreadyExistsError` (HTTP 409) when the model exists
+    and the statement carries neither ``OR REPLACE`` nor ``IF NOT EXISTS``.
+    Run before execution so a duplicate or a skip never runs the training query.
+    """
+    proj = request.project_id or project_id
+    if ctx.catalog.get_dataset(proj, request.dataset_id) is None:
+        raise resource_not_found(ResourceRef("dataset", proj, request.dataset_id))
+    existing = ctx.catalog.get_model(proj, request.dataset_id, request.model_id)
+    if existing is None:
+        return "CREATE"
+    if request.replace:
+        return "REPLACE"
+    if request.if_not_exists:
+        return "SKIP"
+    raise resource_already_exists(
+        ResourceRef("model", proj, request.dataset_id, request.model_id),
+    )
+
+
+def _standard_sql_data_type(entry: dict[str, Any]) -> dict[str, Any]:
+    """Render a :func:`build_response_schema` entry as a StandardSQL data type dict.
+
+    A ``REPEATED`` column becomes ``ARRAY`` of its element type; a ``RECORD``
+    column becomes ``STRUCT`` with nested fields; a ``RANGE`` column carries its
+    ``rangeElementType``; every other type maps through
+    :data:`_BQ_TYPE_TO_TYPE_KIND`.
+    """
+    if entry.get("mode") == "REPEATED":
+        element = {k: v for k, v in entry.items() if k != "mode"}
+        return {"typeKind": "ARRAY", "arrayElementType": _standard_sql_data_type(element)}
+    bq_type = entry.get("type", "")
+    if bq_type == "RECORD":
+        fields = [_schema_field_to_standard_sql(field) for field in entry.get("fields", [])]
+        return {"typeKind": "STRUCT", "structType": {"fields": fields}}
+    if bq_type == "RANGE":
+        elem = entry.get("rangeElementType", {}).get("type", "")
+        return {
+            "typeKind": "RANGE",
+            "rangeElementType": {"typeKind": _BQ_TYPE_TO_TYPE_KIND.get(elem, elem)},
+        }
+    return {"typeKind": _BQ_TYPE_TO_TYPE_KIND.get(bq_type, bq_type)}
+
+
+def _schema_field_to_standard_sql(entry: dict[str, Any]) -> dict[str, Any]:
+    """Render a :func:`build_response_schema` entry as a ``StandardSqlField`` dict."""
+    return {"name": entry["name"], "type": _standard_sql_data_type(entry)}
+
+
+def _split_feature_label_columns(
+    schema_fields: list[dict[str, Any]],
+    label_cols: tuple[str, ...],
+) -> tuple[tuple[dict[str, Any], ...], tuple[dict[str, Any], ...]]:
+    """Partition the training-query columns into ``(features, labels)``.
+
+    Columns named in ``label_cols`` become label columns (as
+    ``StandardSqlField`` dicts), the rest become features, each side keeping
+    the training query's column order. Raises :class:`InvalidQueryError` when a
+    named label column is absent from the query output.
+    """
+    names = {field["name"] for field in schema_fields}
+    missing = [col for col in label_cols if col not in names]
+    if missing:
+        raise InvalidQueryError(
+            "CREATE MODEL input_label_cols not found in the training query output: "
+            + ", ".join(missing),
+        )
+    labels = set(label_cols)
+    features = tuple(
+        _schema_field_to_standard_sql(f) for f in schema_fields if f["name"] not in labels
+    )
+    label_columns = tuple(
+        _schema_field_to_standard_sql(f) for f in schema_fields if f["name"] in labels
+    )
+    return features, label_columns
+
+
+def register_model(
+    request: _CreateModelRequest,
+    project_id: str,
+    arrow_schema: pa.Schema,
+    *,
+    operation: str,
+    now: Any,
+    ctx: AppContext,
+) -> None:
+    """Register (or replace) a :class:`ModelMeta` from the training query's schema.
+
+    The training query's output columns become the model's feature/label
+    columns (those named in ``input_label_cols`` are labels, the rest are
+    features) as ``StandardSqlField`` dicts. No model is trained. This writes the
+    catalog but does not take the engine write lock itself; the async job and
+    scripting callers hold it around this call to serialise DuckDB-backed catalog
+    writes (test and property callers invoke it directly).
+    """
+    proj = request.project_id or project_id
+    feature_columns, label_columns = _split_feature_label_columns(
+        build_response_schema(arrow_schema),
+        request.label_cols,
+    )
+    meta = ModelMeta(
+        project_id=proj,
+        dataset_id=request.dataset_id,
+        model_id=request.model_id,
+        model_type=request.model_type,
+        feature_columns=feature_columns,
+        label_columns=label_columns,
+        training_query=request.select_sql,
+        creation_time=now,
+        last_modified_time=now,
+        etag=generate_etag(proj, request.dataset_id, request.model_id, str(now)),
+    )
+    replacing = (
+        operation == "REPLACE"
+        and ctx.catalog.get_model(proj, request.dataset_id, request.model_id) is not None
+    )
+    if replacing:
+        ctx.catalog.update_model(meta)
+    else:
+        ctx.catalog.create_model(meta)
+
+
+async def _execute_create_model_job(
+    *,
+    project_id: str,
+    job_id: str,
+    bq_sql: str,
+    query_params: list[dict[str, Any]] | None,
+    now: Any,
+    ctx: AppContext,
+    caller: CallerIdentity | None,
+) -> JobMeta:
+    """Run a ``CREATE MODEL`` statement as a QUERY job: register metadata, no training.
+
+    The training query (``AS SELECT ...``) flows through the standard
+    single-statement pipeline so its result schema (and any reference error)
+    is real; the rows are discarded. The derived feature/label columns are
+    stored on a :class:`ModelMeta`. The job reports ``statementType =
+    CREATE_MODEL`` with zero result rows. ``IF NOT EXISTS`` on an existing
+    model skips both the query and the write.
+    """
+    request = parse_create_model(bq_sql)
+    if request is None:  # pragma: no cover (classifier already guaranteed CREATE_MODEL)
+        raise InvalidQueryError("Malformed CREATE MODEL statement.")
+    operation = preflight_create_model(request, project_id, ctx)
+    if operation != "SKIP":
+        effective_caller = caller or CallerIdentity(
+            principal="user:anonymous@bqemulator.local",
+            is_authenticated=False,
+        )
+        arrow_table = await _run_query_body(
+            project_id=project_id,
+            bq_sql=training_schema_sql(request.select_sql),
+            query_params=query_params,
+            ctx=ctx,
+            is_scripted=False,
+            effective_caller=effective_caller,
+        )
+        # register_model writes the catalog; serialise it under the engine write
+        # lock like every other catalog write (PATCH / DELETE models, DML).
+        async with ctx.engine.write_lock():
+            register_model(
+                request,
+                project_id,
+                arrow_table.schema,
+                operation=operation,
+                now=now,
+                ctx=ctx,
+            )
+    JOB_RESULTS[job_id] = _EMPTY_ARROW
+    JOB_SCHEMAS[job_id] = []
+    ctx.metrics.sql_translation_total.labels(outcome="ok").inc()
+    statistics = _build_query_statistics(
+        total_rows=0,
+        statement_type="CREATE_MODEL",
+        num_dml_affected_rows=None,
+        ddl_operation=operation,
+    )
+    return JobMeta(
+        project_id=project_id,
+        job_id=job_id,
+        job_type="QUERY",
+        state="DONE",
+        configuration=_build_query_configuration(bq_sql, project_id, job_id),
+        statistics=statistics,
+        creation_time=now,
+        start_time=now,
+        end_time=ctx.clock.now(),
+        etag=generate_etag(project_id, job_id, str(now)),
+    )
+
+
+# ---------------------------------------------------------------------------
 # Versioning DDL helpers — snapshots, clones, materialized views
 # ---------------------------------------------------------------------------
 
@@ -2476,6 +2980,7 @@ _CREATE_KIND_TO_STATEMENT_TYPE = {
     "PROCEDURE": "CREATE_PROCEDURE",
     "SCHEMA": "CREATE_SCHEMA",
     "SNAPSHOT": "CREATE_SNAPSHOT_TABLE",
+    "MODEL": "CREATE_MODEL",
 }
 _DROP_KIND_TO_STATEMENT_TYPE = {
     "TABLE": "DROP_TABLE",
@@ -2770,6 +3275,10 @@ __all__ = [
     "execute_extract_job",
     "execute_load_job",
     "execute_query_job",
+    "parse_create_model",
     "parse_export_data",
+    "preflight_create_model",
+    "register_model",
+    "training_schema_sql",
     "write_export",
 ]
