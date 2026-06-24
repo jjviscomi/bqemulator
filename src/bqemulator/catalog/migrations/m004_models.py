@@ -1,17 +1,10 @@
-"""BigQuery ML model catalog schema.
+"""BigQuery ML model catalog schema (ADR 0047 / RFC 0002).
 
-Adds the persistent ``_bqemulator_catalog.models`` table — one row per
-:class:`~bqemulator.catalog.models.ModelMeta`. Identity is
-``(project_id, dataset_id, model_id)``. The rich model fields
-(feature/label column shapes, labels, encryption, training-query
-provenance) live in the ``metadata_json`` column so they round-trip
-through JSON without a schema change; ``model_type`` and ``etag`` are
-promoted to dedicated columns to match the indexed-column convention
-used by the ``routines`` table.
-
-The DuckDB-backed catalog repository delegates reads to its in-memory
-cache and writes through to this table, exactly as it does for
-routines. See ADR 0047 / RFC 0002 for the surface-only BigQuery ML scope.
+Adds the persistent ``_bqemulator_catalog.models`` table, keyed by
+``(project_id, dataset_id, model_id)``. Rich fields live in
+``metadata_json`` so they evolve without a migration; ``model_type`` and
+``etag`` are promoted to dedicated columns, mirroring the ``routines``
+table convention.
 """
 
 from __future__ import annotations

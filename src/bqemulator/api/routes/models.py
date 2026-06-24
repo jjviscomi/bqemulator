@@ -25,12 +25,17 @@ from datetime import UTC, datetime
 from typing import Annotated, Any
 
 from fastapi import APIRouter, Depends, Request, Response, status
+from pydantic import ValidationError as PydanticValidationError
 
 from bqemulator.api.dependencies import AppContext, get_context
 from bqemulator.api.routes._rest_helpers import body_or_existing
 from bqemulator.catalog.etag import generate_etag
 from bqemulator.catalog.models import ModelMeta
-from bqemulator.domain.errors import ResourceRef, resource_not_found
+from bqemulator.domain.errors import (
+    ResourceRef,
+    ValidationError,
+    resource_not_found,
+)
 
 router = APIRouter(prefix="/bigquery/v2", tags=["models"])
 
@@ -60,11 +65,9 @@ def _from_millis(value: str | int) -> datetime:
 def _model_to_rest(m: ModelMeta) -> dict[str, Any]:
     """Serialize a :class:`ModelMeta` to the BigQuery REST shape.
 
-    Emits only documented BigQuery fields. ``training_query`` is internal
-    provenance and is intentionally never surfaced. A top-level ``kind``
-    is intentionally omitted: the documented Model resource carries none,
-    and the conformance corpus (recorded from real BigQuery) is the
-    source of truth for the exact response envelope.
+    Emits only documented BigQuery fields; the internal ``training_query``
+    provenance and a top-level ``kind`` are intentionally omitted (the
+    conformance corpus pins the exact envelope in a later change).
     """
     body: dict[str, Any] = {
         "etag": m.etag,
@@ -99,12 +102,19 @@ def _patched_expiration(body: dict[str, Any], existing: ModelMeta) -> datetime |
     """Resolve ``expirationTime`` for a PATCH, honouring explicit null.
 
     A body value of ``null`` clears the expiry; an absent key leaves the
-    existing value untouched; a millis value sets it.
+    existing value untouched; a millis value sets it. A non-numeric or
+    out-of-range value is rejected with a 400 rather than surfacing as a
+    500.
     """
     if "expirationTime" not in body:
         return existing.expiration_time
     raw = body["expirationTime"]
-    return None if raw is None else _from_millis(raw)
+    if raw is None:
+        return None
+    try:
+        return _from_millis(raw)
+    except (ValueError, TypeError, OverflowError, OSError) as exc:
+        raise ValidationError(f"Invalid expirationTime: {raw!r}") from exc
 
 
 def _rest_to_model_meta(
@@ -117,26 +127,37 @@ def _rest_to_model_meta(
     Only the mutable fields are read from ``body``; every read-only field
     (identity, ``model_type``, feature/label columns, ``location``,
     ``creation_time``, training-query provenance) is preserved from
-    ``existing`` via :meth:`ModelMeta.model_copy`.
+    ``existing``. The result is built through the validating constructor
+    (not ``model_copy``, which skips validation) so an ill-typed mutable
+    field — e.g. ``labels: null`` — is rejected with a 400 instead of
+    being persisted as a row that would later fail catalog hydration.
     """
     now = clock.now()
-    return existing.model_copy(
-        update={
-            "friendly_name": body_or_existing(
-                body, "friendlyName", existing, "friendly_name", None
-            ),
-            "description": body_or_existing(body, "description", existing, "description", None),
-            "labels": body_or_existing(body, "labels", existing, "labels", {}),
-            "expiration_time": _patched_expiration(body, existing),
-            "encryption_configuration": body_or_existing(
+    try:
+        return ModelMeta(
+            project_id=existing.project_id,
+            dataset_id=existing.dataset_id,
+            model_id=existing.model_id,
+            model_type=existing.model_type,
+            friendly_name=body_or_existing(body, "friendlyName", existing, "friendly_name", None),
+            description=body_or_existing(body, "description", existing, "description", None),
+            labels=body_or_existing(body, "labels", existing, "labels", {}),
+            location=existing.location,
+            expiration_time=_patched_expiration(body, existing),
+            feature_columns=existing.feature_columns,
+            label_columns=existing.label_columns,
+            encryption_configuration=body_or_existing(
                 body, "encryptionConfiguration", existing, "encryption_configuration", None
             ),
-            "last_modified_time": now,
-            "etag": generate_etag(
+            training_query=existing.training_query,
+            creation_time=existing.creation_time,
+            last_modified_time=now,
+            etag=generate_etag(
                 existing.project_id, existing.dataset_id, existing.model_id, str(now)
             ),
-        },
-    )
+        )
+    except PydanticValidationError as exc:
+        raise ValidationError("Invalid model patch body") from exc
 
 
 # ---------------------------------------------------------------------------
@@ -150,13 +171,11 @@ def list_models(
     dataset_id: str,
     ctx: _Ctx,
 ) -> dict[str, Any]:
-    """List the models in a dataset.
+    """List the models in a dataset, ordered by ``model_id``.
 
-    Returns every model in a single ``models`` array, ordered by
-    ``model_id`` for a stable response. This mirrors BigQuery's
-    single-page ``ListModelsResponse`` (which carries ``models`` and an
-    optional ``nextPageToken``) for the page sizes a local emulator
-    serves; the codebase's other list endpoints do not paginate either.
+    Returns a single ``models`` array, matching BigQuery's single-page
+    ``ListModelsResponse`` for the sizes a local emulator serves; the
+    codebase's other list endpoints do not paginate either.
     """
     models = sorted(
         ctx.catalog.list_models(project_id, dataset_id),

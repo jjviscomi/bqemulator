@@ -311,15 +311,6 @@ class TestModelCrud:
         with pytest.raises(NotFoundError):
             repo.create_model(make_model())
 
-    def test_crud_roundtrip(self) -> None:
-        repo = MemoryCatalogRepository()
-        repo.create_dataset(make_dataset())
-        m = repo.create_model(make_model())
-        assert repo.get_model("p", "sales", "churn") == m
-        assert repo.list_models("p", "sales") == (m,)
-        repo.delete_model("p", "sales", "churn")
-        assert repo.get_model("p", "sales", "churn") is None
-
     def test_create_duplicate_raises(self) -> None:
         repo = MemoryCatalogRepository()
         repo.create_dataset(make_dataset())

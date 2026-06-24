@@ -165,6 +165,30 @@ class TestModelsPatch:
         r = client.patch(f"{_BASE}/nope", json={"description": "x"})
         assert r.status_code == 404
 
+    @pytest.mark.parametrize(
+        "body",
+        [
+            {"labels": None},  # null for a non-Optional field
+            {"labels": ["a", "b"]},  # wrong type
+            {"friendlyName": 123},  # wrong type
+            {"expirationTime": "not-a-number"},  # uncoercible
+            {"expirationTime": "1e9999"},  # out of range
+        ],
+    )
+    def test_invalid_patch_returns_400(
+        self,
+        client: TestClient,
+        body: dict[str, object],
+    ) -> None:
+        _seed_model(client.app)  # type: ignore[arg-type]
+        assert client.patch(f"{_BASE}/m1", json=body).status_code == 400
+
+    def test_rejected_patch_leaves_model_unchanged(self, client: TestClient) -> None:
+        # A rejected PATCH must not partially mutate or corrupt the model.
+        _seed_model(client.app)  # type: ignore[arg-type]
+        client.patch(f"{_BASE}/m1", json={"labels": None})
+        assert client.get(f"{_BASE}/m1").json()["labels"] == {"team": "ds"}
+
 
 class TestModelsDelete:
     def test_delete_then_404(self, client: TestClient) -> None:

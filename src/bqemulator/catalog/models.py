@@ -340,27 +340,17 @@ class RoutineMeta(_Frozen):
 
 
 class ModelMeta(_Frozen):
-    """Metadata for a BigQuery ML model (surface-only registration).
+    """Surface-only metadata for a BigQuery ML model (ADR 0047 / RFC 0002).
 
-    The emulator registers a model's *metadata* so the Models REST
-    resource, ``CREATE MODEL`` DDL, and ``ML.PREDICT`` output *shape*
-    can be exercised locally. It does **not** train a model or store
-    learned weights — ``feature_columns`` / ``label_columns`` describe
-    the model's input/output *shape* only. See ADR 0047 / RFC 0002.
-
-    ``model_type`` is a free-form string rather than a closed
-    :data:`Literal`: BigQuery's ``modelType`` enum is large and grows
-    with each BQML release, and the surface registers any declared type
-    as metadata without interpreting it. The official client likewise
-    treats it as a plain string defaulting to ``MODEL_TYPE_UNSPECIFIED``.
-
-    ``feature_columns`` and ``label_columns`` are stored as opaque
-    ``StandardSqlField`` dicts (``{"name": ..., "type": {"typeKind":
-    ...}}``), mirroring how :class:`RoutineMeta` stores ``return_type``
-    and argument data types. ``training_query`` is bqemulator-internal
-    provenance (the ``AS SELECT`` text a ``CREATE MODEL`` was derived
-    from); it is persisted but never emitted in the REST representation,
-    which carries only documented BigQuery fields.
+    Registers a model's *metadata* only — no training, no learned
+    weights. ``model_type`` is a free-form string (BigQuery's enum is
+    large and evolving; the official client also treats it as a plain
+    string). ``feature_columns`` / ``label_columns`` are opaque
+    ``StandardSqlField`` dicts (``{"name", "type": {"typeKind"}}``)
+    describing input/output *shape* only, mirroring how
+    :class:`RoutineMeta` stores typed structures. ``training_query`` is
+    internal provenance (the ``CREATE MODEL`` ``AS SELECT`` text): it is
+    persisted but never emitted in the REST representation.
     """
 
     project_id: str

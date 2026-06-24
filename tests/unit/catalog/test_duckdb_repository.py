@@ -170,8 +170,15 @@ async def test_routine_crud_roundtrips(ephemeral_settings: Settings) -> None:
 
 
 @pytest.mark.asyncio
-async def test_model_crud_roundtrips(ephemeral_settings: Settings) -> None:
-    engine = DuckDBEngine(ephemeral_settings)
+async def test_model_crud_and_on_disk_persistence(persistent_settings: Settings) -> None:
+    """Model CRUD writes through to DuckDB and survives an engine reopen.
+
+    Covers create/get/list/update write-through, then a fresh engine on
+    the same data directory rehydrating the full :class:`ModelMeta`
+    (opaque feature/label column shapes + internal training-query
+    provenance, and the persisted update), then delete write-through.
+    """
+    engine = DuckDBEngine(persistent_settings)
     await engine.start()
     try:
         repo = DuckDBCatalogRepository(engine)
@@ -179,32 +186,8 @@ async def test_model_crud_roundtrips(ephemeral_settings: Settings) -> None:
         m = repo.create_model(_model())
         assert repo.get_model("p", "sales", "m1") == m
         assert repo.list_models("p", "sales") == (m,)
-
-        updated = _model().model_copy(update={"description": "d"})
-        repo.update_model(updated)
+        repo.update_model(_model().model_copy(update={"description": "d"}))
         assert repo.get_model("p", "sales", "m1").description == "d"  # type: ignore[union-attr]
-
-        repo.delete_model("p", "sales", "m1")
-        assert repo.get_model("p", "sales", "m1") is None
-    finally:
-        await engine.stop()
-
-
-@pytest.mark.asyncio
-async def test_model_persists_across_engine_reopen(persistent_settings: Settings) -> None:
-    """A model written to disk rehydrates from a fresh engine + repo.
-
-    Exercises the on-disk persistence path end to end: a second engine
-    opened on the same data directory must reconstruct the full
-    :class:`ModelMeta` — including the opaque feature/label column shapes
-    and the internal training-query provenance — from the JSON column.
-    """
-    engine = DuckDBEngine(persistent_settings)
-    await engine.start()
-    try:
-        repo = DuckDBCatalogRepository(engine)
-        repo.create_dataset(_ds())
-        repo.create_model(_model())
     finally:
         await engine.stop()
 
@@ -214,9 +197,11 @@ async def test_model_persists_across_engine_reopen(persistent_settings: Settings
         repo = DuckDBCatalogRepository(reopened)
         got = repo.get_model("p", "sales", "m1")
         assert got is not None
-        assert got.model_type == "LINEAR_REGRESSION"
+        assert got.description == "d"  # the update persisted across reopen
         assert got.feature_columns == ({"name": "x", "type": {"typeKind": "FLOAT64"}},)
         assert got.training_query == "SELECT x, y FROM p.sales.t"
+        repo.delete_model("p", "sales", "m1")
+        assert repo.get_model("p", "sales", "m1") is None
     finally:
         await reopened.stop()
 
