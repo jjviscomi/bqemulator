@@ -92,7 +92,7 @@ jobs:
       # parallel, so Scorecard's release-asset scan can see it.
       - name: Attest build provenance for dist artifacts
         id: attest
-        uses: actions/attest-build-provenance@a2bbfa25375fe432b6a289bc6b6cd05ecd0c4c32 # v4.1.0
+        uses: actions/attest-build-provenance@0f67c3f4856b2e3261c31976d6725780e5e4c373 # v4.1.1
         with:
           subject-path: 'dist/*'
       - name: Stage attestation under a Scorecard-discoverable filename
