@@ -132,7 +132,11 @@ grpc_api/ ──┘        + scripting/ + udf/ + versioning/ + types/
   source of concrete versions. CI installs from it with `uv sync --frozen` and
   `make dev-setup` with `uv sync --locked` (which additionally fails fast if
   the lock has drifted from pyproject), so neither can re-resolve or let an
-  upstream release change what a build installs. Changing a dependency is a
+  upstream release change what a build installs. `dev-setup` pins the
+  interpreter to `PYTHON_VERSION` (default 3.11, matching CI's lint/mypy
+  target) so `make verify` runs clean locally; override it
+  (`make dev-setup PYTHON_VERSION=3.13`) to build against another supported
+  runtime. Changing a dependency is a
   deliberate two-step: edit `pyproject.toml`, run `make lock` to regenerate
   `uv.lock`, and commit both -- the lint gate's `uv lock --check` rejects a
   pyproject edit whose lock was not regenerated. Dependency upgrades arrive

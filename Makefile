@@ -42,6 +42,13 @@ DIFF_COVER := $(VENV_BIN)diff-cover
 MKDOCS := $(VENV_BIN)mkdocs
 PRE_COMMIT := $(VENV_BIN)pre-commit
 UV := uv
+# Interpreter ``make dev-setup`` builds .venv against. Pinned to 3.11 (the
+# floor and the version CI's lint job + mypy's ``python_version`` target
+# use) so ``make verify`` is deterministic locally: it sidesteps both the
+# py3.14 coverage/DuckDB-UDF incompatibility and the mypy-vs-newer-numpy-stub
+# error seen on 3.13/3.14. Override to exercise another supported runtime,
+# e.g. ``make dev-setup PYTHON_VERSION=3.13``.
+PYTHON_VERSION ?= 3.11
 DOCKER_IMAGE := ghcr.io/jjviscomi/bqemulator
 DOCKER_TAG ?= dev
 DOCKER_PLATFORMS ?= linux/amd64,linux/arm64
@@ -84,7 +91,10 @@ dev-setup: _require-uv ## Create .venv from the lockfile and install pre-commit 
 	# reproducible set CI installs (ADR 0048) and never silently re-resolves
 	# or rewrites the lock as a side effect of setup. If this errors because
 	# you changed dependencies, run ``make lock`` first, then re-run.
-	$(UV) sync --locked --extra dev
+	# ``--python $(PYTHON_VERSION)`` pins the interpreter (default 3.11) so
+	# the local toolchain matches CI and ``make verify`` runs clean; override
+	# with ``PYTHON_VERSION=3.13`` to build against another supported runtime.
+	$(UV) sync --locked --extra dev --python "$(PYTHON_VERSION)"
 	.venv/bin/pre-commit install --install-hooks
 	.venv/bin/pre-commit install --hook-type commit-msg
 	@echo "Dev environment ready in .venv. Activate with: source .venv/bin/activate"
