@@ -23,6 +23,22 @@ new release.
 See [`docs/architecture/contributing/documentation-style-guide.md`](docs/architecture/contributing/documentation-style-guide.md)
 for the full entry-form rules and worked examples.
 
+## [1.4.0] - 2026-06-28
+
+### Changed
+
+- Install dependencies frozen from a committed `uv.lock` in CI and local development while the published wheel keeps flexible version ranges, and add a scheduled latest-deps canary that surfaces upstream regressions without gating pull requests ([ADR 0048](docs/adr/0048-reproducible-builds-lockfile.md)).
+- Unify the scripted and standalone inner-query pipelines so dependent materialized-view refresh and time-travel resolution behave identically whether a query runs on its own or inside a script ([ADR 0046](docs/adr/0046-unified-inner-query-pipeline.md)).
+- Cap `sqlglot` below 30.12 to avoid a BigQuery-to-DuckDB code-generation regression in `PARSE_DATETIME` and quoted-string rendering, and bump batched non-major dependencies.
+
+### Added
+
+- Register BigQuery ML model metadata with `CREATE MODEL`, deriving the feature and label schema from the training query without running training, and serve it through the Models REST resource (`list`, `get`, `patch`, `delete`): a surface-only slice defined by [RFC 0002](docs/rfcs/0002-bigquery-ml-surface.md) and [ADR 0047](docs/adr/0047-bigquery-ml-surface.md).
+
+### Fixed
+
+- Point Google Cloud documentation links at the canonical `docs.cloud.google.com` host to clear redirect-driven link rot.
+
 ## [1.3.0] - 2026-06-20
 
 ### Changed
