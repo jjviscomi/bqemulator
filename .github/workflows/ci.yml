@@ -19,14 +19,23 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
-      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6.3.0
+      - uses: astral-sh/setup-uv@fac544c07dec837d0ccb6301d7b5580bf5edae39 # v8.2.0
         with:
-          python-version: "3.11"
-          cache: pip
-      - name: Install dev deps
-        run: |
-          python -m pip install --upgrade pip
-          pip install -e ".[dev]"
+          enable-cache: true
+      # Reproducible install from the committed lockfile (ADR 0048). The
+      # lock, not a fresh resolve, decides every version, so an upstream
+      # release can never change what this run installs.
+      - name: Install (locked, from uv.lock)
+        run: uv sync --frozen --extra dev --python "3.11"
+      # Put the synced .venv on PATH so the bare tool invocations below
+      # (and the prewarm composite action's ``python``) resolve to the
+      # locked interpreter without an explicit ``uv run`` on every step.
+      - name: Activate project venv
+        run: echo "$PWD/.venv/bin" >> "$GITHUB_PATH"
+      # Guard against a lockfile that has drifted from pyproject.toml: fail
+      # fast here rather than installing a stale resolution everywhere else.
+      - name: Verify lockfile is current
+        run: uv lock --check
       - name: Ruff lint
         run: ruff check src tests scripts
       - name: Ruff format check
@@ -62,14 +71,19 @@ jobs:
         python: ["3.11", "3.12", "3.13"]
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
-      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6.3.0
+      - uses: astral-sh/setup-uv@fac544c07dec837d0ccb6301d7b5580bf5edae39 # v8.2.0
         with:
-          python-version: ${{ matrix.python }}
-          cache: pip
-      - name: Install
-        run: |
-          python -m pip install --upgrade pip
-          pip install -e ".[dev,all]"
+          enable-cache: true
+      - name: Install (locked, from uv.lock)
+        run: uv sync --frozen --extra dev --extra all --python "${{ matrix.python }}"
+      # Linux puts the synced .venv on PATH so the prewarm composite
+      # action's bare ``python`` resolves to the locked interpreter.
+      # macOS / Windows skip the prewarm step and run pytest through
+      # ``uv run`` instead, which avoids a cross-platform venv-path
+      # activation dance (``.venv/bin`` vs ``.venv/Scripts``).
+      - name: Activate project venv (Linux; for the prewarm action)
+        if: runner.os == 'Linux'
+        run: echo "$PWD/.venv/bin" >> "$GITHUB_PATH"
       # Prewarm DuckDB extensions so engine-backed unit tests read them from
       # the local cache rather than fetching over the network mid-test.
       # Linux-only: the prewarm uses ``timeout``, absent from the macOS /
@@ -77,9 +91,9 @@ jobs:
       - uses: ./.github/actions/prewarm-duckdb-extensions
         if: runner.os == 'Linux'
       - name: Unit tests
-        run: pytest tests/unit -m unit
+        run: uv run --no-sync pytest tests/unit -m unit
       - name: Property tests
-        run: pytest tests/property -m property
+        run: uv run --no-sync pytest tests/property -m property
 
   integration:
     name: Integration tests
@@ -87,13 +101,13 @@ jobs:
     needs: [lint]
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
-      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6.3.0
+      - uses: astral-sh/setup-uv@fac544c07dec837d0ccb6301d7b5580bf5edae39 # v8.2.0
         with:
-          python-version: "3.11"
-          cache: pip
-      - run: |
-          python -m pip install --upgrade pip
-          pip install -e ".[dev,all]"
+          enable-cache: true
+      - name: Install (locked, from uv.lock)
+        run: uv sync --frozen --extra dev --extra all --python "3.11"
+      - name: Activate project venv
+        run: echo "$PWD/.venv/bin" >> "$GITHUB_PATH"
       # G3 / ADR 0030: install avro-tools so the cross-impl Avro
       # integration test ``test_emulator_avro_bytes_decode_with_apache_avro_tools``
       # runs (rather than skipping). The package supplies the
@@ -127,13 +141,13 @@ jobs:
     # waiting for the full CI matrix.
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
-      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6.3.0
+      - uses: astral-sh/setup-uv@fac544c07dec837d0ccb6301d7b5580bf5edae39 # v8.2.0
         with:
-          python-version: "3.11"
-          cache: pip
-      - run: |
-          python -m pip install --upgrade pip
-          pip install -e ".[dev,all]"
+          enable-cache: true
+      - name: Install (locked, from uv.lock)
+        run: uv sync --frozen --extra dev --extra all --python "3.11"
+      - name: Activate project venv
+        run: echo "$PWD/.venv/bin" >> "$GITHUB_PATH"
       - uses: ./.github/actions/prewarm-duckdb-extensions
       - name: Replay conformance corpus (offline; no BQ creds)
         run: pytest tests/conformance -m conformance --junit-xml=conformance.xml
@@ -150,18 +164,18 @@ jobs:
     needs: [lint]
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
-      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6.3.0
+      - uses: astral-sh/setup-uv@fac544c07dec837d0ccb6301d7b5580bf5edae39 # v8.2.0
         with:
-          # Pin to the dev-environment Python so the gate stays
-          # consistent with local ``make verify``. The unit matrix
-          # already covers py3.11–3.13; the coverage report itself
-          # uses the dev-pinned interpreter so cross-version code-
-          # path differences don't move the coverage number.
-          python-version: "3.14"
-          cache: pip
-      - run: |
-          python -m pip install --upgrade pip
-          pip install -e ".[dev,all]"
+          enable-cache: true
+      # Pin to the dev-environment Python so the gate stays consistent
+      # with local ``make verify``. The unit matrix already covers
+      # py3.11–3.13; the coverage report itself uses the dev-pinned
+      # interpreter so cross-version code-path differences don't move
+      # the coverage number.
+      - name: Install (locked, from uv.lock)
+        run: uv sync --frozen --extra dev --extra all --python "3.14"
+      - name: Activate project venv
+        run: echo "$PWD/.venv/bin" >> "$GITHUB_PATH"
       - uses: ./.github/actions/prewarm-duckdb-extensions
       - name: Combined coverage (unit + property + integration)
         run: |
@@ -204,13 +218,13 @@ jobs:
     # && make api-coverage``, then commit the regenerated files.
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
-      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6.3.0
+      - uses: astral-sh/setup-uv@fac544c07dec837d0ccb6301d7b5580bf5edae39 # v8.2.0
         with:
-          python-version: "3.11"
-          cache: pip
-      - run: |
-          python -m pip install --upgrade pip
-          pip install -e ".[dev,all]"
+          enable-cache: true
+      - name: Install (locked, from uv.lock)
+        run: uv sync --frozen --extra dev --extra all --python "3.11"
+      - name: Activate project venv
+        run: echo "$PWD/.venv/bin" >> "$GITHUB_PATH"
       - name: Coverage matrix (P8.a)
         run: python scripts/generate_coverage_matrix.py --check
       - name: Compatibility matrix (P4.b)

@@ -57,14 +57,15 @@ help: ## Show this help
 # ---------------------------------------------------------------------------
 
 .PHONY: dev-setup
-dev-setup: ## Create .venv, install dependencies and pre-commit hooks
+dev-setup: ## Create .venv from the lockfile and install pre-commit hooks
 	# Own the virtualenv so every other target runs against a known,
-	# pinned interpreter (see the tool variables above). Re-running is safe:
-	# the venv is reused and dependencies are re-resolved against the
-	# current pins, which also repairs an env that has drifted below them.
-	test -d .venv || $(PYTHON) -m venv .venv
-	.venv/bin/python -m pip install --upgrade pip
-	.venv/bin/python -m pip install -e ".[dev]"
+	# pinned interpreter (see the tool variables above). ``uv sync`` creates
+	# and populates ``.venv`` from ``uv.lock`` so the local environment
+	# matches CI exactly (ADR 0048); ``--extra dev`` pulls the full dev
+	# toolchain. Re-running is safe: an unchanged lock reinstalls the same
+	# versions, and editing pyproject.toml re-resolves and rewrites the lock,
+	# which also repairs an env that has drifted.
+	$(UV) sync --extra dev
 	.venv/bin/pre-commit install --install-hooks
 	.venv/bin/pre-commit install --hook-type commit-msg
 	@echo "Dev environment ready in .venv. Activate with: source .venv/bin/activate"
