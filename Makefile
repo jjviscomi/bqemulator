@@ -21,11 +21,13 @@ SHELL := /bin/bash
 # …$(PATH)`` handling is unreliable (recipes intermittently fall back to
 # the shell interpreter), so each tool is invoked by its absolute venv
 # path directly. ``$(CURDIR)`` keeps it absolute so recipes that ``cd``
-# into subdirectories still resolve it. CI installs into the runner
-# interpreter and has no ``.venv``, so ``VENV_BIN`` is empty there and
-# the bare names resolve exactly as before. Tools that are not pip
-# packages (docker, go, node, npm, mvn, bq, typos, lychee, npx) are
-# invoked by bare name and fall through to the system PATH.
+# into subdirectories still resolve it. ``VENV_BIN`` is empty when no
+# ``.venv`` is present, so the bare names fall through to whatever Python
+# is active; both ``make dev-setup`` and CI create ``.venv`` from the
+# lockfile (ADR 0048), so locally and in CI these resolve to the pinned
+# interpreter. Tools that are not Python packages (docker, go, node, npm,
+# mvn, bq, typos, lychee, npx) are invoked by bare name and fall through
+# to the system PATH.
 VENV_BIN := $(if $(wildcard .venv/bin),$(CURDIR)/.venv/bin/,)
 PYTHON := $(VENV_BIN)python3
 PIP := $(PYTHON) -m pip

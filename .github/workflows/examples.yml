@@ -61,12 +61,13 @@ jobs:
     needs: build-image
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
-      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6.3.0
-        with: { python-version: "3.11" }
+      - uses: astral-sh/setup-uv@fac544c07dec837d0ccb6301d7b5580bf5edae39 # v8.2.0
+        with:
+          enable-cache: true
       - run: |
-          python -m pip install --upgrade pip
-          pip install -e ".[dev,all]"
-          pip install -r docs/examples/python/pytest-integration/requirements.txt
+          uv sync --frozen --extra dev --extra all --python "3.11"
+          uv pip install -r docs/examples/python/pytest-integration/requirements.txt
+          echo "$PWD/.venv/bin" >> "$GITHUB_PATH"
       - name: make test
         working-directory: docs/examples/python/pytest-integration
         run: make test
@@ -77,12 +78,13 @@ jobs:
     needs: build-image
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
-      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6.3.0
-        with: { python-version: "3.11" }
+      - uses: astral-sh/setup-uv@fac544c07dec837d0ccb6301d7b5580bf5edae39 # v8.2.0
+        with:
+          enable-cache: true
       - run: |
-          python -m pip install --upgrade pip
-          pip install -e ".[dev,all]"
-          pip install -r docs/examples/python/export-to-gcs/requirements.txt
+          uv sync --frozen --extra dev --extra all --python "3.11"
+          uv pip install -r docs/examples/python/export-to-gcs/requirements.txt
+          echo "$PWD/.venv/bin" >> "$GITHUB_PATH"
       - name: make test
         working-directory: docs/examples/python/export-to-gcs
         run: make test
@@ -93,12 +95,13 @@ jobs:
     needs: build-image
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
-      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6.3.0
-        with: { python-version: "3.11" }
+      - uses: astral-sh/setup-uv@fac544c07dec837d0ccb6301d7b5580bf5edae39 # v8.2.0
+        with:
+          enable-cache: true
       - run: |
-          python -m pip install --upgrade pip
-          pip install -e ".[dev,all]"
-          pip install -r docs/examples/python/dbt-local/requirements.txt
+          uv sync --frozen --extra dev --extra all --python "3.11"
+          uv pip install -r docs/examples/python/dbt-local/requirements.txt
+          echo "$PWD/.venv/bin" >> "$GITHUB_PATH"
       - name: make test
         working-directory: docs/examples/python/dbt-local
         run: make test
@@ -109,12 +112,13 @@ jobs:
     needs: build-image
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
-      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6.3.0
-        with: { python-version: "3.11" }
+      - uses: astral-sh/setup-uv@fac544c07dec837d0ccb6301d7b5580bf5edae39 # v8.2.0
+        with:
+          enable-cache: true
       - run: |
-          python -m pip install --upgrade pip
-          pip install -e ".[dev,all]"
-          pip install -r docs/examples/python/airflow-dag-test/requirements.txt
+          uv sync --frozen --extra dev --extra all --python "3.11"
+          uv pip install -r docs/examples/python/airflow-dag-test/requirements.txt
+          echo "$PWD/.venv/bin" >> "$GITHUB_PATH"
       - name: make test
         working-directory: docs/examples/python/airflow-dag-test
         run: make test
@@ -125,16 +129,17 @@ jobs:
     needs: build-image
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
-      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6.3.0
-        with: { python-version: "3.11" }
+      - uses: astral-sh/setup-uv@fac544c07dec837d0ccb6301d7b5580bf5edae39 # v8.2.0
+        with:
+          enable-cache: true
       - uses: actions/setup-java@1bcf9fb12cf4aa7d266a90ae39939e61372fe520 # v5.4.0
         with:
           distribution: temurin
           java-version: "17"
       - run: |
-          python -m pip install --upgrade pip
-          pip install -e ".[dev,all]"
-          pip install -r docs/examples/python/pyspark-bigquery/requirements.txt
+          uv sync --frozen --extra dev --extra all --python "3.11"
+          uv pip install -r docs/examples/python/pyspark-bigquery/requirements.txt
+          echo "$PWD/.venv/bin" >> "$GITHUB_PATH"
       - name: make test
         working-directory: docs/examples/python/pyspark-bigquery
         run: make test
@@ -259,9 +264,13 @@ jobs:
       - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with: { name: bqemu-image, path: /tmp }
       - run: docker load -i /tmp/bqemu.tar
-      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6.3.0
-        with: { python-version: "3.11" }
-      - run: pip install google-cloud-bigquery
+      - uses: astral-sh/setup-uv@fac544c07dec837d0ccb6301d7b5580bf5edae39 # v8.2.0
+        with:
+          enable-cache: true
+      - run: |
+          uv venv
+          uv pip install google-cloud-bigquery
+          echo "$PWD/.venv/bin" >> "$GITHUB_PATH"
       - name: make test
         env:
           BQEMU_IMAGE: ${{ needs.build-image.outputs.image }}
@@ -273,9 +282,13 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
-      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6.3.0
-        with: { python-version: "3.11" }
-      - run: pip install PyYAML
+      - uses: astral-sh/setup-uv@fac544c07dec837d0ccb6301d7b5580bf5edae39 # v8.2.0
+        with:
+          enable-cache: true
+      - run: |
+          uv venv
+          uv pip install PyYAML
+          echo "$PWD/.venv/bin" >> "$GITHUB_PATH"
       - name: GitHub Actions recipe
         working-directory: docs/examples/ci-recipes/github-actions
         run: make test

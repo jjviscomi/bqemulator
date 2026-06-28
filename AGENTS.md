@@ -125,6 +125,22 @@ grpc_api/ ──┘        + scripting/ + udf/ + versioning/ + types/
   readable tag. Same rationale as the Actions pin: tags are mutable;
   digests are immutable. Dependabot's `docker` ecosystem updater
   bumps both the tag and digest together on each upstream release.
+- **Python dependency pinning.** The published manifest
+  ([`pyproject.toml`](pyproject.toml)) declares **flexible ranges** -- a
+  library must not export exact pins to its consumers. Reproducibility
+  instead lives in a committed lockfile: [`uv.lock`](uv.lock) is the single
+  source of concrete versions, and CI plus `make dev-setup` install from it
+  frozen (`uv sync --frozen`), so an upstream release can never change what
+  a build resolves. Dependency upgrades arrive only as reviewable lockfile
+  PRs (Dependabot's `uv` ecosystem), each running the full gate in
+  isolation. A scheduled, non-blocking
+  [latest-deps canary](.github/workflows/latest-deps-canary.yml) installs
+  latest-within-ranges to surface upstream regressions early. Same rationale
+  as the Actions and Docker pins, applied to the last surface that still
+  floated. See [ADR 0048](docs/adr/0048-reproducible-builds-lockfile.md).
+  (The release build is the deliberate exception: it builds the published
+  wheel from the ranges, not the lock, because a library artifact must carry
+  ranges.)
 - **Conventional Commits** (`feat:`, `fix:`, `docs:`, `refactor:`,
   `test:`, `chore:`, `build:`, `ci:`, `perf:`, `style:`). Enforced by
   `commitlint`.
