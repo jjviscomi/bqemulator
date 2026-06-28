@@ -268,8 +268,7 @@ jobs:
         with:
           enable-cache: true
       - run: |
-          uv venv --python "3.11"
-          uv pip install google-cloud-bigquery
+          uv sync --frozen --extra dev --python "3.11"
           echo "$PWD/.venv/bin" >> "$GITHUB_PATH"
       - name: make test
         env:
@@ -286,8 +285,7 @@ jobs:
         with:
           enable-cache: true
       - run: |
-          uv venv --python "3.11"
-          uv pip install PyYAML
+          uv sync --frozen --extra dev --python "3.11"
           echo "$PWD/.venv/bin" >> "$GITHUB_PATH"
       - name: GitHub Actions recipe
         working-directory: docs/examples/ci-recipes/github-actions
