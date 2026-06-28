@@ -49,7 +49,17 @@ dependencies = [
     # BigQuery and its KNOWN_DIVERGENCES pin was removed. Both behaviours are
     # 30.9-specific, so the floor must be >=30.9 (a resolve to <30.9 would
     # re-break PARSE_TIME and surface Q47 as an unexpected conformance fail).
-    "sqlglot>=30.9",
+    #
+    # Cap below 30.12: 30.12.0 regressed two BigQuery-to-DuckDB codegen
+    # paths the emulator relies on. PARSE_DATETIME began wrapping its result
+    # in ``TIMEZONE('UTC', STRPTIME(...))`` (tz-aware) instead of a naive
+    # ``STRPTIME``, violating DATETIME's naive-wire contract; and a string
+    # literal containing quotes (e.g. a row-access ``FILTER USING`` predicate
+    # embedded in a VALUES clause) is rendered as adjacent string literals,
+    # which is invalid SQL. Both were reproduced against the in-repo unit,
+    # conformance, integration, and e2e suites. Lift this cap once upstream
+    # restores the prior codegen (tracked as a follow-up to adopt 30.12.x).
+    "sqlglot>=30.9,<30.12",
     "pyarrow>=14.0",
     # Exclude fastapi 0.136.3: MAL-2026-4750 — Amazon Inspector flagged
     # the release as tampered (adds an undocumented ``fastar>=0.9.0``
