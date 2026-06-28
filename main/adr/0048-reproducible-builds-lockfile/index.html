@@ -10,13 +10,13 @@
       
       
       
-        <link rel="canonical" href="https://jjviscomi.github.io/bqemulator/main/adr/0044-starlette-1x-adoption/">
+        <link rel="canonical" href="https://jjviscomi.github.io/bqemulator/main/adr/0048-reproducible-builds-lockfile/">
       
       
-        <link rel="prev" href="../0043-export-data-statement/">
+        <link rel="prev" href="../0047-bigquery-ml-surface/">
       
       
-        <link rel="next" href="../0045-autodetect-schema-inference/">
+        <link rel="next" href="../../rfcs/">
       
       
         
@@ -27,7 +27,7 @@
     
     
       
-        <title>0044 Adopt starlette 1.x (security) without adopting httpx2 - bqemulator</title>
+        <title>0048 Reproducible builds via a committed lockfile - bqemulator</title>
       
     
     
@@ -80,7 +80,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#adr-0044-adopt-starlette-1x-security-without-adopting-httpx2" class="md-skip">
+        <a href="#adr-0048-reproducible-builds-via-a-committed-lockfile-flexible-library-ranges-and-a-latest-deps-canary" class="md-skip">
           Skip to content
         </a>
       
@@ -118,7 +118,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              0044 Adopt starlette 1.x (security) without adopting httpx2
+              0048 Reproducible builds via a committed lockfile
             
           </span>
         </div>
@@ -4253,37 +4253,10 @@
                 
   
   
-    
   
   
-  
-    <li class="md-nav__item md-nav__item--active">
-      
-      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
-      
-      
-        
-      
-      
-        <label class="md-nav__link md-nav__link--active" for="__toc">
-          
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    0044 Adopt starlette 1.x (security) without adopting httpx2
-  
-
-    
-  </span>
-  
-  
-
-          <span class="md-nav__icon md-icon"></span>
-        </label>
-      
-      <a href="./" class="md-nav__link md-nav__link--active">
+    <li class="md-nav__item">
+      <a href="../0044-starlette-1x-adoption/" class="md-nav__link">
         
   
   
@@ -4299,109 +4272,6 @@
   
 
       </a>
-      
-        
-
-<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
-  
-  
-  
-    
-  
-  
-    <label class="md-nav__title" for="__toc">
-      <span class="md-nav__icon md-icon"></span>
-      Table of contents
-    </label>
-    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#context" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Context
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#decisions" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Decisions
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Decisions">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#1-floor-starlette131" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        1. Floor starlette&gt;=1.3.1
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#2-keep-plain-httpx-do-not-adopt-httpx2" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        2. Keep plain httpx; do not adopt httpx2
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#3-scope-ignore-the-test-client-deprecation-warning" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        3. Scope-ignore the test-client deprecation warning
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#4-drop-the-obsolete-pysec-2026-161-ignore" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        4. Drop the obsolete PYSEC-2026-161 ignore
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#consequences" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Consequences
-      
-    </span>
-  </a>
-  
-</li>
-      
-    </ul>
-  
-</nav>
-      
     </li>
   
 
@@ -4495,10 +4365,37 @@
                 
   
   
+    
   
   
-    <li class="md-nav__item">
-      <a href="../0048-reproducible-builds-lockfile/" class="md-nav__link">
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0048 Reproducible builds via a committed lockfile
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
         
   
   
@@ -4514,6 +4411,109 @@
   
 
       </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#context" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Context
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#decisions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Decisions
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Decisions">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#1-keep-projectdependencies-as-flexible-ranges" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. Keep [project.dependencies] as flexible ranges
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#2-commit-a-lockfile-and-install-from-it-in-ci-and-dev" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. Commit a lockfile and install from it in CI and dev
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#3-add-a-scheduled-latest-deps-canary-that-is-allowed-to-fail" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. Add a scheduled latest-deps canary that is allowed to fail
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#4-dependabot-maintains-the-lockfile" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4. Dependabot maintains the lockfile
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#consequences" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Consequences
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
     </li>
   
 
@@ -5612,10 +5612,10 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#1-floor-starlette131" class="md-nav__link">
+  <a href="#1-keep-projectdependencies-as-flexible-ranges" class="md-nav__link">
     <span class="md-ellipsis">
       
-        1. Floor starlette&gt;=1.3.1
+        1. Keep [project.dependencies] as flexible ranges
       
     </span>
   </a>
@@ -5623,10 +5623,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#2-keep-plain-httpx-do-not-adopt-httpx2" class="md-nav__link">
+  <a href="#2-commit-a-lockfile-and-install-from-it-in-ci-and-dev" class="md-nav__link">
     <span class="md-ellipsis">
       
-        2. Keep plain httpx; do not adopt httpx2
+        2. Commit a lockfile and install from it in CI and dev
       
     </span>
   </a>
@@ -5634,10 +5634,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#3-scope-ignore-the-test-client-deprecation-warning" class="md-nav__link">
+  <a href="#3-add-a-scheduled-latest-deps-canary-that-is-allowed-to-fail" class="md-nav__link">
     <span class="md-ellipsis">
       
-        3. Scope-ignore the test-client deprecation warning
+        3. Add a scheduled latest-deps canary that is allowed to fail
       
     </span>
   </a>
@@ -5645,10 +5645,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#4-drop-the-obsolete-pysec-2026-161-ignore" class="md-nav__link">
+  <a href="#4-dependabot-maintains-the-lockfile" class="md-nav__link">
     <span class="md-ellipsis">
       
-        4. Drop the obsolete PYSEC-2026-161 ignore
+        4. Dependabot maintains the lockfile
       
     </span>
   </a>
@@ -5688,7 +5688,7 @@
 
 
   
-    <a href="https://github.com/jjviscomi/bqemulator/edit/main/docs/adr/0044-starlette-1x-adoption.md" title="Edit this page" class="md-content__button md-icon" rel="edit">
+    <a href="https://github.com/jjviscomi/bqemulator/edit/main/docs/adr/0048-reproducible-builds-lockfile.md" title="Edit this page" class="md-content__button md-icon" rel="edit">
       
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M10 20H6V4h7v5h5v3.1l2-2V8l-6-6H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h4zm10.2-7c.1 0 .3.1.4.2l1.3 1.3c.2.2.2.6 0 .8l-1 1-2.1-2.1 1-1c.1-.1.2-.2.4-.2m0 3.9L14.1 23H12v-2.1l6.1-6.1z"/></svg>
     </a>
@@ -5697,79 +5697,116 @@
     
       
     
-    <a href="https://github.com/jjviscomi/bqemulator/raw/main/docs/adr/0044-starlette-1x-adoption.md" title="View source of this page" class="md-content__button md-icon">
+    <a href="https://github.com/jjviscomi/bqemulator/raw/main/docs/adr/0048-reproducible-builds-lockfile.md" title="View source of this page" class="md-content__button md-icon">
       
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M17 18c.56 0 1 .44 1 1s-.44 1-1 1-1-.44-1-1 .44-1 1-1m0-3c-2.73 0-5.06 1.66-6 4 .94 2.34 3.27 4 6 4s5.06-1.66 6-4c-.94-2.34-3.27-4-6-4m0 6.5a2.5 2.5 0 0 1-2.5-2.5 2.5 2.5 0 0 1 2.5-2.5 2.5 2.5 0 0 1 2.5 2.5 2.5 2.5 0 0 1-2.5 2.5M9.27 20H6V4h7v5h5v4.07c.7.08 1.36.25 2 .49V8l-6-6H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h4.5a8.2 8.2 0 0 1-1.23-2"/></svg>
     </a>
   
 
 
-<h1 id="adr-0044-adopt-starlette-1x-security-without-adopting-httpx2">ADR 0044: Adopt starlette 1.x (security) without adopting httpx2<a class="headerlink" href="#adr-0044-adopt-starlette-1x-security-without-adopting-httpx2" title="Permanent link">&para;</a></h1>
+<h1 id="adr-0048-reproducible-builds-via-a-committed-lockfile-flexible-library-ranges-and-a-latest-deps-canary">ADR 0048: Reproducible builds via a committed lockfile, flexible library ranges, and a latest-deps canary<a class="headerlink" href="#adr-0048-reproducible-builds-via-a-committed-lockfile-flexible-library-ranges-and-a-latest-deps-canary" title="Permanent link">&para;</a></h1>
 <ul>
 <li><strong>Status</strong>: Accepted</li>
 </ul>
 <h2 id="context">Context<a class="headerlink" href="#context" title="Permanent link">&para;</a></h2>
-<p><code>pip-audit</code> flagged four advisories against <code>starlette</code> 0.52.1, the ASGI
-foundation under FastAPI that serves the emulator's REST API:</p>
+<p><code>bqemulator</code> declares every Python dependency, runtime and tooling alike, as
+a floor-only range (<code>sqlglot&gt;=30.9</code>, <code>pytest&gt;=9.0.3</code>, <code>ruff&gt;=0.3</code>, and so on),
+with a handful of reactive ceilings added after past breakages
+(<code>grpcio-tools&lt;1.81</code>, <code>fastapi!=0.136.3</code>, <code>sqlglot&lt;30.12</code>). There is <strong>no
+committed lockfile</strong> (<code>uv.lock</code>, <code>poetry.lock</code>, <code>requirements*.txt</code>, or
+<code>constraints*.txt</code>), and CI installs with <code>pip install -e ".[dev,all]"</code> on
+every run, which resolves to the <strong>latest</strong> compatible release of every
+package each time.</p>
+<p>The consequence is that <code>main</code>'s green/red status depends on what PyPI
+published recently rather than on the repository's own code. A new upstream
+release can fail CI with zero local changes, and the failure surfaces on
+whatever PR happens to run next:</p>
 <ul>
-<li><code>CVE-2026-48818</code> (fixed in starlette 1.1.0)</li>
-<li><code>CVE-2026-48817</code> (fixed in starlette 1.1.0)</li>
-<li><code>CVE-2026-54282</code> (fixed in starlette 1.3.0)</li>
-<li><code>CVE-2026-54283</code> (fixed in starlette 1.3.1)</li>
+<li><strong>sqlglot 30.12.0</strong> (the incident that prompted this ADR, fixed tactically
+  in #189) regressed two BigQuery-to-DuckDB codegen paths and reddened CI on
+  an unrelated Dependabot batch PR. Re-running <code>main</code>'s own CI on an unchanged
+  commit reproduced the failure, confirming the cause was upstream drift, not
+  the PR.</li>
+<li>Prior episodes followed the same pattern: the sqlglot 30.9.0 break, pytest
+  minor bumps, and the starlette CVE line (see <a href="../0044-starlette-1x-adoption/">ADR 0044</a>).</li>
 </ul>
-<p>Every fix ships in the starlette 1.x line. The dependency had been held at
-<code>starlette&gt;=0.46,&lt;1.0</code>. The ceiling pin's stated reason was a feared
-<code>httpx</code> to <code>httpx2</code> migration in <code>starlette.testclient</code> (which FastAPI's
-<code>TestClient</code> re-exports), deferred to "its own PR." A prior advisory,
-<code>PYSEC-2026-161</code>, was carried in <code>.pip-audit-ignore</code> for the same reason: its
-only fix was in the capped 1.x line.</p>
-<p>Empirically, the feared migration is narrower than the pin assumed:</p>
-<ul>
-<li><code>fastapi</code> 0.137 (the current floor's resolution) already accepts
-  <code>starlette</code> 1.3.1 and resolves with plain <code>httpx</code> 0.28; there is no runtime
-  <code>httpx2</code> requirement.</li>
-<li><code>starlette.testclient</code> in 1.x prefers an optional <code>httpx2</code> package and, when
-  it is absent, falls back to plain <code>httpx</code> while emitting a
-  <code>StarletteDeprecationWarning</code>. The only concrete breakage was that the
-  project's warnings-as-errors test policy turned that import-time deprecation
-  into a collection error for every <code>TestClient</code>-based test.</li>
-</ul>
-<p>The security exposure is real (a runtime dependency), though the emulator's
-threat model is a local, trusted developer or CI environment rather than an
-internet-facing service.</p>
+<p>This is not a gap in diligence; it is the predictable behaviour of an
+unlocked, float-to-latest install. Notably, the project <strong>already</strong> pins its
+supply-chain-sensitive surfaces for exactly this reason: every GitHub Actions
+<code>uses:</code> is pinned to a full commit SHA and every <code>Dockerfile</code> base image is
+pinned by digest, both maintained by Dependabot (see <code>AGENTS.md</code>). Python
+dependency resolution is the one remaining surface left to float.</p>
+<p>The complicating constraint is that <code>bqemulator</code> is a <strong>published library</strong>
+(PyPI), not an application. Exact-pinning runtime dependencies in
+<code>[project.dependencies]</code> would not buy reliability; it would <em>export</em>
+dependency conflicts to every downstream project that installs <code>bqemulator</code>
+alongside other packages. The reliability we want belongs at the build layer,
+not in the published contract.</p>
+<p>The standard resolution is to separate <strong>abstract</strong> dependencies (what the
+library promises the world) from <strong>concrete</strong> dependencies (what this
+repository actually builds and tests against).</p>
 <h2 id="decisions">Decisions<a class="headerlink" href="#decisions" title="Permanent link">&para;</a></h2>
-<h3 id="1-floor-starlette131">1. Floor <code>starlette&gt;=1.3.1</code><a class="headerlink" href="#1-floor-starlette131" title="Permanent link">&para;</a></h3>
-<p>1.3.1 is the lowest release that clears all four advisories plus the
-previously-ignored <code>PYSEC-2026-161</code>. <code>fastapi</code> and <code>httpx</code> are left at their
-existing floors; no FastAPI bump is required.</p>
-<h3 id="2-keep-plain-httpx-do-not-adopt-httpx2">2. Keep plain <code>httpx</code>; do not adopt <code>httpx2</code><a class="headerlink" href="#2-keep-plain-httpx-do-not-adopt-httpx2" title="Permanent link">&para;</a></h3>
-<p><code>httpx2</code> is a separate, distinct HTTP-client package whose provenance and
-maintenance are not yet vetted for this dependency graph, and the security fix
-that motivated this change lives in <code>starlette</code> itself, not in the test
-client. Plain <code>httpx</code> remains fully supported by <code>starlette.testclient</code> as the
-fallback, so the test client keeps working unchanged.</p>
-<h3 id="3-scope-ignore-the-test-client-deprecation-warning">3. Scope-ignore the test-client deprecation warning<a class="headerlink" href="#3-scope-ignore-the-test-client-deprecation-warning" title="Permanent link">&para;</a></h3>
-<p>A single <code>filterwarnings</code> entry in <code>pyproject.toml</code> ignores exactly the
-"Using <code>httpx</code> with <code>starlette.testclient</code> is deprecated" message
-(<code>starlette.exceptions.StarletteDeprecationWarning</code>). The ignore is matched by
-message so any other starlette deprecation still fails the warnings-as-errors
-gate. Adopting <code>httpx2</code>, or revisiting if a future starlette release removes
-the plain-<code>httpx</code> fallback, is left as follow-up.</p>
-<h3 id="4-drop-the-obsolete-pysec-2026-161-ignore">4. Drop the obsolete <code>PYSEC-2026-161</code> ignore<a class="headerlink" href="#4-drop-the-obsolete-pysec-2026-161-ignore" title="Permanent link">&para;</a></h3>
-<p>That entry existed only because the fix was gated behind the <code>&lt;1.0</code> cap. With
-the floor at 1.3.1 the advisory is genuinely patched, so the ignore is removed
-rather than carried as dead configuration.</p>
+<h3 id="1-keep-projectdependencies-as-flexible-ranges">1. Keep <code>[project.dependencies]</code> as flexible ranges<a class="headerlink" href="#1-keep-projectdependencies-as-flexible-ranges" title="Permanent link">&para;</a></h3>
+<p>The published manifest continues to declare floors (and only the reactive
+ceilings that document a known-incompatible release). Runtime dependencies are
+<strong>not</strong> exact-pinned. This preserves correctness for downstream consumers and
+keeps <code>bqemulator</code> a well-behaved library in a shared dependency graph. The
+existing ceilings (<code>grpcio-tools&lt;1.81</code>, <code>fastapi!=0.136.3</code>, <code>sqlglot&lt;30.12</code>)
+remain as a documented safety net, each carrying its rationale in a comment.</p>
+<h3 id="2-commit-a-lockfile-and-install-from-it-in-ci-and-dev">2. Commit a lockfile and install from it in CI and dev<a class="headerlink" href="#2-commit-a-lockfile-and-install-from-it-in-ci-and-dev" title="Permanent link">&para;</a></h3>
+<p>A committed lockfile becomes the single source of concrete versions for the
+repository's own builds. CI installs from the lock with a frozen / no-resolve
+flag so an upstream release can never silently change what CI runs. The lock
+covers tooling (ruff, mypy, pytest, xenon, and the rest) as well as runtime
+and test dependencies, so linter and test-runner upgrades that change rules or
+warnings-as-errors behaviour become deliberate, reviewed changes rather than
+spontaneous failures.</p>
+<p><strong>Mechanism: <code>uv</code> with <code>uv.lock</code>.</strong> <code>uv</code> produces a hashed, cross-platform
+lockfile, is fast, is supported by Dependabot's <code>uv</code> ecosystem updater, and
+composes with the existing <code>pyproject.toml</code> / <code>.venv</code> model (<code>uv sync</code> creates
+and populates <code>.venv</code>, which the Makefile already binds to). CI provisions the
+interpreter and <code>uv</code> via <code>astral-sh/setup-uv</code> (SHA-pinned like every other
+action) and installs with <code>uv sync --frozen</code>, so the resolution is taken from
+the lock and never recomputed mid-pipeline. Two alternatives were considered
+and rejected: <code>pip-tools</code> (a hashed <code>constraints.txt</code> installed with
+<code>pip install -c</code>) keeps pure <code>pip</code> but is slower, less ergonomic, and has no
+single-command sync; <code>poetry</code> would restructure the dependency tables and is
+the most disruptive. <code>uv</code> is the decision.</p>
+<h3 id="3-add-a-scheduled-latest-deps-canary-that-is-allowed-to-fail">3. Add a scheduled latest-deps canary that is allowed to fail<a class="headerlink" href="#3-add-a-scheduled-latest-deps-canary-that-is-allowed-to-fail" title="Permanent link">&para;</a></h3>
+<p>A separate scheduled workflow installs the dependencies fully unpinned (latest
+of everything, ignoring the lock) and runs the test suite. It is <strong>non-blocking</strong>:
+it does not gate any PR, and on failure it surfaces a clear signal (a job
+failure and/or an auto-filed issue). This preserves the one genuine benefit of
+the current float-to-latest setup, early detection of upstream regressions,
+without gambling the <code>main</code> branch on it. The sqlglot 30.12.0 break would have
+appeared here, on a schedule, with an unambiguous cause, instead of by surprise
+on unrelated work.</p>
+<h3 id="4-dependabot-maintains-the-lockfile">4. Dependabot maintains the lockfile<a class="headerlink" href="#4-dependabot-maintains-the-lockfile" title="Permanent link">&para;</a></h3>
+<p>Dependabot's <code>uv</code> (or <code>pip</code>) ecosystem updater keeps the lock current,
+continuing alongside the existing <code>github-actions</code> and <code>docker</code> updaters. A
+dependency upgrade therefore arrives as a reviewable lockfile PR that runs the
+full CI gate <strong>in isolation</strong>, which is precisely where a regression like
+sqlglot 30.12.0 should be caught and contained.</p>
 <h2 id="consequences">Consequences<a class="headerlink" href="#consequences" title="Permanent link">&para;</a></h2>
 <ul>
-<li><code>pip-audit</code> reports no known vulnerabilities; the four CVEs and
-  <code>PYSEC-2026-161</code> are resolved by the upgrade, not suppressed.</li>
-<li>The long-standing <code>starlette&lt;1.0</code> deferral and its tracking comment are
-  retired.</li>
-<li>One narrowly-scoped warning ignore is added to the test configuration; the
-  rest of the warnings-as-errors discipline is unchanged.</li>
-<li>A future move to <code>httpx2</code> (or a forced move, if starlette drops the
-  plain-<code>httpx</code> fallback) is a self-contained follow-up that does not block the
-  security fix.</li>
+<li><code>main</code> can no longer turn red because of an upstream release with no code
+  change; per-PR CI becomes reproducible.</li>
+<li>Contributors get a deterministic <code>make dev-setup</code> that matches CI exactly.</li>
+<li>Dependency and tooling upgrades become explicit, reviewed lockfile PRs
+  instead of ambient drift; a bad release is caught on its own PR.</li>
+<li>The latest-deps canary keeps the project ahead of upstream changes as a
+  non-blocking early-warning signal.</li>
+<li>Downstream consumers are unaffected: the published ranges do not change, so
+  <code>bqemulator</code> keeps resolving flexibly in a shared environment.</li>
+<li>Costs: a lockfile to maintain (mitigated by Dependabot), one additional tool
+  (<code>uv</code>) in the toolchain, and slightly more ceremony per upgrade (a lockfile
+  PR rather than an implicit resolve). These are the same trade-offs the
+  project already accepted for SHA-pinned Actions and digest-pinned images.</li>
+<li>The implementation (adopting the lock tooling, wiring CI to install frozen,
+  the latest-deps canary workflow, <code>dependabot.yml</code>, the Makefile, and the
+  contributor docs) lands together with this ADR as a single self-contained
+  change. It touches build and CI configuration only, not the library's
+  runtime behaviour, so it carries no feature risk.</li>
 </ul>
 
 
