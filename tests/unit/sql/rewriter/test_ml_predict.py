@@ -111,6 +111,32 @@ class TestRewriteShape:
         assert "AS predicted FROM" in out
         assert "predicted_" not in out
 
+    def test_nested_ml_predict_both_levels_rewritten(self) -> None:
+        """A nested ``ML.PREDICT`` (inside another's input query) is fully rewritten.
+
+        Both levels must be rewritten deepest-first, or the outer rewrite would
+        serialise the un-rewritten inner call back into the generated SQL.
+        """
+        catalog = _catalog()
+        catalog.create_model(
+            ModelMeta(
+                project_id="p",
+                dataset_id="ds",
+                model_id="m2",
+                label_columns=_DEFAULT_LABELS,
+                creation_time=NOW,
+                last_modified_time=NOW,
+                etag="e",
+            ),
+        )
+        sql = (
+            "SELECT * FROM ML.PREDICT(MODEL ds.m, "
+            "(SELECT * FROM ML.PREDICT(MODEL ds.m2, (SELECT 1 AS x))))"
+        )
+        out = _rewrite(sql, catalog)
+        assert not _has_predict_node(out)
+        assert out.count("CAST(0.0 AS FLOAT64)") == 2
+
     def test_nested_in_cte(self) -> None:
         """``ML.PREDICT`` inside a CTE-bearing query is rewritten in place."""
         sql = "WITH s AS (SELECT 1 x) SELECT * FROM ML.PREDICT(MODEL ds.m, (SELECT * FROM s))"

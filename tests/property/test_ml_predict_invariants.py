@@ -11,6 +11,7 @@ by the in-process tests in ``tests/unit/jobs/test_ml_predict.py``.
 from __future__ import annotations
 
 from datetime import UTC, datetime
+import re
 
 from hypothesis import given
 from hypothesis import strategies as st
@@ -69,9 +70,11 @@ def test_one_stub_per_label_and_input_preserved(labels: list[str]) -> None:
     # The rewrite is complete: no ML.PREDICT node survives to translation.
     assert not list(sqlglot.parse_one(out, read="bigquery").find_all(exp.Predict))
     # Exactly one deterministic stub column per label, each correctly named.
+    # Match whole alias tokens (not raw substrings) so a missing or duplicated
+    # alias is caught even for prefix-overlapping label names (e.g. "a", "aa").
     assert out.count("CAST(0.0 AS FLOAT64)") == len(labels)
-    for name in labels:
-        assert f"predicted_{name}" in out
+    predicted_aliases = re.findall(r"\bAS (predicted_\w+)", out)
+    assert sorted(predicted_aliases) == sorted(f"predicted_{name}" for name in labels)
     # The input query and the passthrough projection are preserved.
     assert "SELECT 1 AS x" in out
     assert "SELECT *" in out

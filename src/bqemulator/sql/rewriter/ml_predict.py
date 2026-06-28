@@ -70,7 +70,12 @@ def rewrite_ml_predict(
     if not predicts:
         return bq_sql
 
-    for node in predicts:
+    # Rewrite deepest-first. A nested ML.PREDICT (one inside another's input
+    # query) must be rewritten before its parent: rewriting the parent first
+    # serialises the still-unrewritten inner call back into the generated SQL.
+    # ``find_all`` yields ancestors before descendants (DFS pre-order), so
+    # ``reversed`` gives children-before-parents.
+    for node in reversed(predicts):
         target, alias_name = _replacement_target(node)
         target.replace(
             _predict_subquery(node, project_id=project_id, catalog=catalog, alias_name=alias_name)
