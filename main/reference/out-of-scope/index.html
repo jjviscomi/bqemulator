@@ -6161,10 +6161,10 @@ trees, AutoML, regression), and <code>ML.EVALUATE</code>, <code>ML.FORECAST</cod
 <p>In scope is a <strong>surface-only</strong> slice, defined in
 <a href="../../rfcs/0002-bigquery-ml-surface/">RFC 0002</a> and
 <a href="../../adr/0047-bigquery-ml-surface/">ADR 0047</a>: model-metadata registration via
-<code>CREATE MODEL</code> (the feature/label schema is derived from the training query),
+<code>CREATE MODEL</code> (the feature/label schema is derived from the training query) and
 the Models REST resource (<code>list</code> / <code>get</code> / <code>patch</code> / <code>delete</code>; BigQuery has no
-<code>insert</code>), and the <code>ML.PREDICT</code> output shape (values are deterministic and not
-real predictions).</p>
+<code>insert</code>). <code>ML.PREDICT</code> execution is not currently supported and raises
+<code>UnsupportedFeatureError</code>.</p>
 <p><em>Rationale</em>: full BQML training would be a project of comparable size to the
 rest of the emulator; the surface-only slice unblocks SQL-parsing, Models-API,
 and pipeline-shape testing without it. See
