@@ -35,6 +35,7 @@ from typing import TYPE_CHECKING
 from bqemulator.domain.result import Err, Ok
 from bqemulator.sql.catalog_schema import build_catalog_schema
 from bqemulator.sql.rewriter.information_schema import expand_information_schema
+from bqemulator.sql.rewriter.ml_predict import rewrite_ml_predict
 from bqemulator.sql.rewriter.row_access_filter import rewrite_for_row_access
 from bqemulator.sql.rewriter.unnest_offset import rewrite_unnest_offset
 from bqemulator.sql.rewriter.wildcard_expander import expand_wildcard_tables
@@ -137,6 +138,11 @@ async def rewrite_and_translate_statement(
     """
     # Refresh any stale materialized views this statement reads.
     await refresh_dependent_mvs(project_id, bq_sql, ctx)
+    # Rewrite ML.PREDICT into a passthrough-plus-prediction subquery before
+    # the remaining passes, so its input query's tables flow through
+    # time-travel, row-access, INFORMATION_SCHEMA, and wildcard expansion
+    # like any other subquery (ADR 0047 / RFC 0002).
+    bq_sql = rewrite_ml_predict(bq_sql, project_id=project_id, catalog=ctx.catalog)
     # Resolve FOR SYSTEM_TIME AS OF before the translator runs.
     bq_sql = rewrite_for_system_time(bq_sql, project_id, ctx.snapshots, ctx.engine)
     # Enforce row access policies before any other rewrite.

@@ -142,10 +142,11 @@ async def test_unsupported_feature_translation_error_surfaces_unwrapped(
     with pytest.raises(UnsupportedFeatureError) as excinfo:
         await _run_single_sql(
             "p",
-            "SELECT * FROM ML.PREDICT(MODEL m, TABLE t)",
+            "SELECT * FROM ML.EVALUATE(MODEL m, TABLE t)",
             None,
             ctx,
             caller=_ANON,
         )
     # The unsupported feature itself is the cause, not some later failure.
-    assert "ML.PREDICT" in str(excinfo.value)
+    # (``ML.PREDICT`` is now intercepted; ``ML.EVALUATE`` stays unsupported.)
+    assert "ML.EVALUATE" in str(excinfo.value)
