@@ -1,0 +1,77 @@
+name: Latest-deps canary
+
+# Early-warning probe for upstream dependency regressions (ADR 0048).
+#
+# Per-PR CI installs from the committed uv.lock, so it is reproducible and
+# cannot turn red because of a new upstream release. The cost of that
+# stability is that drift is invisible until someone bumps the lock. This
+# scheduled job restores the early signal WITHOUT gambling the main branch
+# on it: it resolves every dependency to the latest version the pyproject
+# ranges allow (ignoring the lock) and runs the core suites. It is
+# non-blocking -- it gates no PR -- and on failure it files or updates a
+# single tracking issue so a regression like the sqlglot 30.12.0 break
+# surfaces here, on a schedule, instead of by surprise on unrelated work.
+
+on:
+  schedule:
+    # Mondays 07:00 UTC, an hour after Dependabot's 06:00 sweep.
+    - cron: "0 7 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  # Needed only by the failure-reporting step to file/update the tracking
+  # issue; the test job itself is read-only.
+  issues: write
+
+concurrency:
+  group: latest-deps-canary
+  cancel-in-progress: true
+
+jobs:
+  latest-deps:
+    name: Test against latest unpinned dependencies
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+      - uses: astral-sh/setup-uv@fac544c07dec837d0ccb6301d7b5580bf5edae39 # v8.2.0
+        with:
+          # The canary deliberately wants a fresh resolution, not a cached
+          # one, so it sees newly-published releases promptly.
+          enable-cache: false
+      # ``--upgrade`` resolves every dependency to the newest version its
+      # pyproject range allows, ignoring uv.lock. This is the whole point of
+      # the canary: it must NOT install the locked set.
+      - name: Install latest within ranges
+        run: |
+          uv sync --upgrade --extra dev --extra all --python "3.11"
+          echo "$PWD/.venv/bin" >> "$GITHUB_PATH"
+      - name: Show resolved versions
+        run: uv pip list
+      - uses: ./.github/actions/prewarm-duckdb-extensions
+      - name: Unit + property + integration + conformance
+        run: |
+          pytest tests/unit tests/property tests/integration tests/conformance \
+            -m "unit or property or integration or conformance"
+      - name: File or update tracking issue on failure
+        if: failure()
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          title="Latest-deps canary is failing"
+          body=$(printf '%s\n' \
+            "The scheduled latest-deps canary failed: ${RUN_URL}" \
+            "" \
+            "An upstream release within the project's dependency ranges has" \
+            "likely regressed against the test suite. Per-PR CI is unaffected" \
+            "(it installs from the committed uv.lock), but a future lock bump" \
+            "would pull this in. Investigate the run, and if the upstream fix" \
+            "is not imminent, add a ceiling in pyproject.toml (see ADR 0048).")
+          existing=$(gh issue list --state open --search "${title} in:title" \
+            --json number --jq '.[0].number // empty' 2>/dev/null || true)
+          if [ -n "${existing}" ]; then
+            gh issue comment "${existing}" --body "${body}"
+          else
+            gh issue create --title "${title}" --body "${body}"
+          fi

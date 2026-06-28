@@ -1,6 +1,11 @@
 version: 2
 updates:
-  - package-ecosystem: pip
+  # Root project: the ``uv`` ecosystem reads pyproject.toml and keeps
+  # uv.lock current (ADR 0048). A dependency bump therefore arrives as a
+  # reviewable lockfile PR that runs the full CI gate in isolation, instead
+  # of drifting in via an unpinned resolve. The example/e2e manifests below
+  # stay on their own ecosystems (pip / npm / gomod / maven).
+  - package-ecosystem: uv
     directory: "/"
     schedule:
       interval: weekly

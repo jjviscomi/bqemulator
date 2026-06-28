@@ -57,22 +57,22 @@ jobs:
     timeout-minutes: 45
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
-      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6.3.0
+      - uses: astral-sh/setup-uv@fac544c07dec837d0ccb6301d7b5580bf5edae39 # v8.2.0
         with:
-          # Atheris 3.0.0 supports Python 3.11/3.12/3.13. 3.13 matches
-          # the leading edge of the per-PR matrix in ci.yml; bump to
-          # 3.14 when Atheris ships support. The version is documented
-          # in ADR 0031 §2 (tool choice).
-          python-version: "3.13"
-          cache: pip
+          enable-cache: true
       - name: Install dev deps + atheris
         run: |
-          python -m pip install --upgrade pip
-          pip install -e ".[dev,all]"
-          # Atheris is intentionally NOT a project dev dep — it's
-          # CPython-build-tied and unsupported on the dev-box's 3.14.
-          # Installing it here keeps it in the fuzz-only environment.
-          pip install 'atheris>=3.0'
+          # Atheris 3.1.0 supports Python 3.11/3.12/3.13. 3.13 matches the
+          # leading edge of the per-PR matrix in ci.yml; bump to 3.14 when
+          # Atheris ships support. The version is documented in ADR 0031 §2.
+          uv sync --frozen --extra dev --extra all --python "3.13"
+          echo "$PWD/.venv/bin" >> "$GITHUB_PATH"
+          # Atheris is intentionally NOT a project dep and cannot live in
+          # uv.lock: it is CPython-build-tied with no wheel for the dev-box's
+          # 3.14, so a universal ``uv lock`` (requires-python >=3.11) cannot
+          # resolve it. Pin it to an exact version here instead, bumped
+          # deliberately, so the fuzz environment stays reproducible.
+          uv pip install 'atheris==3.1.0'
       - name: Run SQL translator harness (10 min)
         run: |
           python fuzz/fuzz_sql_translator.py \

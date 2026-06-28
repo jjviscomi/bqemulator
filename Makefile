@@ -21,11 +21,13 @@ SHELL := /bin/bash
 # …$(PATH)`` handling is unreliable (recipes intermittently fall back to
 # the shell interpreter), so each tool is invoked by its absolute venv
 # path directly. ``$(CURDIR)`` keeps it absolute so recipes that ``cd``
-# into subdirectories still resolve it. CI installs into the runner
-# interpreter and has no ``.venv``, so ``VENV_BIN`` is empty there and
-# the bare names resolve exactly as before. Tools that are not pip
-# packages (docker, go, node, npm, mvn, bq, typos, lychee, npx) are
-# invoked by bare name and fall through to the system PATH.
+# into subdirectories still resolve it. ``VENV_BIN`` is empty when no
+# ``.venv`` is present, so the bare names fall through to whatever Python
+# is active; both ``make dev-setup`` and CI create ``.venv`` from the
+# lockfile (ADR 0048), so locally and in CI these resolve to the pinned
+# interpreter. Tools that are not Python packages (docker, go, node, npm,
+# mvn, bq, typos, lychee, npx) are invoked by bare name and fall through
+# to the system PATH.
 VENV_BIN := $(if $(wildcard .venv/bin),$(CURDIR)/.venv/bin/,)
 PYTHON := $(VENV_BIN)python3
 PIP := $(PYTHON) -m pip
@@ -40,6 +42,13 @@ DIFF_COVER := $(VENV_BIN)diff-cover
 MKDOCS := $(VENV_BIN)mkdocs
 PRE_COMMIT := $(VENV_BIN)pre-commit
 UV := uv
+# Interpreter ``make dev-setup`` builds .venv against. Pinned to 3.11 (the
+# floor and the version CI's lint job + mypy's ``python_version`` target
+# use) so ``make verify`` is deterministic locally: it sidesteps both the
+# py3.14 coverage/DuckDB-UDF incompatibility and the mypy-vs-newer-numpy-stub
+# error seen on 3.13/3.14. Override to exercise another supported runtime,
+# e.g. ``make dev-setup PYTHON_VERSION=3.13``.
+PYTHON_VERSION ?= 3.11
 DOCKER_IMAGE := ghcr.io/jjviscomi/bqemulator
 DOCKER_TAG ?= dev
 DOCKER_PLATFORMS ?= linux/amd64,linux/arm64
@@ -56,18 +65,48 @@ help: ## Show this help
 # Environment setup
 # ---------------------------------------------------------------------------
 
+.PHONY: _require-uv
+_require-uv:
+	# Internal guard: dev-setup and lock drive ``uv``, so fail with an
+	# actionable install hint rather than a bare "command not found" on a
+	# fresh machine. One backslash-joined line so it behaves identically
+	# whether each recipe line gets its own shell (GNU Make 3.81 on macOS,
+	# no ``.ONESHELL``) or the recipe runs as one script (Make 4.x on Linux).
+	@command -v $(UV) >/dev/null 2>&1 || { \
+	  printf '%s\n' \
+	    "Error: '$(UV)' is required but was not found on PATH." \
+	    "Install it, then re-run this target:" \
+	    "  pipx install uv        # isolated install (recommended)" \
+	    "  pip install --user uv  # into your Python user site" \
+	    "  docs: https://docs.astral.sh/uv/getting-started/installation/"; \
+	  exit 1; \
+	}
+
 .PHONY: dev-setup
-dev-setup: ## Create .venv, install dependencies and pre-commit hooks
+dev-setup: _require-uv ## Create .venv from the lockfile and install pre-commit hooks
 	# Own the virtualenv so every other target runs against a known,
-	# pinned interpreter (see the tool variables above). Re-running is safe:
-	# the venv is reused and dependencies are re-resolved against the
-	# current pins, which also repairs an env that has drifted below them.
-	test -d .venv || $(PYTHON) -m venv .venv
-	.venv/bin/python -m pip install --upgrade pip
-	.venv/bin/python -m pip install -e ".[dev]"
+	# pinned interpreter (see the tool variables above). ``uv sync --locked``
+	# populates ``.venv`` from ``uv.lock`` and FAILS FAST if the lock is stale
+	# relative to pyproject.toml, so the local environment is the same
+	# reproducible set CI installs (ADR 0048) and never silently re-resolves
+	# or rewrites the lock as a side effect of setup. If this errors because
+	# you changed dependencies, run ``make lock`` first, then re-run.
+	# ``--python $(PYTHON_VERSION)`` pins the interpreter (default 3.11) so
+	# the local toolchain matches CI and ``make verify`` runs clean; override
+	# with ``PYTHON_VERSION=3.13`` to build against another supported runtime.
+	$(UV) sync --locked --extra dev --python "$(PYTHON_VERSION)"
 	.venv/bin/pre-commit install --install-hooks
 	.venv/bin/pre-commit install --hook-type commit-msg
 	@echo "Dev environment ready in .venv. Activate with: source .venv/bin/activate"
+
+.PHONY: lock
+lock: _require-uv ## Re-resolve and rewrite uv.lock after changing deps in pyproject.toml
+	# The only sanctioned way to change the locked set: run this whenever you
+	# edit ``[project] dependencies`` or an ``[project.optional-dependencies]``
+	# extra, then commit the updated ``uv.lock`` alongside the pyproject change.
+	# The lint gate's ``uv lock --check`` rejects a pyproject edit whose lock
+	# was not regenerated (ADR 0048).
+	$(UV) lock
 
 .PHONY: clean
 clean: ## Remove build and test artifacts

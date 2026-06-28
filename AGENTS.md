@@ -125,6 +125,30 @@ grpc_api/ ──┘        + scripting/ + udf/ + versioning/ + types/
   readable tag. Same rationale as the Actions pin: tags are mutable;
   digests are immutable. Dependabot's `docker` ecosystem updater
   bumps both the tag and digest together on each upstream release.
+- **Python dependency pinning.** The published manifest
+  ([`pyproject.toml`](pyproject.toml)) declares **flexible ranges** -- a
+  library must not export exact pins to its consumers. Reproducibility
+  instead lives in a committed lockfile: [`uv.lock`](uv.lock) is the single
+  source of concrete versions. CI installs from it with `uv sync --frozen` and
+  `make dev-setup` with `uv sync --locked` (which additionally fails fast if
+  the lock has drifted from pyproject), so neither can re-resolve or let an
+  upstream release change what a build installs. `dev-setup` pins the
+  interpreter to `PYTHON_VERSION` (default 3.11, matching CI's lint/mypy
+  target) so `make verify` runs clean locally; override it
+  (`make dev-setup PYTHON_VERSION=3.13`) to build against another supported
+  runtime. Changing a dependency is a
+  deliberate two-step: edit `pyproject.toml`, run `make lock` to regenerate
+  `uv.lock`, and commit both -- the lint gate's `uv lock --check` rejects a
+  pyproject edit whose lock was not regenerated. Dependency upgrades arrive
+  only as reviewable lockfile PRs (Dependabot's `uv` ecosystem), each running
+  the full gate in isolation. A scheduled, non-blocking
+  [latest-deps canary](.github/workflows/latest-deps-canary.yml) installs
+  latest-within-ranges to surface upstream regressions early. Same rationale
+  as the Actions and Docker pins, applied to the last surface that still
+  floated. See [ADR 0048](docs/adr/0048-reproducible-builds-lockfile.md).
+  (The release build is the deliberate exception: it builds the published
+  wheel from the ranges, not the lock, because a library artifact must carry
+  ranges.)
 - **Conventional Commits** (`feat:`, `fix:`, `docs:`, `refactor:`,
   `test:`, `chore:`, `build:`, `ci:`, `perf:`, `style:`). Enforced by
   `commitlint`.

@@ -49,9 +49,9 @@ jobs:
     needs: docker-build
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
-      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6.3.0
+      - uses: astral-sh/setup-uv@fac544c07dec837d0ccb6301d7b5580bf5edae39 # v8.2.0
         with:
-          python-version: "3.11"
+          enable-cache: true
       - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
           name: bqemu-image
@@ -60,12 +60,11 @@ jobs:
         run: docker load -i /tmp/bqemu.tar
       - name: Install
         run: |
-          python -m pip install --upgrade pip
-          pip install -e ".[dev,all]"
+          uv sync --frozen --extra dev --extra all --python "3.11"
       - name: Run
         env:
           BQEMU_IMAGE: ghcr.io/jjviscomi/bqemulator:ci-${{ github.sha }}
-        run: pytest tests/e2e/python_client -m e2e
+        run: uv run --no-sync pytest tests/e2e/python_client -m e2e
 
   nodejs-e2e:
     name: E2E — Node.js client
@@ -78,11 +77,11 @@ jobs:
           node-version: "20"
           cache: npm
           cache-dependency-path: tests/e2e/nodejs_client/package-lock.json
-      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6.3.0
+      - uses: astral-sh/setup-uv@fac544c07dec837d0ccb6301d7b5580bf5edae39 # v8.2.0
         with:
-          python-version: "3.11"
+          enable-cache: true
       - name: Install fixture-staging deps
-        run: pip install fastavro pyorc
+        run: uv sync --frozen --extra all --python "3.11"
       - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
           name: bqemu-image
@@ -101,7 +100,7 @@ jobs:
           GCS_DIR="$(mktemp -d -t bqemu-g1-nodejs.XXXXXX)"
           chmod 777 "$GCS_DIR"
           echo "GCS_DIR=$GCS_DIR" >> "$GITHUB_ENV"
-          python scripts/stage_g1_e2e_fixtures.py --root "$GCS_DIR"
+          uv run --no-sync python scripts/stage_g1_e2e_fixtures.py --root "$GCS_DIR"
           docker run -d --name bqemu \
             -p 9050:9050 -p 9060:9060 \
             -v "$GCS_DIR:/var/lib/bqemu-gcs:rw" \
@@ -151,11 +150,11 @@ jobs:
           go-version: "1.25"
           cache: true
           cache-dependency-path: tests/e2e/go_client/go.mod
-      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6.3.0
+      - uses: astral-sh/setup-uv@fac544c07dec837d0ccb6301d7b5580bf5edae39 # v8.2.0
         with:
-          python-version: "3.11"
+          enable-cache: true
       - name: Install fixture-staging deps
-        run: pip install fastavro pyorc
+        run: uv sync --frozen --extra all --python "3.11"
       - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
           name: bqemu-image
@@ -168,7 +167,7 @@ jobs:
           GCS_DIR="$(mktemp -d -t bqemu-g1-go.XXXXXX)"
           chmod 777 "$GCS_DIR"
           echo "GCS_DIR=$GCS_DIR" >> "$GITHUB_ENV"
-          python scripts/stage_g1_e2e_fixtures.py --root "$GCS_DIR"
+          uv run --no-sync python scripts/stage_g1_e2e_fixtures.py --root "$GCS_DIR"
           docker run -d --name bqemu \
             -p 9050:9050 -p 9060:9060 \
             -v "$GCS_DIR:/var/lib/bqemu-gcs:rw" \
@@ -211,11 +210,11 @@ jobs:
           distribution: temurin
           java-version: "17"
           cache: maven
-      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6.3.0
+      - uses: astral-sh/setup-uv@fac544c07dec837d0ccb6301d7b5580bf5edae39 # v8.2.0
         with:
-          python-version: "3.11"
+          enable-cache: true
       - name: Install fixture-staging deps
-        run: pip install fastavro pyorc
+        run: uv sync --frozen --extra all --python "3.11"
       - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
           name: bqemu-image
@@ -228,7 +227,7 @@ jobs:
           GCS_DIR="$(mktemp -d -t bqemu-g1-java.XXXXXX)"
           chmod 777 "$GCS_DIR"
           echo "GCS_DIR=$GCS_DIR" >> "$GITHUB_ENV"
-          python scripts/stage_g1_e2e_fixtures.py --root "$GCS_DIR"
+          uv run --no-sync python scripts/stage_g1_e2e_fixtures.py --root "$GCS_DIR"
           docker run -d --name bqemu \
             -p 9050:9050 -p 9060:9060 \
             -v "$GCS_DIR:/var/lib/bqemu-gcs:rw" \
@@ -273,9 +272,9 @@ jobs:
     needs: docker-build
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
-      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6.3.0
+      - uses: astral-sh/setup-uv@fac544c07dec837d0ccb6301d7b5580bf5edae39 # v8.2.0
         with:
-          python-version: "3.11"
+          enable-cache: true
       - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
           name: bqemu-image
@@ -296,9 +295,8 @@ jobs:
           bq version
       - name: Install bqemulator (Python + testcontainers)
         run: |
-          python -m pip install --upgrade pip
-          pip install -e ".[dev,all]"
+          uv sync --frozen --extra dev --extra all --python "3.11"
       - name: Run
         env:
           BQEMU_IMAGE: ghcr.io/jjviscomi/bqemulator:ci-${{ github.sha }}
-        run: pytest tests/e2e/bq_cli_client -m e2e
+        run: uv run --no-sync pytest tests/e2e/bq_cli_client -m e2e
