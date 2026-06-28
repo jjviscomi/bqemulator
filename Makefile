@@ -58,8 +58,25 @@ help: ## Show this help
 # Environment setup
 # ---------------------------------------------------------------------------
 
+.PHONY: _require-uv
+_require-uv:
+	# Internal guard: dev-setup and lock drive ``uv``, so fail with an
+	# actionable install hint rather than a bare "command not found" on a
+	# fresh machine. One backslash-joined line so it behaves identically
+	# whether each recipe line gets its own shell (GNU Make 3.81 on macOS,
+	# no ``.ONESHELL``) or the recipe runs as one script (Make 4.x on Linux).
+	@command -v $(UV) >/dev/null 2>&1 || { \
+	  printf '%s\n' \
+	    "Error: '$(UV)' is required but was not found on PATH." \
+	    "Install it, then re-run this target:" \
+	    "  pipx install uv        # isolated install (recommended)" \
+	    "  pip install --user uv  # into your Python user site" \
+	    "  docs: https://docs.astral.sh/uv/getting-started/installation/"; \
+	  exit 1; \
+	}
+
 .PHONY: dev-setup
-dev-setup: ## Create .venv from the lockfile and install pre-commit hooks
+dev-setup: _require-uv ## Create .venv from the lockfile and install pre-commit hooks
 	# Own the virtualenv so every other target runs against a known,
 	# pinned interpreter (see the tool variables above). ``uv sync --locked``
 	# populates ``.venv`` from ``uv.lock`` and FAILS FAST if the lock is stale
@@ -73,7 +90,7 @@ dev-setup: ## Create .venv from the lockfile and install pre-commit hooks
 	@echo "Dev environment ready in .venv. Activate with: source .venv/bin/activate"
 
 .PHONY: lock
-lock: ## Re-resolve and rewrite uv.lock after changing deps in pyproject.toml
+lock: _require-uv ## Re-resolve and rewrite uv.lock after changing deps in pyproject.toml
 	# The only sanctioned way to change the locked set: run this whenever you
 	# edit ``[project] dependencies`` or an ``[project.optional-dependencies]``
 	# extra, then commit the updated ``uv.lock`` alongside the pyproject change.
