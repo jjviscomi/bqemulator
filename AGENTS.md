@@ -129,11 +129,15 @@ grpc_api/ ──┘        + scripting/ + udf/ + versioning/ + types/
   ([`pyproject.toml`](pyproject.toml)) declares **flexible ranges** -- a
   library must not export exact pins to its consumers. Reproducibility
   instead lives in a committed lockfile: [`uv.lock`](uv.lock) is the single
-  source of concrete versions, and CI plus `make dev-setup` install from it
-  frozen (`uv sync --frozen`), so an upstream release can never change what
-  a build resolves. Dependency upgrades arrive only as reviewable lockfile
-  PRs (Dependabot's `uv` ecosystem), each running the full gate in
-  isolation. A scheduled, non-blocking
+  source of concrete versions. CI installs from it with `uv sync --frozen` and
+  `make dev-setup` with `uv sync --locked` (which additionally fails fast if
+  the lock has drifted from pyproject), so neither can re-resolve or let an
+  upstream release change what a build installs. Changing a dependency is a
+  deliberate two-step: edit `pyproject.toml`, run `make lock` to regenerate
+  `uv.lock`, and commit both -- the lint gate's `uv lock --check` rejects a
+  pyproject edit whose lock was not regenerated. Dependency upgrades arrive
+  only as reviewable lockfile PRs (Dependabot's `uv` ecosystem), each running
+  the full gate in isolation. A scheduled, non-blocking
   [latest-deps canary](.github/workflows/latest-deps-canary.yml) installs
   latest-within-ranges to surface upstream regressions early. Same rationale
   as the Actions and Docker pins, applied to the last surface that still

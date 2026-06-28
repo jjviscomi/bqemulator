@@ -61,16 +61,25 @@ help: ## Show this help
 .PHONY: dev-setup
 dev-setup: ## Create .venv from the lockfile and install pre-commit hooks
 	# Own the virtualenv so every other target runs against a known,
-	# pinned interpreter (see the tool variables above). ``uv sync`` creates
-	# and populates ``.venv`` from ``uv.lock`` so the local environment
-	# matches CI exactly (ADR 0048); ``--extra dev`` pulls the full dev
-	# toolchain. Re-running is safe: an unchanged lock reinstalls the same
-	# versions, and editing pyproject.toml re-resolves and rewrites the lock,
-	# which also repairs an env that has drifted.
-	$(UV) sync --extra dev
+	# pinned interpreter (see the tool variables above). ``uv sync --locked``
+	# populates ``.venv`` from ``uv.lock`` and FAILS FAST if the lock is stale
+	# relative to pyproject.toml, so the local environment is the same
+	# reproducible set CI installs (ADR 0048) and never silently re-resolves
+	# or rewrites the lock as a side effect of setup. If this errors because
+	# you changed dependencies, run ``make lock`` first, then re-run.
+	$(UV) sync --locked --extra dev
 	.venv/bin/pre-commit install --install-hooks
 	.venv/bin/pre-commit install --hook-type commit-msg
 	@echo "Dev environment ready in .venv. Activate with: source .venv/bin/activate"
+
+.PHONY: lock
+lock: ## Re-resolve and rewrite uv.lock after changing deps in pyproject.toml
+	# The only sanctioned way to change the locked set: run this whenever you
+	# edit ``[project] dependencies`` or an ``[project.optional-dependencies]``
+	# extra, then commit the updated ``uv.lock`` alongside the pyproject change.
+	# The lint gate's ``uv lock --check`` rejects a pyproject edit whose lock
+	# was not regenerated (ADR 0048).
+	$(UV) lock
 
 .PHONY: clean
 clean: ## Remove build and test artifacts

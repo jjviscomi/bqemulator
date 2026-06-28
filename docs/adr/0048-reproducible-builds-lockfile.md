@@ -1,6 +1,6 @@
 # ADR 0048: Reproducible builds via a committed lockfile, flexible library ranges, and a latest-deps canary
 
-- **Status**: Proposed
+- **Status**: Accepted
 
 ## Context
 
@@ -111,7 +111,8 @@ sqlglot 30.12.0 should be caught and contained.
   (`uv`) in the toolchain, and slightly more ceremony per upgrade (a lockfile
   PR rather than an implicit resolve). These are the same trade-offs the
   project already accepted for SHA-pinned Actions and digest-pinned images.
-- Implementation (adopting the lock tooling, wiring CI to install frozen,
-  adding the canary workflow, updating `dependabot.yml`, the Makefile, and the
-  contributor docs) is a self-contained follow-up and does not block feature
-  work.
+- The implementation (adopting the lock tooling, wiring CI to install frozen,
+  the latest-deps canary workflow, `dependabot.yml`, the Makefile, and the
+  contributor docs) lands together with this ADR as a single self-contained
+  change. It touches build and CI configuration only, not the library's
+  runtime behaviour, so it carries no feature risk.
