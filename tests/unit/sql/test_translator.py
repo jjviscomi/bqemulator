@@ -99,8 +99,14 @@ class TestErrorHandling:
         assert isinstance(result, Err)
 
     def test_bqml_detected_as_unsupported(self, translator: SQLTranslator) -> None:
+        """A still-unsupported ``ML.*`` construct is keyword-rejected as 501.
+
+        ``ML.PREDICT`` is no longer rejected here: it is intercepted before
+        translation by the ``ml_predict`` rewriter (ADR 0047 / RFC 0002).
+        ``ML.EVALUATE`` and the other ``ML.*`` constructs remain unsupported.
+        """
         result = translator.translate(
-            "SELECT * FROM ML.PREDICT(MODEL my_model, TABLE t)",
+            "SELECT * FROM ML.EVALUATE(MODEL my_model, TABLE t)",
         )
         assert isinstance(result, Err)
         assert isinstance(result.error, UnsupportedFeatureError)
