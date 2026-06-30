@@ -111,6 +111,13 @@ class TestRewriteShape:
         assert "AS predicted FROM" in out
         assert "predicted_" not in out
 
+    def test_label_name_requiring_quoting_is_escaped(self) -> None:
+        """A label name with special characters is safely quoted in the alias."""
+        catalog = _catalog(label_columns=({"name": "my col", "type": {"typeKind": "FLOAT64"}},))
+        out = _rewrite("SELECT * FROM ML.PREDICT(MODEL ds.m, (SELECT 1 AS x))", catalog)
+        assert "`predicted_my col`" in out
+        assert not _has_predict_node(out)
+
     def test_nested_ml_predict_both_levels_rewritten(self) -> None:
         """A nested ``ML.PREDICT`` (inside another's input query) is fully rewritten.
 

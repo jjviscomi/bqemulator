@@ -17,11 +17,11 @@ special handling. Because it runs inside the shared
 chain, standalone and scripted statements share one code path, exactly
 as ``EXPORT DATA`` and ``CREATE MODEL`` do.
 
-Scope (RFC 0002): the regression-shaped default ``predicted_<label>``
-(``FLOAT64``) per label column. Per-model-task output shapes
-(classifier probability arrays, k-means ``centroid_id``), exact column
-order, and the recorded prediction-value divergence are resolved by
-conformance recording in a later phase, not here.
+Scope (RFC 0002): this implements the regression-shaped default, one
+``predicted_<label>`` (``FLOAT64``) column per label column. Per-model-task
+output shapes (classifier probability arrays, k-means ``centroid_id``), exact
+column order, and prediction-value accuracy are out of scope: the values are
+deterministic stubs, never real predictions.
 """
 
 from __future__ import annotations
@@ -41,6 +41,7 @@ if TYPE_CHECKING:
 #: Constant across every row, so it can never be mistaken for genuine,
 #: row-varying model output; documented as a stub wherever it appears.
 _STUB_PREDICTION = "CAST(0.0 AS FLOAT64)"
+_STUB_NODE = sqlglot.parse_one(_STUB_PREDICTION, read="bigquery")
 
 #: Alias given to the wrapped input query inside the synthesised subquery.
 _INPUT_ALIAS = "_ml_predict_input"
@@ -105,9 +106,17 @@ def _predict_subquery(
     catalog: CatalogRepository,
     alias_name: str,
 ) -> exp.Subquery:
-    """Build the passthrough-plus-prediction subquery replacing one ``Predict``."""
+    """Build the passthrough-plus-prediction subquery replacing one ``Predict``.
+
+    Prediction columns are built as AST nodes with :func:`exp.to_identifier`
+    aliases so a label name needing quoting (spaces, punctuation) is escaped
+    safely rather than interpolated raw into the SQL text.
+    """
     model = _resolve_model(node.this, project_id=project_id, catalog=catalog)
-    projections = ["*", *(f"{_STUB_PREDICTION} AS {name}" for name in _predicted_columns(model))]
+    projections: list[exp.Expression | str] = ["*"]
+    projections.extend(
+        exp.alias_(_STUB_NODE.copy(), exp.to_identifier(name)) for name in _predicted_columns(model)
+    )
     select = exp.select(*projections).from_(_input_from_clause(node.args.get("expression")))
     return select.subquery(alias=alias_name) if alias_name else select.subquery()
 
