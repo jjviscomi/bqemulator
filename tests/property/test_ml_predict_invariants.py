@@ -15,12 +15,15 @@ import re
 
 from hypothesis import given
 from hypothesis import strategies as st
+import pytest
 import sqlglot
 from sqlglot import exp
 
 from bqemulator.catalog.memory_repository import MemoryCatalogRepository
 from bqemulator.catalog.models import DatasetMeta, ModelMeta
 from bqemulator.sql.rewriter.ml_predict import rewrite_ml_predict
+
+pytestmark = pytest.mark.property
 
 NOW = datetime(2026, 5, 16, tzinfo=UTC)
 
