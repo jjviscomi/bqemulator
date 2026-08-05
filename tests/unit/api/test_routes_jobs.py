@@ -161,13 +161,15 @@ class TestJobsInsertEndpoint:
         assert r.json()["status"]["state"] == "DONE"
 
     def test_unsupported_bqml_returns_501(self, app: FastAPI) -> None:
+        # ``ML.PREDICT`` is now intercepted (ADR 0047 / RFC 0002); ``ML.EVALUATE``
+        # is still out of scope and must surface BigQuery's 501.
         c = TestClient(app, raise_server_exceptions=False)
         r = c.post(
             "/bigquery/v2/projects/p/jobs",
             json={
                 "configuration": {
                     "query": {
-                        "query": "SELECT * FROM ML.PREDICT(MODEL m, TABLE t)",
+                        "query": "SELECT * FROM ML.EVALUATE(MODEL m, TABLE t)",
                     },
                 },
             },
