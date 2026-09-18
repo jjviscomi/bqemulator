@@ -104,6 +104,7 @@ def _detect_rewrite_needs(upper_sql: str) -> dict[str, bool]:
         "timestamp_micros_millis": (
             "TIMESTAMP_MICROS" in upper_sql or "TIMESTAMP_MILLIS" in upper_sql
         ),
+        "date_trunc_week_monday": "WEEK" in upper_sql and "MONDAY" in upper_sql,
     }
 
 
@@ -257,6 +258,87 @@ def _build_week_saturday(operand: exp.Expression) -> exp.Expression:
     return exp.Cast(this=date_add, to=exp.DataType.build("DATE"))
 
 
+def _rewrite_date_trunc_week_monday(tree: exp.Expression) -> bool:
+    """Replace every ``DATE_TRUNC(x, WEEK(MONDAY))`` with Monday-start date math.
+
+    Only ``exp.DateTrunc`` — never ``exp.TimestampTrunc`` /
+    ``exp.DatetimeTrunc`` — is a candidate: this pass's output is
+    always cast to ``DATE`` (matching ``DATE_TRUNC``'s own return
+    type), and forcing that cast onto a ``TIMESTAMP_TRUNC`` /
+    ``DATETIME_TRUNC`` call would both change its result type and
+    drop any time-zone argument. Those calls need no rewrite here —
+    DuckDB's own ``TIMESTAMP_TRUNC(..., 'WEEK')`` is already
+    Monday-start by default, the same as BigQuery's explicit
+    ``WEEK(MONDAY)``.
+
+    BigQuery's *default* ``WEEK`` truncation is Sunday-start;
+    ``MONDAY`` must be named explicitly to opt into Monday-start.
+    SQLGlot's BigQuery generator drops a bare/``WEEK(SUNDAY)`` day
+    qualifier as redundant with the default whenever the query is
+    round-tripped back through BigQuery text — and this module's own
+    :func:`_rewrite_date_function_results` forces exactly such a
+    round-trip whenever ``DATE_ADD``/``DATE_SUB``/``DATE_FROM_UNIX_DATE``
+    appears *anywhere else* in the same query, even in another
+    statement's CTE. ``WEEK(MONDAY)`` survives that round-trip intact,
+    but DuckDB's own ``DATE_TRUNC('WEEK', x)`` is *also* Monday-start,
+    so the cross-dialect transpile of a round-trip-collapsed
+    default/Sunday call and an untouched ``WEEK(MONDAY)`` call land on
+    the exact same DuckDB shape: ``TimestampTrunc(this=x, unit='WEEK')``.
+    At that point, :class:`bqemulator.sql.rules.iso_date_parts.DateTruncWeekRule`
+    — the safety net that adds the Sunday-start day math BigQuery's
+    *default* WEEK needs over a schema-typed DATE column — cannot tell
+    the two apart, and would apply its Sunday shift to a genuine
+    ``WEEK(MONDAY)`` call too.
+
+    Rewriting the explicit MONDAY form here, on the original BigQuery
+    AST where the day-of-week is still an unambiguous ``exp.WeekStart``
+    node, into equivalent ``DATE_SUB``/``EXTRACT``/``MOD`` arithmetic
+    removes the ambiguity at the source: there is no bare-``WEEK``
+    ``DATE_TRUNC`` call left for ``DateTruncWeekRule`` to (mis)match.
+    """
+    modified = False
+    for node in list(tree.find_all(exp.DateTrunc)):
+        unit = node.args.get("unit")
+        if not isinstance(unit, exp.WeekStart):
+            continue
+        if _name(unit.this).upper() != "MONDAY":
+            continue
+        operand = node.this
+        if operand is None:
+            continue
+        node.replace(_build_week_monday(operand))
+        modified = True
+    return modified
+
+
+def _build_week_monday(operand: exp.Expression) -> exp.Expression:
+    """Construct ``CAST(DATE_SUB(operand, INTERVAL MOD(DAYOFWEEK(operand) + 5, 7) DAY) AS DATE)``.
+
+    BigQuery's ``DAYOFWEEK`` is 1 (Sunday) through 7 (Saturday); the
+    number of days since the most recent Monday is
+    ``(DAYOFWEEK + 5) MOD 7`` — Monday itself gives 0, Sunday gives 6.
+    Passed as a plain expression rather than wrapped in its own
+    ``exp.Interval``, matching :func:`_build_week_saturday`'s reasoning
+    (an inner ``exp.Interval`` would double up after a round-trip
+    through the BigQuery serializer).
+
+    The outer ``CAST(... AS DATE)`` matches BigQuery's ``DATE_TRUNC``
+    return type; without it the ``date - INTERVAL`` widens to
+    ``TIMESTAMP`` after the SQLGlot transpile.
+    """
+    extract_dow = exp.Extract(this=exp.Var(this="DAYOFWEEK"), expression=operand.copy())
+    days_since_monday = exp.Mod(
+        this=exp.Paren(this=exp.Add(this=extract_dow, expression=exp.Literal.number(5))),
+        expression=exp.Literal.number(7),
+    )
+    date_sub = exp.DateSub(
+        this=operand.copy(),
+        expression=days_since_monday,
+        unit=exp.Var(this="DAY"),
+    )
+    return exp.Cast(this=date_sub, to=exp.DataType.build("DATE"))
+
+
 def _name(node: exp.Expression) -> str:
     """Return *node*'s text content (handles ``Var`` / ``Literal`` / ``Identifier``)."""
     if isinstance(node, exp.Literal):
@@ -265,10 +347,14 @@ def _name(node: exp.Expression) -> str:
 
 
 #: Ordered dispatch of (needs-key, rewriter) pairs. Matches the order
-#: of ``_detect_rewrite_needs``'s output keys. Order is presentation-
-#: only — each rewriter targets a distinct AST shape so ordering does
-#: not affect the outcome.
+#: of ``_detect_rewrite_needs``'s output keys. ``date_trunc_week_monday``
+#: must run *before* ``date_cast``: it removes every ``WEEK(MONDAY)``
+#: node so the later BigQuery-text round-trip forced by ``date_cast``
+#: (when both are needed in the same query) never has a chance to
+#: collapse it into the ambiguous bare form. The rest target distinct
+#: AST shapes so their relative order does not matter.
 _DATETIME_REWRITE_PASSES: tuple[tuple[str, Callable[[exp.Expression], bool]], ...] = (
+    ("date_trunc_week_monday", _rewrite_date_trunc_week_monday),
     ("last_day_week", _rewrite_last_day_week),
     ("date_cast", _rewrite_date_function_results),
     ("timestamp_micros_millis", _rewrite_timestamp_micros_millis),

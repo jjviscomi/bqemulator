@@ -180,6 +180,106 @@ class TestLastDayWeek:
         assert row == (_dt.date(2024, 2, 29),)
 
 
+class TestDateTruncWeekMonday:
+    """``DATE_TRUNC(x, WEEK(MONDAY))`` truncates to the most recent Monday.
+
+    BigQuery's *default* ``WEEK`` truncation is Sunday-start;
+    ``MONDAY`` must be named explicitly to opt into Monday-start.
+    SQLGlot's BigQuery generator drops a bare/``WEEK(SUNDAY)`` day
+    qualifier as redundant with the default whenever the query is
+    round-tripped back through BigQuery text — and this module's own
+    ``_rewrite_date_function_results`` forces exactly such a
+    round-trip whenever ``DATE_ADD``/``DATE_SUB``/``DATE_FROM_UNIX_DATE``
+    appears *anywhere else* in the same query. ``WEEK(MONDAY)``
+    survives that round-trip intact, but DuckDB's own
+    ``DATE_TRUNC('WEEK', x)`` is *also* Monday-start, so the
+    cross-dialect transpile of a round-trip-collapsed default/Sunday
+    call and an untouched ``WEEK(MONDAY)`` call land on the exact same
+    DuckDB shape — indistinguishable, at that point, to
+    ``bqemulator.sql.rules.iso_date_parts.DateTruncWeekRule`` (the
+    safety net that adds the Sunday-start day math BigQuery's
+    *default* WEEK needs over a schema-typed DATE column). This
+    rewrite removes ``WEEK(MONDAY)`` before the round-trip can
+    collapse the ambiguity into that shape, so ``DateTruncWeekRule``
+    never sees a genuine ``WEEK(MONDAY)`` call to (mis)match. Only
+    ``DATE_TRUNC`` is a candidate — ``TIMESTAMP_TRUNC`` /
+    ``DATETIME_TRUNC`` need no such rewrite; see
+    ``_rewrite_date_trunc_week_monday``'s own docstring.
+    """
+
+    def test_tuesday_returns_previous_monday(
+        self, t: SQLTranslator, con: duckdb.DuckDBPyConnection
+    ) -> None:
+        # 2026-09-15 is a Tuesday; the Monday on/before it is 2026-09-14.
+        row = _execute(t, con, "SELECT DATE_TRUNC(DATE '2026-09-15', WEEK(MONDAY)) AS d")
+        assert row == (_dt.date(2026, 9, 14),)
+
+    def test_monday_returns_self(self, t: SQLTranslator, con: duckdb.DuckDBPyConnection) -> None:
+        row = _execute(t, con, "SELECT DATE_TRUNC(DATE '2026-09-14', WEEK(MONDAY)) AS d")
+        assert row == (_dt.date(2026, 9, 14),)
+
+    def test_sunday_returns_previous_monday(
+        self, t: SQLTranslator, con: duckdb.DuckDBPyConnection
+    ) -> None:
+        # 2026-09-13 is a Sunday; it still belongs to the Monday-start
+        # week beginning 2026-09-07, *not* 2026-09-14.
+        row = _execute(t, con, "SELECT DATE_TRUNC(DATE '2026-09-13', WEEK(MONDAY)) AS d")
+        assert row == (_dt.date(2026, 9, 7),)
+
+    def test_returns_date_type(self, t: SQLTranslator, con: duckdb.DuckDBPyConnection) -> None:
+        col_type = _column_type(t, con, "SELECT DATE_TRUNC(DATE '2026-09-15', WEEK(MONDAY)) AS d")
+        assert col_type == "DATE"
+
+    def test_survives_date_add_round_trip_in_same_query(
+        self, t: SQLTranslator, con: duckdb.DuckDBPyConnection
+    ) -> None:
+        """A co-occurring ``DATE_ADD`` in the same query must not corrupt WEEK(MONDAY).
+
+        ``DATE_ADD`` anywhere in the query forces a BigQuery-text
+        round-trip that collapses a co-occurring ``WEEK(SUNDAY)`` to
+        the ambiguous bare ``WEEK`` form; this rewrite removes
+        ``WEEK(MONDAY)`` before that round-trip can make it
+        indistinguishable from the collapsed default.
+        """
+        row = _execute(
+            t,
+            con,
+            "SELECT DATE_TRUNC(DATE '2026-09-15', WEEK(MONDAY)) AS monday_start, "
+            "DATE_ADD(DATE '2026-09-15', INTERVAL 1 DAY) AS unrelated",
+        )
+        assert row == (_dt.date(2026, 9, 14), _dt.date(2026, 9, 16))
+
+    def test_week_sunday_unaffected_when_monday_also_present(
+        self, t: SQLTranslator, con: duckdb.DuckDBPyConnection
+    ) -> None:
+        """WEEK(SUNDAY) and WEEK(MONDAY) in the same query resolve independently."""
+        row = _execute(
+            t,
+            con,
+            "SELECT DATE_TRUNC(DATE '2026-09-15', WEEK(MONDAY)) AS monday_start, "
+            "DATE_TRUNC(DATE '2026-09-15', WEEK(SUNDAY)) AS sunday_start",
+        )
+        assert row == (_dt.date(2026, 9, 14), _dt.date(2026, 9, 13))
+
+    def test_timestamp_trunc_week_monday_is_not_rewritten(self) -> None:
+        """``TIMESTAMP_TRUNC(x, WEEK(MONDAY))`` is left untouched by this pass.
+
+        This rewrite's output is always cast to ``DATE`` — the return
+        type ``DATE_TRUNC`` needs. Applying that same cast to a
+        ``TIMESTAMP_TRUNC`` call would silently change its result type
+        (and drop any time-zone argument), so only ``exp.DateTrunc`` is
+        a candidate; ``TIMESTAMP_TRUNC`` / ``DATETIME_TRUNC`` calls pass
+        through this module unchanged.
+        """
+        sql = "SELECT TIMESTAMP_TRUNC(ts, WEEK(MONDAY)) AS ts FROM t"
+        assert rewrite_datetime_helpers(sql) == sql
+
+    def test_datetime_trunc_week_monday_is_not_rewritten(self) -> None:
+        """Same guarantee as above, for ``DATETIME_TRUNC``."""
+        sql = "SELECT DATETIME_TRUNC(dt, WEEK(MONDAY)) AS dt FROM t"
+        assert rewrite_datetime_helpers(sql) == sql
+
+
 class TestParseFailureTolerance:
     """Parse failures are tolerated — the input is returned unchanged."""
 
