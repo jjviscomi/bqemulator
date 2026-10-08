@@ -12,9 +12,12 @@ unrelated string literal.
 
 from __future__ import annotations
 
+import duckdb
 import pytest
 
+from bqemulator.domain.result import Ok
 from bqemulator.sql.rewriter.safe_helpers import rewrite_safe_helpers
+from bqemulator.sql.translator import SQLTranslator
 
 pytestmark = pytest.mark.unit
 
@@ -68,3 +71,60 @@ class TestNoModification:
         out = rewrite_safe_helpers(sql)
         # The string is unchanged (returned via the no-modification path).
         assert out == sql
+
+
+class TestNestedAndSubscriptedSafeCalls:
+    """Nested and subscripted ``SAFE.X(...)`` calls leave no ``SAFE.`` behind."""
+
+    @pytest.mark.parametrize(
+        "sql",
+        [
+            "SELECT SAFE.PARSE_JSON(SAFE.STRING(SAFE.PARSE_JSON('1')))",
+            "SELECT SAFE.PARSE_JSON('{\"k\": 1}')['k']",
+            "SELECT safe.parse_json('{\"k\": 1}')['k']",
+            "SELECT JSON_KEYS(SAFE.PARSE_JSON(SAFE.STRING(SAFE.PARSE_JSON('1'))))",
+        ],
+    )
+    def test_every_safe_prefix_rewritten(self, sql: str) -> None:
+        """Each ``SAFE.`` call becomes a ``TRY(...)`` wrapper."""
+        out = rewrite_safe_helpers(sql).upper()
+        assert "SAFE." not in out
+        assert out.count("TRY(") == sql.upper().count("SAFE.")
+
+    def test_non_safe_dot_call_left_alone(self) -> None:
+        """A dotted call on another qualifier is not mistaken for ``SAFE.``."""
+        sql = "SELECT SAFE.LN(1), proj.fn(1)['k'], proj.fn(1).k"
+        out = rewrite_safe_helpers(sql)
+        assert "proj.fn(1)['k']" in out
+        assert "proj.fn(1).k" in out
+        assert out.upper().count("TRY(") == 1
+
+
+class TestSafeCallsExecuteOnDuckDB:
+    """The rewritten SQL runs on DuckDB and matches BigQuery's result."""
+
+    @pytest.mark.parametrize(
+        ("sql", "expected"),
+        [
+            # SAFE.STRING of a JSON string yields the unwrapped text, which
+            # is itself JSON — the double-encoded payload shape.
+            (
+                "SELECT TO_JSON_STRING(SAFE.PARSE_JSON(SAFE.STRING("
+                'SAFE.PARSE_JSON(\'"{\\\\"k\\\\":1}"\'))))',
+                '{"k":1}',
+            ),
+            ("SELECT TO_JSON_STRING(SAFE.PARSE_JSON('{\"k\": 1}')['k'])", "1"),
+            ("SELECT SAFE.PARSE_JSON('not json') IS NULL", True),
+        ],
+    )
+    def test_result(self, sql: str, expected: object) -> None:
+        """Translate, execute, and compare the single cell."""
+        result = SQLTranslator().translate(sql)
+        assert isinstance(result, Ok), result
+        conn = duckdb.connect()
+        try:
+            row = conn.execute(result.value).fetchone()
+        finally:
+            conn.close()
+        assert row is not None
+        assert row[0] == expected
