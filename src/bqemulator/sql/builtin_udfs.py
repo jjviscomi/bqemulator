@@ -25,6 +25,7 @@ Helpers are registered exactly once per :class:`DuckDBEngine`; concurrent
 from __future__ import annotations
 
 import base64
+import contextlib
 import datetime as _datetime
 from decimal import Decimal, InvalidOperation
 import hashlib
@@ -799,6 +800,9 @@ def bqemu_sha512(value: str | None) -> bytes | None:
 #: BigQuery's ``%Ez``. For STRPTIME no post-processing is needed because
 #: Python's ``%z`` already accepts both forms.
 _EZ_SPECIFIER_RE = re.compile(r"%Ez")
+#: BigQuery's fractional-seconds specifiers: ``%E<n>S`` (seconds with ``n``
+#: fractional digits) and ``%E*S`` (seconds with full fractional precision).
+_E_SECONDS_SPECIFIER_RE = re.compile(r"%E(\d|\*)S")
 #: BigQuery's ``%Z`` named-zone specifier on input — used by PARSE_TIMESTAMP.
 #: Real BigQuery validates the trailing zone token against the IANA TZ
 #: database and rejects abbreviations like ``IST`` / ``EST`` / ``PST`` that
@@ -886,13 +890,40 @@ def bqemu_parse_timestamp_iso(
     ``EST`` / ``PST`` that ambiguously map to multiple IANA zones —
     matching BigQuery's documented behaviour).
 
+    The ``%E<n>S`` / ``%E*S`` fractional-seconds specifiers are routed
+    here too, since DuckDB's STRPTIME rejects the whole ``%E#`` family.
+
     Returns a *naive* UTC datetime so the caller's
     ``timezone('UTC', …)`` wrap (per :class:`ParseTimestampStrictRule`)
     surfaces the column as ``TIMESTAMP`` on the wire.
     """
     if fmt is None or value is None:
         return None
-    py_fmt = _EZ_SPECIFIER_RE.sub("%z", fmt)
+    *fallbacks, py_fmt = _strptime_formats(_EZ_SPECIFIER_RE.sub("%z", fmt))
+    for candidate in fallbacks:
+        with contextlib.suppress(ValueError):
+            return _strptime_naive_utc(candidate, value)
+    return _strptime_naive_utc(py_fmt, value)
+
+
+def _strptime_formats(py_fmt: str) -> list[str]:
+    """Expand BigQuery's ``%E<n>S`` / ``%E*S`` into Python ``strptime`` formats.
+
+    ``%E0S`` becomes ``%S`` and ``%E<n>S`` becomes ``%S.%f``. ``%E*S``
+    (full precision) also matches a value with no fractional part, so it
+    yields ``%S.%f`` first and a plain ``%S`` fallback second.
+    """
+    with_fraction = _E_SECONDS_SPECIFIER_RE.sub(
+        lambda m: "%S" if m.group(1) == "0" else "%S.%f",
+        py_fmt,
+    )
+    if "%E*S" not in py_fmt:
+        return [with_fraction]
+    return [with_fraction, _E_SECONDS_SPECIFIER_RE.sub("%S", py_fmt)]
+
+
+def _strptime_naive_utc(py_fmt: str, value: str) -> _datetime.datetime:
+    """Parse ``value`` with a Python ``strptime`` format; return naive UTC."""
     py_fmt, value, parsed_zone = _extract_z_zone(py_fmt, value)
     try:
         # DTZ007 is deliberately silenced here: the zone token has been

@@ -22,16 +22,21 @@ The rewriter short-circuits when no ``FORMAT_TIMESTAMP`` /
 
 from __future__ import annotations
 
+import re
+
 import sqlglot
 from sqlglot import exp
 
+#: BigQuery's ``%E<n>S`` / ``%E*S`` fractional-seconds specifiers.
+_E_SECONDS_SPECIFIER_RE = re.compile(r"%E(\d|\*)S")
+
 
 def _format_has_ez_or_z(fmt_node: exp.Expression | None) -> bool:
-    """Return True when ``fmt_node`` is a literal containing ``%Ez`` or ``%Z``."""
+    """Return True when ``fmt_node`` is a literal with ``%Ez``, ``%Z`` or ``%E<n>S`` / ``%E*S``."""
     if not isinstance(fmt_node, exp.Literal) or not fmt_node.is_string:
         return False
     text = str(fmt_node.this)
-    return "%Ez" in text or "%Z" in text
+    return "%Ez" in text or "%Z" in text or _E_SECONDS_SPECIFIER_RE.search(text) is not None
 
 
 def rewrite_timestamp_iso_helpers(bq_sql: str) -> str:
@@ -43,9 +48,10 @@ def rewrite_timestamp_iso_helpers(bq_sql: str) -> str:
       (BigQuery's optional 3rd arg, which SQLGlot drops on translate),
       OR the format string contains a ``%E`` specifier (DuckDB STRFTIME
       cannot parse the ``%E#`` extension family).
-    * ``PARSE_TIMESTAMP(fmt, value)`` carries ``%Ez`` (DuckDB STRPTIME
-      cannot parse it) or ``%Z`` (DuckDB silently accepts ambiguous
-      zone abbreviations real BigQuery rejects).
+    * ``PARSE_TIMESTAMP(fmt, value)`` carries ``%Ez`` or ``%E<n>S`` /
+      ``%E*S`` (DuckDB STRPTIME cannot parse them) or ``%Z`` (DuckDB
+      silently accepts ambiguous zone abbreviations real BigQuery
+      rejects).
 
     Returns the input unchanged when neither function is referenced.
     """
@@ -111,10 +117,10 @@ def _rewrite_format_timestamp(node: exp.TimeToStr) -> exp.Expression | None:
 def _rewrite_parse_timestamp(node: exp.StrToTime) -> exp.Expression | None:
     """Build the ``timezone('UTC', bqemu_parse_timestamp_iso(...))`` call.
 
-    Triggered when the format carries a BigQuery-only ``%Ez`` or a
-    ``%Z`` named-zone token. The outer ``timezone('UTC', …)`` wrap
-    surfaces the result as ``TIMESTAMP`` on the wire, matching
-    :class:`ParseTimestampUtcRule`.
+    Triggered when the format carries a BigQuery-only ``%Ez`` /
+    ``%E<n>S`` / ``%E*S`` specifier or a ``%Z`` named-zone token. The
+    outer ``timezone('UTC', …)`` wrap surfaces the result as
+    ``TIMESTAMP`` on the wire, matching :class:`ParseTimestampUtcRule`.
     """
     fmt = node.args.get("format")
     if fmt is None or not _format_has_ez_or_z(fmt):

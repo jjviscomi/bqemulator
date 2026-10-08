@@ -11,13 +11,17 @@ from __future__ import annotations
 
 import datetime as _datetime
 
+import duckdb
 import pytest
 
+from bqemulator.domain.result import Ok
 from bqemulator.sql.builtin_udfs import (
     bqemu_farm_fingerprint,
     bqemu_format_timestamp_iso,
     bqemu_parse_timestamp_iso,
+    register_builtin_udfs,
 )
+from bqemulator.sql.translator import SQLTranslator
 
 pytestmark = pytest.mark.unit
 
@@ -153,3 +157,47 @@ class TestFarmFingerprintLengthBranches:
 
     def test_passes_through_none(self) -> None:
         assert bqemu_farm_fingerprint(None) is None
+
+
+class TestParseTimestampFractionalSeconds:
+    """``%E<n>S`` / ``%E*S`` fractional-seconds specifiers."""
+
+    @pytest.mark.parametrize(
+        ("fmt", "value", "expected"),
+        [
+            ("%Y-%m-%dT%H:%M:%E*SZ", "2026-05-21T16:00:01.5Z", (1, 500000)),
+            ("%Y-%m-%dT%H:%M:%E*SZ", "2026-05-21T16:00:01.123456Z", (1, 123456)),
+            # %E*S also accepts a value with no fractional part.
+            ("%Y-%m-%dT%H:%M:%E*SZ", "2026-05-21T16:00:01Z", (1, 0)),
+            ("%Y-%m-%d %H:%M:%E3S", "2026-05-21 16:00:01.250", (1, 250000)),
+            ("%Y-%m-%d %H:%M:%E0S", "2026-05-21 16:00:01", (1, 0)),
+            ("%Y-%m-%dT%H:%M:%E*S%Ez", "2026-05-21T12:00:01.5-04:00", (1, 500000)),
+        ],
+    )
+    def test_parse(self, fmt: str, value: str, expected: tuple[int, int]) -> None:
+        dt = bqemu_parse_timestamp_iso(fmt, value)
+        assert dt is not None
+        assert dt.hour == 16
+        assert (dt.second, dt.microsecond) == expected
+
+    def test_parse_rejects_garbage(self) -> None:
+        with pytest.raises(ValueError, match="Failed to parse"):
+            bqemu_parse_timestamp_iso("%Y-%m-%dT%H:%M:%E*SZ", "not-a-timestamp")
+
+
+class TestParseTimestampFractionalSecondsEndToEnd:
+    """``PARSE_TIMESTAMP`` with ``%E*S`` translates and runs on DuckDB."""
+
+    def test_executes(self) -> None:
+        sql = "SELECT PARSE_TIMESTAMP('%Y-%m-%dT%H:%M:%E*SZ', '2026-05-21T16:00:01.5Z')"
+        result = SQLTranslator().translate(sql)
+        assert isinstance(result, Ok), result
+        conn = duckdb.connect()
+        try:
+            conn.execute("SET TimeZone = 'UTC'")
+            register_builtin_udfs(conn)
+            row = conn.execute(result.value).fetchone()
+        finally:
+            conn.close()
+        assert row is not None
+        assert row[0] == _datetime.datetime(2026, 5, 21, 16, 0, 1, 500000, tzinfo=_datetime.UTC)

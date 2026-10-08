@@ -83,6 +83,13 @@ class TestParseTimestampRewrite:
         out = rewrite_timestamp_iso_helpers(sql)
         assert "bqemu_parse_timestamp_iso" in out.lower()
 
+    @pytest.mark.parametrize("spec", ["%E*S", "%E3S"])
+    def test_parse_with_fractional_seconds_triggers_helper(self, spec: str) -> None:
+        """%E<n>S / %E*S trigger the rewrite (DuckDB STRPTIME rejects them)."""
+        sql = f"SELECT PARSE_TIMESTAMP('%Y-%m-%dT%H:%M:{spec}Z', '2024-01-15T12:00:00.5Z')"
+        out = rewrite_timestamp_iso_helpers(sql)
+        assert "bqemu_parse_timestamp_iso" in out.lower()
+
     def test_parse_without_pct_ez_or_z_unchanged(self) -> None:
         """PARSE_TIMESTAMP without %Ez / %Z is left alone."""
         sql = "SELECT PARSE_TIMESTAMP('%Y-%m-%d', '2024-01-15')"
