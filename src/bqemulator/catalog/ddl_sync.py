@@ -497,13 +497,23 @@ def _introspect_schema(
     # Without this, ``INFORMATION_SCHEMA.COLUMNS`` returns
     # ``is_nullable='YES'`` for every column. Pinned by
     # ``information_schema/is_columns_basic``.
-    notnull_by_col = _column_notnull_map(target_ref, ctx)
+    columns = _column_info(target_ref, ctx)
     fields = tuple(
         _arrow_field_to_table_field(
             schema.field(i),
-            mode_override=("REQUIRED" if notnull_by_col.get(schema.field(i).name) else "NULLABLE"),
+            mode_override=(
+                "REQUIRED" if columns.get(schema.field(i).name, ("", False))[1] else "NULLABLE"
+            ),
         )
         for i in range(len(schema))
+    )
+    # Arrow also exports JSON columns as plain strings, so recover their
+    # declared type from the same ``PRAGMA table_info`` rows.
+    fields = tuple(
+        field.model_copy(update={"type": "JSON"})
+        if columns.get(field.name, ("", False))[0] == "JSON"
+        else field
+        for field in fields
     )
     return TableSchema(fields=fields)
 
@@ -561,15 +571,15 @@ def _arrow_field_to_table_field(  # type: ignore[no-any-unimported]
     )
 
 
-def _column_notnull_map(target_ref: str, ctx: AppContext) -> dict[str, bool]:
-    """Return ``{column_name: notnull}`` from DuckDB's ``PRAGMA table_info``.
+def _column_info(target_ref: str, ctx: AppContext) -> dict[str, tuple[str, bool]]:
+    """Return ``{column_name: (duckdb_type, notnull)}`` from ``PRAGMA table_info``.
 
     DuckDB's ``PRAGMA table_info`` rows are
     ``(cid, name, type, notnull, dflt_value, pk)``. We project columns 1
-    (name) and 3 (notnull) — both stable across DuckDB versions.
+    (name), 2 (type) and 3 (notnull) — all stable across DuckDB versions.
     """
     rows = ctx.engine.execute(f"PRAGMA table_info({target_ref})").fetchall()
-    return {row[1]: bool(row[3]) for row in rows}
+    return {row[1]: (row[2], bool(row[3])) for row in rows}
 
 
 def _introspect_num_rows(
