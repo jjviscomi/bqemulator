@@ -263,11 +263,43 @@ class ApproxTopSumRule(TranslationRule):
         return _anon("approx_top_k", value, count)
 
 
+@register
+class MergeUpdateSetRule(TranslationRule):
+    """``MERGE ... WHEN MATCHED THEN UPDATE SET l.col = ...`` → ``SET col = ...``.
+
+    BigQuery accepts alias-qualified SET targets in a MERGE update; DuckDB
+    rejects them ("Qualified column names in UPDATE .. SET not supported").
+    The target is always the MERGE's target table, so the qualifier is dropped.
+    """
+
+    name = "MERGE_UPDATE_SET"
+
+    def applies_to(self, node: exp.Expression) -> bool:
+        """Match a MERGE ``UPDATE`` action with a qualified SET target."""
+        return (
+            isinstance(node, exp.Update)
+            and isinstance(node.parent, exp.When)
+            and any(
+                isinstance(eq, exp.EQ) and isinstance(eq.this, exp.Column) and eq.this.table
+                for eq in node.expressions
+            )
+        )
+
+    def rewrite(self, node: exp.Expression) -> exp.Expression:
+        """Emit the same ``UPDATE`` with bare SET target columns."""
+        update = node.copy()
+        for eq in update.expressions:
+            if isinstance(eq, exp.EQ) and isinstance(eq.this, exp.Column):
+                eq.this.set("table", None)
+        return update
+
+
 __all__ = [
     "ApproxTopSumRule",
     "CountIfEmptyZeroRule",
     "FarmFingerprintRule",
     "IeeeDivideRule",
+    "MergeUpdateSetRule",
     "RangeBucketRule",
     "SignFloatTypeRule",
 ]

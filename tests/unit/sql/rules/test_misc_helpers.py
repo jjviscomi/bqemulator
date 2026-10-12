@@ -405,3 +405,34 @@ class TestNumericLiteralRewriter:
         # integer truncation would change the value and is explicitly
         # forbidden.
         assert "578960446186580977117854925043439539266" in rewritten
+
+
+class TestMergeUpdateSetRule:
+    """``MERGE ... UPDATE SET l.col = ...`` → bare SET targets DuckDB accepts."""
+
+    _MERGE = (
+        "MERGE INTO target AS l USING src AS r ON l.id = r.id "
+        "WHEN MATCHED THEN UPDATE SET l.name = r.name "
+        "WHEN NOT MATCHED THEN INSERT (id, name) VALUES (r.id, r.name)"
+    )
+
+    def test_qualified_set_target_executes(
+        self,
+        t: SQLTranslator,
+        con: duckdb.DuckDBPyConnection,
+    ) -> None:
+        con.execute("CREATE TABLE target (id BIGINT, name VARCHAR)")
+        con.execute("INSERT INTO target VALUES (1, 'old')")
+        con.execute("CREATE TABLE src (id BIGINT, name VARCHAR)")
+        con.execute("INSERT INTO src VALUES (1, 'new'), (2, 'added')")
+        result = t.translate(self._MERGE)
+        assert isinstance(result, Ok), result
+        con.execute(result.value)
+        rows = con.execute("SELECT id, name FROM target ORDER BY id").fetchall()
+        assert rows == [(1, "new"), (2, "added")]
+
+    def test_only_set_target_loses_qualifier(self, t: SQLTranslator) -> None:
+        result = t.translate(self._MERGE)
+        assert isinstance(result, Ok), result
+        assert "l.name =" not in result.value
+        assert "r.name" in result.value
