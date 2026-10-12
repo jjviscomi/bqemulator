@@ -18,6 +18,7 @@ from bqemulator.catalog.ddl_sync import (
     _detect_catalog_drop,
     _detect_create_schema,
     assert_drop_schema_allowed,
+    sync_altered_table,
     sync_created_schema,
     sync_created_table,
     sync_created_view,
@@ -741,6 +742,133 @@ class TestDropSyncWiring:
         script = "CREATE TABLE `p.ds.scripted` (id INT64);\nDROP TABLE `p.ds.scripted`;"
         await execute_query_job("p", "job-script", script, None, ctx)
         assert ctx.catalog.get_table("p", "ds", "scripted") is None
+
+
+class TestAlterTableSyncWiring:
+    """Column-level ALTER TABLE through ``execute_query_job`` refreshes the catalog schema."""
+
+    @staticmethod
+    def _columns(ctx: AppContext) -> list[tuple[str, str, str]]:
+        meta = ctx.catalog.get_table("p", "ds", "t")
+        assert meta is not None
+        return [(f.name, f.type, f.mode) for f in meta.schema_.fields]
+
+    async def _create(self, ctx: AppContext) -> None:
+        await execute_query_job(
+            "p",
+            "job-create",
+            "CREATE TABLE `p.ds.t` (id INT64 NOT NULL, name STRING)",
+            None,
+            ctx,
+        )
+
+    async def test_add_drop_and_rename_columns(self, ctx: AppContext) -> None:
+        """ADD / RENAME / DROP COLUMN are reflected in the catalog schema."""
+        await self._create(ctx)
+        await execute_query_job(
+            "p",
+            "job-add",
+            "ALTER TABLE `p.ds.t` ADD COLUMN IF NOT EXISTS flag BOOL",
+            None,
+            ctx,
+        )
+        assert self._columns(ctx) == [
+            ("id", "INTEGER", "REQUIRED"),
+            ("name", "STRING", "NULLABLE"),
+            ("flag", "BOOLEAN", "NULLABLE"),
+        ]
+        await execute_query_job(
+            "p", "job-rename", "ALTER TABLE `p.ds.t` RENAME COLUMN name TO label", None, ctx
+        )
+        await execute_query_job("p", "job-drop", "ALTER TABLE `p.ds.t` DROP COLUMN flag", None, ctx)
+        assert [c[0] for c in self._columns(ctx)] == ["id", "label"]
+
+    async def test_drop_not_null_updates_mode(self, ctx: AppContext) -> None:
+        """``ALTER COLUMN … DROP NOT NULL`` turns REQUIRED into NULLABLE."""
+        await self._create(ctx)
+        await execute_query_job(
+            "p",
+            "job-alter",
+            "ALTER TABLE `p.ds.t` ALTER COLUMN id DROP NOT NULL",
+            None,
+            ctx,
+        )
+        assert self._columns(ctx)[0] == ("id", "INTEGER", "NULLABLE")
+
+    async def test_existing_column_metadata_is_kept(self, ctx: AppContext) -> None:
+        """Catalogued columns keep their metadata; only new columns are introspected."""
+        await self._create(ctx)
+        meta = ctx.catalog.get_table("p", "ds", "t")
+        assert meta is not None
+        described = tuple(
+            f.model_copy(update={"description": "the name"}) if f.name == "name" else f
+            for f in meta.schema_.fields
+        )
+        ctx.catalog.update_table(
+            meta.model_copy(
+                update={"schema_": meta.schema_.model_copy(update={"fields": described})}
+            ),
+        )
+        await execute_query_job(
+            "p", "job-add", "ALTER TABLE `p.ds.t` ADD COLUMN extra JSON", None, ctx
+        )
+        meta = ctx.catalog.get_table("p", "ds", "t")
+        assert meta is not None
+        fields = {f.name: f for f in meta.schema_.fields}
+        assert fields["name"].description == "the name"
+        assert "extra" in fields
+
+    async def test_scripted_alter_refreshes_schema(self, ctx: AppContext) -> None:
+        """A multi-statement script routes the ALTER through the interpreter hook."""
+        script = (
+            "CREATE TABLE `p.ds.t` (id INT64);\n"
+            "ALTER TABLE `p.ds.t` ADD COLUMN IF NOT EXISTS flag BOOL;"
+        )
+        await execute_query_job("p", "job-script", script, None, ctx)
+        assert [c[0] for c in self._columns(ctx)] == ["id", "flag"]
+
+    async def test_set_options_leaves_schema_alone(self, ctx: AppContext) -> None:
+        """``ALTER TABLE … SET OPTIONS`` isn't column-level and is skipped."""
+        await self._create(ctx)
+        before = self._columns(ctx)
+        await execute_query_job(
+            "p",
+            "job-options",
+            "ALTER TABLE `p.ds.t` SET OPTIONS (description = 'x')",
+            None,
+            ctx,
+        )
+        assert self._columns(ctx) == before
+
+    async def test_unparseable_or_uncatalogued_is_noop(self, ctx: AppContext) -> None:
+        """Unparseable SQL and tables missing from the catalog are skipped."""
+        sync_altered_table("ALTER TABLE (", "p", ctx)
+        ctx.engine.execute('CREATE TABLE "p__ds"."untracked" (id BIGINT)')
+        sync_altered_table("ALTER TABLE `p.ds.untracked` ADD COLUMN c BOOL", "p", ctx)
+        assert ctx.catalog.get_table("p", "ds", "untracked") is None
+
+    async def test_view_over_added_column_translates(self, ctx: AppContext) -> None:
+        """A rule-rewritten query over a view reads a column added by ALTER.
+
+        With a stale catalog the schema-aware translation pass couldn't
+        resolve the column and DuckDB rejected the query as an alias
+        reference ("cannot be referenced before it is defined").
+        """
+        await self._create(ctx)
+        await execute_query_job(
+            "p", "job-add", "ALTER TABLE `p.ds.t` ADD COLUMN flag BOOL", None, ctx
+        )
+        await execute_query_job(
+            "p",
+            "job-view",
+            "CREATE VIEW `p.ds.v` AS "
+            "WITH s AS (SELECT * FROM `p.ds.t`) SELECT id AS key, flag FROM s",
+            None,
+            ctx,
+        )
+        await execute_query_job(
+            "p", "job-countif", "SELECT COUNTIF(flag IS NULL) FROM `p.ds.v`", None, ctx
+        )
 
 
 class TestCreateSchemaSyncWiring:

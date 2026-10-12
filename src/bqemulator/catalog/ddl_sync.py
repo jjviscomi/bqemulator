@@ -35,6 +35,12 @@ matching real BigQuery. It mirrors the catalog side of the REST
 VIEW`` and ``DROP SNAPSHOT TABLE`` route through the versioning DDL
 manager — which already reconciles the catalog — and are not handled
 here.
+
+Call :func:`sync_altered_table` after a successful column-level ``ALTER
+TABLE`` (``ADD`` / ``DROP`` / ``RENAME`` / ``ALTER COLUMN``). DuckDB
+already holds the new columns; this refreshes the catalog schema so
+``tables.get``, ``INFORMATION_SCHEMA`` and the translator's
+schema-aware passes see them too.
 """
 
 from __future__ import annotations
@@ -164,6 +170,56 @@ def sync_created_view(bq_sql: str, project_id: str, ctx: AppContext) -> None:
         ctx.catalog.update_table(meta)
     else:
         ctx.catalog.create_table(meta)
+
+
+# ALTER TABLE actions that change the column list (or a column's mode).
+_COLUMN_ALTER_ACTIONS = (exp.ColumnDef, exp.Drop, exp.RenameColumn, exp.AlterColumn)
+
+
+def sync_altered_table(bq_sql: str, project_id: str, ctx: AppContext) -> None:
+    """Refresh a catalogued table's schema after a column-level ``ALTER TABLE``.
+
+    No-op unless every action is ``ADD`` / ``DROP`` / ``RENAME`` /
+    ``ALTER COLUMN`` (``RENAME TO`` and ``SET OPTIONS`` don't change the
+    columns), or when the table isn't a catalogued ``TABLE``. Columns that
+    were already catalogued keep their metadata (type spelling,
+    description, …) and only take the new mode, e.g. after ``DROP NOT
+    NULL``; added columns come from introspecting the DuckDB table.
+    """
+    try:
+        tree = sqlglot.parse_one(bq_sql, read="bigquery")
+    except Exception:  # noqa: BLE001
+        return
+    if not isinstance(tree, exp.Alter) or (tree.args.get("kind") or "").upper() != "TABLE":
+        return
+    actions = tree.args.get("actions") or []
+    if (
+        not actions
+        or not all(isinstance(action, _COLUMN_ALTER_ACTIONS) for action in actions)
+        or not isinstance(tree.this, exp.Table)
+    ):
+        return
+    p_id, d_id, t_id = _split_target(tree.this, project_id)
+    meta = ctx.catalog.get_table(p_id, d_id, t_id) if d_id and t_id else None
+    if meta is None or meta.table_type != "TABLE":
+        return
+    catalogued = {field.name: field for field in meta.schema_.fields}
+    fields = tuple(
+        catalogued[field.name].model_copy(update={"mode": field.mode})
+        if field.name in catalogued
+        else field
+        for field in _introspect_schema(p_id, d_id, t_id, ctx).fields
+    )
+    now = ctx.clock.now()
+    ctx.catalog.update_table(
+        meta.model_copy(
+            update={
+                "schema_": TableSchema(fields=fields),
+                "last_modified_time": now,
+                "etag": generate_etag(p_id, d_id, t_id, "TABLE", str(now)),
+            },
+        ),
+    )
 
 
 def sync_created_schema(bq_sql: str, project_id: str, ctx: AppContext) -> None:
@@ -708,6 +764,7 @@ def _build_time_partitioning(
 
 
 __all__ = [
+    "sync_altered_table",
     "sync_created_schema",
     "sync_created_table",
     "sync_created_view",
