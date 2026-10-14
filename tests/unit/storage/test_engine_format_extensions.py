@@ -40,6 +40,9 @@ class _FakeConnection:
     def create_function(self, *_a: Any, **_kw: Any) -> None:
         """No-op: builtin UDF registration is irrelevant to this test."""
 
+    def cursor(self) -> _FakeConnection:
+        return self
+
     def close(self) -> None:
         self.closed = True
 

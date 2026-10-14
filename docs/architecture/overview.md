@@ -80,18 +80,23 @@ Imports flow **downward only**. Domain modules never import from adapters.
 5. FastAPI routes the request to a handler in `api/routes/jobs.py`.
 6. Handler constructs a `QueryJobCommand` and dispatches via
    `jobs/executor.py`.
-7. Executor invokes `SQLTranslator.translate()`, then `DuckDBEngine.fetch_arrow()`.
+7. Executor invokes `SQLTranslator.translate()`, then awaits
+   `DuckDBEngine.fetch_arrow_off_loop()`, which runs the statement in a
+   worker thread so the event loop keeps serving other requests.
 8. Result is converted to BigQuery REST JSON via `storage/arrow_bridge.py`.
 9. Response flows back up; middleware records final status and timing.
 
 ## Key invariants
 
-- **Single DuckDB connection.** All reads and writes go through
-  `DuckDBEngine`. Writes serialize on `asyncio.Lock`.
+- **Single DuckDB database.** All reads and writes go through
+  `DuckDBEngine`. Writes serialize on `asyncio.Lock`. The main connection
+  is used only from the event loop; single-statement query jobs run on a
+  second cursor owned by one worker thread
+  ([ADR 0049](../adr/0049-query-statements-off-event-loop.md)).
 - **Immutable domain models.** Every catalog entity is a frozen Pydantic
   model; mutation goes through `.model_copy(update=...)`.
-- **UTC-only timestamps.** DuckDB connection is opened with
-  `SET TimeZone = 'UTC'`; every TIMESTAMP round-trip is UTC.
+- **UTC-only timestamps.** DuckDB is opened with
+  `SET GLOBAL TimeZone = 'UTC'`; every TIMESTAMP round-trip is UTC.
 - **Errors map to BigQuery ErrorProto.** Every `DomainError` subclass has
   an HTTP status, BQ `reason`, and gRPC canonical status.
 

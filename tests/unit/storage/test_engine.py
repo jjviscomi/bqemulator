@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 from pathlib import Path
 
 import pytest
@@ -67,6 +68,67 @@ class TestExecute:
             assert table.num_rows == 1
         finally:
             await engine.stop()
+
+
+@pytest.mark.asyncio
+class TestFetchArrowOffLoop:
+    async def test_matches_fetch_arrow(self, ephemeral_settings: Settings) -> None:
+        engine = DuckDBEngine(ephemeral_settings)
+        await engine.start()
+        try:
+            sql = "SELECT ? AS a, '{\"k\": 1}'::JSON AS j"
+            off_loop = await engine.fetch_arrow_off_loop(sql, [7])
+            assert off_loop.equals(engine.fetch_arrow(sql, [7]))
+            assert off_loop.schema.field("j").metadata == {b"bqemu.duckdb_type": b"JSON"}
+        finally:
+            await engine.stop()
+
+    async def test_sees_state_of_the_main_connection(
+        self,
+        ephemeral_settings: Settings,
+    ) -> None:
+        engine = DuckDBEngine(ephemeral_settings)
+        await engine.start()
+        try:
+            engine.execute('CREATE TABLE "_bqemulator_catalog"."off_loop" AS SELECT 1 AS x')
+            engine.execute('CREATE MACRO "_bqemulator_catalog"."plus_one"(v) AS (v + 1)')
+            table = await engine.fetch_arrow_off_loop(
+                "SELECT current_setting('TimeZone') AS tz,"
+                ' "_bqemulator_catalog"."plus_one"(x) AS y,'
+                " bqemu_normalize('a', 'NFC') AS n"
+                ' FROM "_bqemulator_catalog"."off_loop"',
+            )
+            assert table.to_pylist() == [{"tz": "UTC", "y": 2, "n": "a"}]
+        finally:
+            await engine.stop()
+
+    async def test_event_loop_runs_while_statement_executes(
+        self,
+        ephemeral_settings: Settings,
+    ) -> None:
+        engine = DuckDBEngine(ephemeral_settings)
+        await engine.start()
+        try:
+            events: list[str] = []
+
+            async def query() -> None:
+                await engine.fetch_arrow_off_loop("SELECT count(*) FROM range(10000000)")
+                events.append("query")
+
+            async def other_request() -> None:
+                await asyncio.sleep(0)
+                engine.execute("SELECT 1").fetchone()
+                events.append("other")
+
+            await asyncio.gather(query(), other_request())
+            assert events == ["other", "query"]
+        finally:
+            await engine.stop()
+
+    async def test_raises_before_start(self, ephemeral_settings: Settings) -> None:
+        engine = DuckDBEngine(ephemeral_settings)
+        with pytest.raises(InternalError):
+            await engine.fetch_arrow_off_loop("SELECT 1")
 
 
 @pytest.mark.asyncio
