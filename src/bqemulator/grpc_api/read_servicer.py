@@ -12,6 +12,7 @@ Methods:
 
 from __future__ import annotations
 
+from functools import partial
 import re
 from typing import TYPE_CHECKING, Any
 
@@ -19,6 +20,7 @@ import grpc
 import pyarrow as pa
 
 from bqemulator.domain.errors import ValidationError
+from bqemulator.grpc_api.loop_bridge import run_on_loop, running_loop
 from bqemulator.observability.logging_ import get_logger
 from bqemulator.row_access.identity import (
     CallerIdentity,
@@ -267,6 +269,9 @@ class BigQueryReadHandler(grpc.GenericRpcHandler):
 
     def __init__(self, context: AppContext) -> None:
         self._ctx = context
+        # CreateReadSession's catalog and DuckDB work runs on this loop's
+        # thread (see ``loop_bridge``); ``None`` outside a running server.
+        self._loop = running_loop()
 
     @staticmethod
     def _build_bq_read_sql(
@@ -297,7 +302,7 @@ class BigQueryReadHandler(grpc.GenericRpcHandler):
         method = handler_call_details.method
         if method == _CREATE_READ_SESSION:
             return grpc.unary_unary_rpc_method_handler(
-                self._handle_create_read_session,
+                partial(run_on_loop, self._loop, self._handle_create_read_session),
             )
         if method == _READ_ROWS:
             return grpc.unary_stream_rpc_method_handler(

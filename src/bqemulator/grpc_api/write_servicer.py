@@ -29,6 +29,7 @@ from __future__ import annotations
 
 from collections.abc import Iterator
 from datetime import UTC, datetime
+from functools import partial
 import re
 from threading import RLock
 from typing import TYPE_CHECKING, Any
@@ -37,6 +38,7 @@ from uuid import uuid4
 import grpc
 
 from bqemulator.domain.errors import ValidationError
+from bqemulator.grpc_api.loop_bridge import run_on_loop, running_loop
 from bqemulator.observability.logging_ import get_logger
 from bqemulator.storage.sql_identifiers import quoted_table_ref, register_name
 from bqemulator.streaming.arrow_deserializer import deserialize_arrow_rows
@@ -118,6 +120,9 @@ class BigQueryWriteHandler(grpc.GenericRpcHandler):
         self._manager = manager or context.write_streams
         # Install the metric-cleanup callback now that the context exists.
         self._manager.set_on_remove(self._release_metric_slot)
+        # The handlers' catalog and DuckDB work runs on this loop's thread
+        # (see ``loop_bridge``); ``None`` outside a running server.
+        self._loop = running_loop()
         # Sync handlers execute on grpc.aio's thread pool; a threading lock
         # serialises DuckDB writes because the event-loop-based
         # ``engine.write_lock`` can't be awaited from sync handlers.
@@ -146,20 +151,19 @@ class BigQueryWriteHandler(grpc.GenericRpcHandler):
     ) -> grpc.RpcMethodHandler | None:
         """Route inbound RPCs to their specific handler."""
         method = handler_call_details.method
-        if method == _CREATE_WRITE_STREAM:
-            return grpc.unary_unary_rpc_method_handler(self._handle_create_write_stream)
+        unary = {
+            _CREATE_WRITE_STREAM: self._handle_create_write_stream,
+            _GET_WRITE_STREAM: self._handle_get_write_stream,
+            _FINALIZE_WRITE_STREAM: self._handle_finalize_write_stream,
+            _BATCH_COMMIT_WRITE_STREAMS: self._handle_batch_commit_write_streams,
+            _FLUSH_ROWS: self._handle_flush_rows,
+        }
+        if method in unary:
+            return grpc.unary_unary_rpc_method_handler(
+                partial(run_on_loop, self._loop, unary[method]),
+            )
         if method == _APPEND_ROWS:
             return grpc.stream_stream_rpc_method_handler(self._handle_append_rows)
-        if method == _GET_WRITE_STREAM:
-            return grpc.unary_unary_rpc_method_handler(self._handle_get_write_stream)
-        if method == _FINALIZE_WRITE_STREAM:
-            return grpc.unary_unary_rpc_method_handler(self._handle_finalize_write_stream)
-        if method == _BATCH_COMMIT_WRITE_STREAMS:
-            return grpc.unary_unary_rpc_method_handler(
-                self._handle_batch_commit_write_streams,
-            )
-        if method == _FLUSH_ROWS:
-            return grpc.unary_unary_rpc_method_handler(self._handle_flush_rows)
         return None
 
     # -- CreateWriteStream ---------------------------------------------------
@@ -488,7 +492,11 @@ class BigQueryWriteHandler(grpc.GenericRpcHandler):
                 continue
 
             request = types.AppendRowsRequest.deserialize(request_bytes)
-            bound_ctx = self._ensure_stream_bound(
+            # Reading requests stays on this worker thread; the catalog and
+            # DuckDB work for each one runs on the loop.
+            bound_ctx = run_on_loop(
+                self._loop,
+                self._ensure_stream_bound,
                 request.write_stream,
                 bound_ctx,
                 context,
@@ -513,7 +521,9 @@ class BigQueryWriteHandler(grpc.GenericRpcHandler):
             # on the underlying protobuf message — accessed via the
             # public ``proto.Message.pb()`` classmethod.
             offset = int(request.offset) if _has_offset(request) else None
-            yield self._perform_append(
+            yield run_on_loop(
+                self._loop,
+                self._perform_append,
                 bound_stream,
                 rows_table,
                 offset,
