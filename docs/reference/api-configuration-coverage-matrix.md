@@ -81,7 +81,7 @@ both audits.
 | Continuous query | `continuous=true` | — | 🔴 Uncovered | 🟢 | Out-of-scope per [out-of-scope.md](out-of-scope.md). |
 | Allow large results (legacy only) | `allowLargeResults=true` | — | 🔴 Uncovered | 🟢 | Coupled to `useLegacySql=true`. |
 | Flatten results (legacy only) | `flattenResults=true` | — | 🔴 Uncovered | 🟢 | Same. |
-| Table definitions (federated) | `tableDefinitions` | — | 🟡 Sampled (1 external_tables test) | 🟢 | |
+| Table definitions (federated) | `tableDefinitions` | — | 🟡 Sampled (integration: `test_query_table_definitions.py`) | 🟢 | `NEWLINE_DELIMITED_JSON` only (optionally `GZIP`), with an explicit schema; each definition becomes a per-job DuckDB temp view over its `sourceUris` (`gs://` via `BQEMU_GCS_LOCAL_ROOT`). Other formats return 501. |
 | `create_session` | `createSession=true` | — | 🟡 Sampled (2 fixtures use it) | 🟡 | BigQuery mints a transient session token returned via `statistics.sessionInfo.sessionId`. The emulator's `_SESSION_CATALOG` mints a fresh URL-safe token; surfacing it through the response shape uses `_maybe_mint_session` + `_attach_session_info`. |
 
 **`QueryJobConfig` summary:** **8 of 31** configurations are 🔴

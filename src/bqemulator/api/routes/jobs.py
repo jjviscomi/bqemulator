@@ -1263,6 +1263,7 @@ async def _execute_query_or_failed_meta(
             query_params,
             ctx,
             caller=caller,
+            table_definitions=query_config.get("tableDefinitions"),
         )
     except _SQL_EXECUTION_DOMAIN_ERRORS as exc:
         return _failed_job_meta(
