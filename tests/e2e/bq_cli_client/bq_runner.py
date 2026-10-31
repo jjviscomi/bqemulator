@@ -203,7 +203,7 @@ def _resolve_discovery_file(work_dir: Path) -> Path:
         return cached
 
     try:
-        with urllib.request.urlopen(_DISCOVERY_URL, timeout=30) as response:  # noqa: S310 — fixed https URL
+        with urllib.request.urlopen(_DISCOVERY_URL, timeout=30) as response:
             cached.write_bytes(response.read())
     except OSError as exc:  # pragma: no cover — network-failure escape
         msg = (

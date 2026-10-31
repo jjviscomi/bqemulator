@@ -93,3 +93,42 @@ CVE-2026-45409
 # fix version is available; tracked for the same dependency-refresh
 # sweep that bumps idna / requests.
 PYSEC-2026-89
+
+# cryptography 49.0.0 — PYSEC-2026-3552 (CVE-2026-69247 /
+# GHSA-g6cj-pr64-35w5): ``pkcs7_decrypt_der`` / ``_pem`` / ``_smime``
+# act as a Bleichenbacher padding oracle when an application decrypts
+# attacker-supplied PKCS#7 ``EnvelopedData`` and reflects the outcome.
+# bqemulator never calls the PKCS#7 decrypt APIs, and neither do its
+# ``cryptography`` consumers (``google-auth`` / ``pyjwt`` use it only for
+# signing and signature verification). The only fix ships in the 50.x
+# major line, which is adopted through its own reviewed upgrade.
+PYSEC-2026-3552
+
+# setuptools 82.0.1 — installed only as a ``grpcio-tools`` requirement;
+# bqemulator never imports it and it never runs inside the emulator.
+# PYSEC-2026-3447 (CVE-2026-59890) lets an NFD-normalised file name slip
+# past a ``MANIFEST.in`` exclusion when building an sdist on macOS
+# APFS/HFS+; GHSA-xmj3-9gf7-h52w lets a crafted wheel's
+# ``namespace_packages.txt`` write an ``__init__.py`` outside the egg
+# directory on setuptools' legacy wheel-install path on Windows.
+# bqemulator builds with hatchling (no ``MANIFEST.in``) and never installs
+# wheels through setuptools. The fixes ship only in the 83.x / 84.x major
+# lines, which are adopted through their own reviewed upgrade.
+PYSEC-2026-3447
+GHSA-xmj3-9gf7-h52w
+
+# filelock 3.29.4 — dev-tooling only (``virtualenv`` / ``pre-commit`` and
+# ``pip-audit``'s HTTP cache); bqemulator itself never imports it. Every
+# advisory below needs a local attacker able to plant files in the lock
+# directory (symlink / hard-link / marker-file races on ``ReadWriteLock``,
+# the soft locks, and Windows ACL inheritance). The fixes ship only in the
+# 4.x major line, which is adopted through its own reviewed upgrade.
+CVE-2026-112907     # soft-lock marker read by path on Windows
+CVE-2026-112909     # UnixFileLock truncates / chmods a swapped lock file
+CVE-2026-112910     # Windows ignores the ``mode`` argument
+CVE-2026-112913     # ReadWriteLock SQLite side files on Windows
+CVE-2026-112915     # ReadWriteLock loads an attacker-planted schema
+CVE-2026-112935     # soft-lock stale-break inode race
+CVE-2026-112936     # ReadWriteLock follows a planted symlink
+CVE-2026-112939     # soft-lock marker owner record not authenticated
+CVE-2026-112940     # ReadWriteLock /proc/self/fd path re-resolution
