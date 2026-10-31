@@ -238,6 +238,7 @@ nav:
       - Overview: rfcs/README.md
       - "0001 EXPORT DATA statement (Cloud Storage)": rfcs/0001-export-data-statement.md
       - "0002 BigQuery ML surface (metadata, Models REST, ML.PREDICT shape)": rfcs/0002-bigquery-ml-surface.md
+      - "0003 GROUP BY <alias> resolution": rfcs/0003-group-by-alias-resolution.md
   - Examples:
       - Overview: examples/README.md
       - bq CLI quickstart: examples/bq-cli-quickstart/README.md

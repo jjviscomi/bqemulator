@@ -43,3 +43,4 @@ for the PR mechanics.
 |---|---|---|
 | [0001](0001-export-data-statement.md) | EXPORT DATA statement (Cloud Storage) | Accepted |
 | [0002](0002-bigquery-ml-surface.md) | BigQuery ML surface (metadata, Models REST, ML.PREDICT shape) | Accepted |
+| [0003](0003-group-by-alias-resolution.md) | GROUP BY \<alias\> resolution | Draft |

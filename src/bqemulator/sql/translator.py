@@ -96,6 +96,19 @@ def _resolve_caller(caller: CallerIdentity | None) -> CallerIdentity:
     return CallerIdentity(principal=DEFAULT_CALLER, is_authenticated=False)
 
 
+def _identifier_key(identifier: exp.Identifier) -> str:
+    """Return a lookup key for *identifier* under BigQuery's matching rule.
+
+    Column and alias names are case-insensitive in BigQuery regardless
+    of backtick quoting — quoting is identifier *syntax* (escaping
+    reserved words, allowing special characters), not a switch to
+    case-sensitive matching, unlike some other SQL dialects. So
+    ``AS `foo``` and ``AS foo`` name the same alias, and a bare
+    ``GROUP BY foo`` matches a backtick-quoted ``AS `Foo``` alias too.
+    """
+    return identifier.name.lower()
+
+
 class SQLTranslator:
     """Translates BigQuery GoogleSQL to DuckDB SQL.
 
@@ -343,13 +356,16 @@ class SQLTranslator:
         # 3. Post-process: parse the DuckDB SQL back into an AST, apply
         #    custom rules, then re-serialize. Rules that detect an
         #    explicitly out-of-scope feature can raise
-        #    :class:`UnsupportedFeatureError`; we propagate that as a
-        #    clean ``Err`` rather than letting it bubble through.
+        #    :class:`UnsupportedFeatureError`, and a rule that detects
+        #    a semantically invalid query (e.g. an ambiguous ``GROUP
+        #    BY`` alias reference) can raise :class:`InvalidQueryError`;
+        #    we propagate both as a clean ``Err`` rather than letting
+        #    them bubble through as uncaught exceptions.
         duckdb_sql = transpiled_list[0]
         if self._rules:
             try:
                 duckdb_sql = self._apply_rules(duckdb_sql, schema=schema)
-            except UnsupportedFeatureError as exc:
+            except (UnsupportedFeatureError, InvalidQueryError) as exc:
                 return Err(exc)
 
         _log.debug(
@@ -389,10 +405,27 @@ class SQLTranslator:
         # narrows it for the rest of the function and the helpers.
         assert isinstance(tree, exp.Expression)  # noqa: S101
 
-        if schema is not None:
-            tree = self._annotate_tree(tree, schema)
+        # GROUP BY items that name a SELECT-list alias must be rewritten
+        # to their ordinal position *before* qualify() runs. DuckDB's
+        # binder resolves a bare GROUP BY identifier against the
+        # FROM-clause's real columns first, only falling back to a
+        # SELECT-list alias of the same name — the opposite priority of
+        # BigQuery's "GROUP BY <alias>" feature. A query that aliases an
+        # output column to a name that also exists as a real column
+        # elsewhere in scope (reachable through the join graph) either
+        # silently groups by the wrong column or trips DuckDB's "column
+        # ... must appear in the GROUP BY clause" binder error — and
+        # running it through ``qualify()`` resolves the *same* ambiguity
+        # the *same* wrong way, since qualify() performs the identical
+        # column-before-alias lookup. An ordinal is positional, not
+        # name-based, so it carries no such ambiguity and is exactly
+        # what "GROUP BY <alias>" means: "group by this SELECT-list
+        # slot".
+        modified = self._expand_group_by_aliases_to_ordinals(tree)
 
-        modified = False
+        if schema is not None:
+            tree, _qualified_ok = self._annotate_tree(tree, schema)
+
         # Snapshot nodes pre-order, then iterate in reverse — children
         # of any parent appear *after* the parent in pre-order, so
         # ``reversed(...)`` gives us a post-order-equivalent traversal.
@@ -406,13 +439,79 @@ class SQLTranslator:
         return sql
 
     @staticmethod
+    def _expand_group_by_aliases_to_ordinals(tree: exp.Expression) -> bool:
+        """Rewrite GROUP BY items naming a SELECT-list alias to their ordinal.
+
+        For every ``SELECT`` in ``tree`` with a ``GROUP BY`` clause,
+        replaces each bare (unqualified) GROUP BY column reference that
+        matches one of that SELECT's output aliases with a 1-based
+        ordinal literal pointing at that SELECT-list position. Returns
+        ``True`` if any replacement was made.
+
+        Alias matching is always case-insensitive (BigQuery's own
+        resolution rule for column and alias names), regardless of
+        backtick quoting on either side — see :func:`_identifier_key`.
+        When two SELECT-list aliases collide under this rule,
+        BigQuery's own semantics permit the duplication as long as
+        nothing references it — only a ``GROUP BY`` item that actually
+        names the colliding alias is an error, raised here as
+        :class:`InvalidQueryError` rather than silently resolved to
+        whichever projection happened to be assigned last.
+        """
+        modified = False
+        for select in tree.find_all(exp.Select):
+            group = select.args.get("group")
+            if group is None:
+                continue
+            alias_positions: dict[str, int] = {}
+            ambiguous_keys: set[str] = set()
+            for idx, projection in enumerate(select.expressions, start=1):
+                if not isinstance(projection, exp.Alias):
+                    continue
+                key = _identifier_key(projection.args["alias"])
+                if key in alias_positions:
+                    ambiguous_keys.add(key)
+                else:
+                    alias_positions[key] = idx
+            if not alias_positions:
+                continue
+            new_expressions = []
+            for item in group.expressions:
+                key = None
+                if (
+                    isinstance(item, exp.Column)
+                    and not item.table
+                    and isinstance(item.this, exp.Identifier)
+                ):
+                    key = _identifier_key(item.this)
+                if key is not None and key in ambiguous_keys:
+                    raise InvalidQueryError(
+                        f"Column name {item.name} is ambiguous",
+                        location="query",
+                    )
+                position = alias_positions.get(key) if key is not None else None
+                if position is None:
+                    new_expressions.append(item)
+                else:
+                    new_expressions.append(exp.Literal.number(position))
+                    modified = True
+            if new_expressions != group.expressions:
+                group.set("expressions", new_expressions)
+        return modified
+
+    @staticmethod
     def _annotate_tree(
         tree: exp.Expression,
         schema: dict[str, Any],
-    ) -> exp.Expression:
+    ) -> tuple[exp.Expression, bool]:
         """Run SQLGlot's ``qualify`` + ``annotate_types`` passes.
 
-        Failures are logged and the unannotated tree is returned;
+        Returns ``(tree, True)`` on success — ``qualify()`` also
+        expands GROUP BY/ORDER BY references to SELECT-list aliases
+        into their underlying expressions, which callers rely on to
+        decide whether the qualified SQL (rather than the original)
+        must be re-serialized. Failures are logged and
+        ``(tree, False)`` is returned with the unannotated tree;
         rules that need type info gracefully skip. The runtime
         ``isinstance`` check narrows SQLGlot's loosely-typed
         ``Expr`` return to :class:`exp.Expression` without resorting
@@ -424,9 +523,9 @@ class SQLTranslator:
             annotated = annotate_types(qualified, schema=schema)
         except Exception as exc:  # noqa: BLE001
             _log.debug("sql.annotate_types_skipped", error=str(exc))
-            return tree
+            return tree, False
         assert isinstance(annotated, exp.Expression)  # noqa: S101 — stub-bridge narrowing
-        return annotated
+        return annotated, True
 
     def _apply_first_matching_rule(
         self,

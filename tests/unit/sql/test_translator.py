@@ -126,6 +126,229 @@ class TestErrorHandling:
         assert not (isinstance(result, Err) and isinstance(result.error, UnsupportedFeatureError))
 
 
+class TestGroupByAliasOrdinalRewrite:
+    """``GROUP BY <select-list alias>`` over a multi-hop join.
+
+    DuckDB's binder resolves a bare ``GROUP BY`` identifier against
+    the FROM-clause's real columns *before* falling back to a
+    SELECT-list alias of the same name — the opposite priority of
+    BigQuery's "GROUP BY <alias>" feature, which always means "group
+    by this SELECT-list slot" regardless of what real column shares
+    its name. When a query aliases 2+ output columns to names that
+    also exist as real columns reachable through >=3 joins (e.g.
+    ``pr.id AS project_id`` alongside a real ``processes.project_id``
+    two joins closer to the FROM clause), the naive alias-as-written
+    SQL either mis-resolves silently to the wrong column or trips
+    DuckDB's "column ... must appear in the GROUP BY clause" binder
+    error outright. ``SQLTranslator._expand_group_by_aliases_to_ordinals``
+    rewrites such items to their 1-based SELECT-list ordinal before the
+    DuckDB SQL is finalized, which is unambiguous — an ordinal maps
+    directly to the SELECT list, no name resolution involved — and
+    preserves exactly what "GROUP BY <alias>" means.
+    """
+
+    def test_group_by_alias_colliding_with_real_column_becomes_ordinal(
+        self,
+        translator: SQLTranslator,
+    ) -> None:
+        sql = """
+        SELECT pr.id AS project_id, pr.name AS project_name
+        FROM pl
+        JOIN t ON t.id = pl.task_id
+        JOIN proc ON proc.id = t.process_id
+        JOIN pr ON pr.id = proc.project_id
+        GROUP BY project_id, project_name
+        """
+        result = translator.translate(sql)
+        assert isinstance(result, Ok)
+        assert "GROUP BY 1, 2" in result.value
+
+    def test_group_by_alias_not_colliding_is_left_alone(
+        self,
+        translator: SQLTranslator,
+    ) -> None:
+        """A GROUP BY item that names no SELECT-list alias must not be touched.
+
+        Guards against the rewrite over-firing on a query where
+        ``category`` is both the DB column and the alias.
+        """
+        result = translator.translate(
+            "SELECT category, COUNT(*) AS cnt FROM t GROUP BY category",
+        )
+        assert isinstance(result, Ok)
+        assert "GROUP BY" in result.value
+        assert "GROUP BY 1" not in result.value
+
+    def test_group_by_alias_ordinal_query_result_is_correct(self) -> None:
+        """End-to-end: the rewritten ordinal form binds and groups correctly.
+
+        Reproduces the exact shape that triggered the DuckDB binder
+        error / silent misgrouping: a distant-table alias
+        (``project_id``) colliding with a same-named real column two
+        joins closer to the FROM clause.
+        """
+        import duckdb
+
+        translator = SQLTranslator()
+        sql = """
+        SELECT pr.id AS project_id, pr.name AS project_name, SUM(1) AS hours
+        FROM pl
+        JOIN t ON t.id = pl.task_id
+        JOIN proc ON proc.id = t.process_id
+        JOIN pr ON pr.id = proc.project_id
+        GROUP BY project_id, project_name
+        """
+        result = translator.translate(sql)
+        assert isinstance(result, Ok)
+
+        con = duckdb.connect()
+        con.execute("CREATE TABLE pl(id VARCHAR, task_id VARCHAR)")
+        con.execute("CREATE TABLE t(id VARCHAR, process_id VARCHAR)")
+        con.execute("CREATE TABLE proc(id VARCHAR, project_id VARCHAR)")
+        con.execute("CREATE TABLE pr(id VARCHAR, name VARCHAR)")
+        con.execute("INSERT INTO pl VALUES ('pl1', 't1')")
+        con.execute("INSERT INTO t VALUES ('t1', 'proc1')")
+        con.execute("INSERT INTO proc VALUES ('proc1', 'pr1')")
+        con.execute("INSERT INTO pr VALUES ('pr1', 'Project1')")
+
+        rows = con.execute(result.value).fetchall()
+        assert rows == [("pr1", "Project1", 1)]
+
+    def test_group_by_matches_alias_case_insensitively(
+        self,
+        translator: SQLTranslator,
+    ) -> None:
+        """An unquoted GROUP BY item matches a differently-cased alias.
+
+        BigQuery resolves unquoted identifiers case-insensitively, so
+        ``GROUP BY project_id`` must still hit the ``AS Project_ID``
+        alias (and therefore its ordinal) even though the two differ
+        in case.
+        """
+        sql = """
+        SELECT pr.id AS Project_ID, pr.name AS project_name
+        FROM pl
+        JOIN t ON t.id = pl.task_id
+        JOIN proc ON proc.id = t.process_id
+        JOIN pr ON pr.id = proc.project_id
+        GROUP BY project_id, PROJECT_NAME
+        """
+        result = translator.translate(sql)
+        assert isinstance(result, Ok)
+        assert "GROUP BY 1, 2" in result.value
+
+    def test_group_by_backtick_quoted_item_matches_unquoted_alias(
+        self,
+        translator: SQLTranslator,
+    ) -> None:
+        """A backtick-quoted GROUP BY identifier still matches case-insensitively.
+
+        BigQuery's column and alias names are case-insensitive
+        regardless of backtick quoting — quoting is identifier syntax
+        (escaping reserved words, allowing special characters), not a
+        switch to case-sensitive matching. A backtick-quoted, oddly
+        cased ``GROUP BY`` item must still resolve to an unquoted
+        alias of a different case.
+        """
+        result = translator.translate(
+            "SELECT a AS project_id FROM t GROUP BY `Project_ID`",
+        )
+        assert isinstance(result, Ok)
+        assert "GROUP BY 1" in result.value
+
+    def test_group_by_double_quoted_string_literal_is_not_a_column_reference(
+        self,
+        translator: SQLTranslator,
+    ) -> None:
+        """``GROUP BY "x"`` groups by a string-literal constant, not a column.
+
+        BigQuery quotes *identifiers* with backticks; a double-quoted
+        token is a string literal. ``GROUP BY "Project_ID"`` is
+        therefore a degenerate case this rewrite never touches (it
+        isn't a column reference at all), regardless of any alias
+        named ``project_id``.
+        """
+        result = translator.translate(
+            'SELECT a AS project_id FROM t GROUP BY "Project_ID"',
+        )
+        assert isinstance(result, Ok)
+        assert "GROUP BY 1" not in result.value
+
+    def test_backtick_quoted_alias_matches_unquoted_group_by_of_same_spelling(
+        self,
+        translator: SQLTranslator,
+    ) -> None:
+        """A backtick-quoted alias and an unquoted GROUP BY item still match.
+
+        Quoting an alias doesn't create a separate, case-sensitive
+        identifier namespace in BigQuery — an unquoted ``GROUP BY``
+        item resolves to a backtick-quoted alias of the same spelling
+        the same way it would an unquoted one.
+        """
+        result = translator.translate(
+            "SELECT a AS `foo` FROM t GROUP BY foo",
+        )
+        assert isinstance(result, Ok)
+        assert "GROUP BY 1" in result.value
+
+    def test_backtick_quoted_and_unquoted_aliases_of_same_spelling_are_ambiguous(
+        self,
+        translator: SQLTranslator,
+    ) -> None:
+        """A backtick-quoted and an unquoted alias of the same spelling are the same alias.
+
+        Quoting doesn't create a distinct identifier, so this is the
+        ordinary duplicate-alias case: a ``GROUP BY`` item referencing
+        the shared name is ambiguous, whichever form it or the
+        aliases use.
+        """
+        from bqemulator.domain.errors import InvalidQueryError
+
+        result = translator.translate(
+            "SELECT a AS `foo`, b AS foo FROM t GROUP BY foo",
+        )
+        assert isinstance(result, Err)
+        assert isinstance(result.error, InvalidQueryError)
+
+    def test_group_by_referencing_duplicated_alias_is_ambiguous(
+        self,
+        translator: SQLTranslator,
+    ) -> None:
+        """A GROUP BY item naming a duplicated alias must error, not guess.
+
+        GoogleSQL permits a SELECT list to reuse the same output alias
+        as long as it is never referenced elsewhere in the query; a
+        ``GROUP BY`` item that does reference it is ambiguous and must
+        be rejected — as a clean ``Err``, matching every other
+        semantic-analysis failure ``translate()`` reports — rather
+        than silently resolved to whichever projection happened to be
+        assigned to the alias last.
+        """
+        from bqemulator.domain.errors import InvalidQueryError
+
+        result = translator.translate(
+            "SELECT COUNT(*) AS key, category AS key FROM t GROUP BY key",
+        )
+        assert isinstance(result, Err)
+        assert isinstance(result.error, InvalidQueryError)
+
+    def test_group_by_ignores_unreferenced_duplicated_alias(
+        self,
+        translator: SQLTranslator,
+    ) -> None:
+        """A duplicated alias that GROUP BY never names stays untouched.
+
+        Only a reference to the ambiguous alias must error — a
+        ``GROUP BY`` clause naming some other, unambiguous column must
+        keep working.
+        """
+        result = translator.translate(
+            "SELECT COUNT(*) AS key, category AS key, region FROM t GROUP BY region",
+        )
+        assert isinstance(result, Ok)
+        assert "GROUP BY" in result.value
+
+
 class TestTranslatorIsStateless:
     def test_multiple_calls_independent(self, translator: SQLTranslator) -> None:
         r1 = translator.translate("SELECT 1")

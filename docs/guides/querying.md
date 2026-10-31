@@ -20,6 +20,30 @@ Supported SQL features track the
 mapping is documented in
 [sql-function-mapping.md](../reference/sql-function-mapping.md).
 
+## GROUP BY \<alias\>
+
+`GROUP BY` may name a `SELECT`-list alias instead of a real column, even
+when a same-named real column exists elsewhere in the join graph — the
+alias always wins, matching BigQuery's own resolution rule
+([RFC 0003](../rfcs/0003-group-by-alias-resolution.md)):
+
+```sql
+SELECT pr.id AS project_id, pr.name AS project_name, SUM(hrs) AS total
+FROM placements pl
+JOIN tasks t ON t.id = pl.task_id
+JOIN processes proc ON proc.id = t.process_id
+JOIN projects pr ON pr.id = proc.project_id
+GROUP BY project_id, project_name
+```
+
+Alias matching is always case-insensitive (`GROUP BY project_id` matches
+`AS Project_ID`), regardless of backtick quoting on either side — quoting
+doesn't create a separate, case-sensitive identifier namespace in
+BigQuery. A `GROUP BY` item that names an alias the `SELECT` list
+assigned to more than one projection is rejected as ambiguous — BigQuery
+permits the duplication,
+but only as long as nothing references it.
+
 ## Caching
 
 Identical queries return cached results within the configured TTL
