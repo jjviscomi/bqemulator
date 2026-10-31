@@ -41,7 +41,12 @@ classifiers = [
 ]
 
 dependencies = [
-    "duckdb>=1.0",
+    # Cap below the 2.x major: DuckDB 2.0 raises ``ResourceInUseException``
+    # when a connection is reused while an ``execute()`` result is still
+    # pending, which breaks the Storage Write API's pending- and
+    # buffered-stream commit paths. Adopt 2.x through its own reviewed
+    # upgrade.
+    "duckdb>=1.0,<2",
     # Floor at 30.9: 30.9.0 transpiles BigQuery PARSE_TIME natively to
     # ``CAST(STRPTIME(...) AS TIME)`` (handled by the ParseTimestampUtcRule
     # Cast-to-TIME guard in ``sql/rules/datetime_semantics.py``) and fixed the
@@ -313,6 +318,8 @@ ignore = [
     "TD002",   # TODO author not required
     "TD003",   # TODO link enforced separately
     "PLR0913", # too-many-arguments — pydantic / FastAPI signatures often exceed
+    "PLR0917", # too-many-positional-arguments — same rationale as PLR0913
+    "CPY001",  # copyright notice — licence lives in LICENSE, not per-file headers
     "ANN401",  # Any sometimes necessary for decorators
     "EM101",   # exception strings can be literal
     "EM102",   # exception f-strings ok
@@ -515,6 +522,15 @@ filterwarnings = [
     # finalizer happened to GC). The underlying resources are safely
     # cleaned up by the runtime; the warning is purely diagnostic.
     "ignore::pytest.PytestUnraisableExceptionWarning",
+    # ``google.api_core`` (and other ``google-cloud-*`` packages built on
+    # its version check) emits a ``FutureWarning`` at import time once
+    # the running interpreter is within a year of its upstream end of
+    # life (Python 3.11 → 2027-10-24). The project still supports 3.11,
+    # so the notice is informational; with the ``"error"`` filter above
+    # it would turn every module importing ``google.cloud`` into a
+    # collection error. Scope the ignore to that exact message so any
+    # other ``FutureWarning`` still surfaces.
+    "ignore:You are using a Python version .* which Google will stop supporting:FutureWarning",
     # starlette 1.x's ``starlette.testclient`` (re-exported by
     # ``fastapi.testclient.TestClient``) emits a
     # ``StarletteDeprecationWarning`` at import when it falls back to
