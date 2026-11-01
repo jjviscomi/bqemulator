@@ -33,63 +33,95 @@ bucket_name = os.environ["BQEMU_CONFORMANCE_GCS_BUCKET"]
 client = storage.Client()
 bucket = client.bucket(bucket_name)
 
+
 def upload(blob_name: str, payload: bytes) -> None:
     bucket.blob(f"g1/{blob_name}").upload_from_string(payload)
 
+
 # --- load_avro_basic ---
-schema = fastavro.parse_schema({
-    "type": "record", "name": "Item",
-    "fields": [
-        {"name": "id", "type": "long"},
-        {"name": "name", "type": ["null", "string"], "default": None},
-    ],
-})
+schema = fastavro.parse_schema(
+    {
+        "type": "record",
+        "name": "Item",
+        "fields": [
+            {"name": "id", "type": "long"},
+            {"name": "name", "type": ["null", "string"], "default": None},
+        ],
+    }
+)
 buf = io.BytesIO()
-fastavro.writer(buf, schema, [
-    {"id": 1, "name": "alpha"},
-    {"id": 2, "name": "beta"},
-    {"id": 3, "name": "gamma"},
-])
+fastavro.writer(
+    buf,
+    schema,
+    [
+        {"id": 1, "name": "alpha"},
+        {"id": 2, "name": "beta"},
+        {"id": 3, "name": "gamma"},
+    ],
+)
 upload("load_avro_basic.avro", buf.getvalue())
 
 # --- load_avro_nested_record ---
-schema = fastavro.parse_schema({
-    "type": "record", "name": "Person",
-    "fields": [
-        {"name": "id", "type": "long"},
-        {"name": "name", "type": "string"},
-        {"name": "addr", "type": {
-            "type": "record", "name": "Address",
-            "fields": [
-                {"name": "city", "type": "string"},
-                {"name": "zip", "type": "string"},
-            ],
-        }},
-    ],
-})
+schema = fastavro.parse_schema(
+    {
+        "type": "record",
+        "name": "Person",
+        "fields": [
+            {"name": "id", "type": "long"},
+            {"name": "name", "type": "string"},
+            {
+                "name": "addr",
+                "type": {
+                    "type": "record",
+                    "name": "Address",
+                    "fields": [
+                        {"name": "city", "type": "string"},
+                        {"name": "zip", "type": "string"},
+                    ],
+                },
+            },
+        ],
+    }
+)
 buf = io.BytesIO()
-fastavro.writer(buf, schema, [
-    {"id": 1, "name": "Ada", "addr": {"city": "London", "zip": "NW1"}},
-    {"id": 2, "name": "Linus", "addr": {"city": "Helsinki", "zip": "00100"}},
-])
+fastavro.writer(
+    buf,
+    schema,
+    [
+        {"id": 1, "name": "Ada", "addr": {"city": "London", "zip": "NW1"}},
+        {"id": 2, "name": "Linus", "addr": {"city": "Helsinki", "zip": "00100"}},
+    ],
+)
 upload("load_avro_nested_record.avro", buf.getvalue())
 
 # --- load_avro_logical_decimal ---
-schema = fastavro.parse_schema({
-    "type": "record", "name": "Amount",
-    "fields": [
-        {"name": "id", "type": "long"},
-        {"name": "value", "type": {
-            "type": "bytes", "logicalType": "decimal",
-            "precision": 38, "scale": 9,
-        }},
-    ],
-})
+schema = fastavro.parse_schema(
+    {
+        "type": "record",
+        "name": "Amount",
+        "fields": [
+            {"name": "id", "type": "long"},
+            {
+                "name": "value",
+                "type": {
+                    "type": "bytes",
+                    "logicalType": "decimal",
+                    "precision": 38,
+                    "scale": 9,
+                },
+            },
+        ],
+    }
+)
 buf = io.BytesIO()
-fastavro.writer(buf, schema, [
-    {"id": 1, "value": Decimal("123.456789000")},
-    {"id": 2, "value": Decimal("-0.000000001")},
-])
+fastavro.writer(
+    buf,
+    schema,
+    [
+        {"id": 1, "value": Decimal("123.456789000")},
+        {"id": 2, "value": Decimal("-0.000000001")},
+    ],
+)
 upload("load_avro_logical_decimal.avro", buf.getvalue())
 
 # --- load_orc_basic ---
