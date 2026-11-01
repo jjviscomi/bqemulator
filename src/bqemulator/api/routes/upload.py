@@ -246,8 +246,10 @@ def _parse_multipart_related(content_type: str, body: bytes) -> tuple[dict[str, 
 
     The first part must carry ``Content-Type: application/json`` (or
     a vendor JSON variant) and parse as the ``Job`` resource. The
-    second part carries the media bytes, which are returned verbatim
-    under any non-composite Content-Type (see :func:`_parse_media_part`).
+    second part carries the media bytes, which are returned under any
+    non-composite Content-Type (see :func:`_parse_media_part`), decoded
+    only if the part declares a ``Content-Transfer-Encoding`` such as
+    ``base64``.
     """
     if not content_type.lower().startswith(("multipart/related", "multipart/mixed")):
         raise InvalidQueryError(

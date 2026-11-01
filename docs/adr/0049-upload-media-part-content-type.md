@@ -27,7 +27,7 @@ they put on the wire was verified against their sources
 | Node.js | always (`createWriteStream`, `load(localPath)`) | `application/octet-stream` |
 | Go | payload under the upload chunk size (16 MiB default) | `http.DetectContentType` of the first 512 bytes |
 | Java | never (resumable only) | — |
-| `bq` CLI | only for an empty file (resumable otherwise) | `application/octet-stream` |
+| `bq` CLI | with `--noenable_resumable_uploads`, or for an empty file | `application/octet-stream` |
 
 The whitelist therefore rejected every Python multipart load with
 `400 multipart upload's second part has unsupported Content-Type '*/*'`,
@@ -57,7 +57,8 @@ footer).
 [`_parse_media_part`](https://github.com/jjviscomi/bqemulator/blob/main/src/bqemulator/api/routes/upload.py)
 accepts any media part whose top-level type is not composite, including
 `*/*`, a missing header (RFC 2045 default `text/plain`), and arbitrary
-sniffed types. The bytes are staged verbatim and parsed per
+sniffed types. The bytes are staged as sent (decoded only when the part
+declares a `Content-Transfer-Encoding` such as `base64`) and parsed per
 `sourceFormat` exactly as before.
 
 ### 2. Reject composite top-level types
@@ -75,12 +76,16 @@ rather than replacing the parser (see Alternative 3).
 A Hypothesis property test drives arbitrary binary payloads (bare CR / LF,
 CRLF, NUL, high bytes, delimiter-like prefixes) under arbitrary discrete
 types through the parser using the `google-resumable-media` framing and
-asserts the staged bytes equal the input. A conformance fixture replays
-the exact multipart request `load_table_from_json` sends. The e2e suites
-exercise the multipart path each client actually takes: Python
-`load_table_from_json` and sized `load_table_from_file` (CSV and Parquet),
-Node `createWriteStream`, and Go loads sniffed as `text/plain`,
-`image/bmp`, and `text/html`.
+asserts the staged bytes equal the input; a companion test keeps that
+framing identical to `google-resumable-media`'s own. A conformance fixture
+mirrors the multipart request `load_table_from_json` sends (framing,
+envelope key order, `*/*` media part), with placeholders for the project,
+dataset, and job id. The e2e suites exercise the multipart path each
+client actually takes: Python `load_table_from_json` and sized
+`load_table_from_file` (CSV and Parquet), Node `createWriteStream`, Go
+loads sniffed as `text/plain`, `image/bmp`, and `text/html`, and
+`bq --noenable_resumable_uploads load`. The Java client has no multipart
+path.
 
 ## Consequences
 

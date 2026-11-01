@@ -18,7 +18,7 @@ runs unchanged.
 | Node | `Table.createWriteStream(…)`, `Table.load(localPath, …)` | Multipart, at any size | `application/octet-stream` |
 | Go | `Table.LoaderFrom(bigquery.NewReaderSource(r)).Run(ctx)` | Multipart below the upload chunk size (16 MiB default), resumable otherwise | Sniffed from the first 512 bytes |
 | Java | `BigQuery.writer(WriteChannelConfiguration)` | Resumable | — |
-| `bq` CLI | `bq load <local file>` | Resumable (multipart for an empty file) | `application/octet-stream` |
+| `bq` CLI | `bq load <local file>` | Resumable; multipart with `--noenable_resumable_uploads` or for an empty file | `application/octet-stream` |
 
 All of them route through `/upload/bigquery/v2/projects/{p}/jobs`
 rather than the data-plane `/bigquery/v2/projects/{p}/jobs` endpoint.
@@ -134,9 +134,10 @@ The bytes are always parsed per `sourceFormat`; the multipart media
 part's `Content-Type` never selects the parser. As on BigQuery, whose
 `jobs.insert` media upload accepts `*/*`, any media type is accepted —
 `*/*`, `application/octet-stream`, a sniffed type such as `image/bmp`, or
-no header at all — and the bytes are staged verbatim. The one exception
-is a composite type (`multipart/*` or `message/*`), which is rejected
-with `400 invalidQuery`; see
+no header at all — and the bytes are staged as sent (decoded only if the
+part declares a `Content-Transfer-Encoding` such as `base64`). The one
+exception is a composite type (`multipart/*` or `message/*`), which is
+rejected with `400 invalidQuery`; see
 [ADR 0049](../adr/0049-upload-media-part-content-type.md).
 
 ## Operator configuration
@@ -180,9 +181,9 @@ A client that loses track of the offset can probe the session with
 - **Go client resumable uploads are rejected.** The Go client sends
   each resumable chunk as a `POST` to the session URI with
   `X-GUploader-No-308: yes`; the upload host accepts chunks only as
-  `PUT`, so a Go load larger than the client's upload chunk size
-  (16 MiB by default) fails with `400 invalidQuery`. Smaller Go loads go
-  out as one multipart request and are unaffected.
+  `PUT` and treats that `POST` as a new session initiation, so a Go load
+  larger than the client's upload chunk size (16 MiB by default) fails.
+  Smaller Go loads go out as one multipart request and are unaffected.
 - **Composite media-part types are rejected.** A media part labelled
   `multipart/*` or `message/*` returns `400 invalidQuery`; no official
   client sends one. See
