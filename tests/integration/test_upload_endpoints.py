@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import io
 import json
+from typing import Any
 import uuid
 
 import httpx
@@ -70,15 +71,18 @@ def _make_dataset_table(server: EmulatorServer, dataset: str, table: str) -> Non
         ).raise_for_status()
 
 
+def _query_rows(server: EmulatorServer, sql: str) -> list[list[Any]]:
+    """Run ``sql`` via jobs.query and return each row's cell values."""
+    with httpx.Client(base_url=server.rest_url, timeout=10) as http:
+        r = http.post("/bigquery/v2/projects/test-project/queries", json={"query": sql})
+        r.raise_for_status()
+        return [[cell["v"] for cell in row["f"]] for row in r.json().get("rows", [])]
+
+
 def _count_rows(server: EmulatorServer, dataset: str, table: str) -> int:
     """Return COUNT(*) on the table via jobs.query."""
-    with httpx.Client(base_url=server.rest_url, timeout=10) as http:
-        r = http.post(
-            "/bigquery/v2/projects/test-project/queries",
-            json={"query": f"SELECT COUNT(*) AS n FROM `test-project.{dataset}.{table}`"},
-        )
-        r.raise_for_status()
-        return int(r.json()["rows"][0]["f"][0]["v"])
+    rows = _query_rows(server, f"SELECT COUNT(*) AS n FROM `test-project.{dataset}.{table}`")
+    return int(rows[0][0])
 
 
 # ---------------------------------------------------------------------------
@@ -380,19 +384,41 @@ def test_session_eviction_after_ttl(bqemu_server: EmulatorServer) -> None:
     assert not staging.exists()
 
 
-def test_load_from_local_file_via_python_client(bqemu_server: EmulatorServer) -> None:
-    """End-to-end via the BQ Python client's ``load_table_from_file``."""
-    dataset = f"upload_py_{uuid.uuid4().hex[:8]}"
-    _make_dataset_table(bqemu_server, dataset, "t")
+# ---------------------------------------------------------------------------
+# Official Python client
+#
+# ``google-cloud-bigquery`` uploads through multipart, labelling the media
+# part ``*/*``, whenever it knows the payload size and it is under 5 MiB:
+# ``load_table_from_file(..., size=n)``, ``load_table_from_json``, and
+# ``load_table_from_dataframe``. An unsized file object always goes
+# resumable.
+# ---------------------------------------------------------------------------
+
+
+def _python_client(server: EmulatorServer) -> Any:
+    """Return a ``google.cloud.bigquery.Client`` bound to ``server``."""
     from google.api_core.client_options import ClientOptions
     from google.auth.credentials import AnonymousCredentials
     from google.cloud import bigquery
 
-    client = bigquery.Client(
+    return bigquery.Client(
         project="test-project",
         credentials=AnonymousCredentials(),
-        client_options=ClientOptions(api_endpoint=bqemu_server.rest_url),
+        client_options=ClientOptions(api_endpoint=server.rest_url),
     )
+
+
+@pytest.mark.parametrize(
+    "sized",
+    [pytest.param(False, id="unsized-resumable"), pytest.param(True, id="sized-multipart")],
+)
+def test_load_from_local_file_via_python_client(bqemu_server: EmulatorServer, sized: bool) -> None:
+    """End-to-end via the BQ Python client's ``load_table_from_file``."""
+    from google.cloud import bigquery
+
+    dataset = f"upload_py_{uuid.uuid4().hex[:8]}"
+    _make_dataset_table(bqemu_server, dataset, "t")
+    client = _python_client(bqemu_server)
     job_config = bigquery.LoadJobConfig(
         source_format=bigquery.SourceFormat.CSV,
         skip_leading_rows=1,
@@ -403,10 +429,82 @@ def test_load_from_local_file_via_python_client(bqemu_server: EmulatorServer) ->
         write_disposition=bigquery.WriteDisposition.WRITE_TRUNCATE,
     )
     csv_bytes = b"id,name\n1,alice\n2,bob\n3,carol\n4,dan\n"
-    job = client.load_table_from_file(
-        io.BytesIO(csv_bytes),
-        f"test-project.{dataset}.t",
-        job_config=job_config,
-    )
-    job.result(timeout=30)
+    try:
+        job = client.load_table_from_file(
+            io.BytesIO(csv_bytes),
+            f"test-project.{dataset}.t",
+            size=len(csv_bytes) if sized else None,
+            job_config=job_config,
+        )
+        job.result(timeout=30)
+    finally:
+        client.close()
     assert _count_rows(bqemu_server, dataset, "t") == 4
+
+
+def test_load_table_from_json_via_python_client(bqemu_server: EmulatorServer) -> None:
+    """``load_table_from_json`` sends a multipart upload with a ``*/*`` media part."""
+    from google.cloud import bigquery
+
+    dataset = f"upload_pyjson_{uuid.uuid4().hex[:8]}"
+    _make_dataset_table(bqemu_server, dataset, "t")
+    client = _python_client(bqemu_server)
+    job_config = bigquery.LoadJobConfig(
+        source_format=bigquery.SourceFormat.NEWLINE_DELIMITED_JSON,
+        write_disposition=bigquery.WriteDisposition.WRITE_TRUNCATE,
+    )
+    try:
+        job = client.load_table_from_json(
+            [{"id": 1, "name": "alice"}, {"id": 2, "name": "bob"}],
+            f"test-project.{dataset}.t",
+            job_config=job_config,
+        )
+        job.result(timeout=30)
+    finally:
+        client.close()
+    sql = f"SELECT id, name FROM `test-project.{dataset}.t` ORDER BY id"
+    assert _query_rows(bqemu_server, sql) == [
+        ["1", "alice"],
+        ["2", "bob"],
+    ]
+
+
+def test_load_parquet_multipart_via_python_client(bqemu_server: EmulatorServer) -> None:
+    """Binary Parquet survives the ``*/*`` multipart path byte for byte.
+
+    This is the upload ``load_table_from_dataframe`` performs for a small
+    frame: it writes Parquet to a temp file and loads it with ``size`` set.
+    """
+    from google.cloud import bigquery
+    import pyarrow as pa
+    import pyarrow.parquet as pq
+
+    dataset = f"upload_pypq_{uuid.uuid4().hex[:8]}"
+    _make_dataset_table(bqemu_server, dataset, "t")
+    sink = io.BytesIO()
+    pq.write_table(
+        pa.table({"id": pa.array([1, 2, 3], pa.int64()), "name": ["alice", "bob", "carol"]}),
+        sink,
+    )
+    parquet_bytes = sink.getvalue()
+    client = _python_client(bqemu_server)
+    job_config = bigquery.LoadJobConfig(
+        source_format=bigquery.SourceFormat.PARQUET,
+        write_disposition=bigquery.WriteDisposition.WRITE_TRUNCATE,
+    )
+    try:
+        job = client.load_table_from_file(
+            io.BytesIO(parquet_bytes),
+            f"test-project.{dataset}.t",
+            size=len(parquet_bytes),
+            job_config=job_config,
+        )
+        job.result(timeout=30)
+    finally:
+        client.close()
+    sql = f"SELECT id, name FROM `test-project.{dataset}.t` ORDER BY id"
+    assert _query_rows(bqemu_server, sql) == [
+        ["1", "alice"],
+        ["2", "bob"],
+        ["3", "carol"],
+    ]

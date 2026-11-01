@@ -73,42 +73,23 @@ _MULTIPART_RELATED_PART_COUNT = 2
 #: BigQuery returns ``308 Resume Incomplete`` on a partial chunk.
 _HTTP_RESUME_INCOMPLETE = 308
 
-#: Permitted Content-Type prefixes for the media part of a multipart
-#: upload and the body of a media/resumable upload. The whitelist
-#: matches BigQuery's documented load-source formats (CSV / NDJSON /
-#: Parquet / Avro / ORC) plus the canonical generic forms BQ accepts.
+#: MIME top-level types the stdlib ``email`` parser treats as composite
+#: (RFC 2046 §5): it interprets such a part's body as nested MIME
+#: entities instead of returning it verbatim, so a media part declared
+#: with one of them would stage an empty or altered file. These are the
+#: only media-part types the upload host rejects.
 #:
-#: ``*/*`` is included even though it names no actual format: the
-#: real BigQuery service tolerates it and every Google Cloud client
-#: library relies on that tolerance. ``google-cloud-bigquery``'s
-#: ``Client.load_table_from_json``/``load_table_from_file`` — the
-#: multipart path taken for any payload under ~5 MiB — never sets an
-#: explicit media part Content-Type, so ``requests``' MIME encoder
-#: defaults it to ``*/*``. This is safe to permit here for the same
-#: reason it's safe on the real service: this whitelist gates the
-#: *declared* media Content-Type header only, never the actual parse
-#: dispatch — ``_load_path_into_target`` always dispatches on the job
-#: config's ``configuration.load.sourceFormat`` (validated separately,
-#: with its own restricted set of accepted values), never on this
-#: header. Rejecting ``*/*`` here doesn't add any security value one
-#: of the real formats above wouldn't already provide — it only broke
-#: every small (sub-resumable-threshold) NDJSON/CSV-autodetect load
-#: sent by an unmodified official client library.
-_PERMITTED_MEDIA_CONTENT_TYPES = (
-    "*/*",
-    "application/octet-stream",
-    "application/x-www-form-urlencoded",
-    "application/json",
-    "application/vnd.bigquery.json",
-    "text/csv",
-    "text/plain",
-    "application/avro",
-    "application/vnd.apache.avro",
-    "application/x-parquet",
-    "application/vnd.apache.parquet",
-    "application/x-orc",
-    "application/vnd.apache.orc",
-)
+#: Every other media type is accepted, matching BigQuery: the
+#: ``jobs.insert`` media upload accepts ``*/*`` (discovery document
+#: ``mediaUpload.accept``) and the bytes are always parsed per
+#: ``configuration.load.sourceFormat``, never per this header. The client
+#: libraries depend on that. ``google-cloud-bigquery`` labels the media
+#: part ``*/*``; the Node.js client and the ``bq`` CLI send
+#: ``application/octet-stream``; the Go client sends whatever
+#: ``http.DetectContentType`` sniffs from the first 512 bytes, which is
+#: ``image/bmp`` for a CSV whose header starts with ``BM`` and
+#: ``text/html`` for one that starts with an HTML-like tag.
+_COMPOSITE_MEDIA_MAINTYPES = frozenset({"multipart", "message"})
 
 
 def _coerce_manager(ctx: AppContext) -> UploadSessionManager:
@@ -239,14 +220,15 @@ def _parse_json_part(part: email.message.Message) -> dict[str, Any]:
 def _parse_media_part(part: email.message.Message) -> bytes:
     """Extract the media bytes from a ``multipart/related`` second part.
 
-    Validates the part's declared content-type against the
-    :data:`_PERMITTED_MEDIA_CONTENT_TYPES` whitelist so an upload
-    can't be coerced into materialising an arbitrary MIME envelope.
+    The declared Content-Type does not select a parser (the load is read
+    per ``configuration.load.sourceFormat``), so any discrete media type
+    is accepted. A composite type (:data:`_COMPOSITE_MEDIA_MAINTYPES`) is
+    rejected because the parser has not preserved such a part's bytes.
     """
-    media_ct = (part.get_content_type() or "").lower()
-    if not _is_permitted_media_type(media_ct):
+    if part.get_content_maintype() in _COMPOSITE_MEDIA_MAINTYPES:
         raise InvalidQueryError(
-            f"multipart upload's second part has unsupported Content-Type {media_ct!r}",
+            "multipart upload's second part must carry the file bytes; got "
+            f"composite Content-Type {part.get_content_type()!r}",
         )
     media_bytes = part.get_payload(decode=True) or b""
     if not isinstance(media_bytes, bytes):  # pragma: no cover — defensive
@@ -264,10 +246,8 @@ def _parse_multipart_related(content_type: str, body: bytes) -> tuple[dict[str, 
 
     The first part must carry ``Content-Type: application/json`` (or
     a vendor JSON variant) and parse as the ``Job`` resource. The
-    second part carries the media bytes; its declared Content-Type is
-    validated against the whitelist :data:`_PERMITTED_MEDIA_CONTENT_TYPES`
-    so the server can't be coerced into materialising an arbitrary
-    MIME envelope inside the staging directory.
+    second part carries the media bytes, which are returned verbatim
+    under any non-composite Content-Type (see :func:`_parse_media_part`).
     """
     if not content_type.lower().startswith(("multipart/related", "multipart/mixed")):
         raise InvalidQueryError(
@@ -288,11 +268,6 @@ def _parse_multipart_related(content_type: str, body: bytes) -> tuple[dict[str, 
         )
     json_part, media_part = parts
     return _parse_json_part(json_part), _parse_media_part(media_part)
-
-
-def _is_permitted_media_type(media_ct: str) -> bool:
-    """Return True if ``media_ct`` matches an allowed media-part type."""
-    return any(media_ct.startswith(prefix) for prefix in _PERMITTED_MEDIA_CONTENT_TYPES)
 
 
 def _load_configuration_from_envelope(envelope: dict[str, Any]) -> dict[str, Any]:

@@ -1,0 +1,10 @@
+--===============7330845974216740156==
+content-type: application/json; charset=UTF-8
+
+{"configuration": {"load": {"destinationTable": {"projectId": "${PROJECT}", "datasetId": "${DATASET_ID}", "tableId": "tbl"}, "sourceFormat": "NEWLINE_DELIMITED_JSON", "writeDisposition": "WRITE_TRUNCATE"}}}
+--===============7330845974216740156==
+content-type: */*
+
+{"id": 1, "name": "alice"}
+{"id": 2, "name": "bob"}
+--===============7330845974216740156==--

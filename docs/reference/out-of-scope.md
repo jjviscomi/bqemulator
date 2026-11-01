@@ -139,6 +139,24 @@ emulator default of `upload_session_ttl_seconds=3600` is operator-
 tunable (1 minute to 24 hours); see
 [ADR 0029](../adr/0029-upload-host-endpoints.md).
 
+### Composite media-part Content-Types on multipart uploads
+
+A `multipart/related` upload whose media (second) part declares a
+composite top-level type, `multipart/*` or `message/*`, is rejected with
+`400 invalidQuery`. Every other media type is accepted and the bytes are
+parsed per `configuration.load.sourceFormat`, as BigQuery does: `*/*`
+from the Python client, `application/octet-stream` from the Node.js
+client and the `bq` CLI, and whatever the Go client sniffs from the
+payload.
+
+*Rationale*: real BigQuery treats the media part as opaque bytes under
+any type, but the upload host parses the envelope with the stdlib
+`email` package, which interprets a composite-labelled part as nested
+MIME entities and would stage an empty or altered file. No official
+client library labels a media part with a composite type, so rejecting
+it loudly is preferred over replacing the parser. See
+[ADR 0049](../adr/0049-upload-media-part-content-type.md).
+
 ### Storage Write API schema evolution
 
 Real BigQuery's `AppendRowsResponse.updated_schema` propagates a
