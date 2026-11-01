@@ -194,13 +194,17 @@ class TestClassifyAndParse:
         [
             ("EXPORT DATA OPTIONS(format='CSV') AS SELECT 1 AS a", "uri"),
             (
-                "EXPORT DATA OPTIONS(uri='gs://b/*.parquet', format='PARQUET', header=true) "
-                "AS SELECT 1 AS a",
+                (
+                    "EXPORT DATA OPTIONS(uri='gs://b/*.parquet', format='PARQUET', header=true) "
+                    "AS SELECT 1 AS a"
+                ),
                 "header",
             ),
             (
-                "EXPORT DATA OPTIONS(uri='gs://b/*.csv', format='CSV', compression='ZSTD') "
-                "AS SELECT 1 AS a",
+                (
+                    "EXPORT DATA OPTIONS(uri='gs://b/*.csv', format='CSV', compression='ZSTD') "
+                    "AS SELECT 1 AS a"
+                ),
                 "compression",
             ),
             (
@@ -208,8 +212,10 @@ class TestClassifyAndParse:
                 "Unknown EXPORT DATA option",
             ),
             (
-                "EXPORT DATA OPTIONS(uri='gs://b/o.avro', format='AVRO', "
-                "use_avro_logical_types='nope') AS SELECT 1 AS a",
+                (
+                    "EXPORT DATA OPTIONS(uri='gs://b/o.avro', format='AVRO', "
+                    "use_avro_logical_types='nope') AS SELECT 1 AS a"
+                ),
                 "boolean option",
             ),
         ],
