@@ -35,7 +35,10 @@ from bqemulator.sql.rewriter.collate_specifier import rewrite_collate_specifier
 from bqemulator.sql.rewriter.create_table_schema_ctas import (
     rewrite_create_table_schema_ctas,
 )
-from bqemulator.sql.rewriter.datetime_helpers import rewrite_datetime_helpers
+from bqemulator.sql.rewriter.datetime_helpers import (
+    DATE_TRUNC_FUNCTION,
+    rewrite_datetime_helpers,
+)
 from bqemulator.sql.rewriter.decimal_literals import rewrite_decimal_literals
 from bqemulator.sql.rewriter.division_by_zero import rewrite_division_by_zero
 from bqemulator.sql.rewriter.json_helpers import rewrite_json_helpers
@@ -95,6 +98,40 @@ _DUCKDB_BINARY_COERCIONS = {
     **TypeAnnotator.BINARY_COERCIONS,
     (exp.DType.DATE, exp.DType.INTERVAL): _date_interval_arithmetic_type,
     (exp.DType.INTERVAL, exp.DType.DATE): _date_interval_arithmetic_type,
+}
+
+
+#: SQLGlot's own typing for anonymous calls: the schema's UDF type.
+_annotate_udf_call = sqlglot.Dialect.EXPRESSION_METADATA[exp.Anonymous]["annotator"]
+
+
+def _annotate_anonymous_call(annotator: TypeAnnotator, call: exp.Anonymous) -> None:
+    """Type a ``BQEMU_DATE_TRUNC`` handoff as its operand; any other call as SQLGlot does.
+
+    BigQuery's ``DATE_TRUNC`` returns its operand's type, and the
+    :mod:`~bqemulator.sql.rules.iso_date_parts` rules expand the handoff
+    to exactly that DuckDB type for a ``DATE`` / ``TIMESTAMP`` /
+    ``TIMESTAMPTZ`` operand. Typing the call before the rules run lets
+    columns derived from it — through CTEs and subqueries — carry the
+    type into rules that read it.
+    """
+    if call.name.upper() == DATE_TRUNC_FUNCTION and call.expressions:
+        operand_type = call.expressions[0].type
+        if operand_type is not None and operand_type.is_type(
+            exp.DType.DATE,
+            exp.DType.TIMESTAMP,
+            exp.DType.TIMESTAMPTZ,
+        ):
+            annotator._set_type(call, operand_type)  # noqa: SLF001 — SQLGlot annotator protocol
+            return
+    _annotate_udf_call(annotator, call)
+
+
+#: Expression typing for the annotation pass: SQLGlot's defaults plus the
+#: result types of the ``BQEMU_*`` handoff calls.
+_DUCKDB_EXPRESSION_METADATA = {
+    **sqlglot.Dialect.EXPRESSION_METADATA,
+    exp.Anonymous: {"annotator": _annotate_anonymous_call},
 }
 
 
@@ -450,9 +487,11 @@ class SQLTranslator:
 
         The annotator uses :data:`_DUCKDB_BINARY_COERCIONS` so operator
         result types match DuckDB's evaluation of the SQL being
-        annotated. Failures are logged and the unannotated tree is
-        returned; rules that need type info gracefully skip. The
-        runtime ``isinstance`` check narrows SQLGlot's loosely-typed
+        annotated, and :data:`_DUCKDB_EXPRESSION_METADATA` so the
+        ``BQEMU_*`` handoff calls carry their result types. Failures
+        are logged and the unannotated tree is returned; rules that
+        need type info gracefully skip. The runtime ``isinstance``
+        check narrows SQLGlot's loosely-typed
         ``Expr`` return to :class:`exp.Expression` without resorting
         to a ``cast`` (which different stub revisions flag as either
         required or redundant).
@@ -461,6 +500,7 @@ class SQLTranslator:
             qualified = qualify(tree, schema=schema, dialect="duckdb", infer_schema=True)
             annotated = TypeAnnotator(
                 schema=ensure_schema(schema),
+                expression_metadata=_DUCKDB_EXPRESSION_METADATA,
                 binary_coercions=_DUCKDB_BINARY_COERCIONS,
             ).annotate(qualified)
         except Exception as exc:  # noqa: BLE001

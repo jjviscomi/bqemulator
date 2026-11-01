@@ -140,7 +140,7 @@ class TestTranslatorIsStateless:
         assert "2" in r2.value
 
 
-_TYPES_SCHEMA = {"t": {"d": "DATE", "n": "BIGINT"}}
+_TYPES_SCHEMA = {"t": {"d": "DATE", "n": "BIGINT", "ts": "TIMESTAMP", "tz": "TIMESTAMPTZ"}}
 
 
 def _annotated_projection_type(duckdb_sql: str) -> str:
@@ -171,6 +171,30 @@ class TestTypeAnnotation:
         connection = duckdb.connect()
         connection.execute("CREATE TABLE t (d DATE, n BIGINT)")
         assert connection.execute(duckdb_sql).description[0][1] == expected
+
+    @pytest.mark.parametrize(
+        ("expression", "expected"),
+        [
+            ("BQEMU_DATE_TRUNC(d, 'MONTH')", "DATE"),
+            ("BQEMU_DATE_TRUNC(ts, 'WEEK(MONDAY)')", "TIMESTAMP"),
+            ("BQEMU_DATE_TRUNC(tz, 'DAY')", "TIMESTAMPTZ"),
+            ("BQEMU_DATE_TRUNC(d + INTERVAL '1' DAY, 'YEAR')", "TIMESTAMP"),
+            ("bqemu_date_trunc(d, 'MONTH')", "DATE"),
+            ("BQEMU_DATE_TRUNC(n, 'MONTH')", "UNKNOWN"),
+            ("BQEMU_DATE_TRUNC()", "UNKNOWN"),
+            ("SOME_UDF(d)", "UNKNOWN"),
+        ],
+    )
+    def test_date_trunc_handoff_carries_its_operand_type(
+        self, expression: str, expected: str
+    ) -> None:
+        assert _annotated_projection_type(f"SELECT {expression} AS v FROM t") == expected
+
+    def test_cte_column_inherits_date_trunc_handoff_type(self) -> None:
+        duckdb_sql = (
+            "WITH c AS (SELECT BQEMU_DATE_TRUNC(d, 'DAY') AS x FROM t) SELECT x AS v FROM c"
+        )
+        assert _annotated_projection_type(duckdb_sql) == "DATE"
 
     def test_cte_column_inherits_operator_type(self) -> None:
         duckdb_sql = "WITH c AS (SELECT d + INTERVAL '1' DAY AS x FROM t) SELECT x AS v FROM c"

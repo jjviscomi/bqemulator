@@ -147,3 +147,14 @@ def test_date_trunc_over_information_schema(client, events: str) -> None:
     assert [field.field_type for field in job.result().schema] == ["STRING", "DATE", "DATE"]
     assert row.table_name == "events"
     assert row.created_year == dt.date(row.created.year, 1, 1)
+
+
+def test_truncating_a_truncated_date_column_stays_date(client, events: str) -> None:
+    """A ``DATE_TRUNC`` result keeps its DATE type through a CTE into another ``DATE_TRUNC``."""
+    job = client.query(
+        f"WITH c AS (SELECT DATE_TRUNC(d, MONTH) AS m FROM {events}) "
+        "SELECT DATE_TRUNC(m, WEEK) AS w FROM c",
+    )
+    row = next(iter(job.result()))
+    assert [field.field_type for field in job.result().schema] == ["DATE"]
+    assert row.w == dt.date(2024, 4, 28)

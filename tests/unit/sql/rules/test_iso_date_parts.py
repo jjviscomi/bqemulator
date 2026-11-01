@@ -422,6 +422,52 @@ class TestDateTruncOverTableColumn:
             )
             assert types == ["TIMESTAMP"], bq_sql
 
+    @pytest.mark.parametrize(
+        ("duckdb_type", "value", "expected"),
+        [
+            ("DATE", _dt.date(2024, 5, 15), _dt.date(2024, 4, 28)),
+            (
+                "TIMESTAMP",
+                _dt.datetime(2024, 5, 15, 13, 45),  # noqa: DTZ001 — DATETIME is naive
+                _dt.datetime(2024, 4, 28),  # noqa: DTZ001 — DATETIME is naive
+            ),
+            (
+                "TIMESTAMPTZ",
+                _dt.datetime(2024, 5, 15, 13, 45, tzinfo=_dt.UTC),
+                _dt.datetime(2024, 4, 28, tzinfo=_dt.UTC),
+            ),
+        ],
+    )
+    def test_truncation_of_a_derived_truncation_keeps_operand_type(
+        self,
+        t: SQLTranslator,
+        con: duckdb.DuckDBPyConnection,
+        duckdb_type: str,
+        value: _dt.date,
+        expected: _dt.date,
+    ) -> None:
+        # The inner truncation's type flows through the CTE / subquery
+        # column into the outer one: 2024-05-01 (a Wednesday) → Sunday.
+        expected_type = con.execute(f"SELECT NULL::{duckdb_type}").description[0][1]
+        for bq_sql in (
+            (
+                "WITH c AS (SELECT DATE_TRUNC(happened_at, MONTH) AS x "
+                "FROM `test-project.bqemu.t`) SELECT DATE_TRUNC(x, WEEK) AS w FROM c"
+            ),
+            (
+                "SELECT DATE_TRUNC(x, WEEK) AS w FROM (SELECT DATE_TRUNC(happened_at, MONTH) AS x "
+                "FROM `test-project.bqemu.t`)"
+            ),
+        ):
+            rows, types = _query_table(
+                t,
+                con,
+                columns={"happened_at": duckdb_type},
+                rows=[(value,)],
+                bq_sql=bq_sql,
+            )
+            assert (rows, types) == ([(expected,)], [expected_type]), bq_sql
+
     def test_date_add_operand_is_date(
         self, t: SQLTranslator, con: duckdb.DuckDBPyConnection
     ) -> None:
