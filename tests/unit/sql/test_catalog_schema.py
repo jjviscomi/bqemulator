@@ -129,9 +129,11 @@ class TestBuildCatalogSchema:
         )
         assert out == {}
 
-    def test_unmappable_type_skipped(self) -> None:
-        # An unrecognised type drops the column from the dict but
-        # keeps the rest of the table's columns.
+    def test_unmappable_type_kept_as_unknown(self) -> None:
+        # An unrecognised type must not drop the column: the translator
+        # expands ``SELECT *`` from this dict, so a missing column would
+        # vanish from the expanded projection. ``UNKNOWN`` keeps it
+        # while leaving its operands untyped.
         meta = _make_table(
             fields=(
                 TableFieldSchema(name="a", type="NUMERIC"),
@@ -144,4 +146,56 @@ class TestBuildCatalogSchema:
             project_id="test-project",
             catalog=cat,
         )
-        assert out == {"orders": {"a": "DECIMAL(38, 9)"}}
+        assert out == {"orders": {"a": "DECIMAL(38, 9)", "b": "UNKNOWN"}}
+
+    def test_parameterised_numeric_keeps_decimal_annotation(self) -> None:
+        # ``precision`` / ``scale`` render as ``NUMERIC(10, 2)``; the
+        # mapper drops the parameters so the operand is still annotated
+        # DECIMAL and the AVG / division rules fire.
+        meta = _make_table(
+            fields=(
+                TableFieldSchema(name="amount", type="NUMERIC", precision=10, scale=2),
+                TableFieldSchema(name="big", type="BIGNUMERIC", precision=20),
+            ),
+        )
+        cat = _FakeCatalog({("test-project", "ds", "orders"): meta})
+        out = build_catalog_schema(
+            "SELECT AVG(amount) FROM `test-project.ds.orders`",
+            project_id="test-project",
+            catalog=cat,
+        )
+        assert out == {"orders": {"amount": "DECIMAL(38, 9)", "big": "DECIMAL(76, 38)"}}
+
+    def test_nested_record_and_repeated_columns(self) -> None:
+        # DDL-created STRUCT columns land in the catalog as ``RECORD``
+        # with nested ``fields`` (and ``REPEATED`` for arrays). They
+        # must be rendered to their compound form so the snapshot keeps
+        # them — otherwise a ``WHERE meta.change_type = …`` over a
+        # ``SELECT *`` subquery fails to bind after star expansion.
+        meta = _make_table(
+            fields=(
+                TableFieldSchema(name="id", type="INTEGER"),
+                TableFieldSchema(
+                    name="meta",
+                    type="RECORD",
+                    fields=(
+                        TableFieldSchema(name="change_type", type="STRING"),
+                        TableFieldSchema(name="sort_keys", type="STRING", mode="REPEATED"),
+                    ),
+                ),
+                TableFieldSchema(name="tags", type="STRING", mode="REPEATED"),
+            ),
+        )
+        cat = _FakeCatalog({("test-project", "ds", "orders"): meta})
+        out = build_catalog_schema(
+            "SELECT * FROM `test-project.ds.orders`",
+            project_id="test-project",
+            catalog=cat,
+        )
+        assert out == {
+            "orders": {
+                "id": "BIGINT",
+                "meta": "STRUCT(change_type VARCHAR, sort_keys VARCHAR[])",
+                "tags": "VARCHAR[]",
+            }
+        }

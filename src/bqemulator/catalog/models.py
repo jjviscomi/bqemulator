@@ -57,6 +57,52 @@ class TableFieldSchema(_Frozen):
     # REST ``rangeElementType`` shape.
     range_element_type: TableFieldSchema | None = None
 
+    def data_type(self) -> str:
+        """Render this column's GoogleSQL ``data_type`` string.
+
+        The form matches what BigQuery documents for
+        ``INFORMATION_SCHEMA.COLUMNS.data_type``. Scalars render as the
+        canonical type name (``INT64``, ``STRING``, ``TIMESTAMP``), with
+        the legacy wire-format spellings ``INTEGER``, ``FLOAT``,
+        ``BOOLEAN`` and ``RECORD`` normalised. Repeated fields render as
+        ``ARRAY<T>``, nested records as ``STRUCT<field1 T1, field2 T2>``
+        and RANGE columns as ``RANGE<T>`` with their element type.
+        ``NUMERIC`` and ``BIGNUMERIC`` carry their precision and scale
+        when set.
+        """
+        inner = self._inner_data_type()
+        if self.mode == "REPEATED":
+            return f"ARRAY<{inner}>"
+        return inner
+
+    def _inner_data_type(self) -> str:
+        """Render the element type; ``data_type`` wraps it in ``ARRAY<…>`` for REPEATED."""
+        bq_type = self.type.upper()
+        bq_type = _LEGACY_TYPE_ALIASES.get(bq_type, bq_type)
+        if bq_type == "STRUCT":
+            nested = ", ".join(
+                f"{nested_field.name} {nested_field.data_type()}" for nested_field in self.fields
+            )
+            return f"STRUCT<{nested}>"
+        if bq_type == "RANGE" and self.range_element_type is not None:
+            return f"RANGE<{self.range_element_type.data_type()}>"
+        if bq_type in {"NUMERIC", "BIGNUMERIC"} and self.precision is not None:
+            if self.scale is not None:
+                return f"{bq_type}({self.precision}, {self.scale})"
+            return f"{bq_type}({self.precision})"
+        return bq_type
+
+
+#: Legacy BigQuery type names → GoogleSQL canonical names. Real BigQuery
+#: accepts the legacy spellings on input but always renders the
+#: canonical form in ``INFORMATION_SCHEMA.COLUMNS.data_type``.
+_LEGACY_TYPE_ALIASES: dict[str, str] = {
+    "INTEGER": "INT64",
+    "FLOAT": "FLOAT64",
+    "BOOLEAN": "BOOL",
+    "RECORD": "STRUCT",
+}
+
 
 TableFieldSchema.model_rebuild()
 

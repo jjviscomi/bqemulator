@@ -198,3 +198,35 @@ class TestJobMeta:
         assert j.job_type == "QUERY"
         assert j.state == "DONE"
         assert j.error_result is None
+
+
+class TestTableFieldSchemaDataType:
+    def test_scalar_normalises_legacy_names(self) -> None:
+        assert TableFieldSchema(name="i", type="INTEGER").data_type() == "INT64"
+        assert TableFieldSchema(name="f", type="FLOAT").data_type() == "FLOAT64"
+        assert TableFieldSchema(name="b", type="BOOLEAN").data_type() == "BOOL"
+        assert TableFieldSchema(name="s", type="STRING").data_type() == "STRING"
+
+    def test_repeated_record_renders_array_of_struct(self) -> None:
+        field = TableFieldSchema(
+            name="items",
+            type="RECORD",
+            mode="REPEATED",
+            fields=(
+                TableFieldSchema(name="sku", type="STRING"),
+                TableFieldSchema(name="qty", type="INTEGER"),
+            ),
+        )
+        assert field.data_type() == "ARRAY<STRUCT<sku STRING, qty INT64>>"
+
+    def test_range_and_parameterised_numeric(self) -> None:
+        rng = TableFieldSchema(
+            name="r",
+            type="RANGE",
+            range_element_type=TableFieldSchema(name="", type="DATE"),
+        )
+        assert rng.data_type() == "RANGE<DATE>"
+        numeric = TableFieldSchema(name="n", type="NUMERIC", precision=10, scale=2)
+        assert numeric.data_type() == "NUMERIC(10, 2)"
+        bignumeric = TableFieldSchema(name="n", type="BIGNUMERIC", precision=20)
+        assert bignumeric.data_type() == "BIGNUMERIC(20)"

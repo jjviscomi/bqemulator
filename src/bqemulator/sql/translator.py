@@ -412,15 +412,20 @@ class SQLTranslator:
     ) -> exp.Expression:
         """Run SQLGlot's ``qualify`` + ``annotate_types`` passes.
 
-        Failures are logged and the unannotated tree is returned;
-        rules that need type info gracefully skip. The runtime
+        Both passes mutate their input in place, so they run on a copy:
+        ``qualify`` can fail part-way (an unresolvable column, a schema
+        gap) after it has already expanded stars and re-quoted
+        identifiers, and serialising that half-rewritten tree would hand
+        DuckDB SQL the user never wrote. On failure the pristine
+        ``tree`` is returned instead and rules that need type info
+        gracefully skip. The runtime
         ``isinstance`` check narrows SQLGlot's loosely-typed
         ``Expr`` return to :class:`exp.Expression` without resorting
         to a ``cast`` (which different stub revisions flag as either
         required or redundant).
         """
         try:
-            qualified = qualify(tree, schema=schema, dialect="duckdb", infer_schema=True)
+            qualified = qualify(tree.copy(), schema=schema, dialect="duckdb", infer_schema=True)
             annotated = annotate_types(qualified, schema=schema)
         except Exception as exc:  # noqa: BLE001
             _log.debug("sql.annotate_types_skipped", error=str(exc))

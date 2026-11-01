@@ -10,6 +10,14 @@ looks each up in the catalog, and emits the dict. Unresolvable refs
 (CTEs, sub-query aliases, missing tables) are skipped — the resulting
 dict carries only what the translator can usefully annotate.
 
+Every column of a resolved table is listed, even when its type cannot
+be mapped: the translator's ``qualify`` pass expands ``SELECT *`` from
+this dict, so a missing column would silently vanish from the expanded
+projection and break any outer reference to it. Nested ``RECORD`` /
+``REPEATED`` columns are rendered to their ``STRUCT<…>`` / ``ARRAY<…>``
+form before mapping; anything still unmappable is typed ``UNKNOWN`` so
+the operand-type-aware rules skip it.
+
 The helper is intentionally tolerant: SQLGlot parse failures and
 catalog lookup failures both surface as an empty dict so the
 translator falls back to its legacy (un-annotated) behaviour.
@@ -41,8 +49,9 @@ def build_catalog_schema(
     """Return the per-table column type dict for tables referenced in *bq_sql*.
 
     Keys are the unqualified table-id; values are
-    ``{column_name: duckdb_type}`` for the columns declared in the
-    catalog. SQLGlot's annotator looks up a column via its bare table
+    ``{column_name: duckdb_type}`` for every column declared in the
+    catalog (``UNKNOWN`` when the type does not map to DuckDB).
+    SQLGlot's annotator looks up a column via its bare table
     name (the alias-or-table portion of a ``"db"."schema"."table"``
     reference), so the flat single-level keying is both sufficient and
     matches the BigQuery convention of using the trailing identifier
@@ -69,12 +78,10 @@ def build_catalog_schema(
             continue
         if meta is None:
             continue
-        columns: dict[str, str] = {}
-        for field in meta.schema_.fields:
-            duckdb_type = _safe_bq_to_duckdb(field.type)
-            if duckdb_type is None:
-                continue
-            columns[field.name] = duckdb_type
+        columns: dict[str, str] = {
+            field.name: _safe_bq_to_duckdb(field.data_type()) or _UNKNOWN_TYPE
+            for field in meta.schema_.fields
+        }
         if columns:
             schema[table_id] = columns
     return schema
@@ -108,33 +115,22 @@ def _resolve_table_ref(
     return table_project, dataset_id, table_name
 
 
-_BQ_TYPE_ALIASES: dict[str, str] = {
-    # Catalog metadata uses BigQuery wire-format names (``INTEGER`` /
-    # ``FLOAT`` / ``BOOLEAN`` / ``RECORD``) alongside the GoogleSQL
-    # spellings (``INT64`` / ``FLOAT64`` / ``BOOL`` / ``STRUCT``). The
-    # type map only accepts the GoogleSQL spellings, so we collapse
-    # the alias before dispatch.
-    "INTEGER": "INT64",
-    "FLOAT": "FLOAT64",
-    "BOOLEAN": "BOOL",
-    "RECORD": "STRUCT",
-}
+#: SQLGlot's placeholder type for a column whose type is not known. It
+#: keeps the column in the schema (so ``SELECT *`` expands to it) while
+#: making ``annotate_types`` leave its operands untyped.
+_UNKNOWN_TYPE = "UNKNOWN"
 
 
 def _safe_bq_to_duckdb(bq_type: str) -> str | None:
-    """Translate a BigQuery type name; return ``None`` on unmappable types.
+    """Translate a GoogleSQL type string; return ``None`` on unmappable types.
 
-    Normalises catalog-stored wire-format aliases (``INTEGER``,
-    ``FLOAT``, ``BOOLEAN``, ``RECORD``) into the GoogleSQL spellings
-    the type map accepts. The translator's annotate-types pass treats
-    missing entries as ``UNKNOWN``; mapping failures (custom catalog
-    types, malformed entries) flow through as ``None`` so the
-    annotator falls back to its defaults for the affected column.
+    ``bq_type`` is the canonical form :meth:`TableFieldSchema.data_type`
+    renders (``INT64``, ``STRUCT<a STRING>``, ``ARRAY<INT64>``, …).
+    Mapping failures (custom catalog types, malformed entries) flow
+    through as ``None`` so the caller can substitute the placeholder.
     """
-    upper = bq_type.strip().upper()
-    normalised = _BQ_TYPE_ALIASES.get(upper, bq_type)
     try:
-        return bq_to_duckdb(normalised)
+        return bq_to_duckdb(bq_type)
     except Exception:  # noqa: BLE001
         return None
 

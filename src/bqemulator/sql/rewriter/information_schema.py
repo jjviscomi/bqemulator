@@ -759,7 +759,7 @@ def _column_row_literal(
     """
     col_name = _sql_literal(field.name)
     is_nullable = _sql_literal("YES" if field.mode != "REQUIRED" else "NO")
-    data_type = _sql_literal(_render_data_type(field))
+    data_type = _sql_literal(field.data_type())
     is_updatable = _sql_literal("YES" if table.table_type == "TABLE" else "NO")
     is_partitioning = _sql_literal(
         "YES" if partition_field is not None and field.name == partition_field else "NO",
@@ -790,53 +790,6 @@ def _partition_field(t: TableMeta) -> str | None:
     if t.range_partitioning is not None:
         return t.range_partitioning.field
     return None
-
-
-def _render_data_type(field: TableFieldSchema) -> str:
-    """Render a BigQuery-shaped ``data_type`` string for a column.
-
-    Matches BigQuery's documented form:
-
-    * scalars: bare type name (``INT64``, ``STRING``, ``TIMESTAMP``).
-    * ``ARRAY<T>`` for repeated fields.
-    * ``STRUCT<field1 T1, field2 T2>`` for nested records.
-    * ``RANGE<T>`` for RANGE columns (with the inner element type).
-    * NUMERIC/BIGNUMERIC carry their precision/scale when set.
-    """
-    inner = _render_inner_type(field)
-    if field.mode == "REPEATED":
-        return f"ARRAY<{inner}>"
-    return inner
-
-
-#: Legacy BigQuery type names → GoogleSQL canonical names used in
-#: ``INFORMATION_SCHEMA.COLUMNS.data_type``. Real BigQuery accepts the
-#: legacy spellings on input but always renders the canonical form in
-#: the information-schema view, so we normalise here to match.
-_LEGACY_TYPE_ALIASES: dict[str, str] = {
-    "INTEGER": "INT64",
-    "FLOAT": "FLOAT64",
-    "BOOLEAN": "BOOL",
-    "RECORD": "STRUCT",
-}
-
-
-def _render_inner_type(field: TableFieldSchema) -> str:
-    bq_type = field.type.upper()
-    bq_type = _LEGACY_TYPE_ALIASES.get(bq_type, bq_type)
-    if bq_type == "STRUCT":
-        nested = ", ".join(
-            f"{nested_field.name} {_render_data_type(nested_field)}"
-            for nested_field in field.fields
-        )
-        return f"STRUCT<{nested}>"
-    if bq_type == "RANGE" and field.range_element_type is not None:
-        return f"RANGE<{_render_inner_type(field.range_element_type)}>"
-    if bq_type in {"NUMERIC", "BIGNUMERIC"} and field.precision is not None:
-        if field.scale is not None:
-            return f"{bq_type}({field.precision}, {field.scale})"
-        return f"{bq_type}({field.precision})"
-    return bq_type
 
 
 # ---------------------------------------------------------------------------

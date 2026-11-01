@@ -118,10 +118,15 @@ def bq_to_duckdb(bq_type: str) -> str:
     - ``ARRAY<INT64>`` → ``BIGINT[]``
     - ``STRUCT<name STRING, age INT64>`` → ``STRUCT(name VARCHAR, age BIGINT)``
     - ``RANGE<DATE>`` → ``STRUCT("start" DATE, "end" DATE)``
+    - ``NUMERIC(10, 2)`` / ``BIGNUMERIC(20)`` / ``STRING(8)`` / ``BYTES(8)``
+      → the base type's mapping. The parameters constrain writes only:
+      BigQuery does not propagate them through expressions, and the
+      emulator stores NUMERIC / BIGNUMERIC at the fixed canonical widths,
+      so the DuckDB type is the unparameterized one.
 
     Raises :class:`ValidationError` for unknown types.
     """
-    upper = bq_type.strip().upper()
+    upper = _strip_scalar_parameters(bq_type.strip().upper())
 
     # ARRAY<element_type>
     if upper.startswith("ARRAY<") and upper.endswith(">"):
@@ -144,6 +149,19 @@ def bq_to_duckdb(bq_type: str) -> str:
     if result is None:
         raise ValidationError(f"Unknown BigQuery type: {bq_type!r}")
     return result
+
+
+#: GoogleSQL scalar types that accept ``(precision[, scale])`` or
+#: ``(max_length)`` parameters.
+_PARAMETERIZED_SCALARS: frozenset[str] = frozenset({"NUMERIC", "BIGNUMERIC", "STRING", "BYTES"})
+
+
+def _strip_scalar_parameters(upper: str) -> str:
+    """Drop ``(…)`` from a parameterized scalar type; leave anything else untouched."""
+    base, paren, params = upper.partition("(")
+    if paren and base.strip() in _PARAMETERIZED_SCALARS and params.endswith(")"):
+        return base.strip()
+    return upper
 
 
 def _duckdb_compound_to_bq(duckdb_type: str, upper: str) -> str | None:
@@ -242,6 +260,13 @@ def bq_schema_to_duckdb_columns(
                     f"RANGE field {name!r} rangeElementType missing 'type'",
                 )
             duckdb_type = bq_to_duckdb(f"RANGE<{elem_type}>")
+        elif "(" in bq_type:
+            # REST schemas carry precision / scale / maxLength as separate
+            # fields; BigQuery rejects a parameterized ``type`` string.
+            raise ValidationError(
+                f"Field {name!r}: type {bq_type!r} must not carry parameters; "
+                "use the precision, scale or maxLength fields",
+            )
         else:
             duckdb_type = bq_to_duckdb(bq_type)
 

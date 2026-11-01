@@ -86,6 +86,33 @@ class TestBqToDuckdbParameterized:
         result = bq_to_duckdb("STRUCT<address STRUCT<street STRING, city STRING>>")
         assert "STRUCT(street VARCHAR, city VARCHAR)" in result
 
+    @pytest.mark.parametrize(
+        ("bq", "expected"),
+        [
+            ("NUMERIC(10, 2)", "DECIMAL(38, 9)"),
+            ("NUMERIC(5)", "DECIMAL(38, 9)"),
+            ("numeric(10,2)", "DECIMAL(38, 9)"),
+            ("BIGNUMERIC(20, 4)", "DECIMAL(76, 38)"),
+            ("STRING(8)", "VARCHAR"),
+            ("BYTES(8)", "BLOB"),
+        ],
+    )
+    def test_parameterized_scalar_maps_to_base_type(self, bq: str, expected: str) -> None:
+        # The parameters constrain writes only; the stored DuckDB column
+        # is the canonical width, so the mapped type must match it.
+        assert bq_to_duckdb(bq) == expected
+
+    def test_parameterized_scalar_inside_compound_types(self) -> None:
+        assert (
+            bq_to_duckdb("STRUCT<amount NUMERIC(10, 2), label STRING(3)>")
+            == "STRUCT(amount DECIMAL(38, 9), label VARCHAR)"
+        )
+        assert bq_to_duckdb("ARRAY<NUMERIC(5)>") == "DECIMAL(38, 9)[]"
+
+    def test_parameters_on_unparameterizable_type_raise(self) -> None:
+        with pytest.raises(ValidationError, match="Unknown BigQuery type"):
+            bq_to_duckdb("INT64(10)")
+
 
 # ---------------------------------------------------------------------------
 # duckdb_to_bq — scalar types
@@ -195,6 +222,12 @@ class TestBqSchemaToDuckdbColumns:
             ("amount", "DECIMAL(38, 9)"),
             ("created", "TIMESTAMPTZ"),
         ]
+
+    def test_parameterized_type_string_rejected(self) -> None:
+        # BigQuery's REST schema takes precision / scale / maxLength as
+        # separate fields and rejects ``"type": "NUMERIC(10, 2)"``.
+        with pytest.raises(ValidationError, match="must not carry parameters"):
+            bq_schema_to_duckdb_columns([{"name": "x", "type": "NUMERIC(10, 2)"}])
 
     def test_repeated_mode_wraps_in_list(self) -> None:
         fields = [{"name": "tags", "type": "STRING", "mode": "REPEATED"}]

@@ -134,3 +134,27 @@ class TestTranslatorIsStateless:
         assert isinstance(r2, Ok)
         assert "1" in r1.value
         assert "2" in r2.value
+
+
+class TestAnnotateTreeIsolation:
+    """Verify ``_annotate_tree`` never leaks a half-qualified tree."""
+
+    def test_failed_qualify_leaves_translation_untouched(self) -> None:
+        # The schema omits ``meta`` so SQLGlot's ``qualify`` raises
+        # after it has already expanded the inner star and re-quoted
+        # identifiers. ``UPPER`` matches a rule, which forces the tree
+        # to be re-serialised — the output must be the plain
+        # transpile, not the mutated tree (which drops ``meta`` from
+        # the subquery and leaves DuckDB unable to bind the WHERE).
+        sql = (
+            "SELECT UPPER(name) AS n FROM "
+            "(SELECT * FROM `p.ds.t` QUALIFY ROW_NUMBER() OVER (PARTITION BY id ORDER BY id) = 1) "
+            "WHERE meta.change_type = 'INSERT'"
+        )
+        translator = SQLTranslator()
+        plain = translator.translate(sql)
+        annotated = translator.translate(sql, schema={"t": {"id": "BIGINT", "name": "TEXT"}})
+        assert isinstance(plain, Ok)
+        assert isinstance(annotated, Ok)
+        assert annotated.value == plain.value
+        assert '"_0"' not in annotated.value
