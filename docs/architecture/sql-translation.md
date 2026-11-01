@@ -1,16 +1,35 @@
 # SQL translation
 
-Pipeline (implemented in `src/bqemulator/sql/`):
+Pipeline (implemented in `bqemulator.sql.translator.SQLTranslator`):
 
 ```
 BigQuery SQL
     │
-    ▼  preprocess (bqemulator.sql.rewriter.pre_sqlglot)
-    ▼  sqlglot.transpile(read="bigquery", write="duckdb")
-    ▼  postprocess (bqemulator.sql.rewriter.post_sqlglot)
-    ▼  rule engine apply (bqemulator.sql.rules.*)
+    ▼  text pre-translators (bqemulator.sql.rewriter.*)
+    ▼  sqlglot.parse(read="bigquery")
+    ▼  BigQuery-AST rewrites (bqemulator.sql.rewriter.datetime_helpers)
+    ▼  DuckDB generation
+    ▼  rule engine (bqemulator.sql.rules.*): re-parse as DuckDB, qualify +
+       annotate types against the catalog schema snapshot, apply rules
+       post-order
 DuckDB SQL
 ```
+
+Text pre-translators rewrite constructs the BigQuery parser or the
+transpile cannot take in their original form. Rewrites that depend on
+distinctions only the BigQuery AST carries — `DATE_ADD(...)` versus
+`date + INTERVAL`, `DATE_TRUNC` versus `TIMESTAMP_TRUNC`,
+`WEEK(<WEEKDAY>)` — run on the parsed BigQuery statement immediately
+before DuckDB generation rather than on text, because re-serialising
+BigQuery SQL is lossy (SQLGlot's BigQuery generator strips `CAST` type
+parameters and reshapes `AT TIME ZONE` and `VALUES … AS v(…)`).
+
+When such a rewrite also needs operand types, which exist only once the
+rule engine annotates the DuckDB AST, it emits a `BQEMU_*` handoff call
+that a rule expands: `DATE_TRUNC(x, WEEK(MONDAY))` becomes
+`BQEMU_DATE_TRUNC(x, 'WEEK(MONDAY)')`, which `DateTruncWeekRule`
+expands into a `DATE` or `TIMESTAMP` truncation according to the type
+of `x`.
 
 ## Rule engine
 

@@ -50,7 +50,7 @@ table below maps each BigQuery view to its rewriter function.
 
 > **Auto-generated.** Edit translation rules under [`src/bqemulator/sql/rules/`](https://github.com/jjviscomi/bqemulator/blob/main/src/bqemulator/sql/rules/) or rewriters under [`src/bqemulator/sql/rewriter/`](https://github.com/jjviscomi/bqemulator/blob/main/src/bqemulator/sql/rewriter/), then run `make function-mapping` to regenerate this block. The CI gate (`--check`) refuses to merge a PR whose committed registry has drifted from the live source. Per-rule docstring summaries are extracted as the cell text — if a cell reads wrong, edit the rule's docstring.
 
-- **Registered rules**: 92 (13 rule modules)
+- **Registered rules**: 91 (13 rule modules)
 - **Rewriter functions**: 24 (24 rewriter modules; the INFORMATION_SCHEMA rewriter has its own hand-maintained per-view table below)
 
 ### Translation rules (post-transpile AST passes)
@@ -83,9 +83,8 @@ table below maps each BigQuery view to its rewriter function.
 | Interval helpers | `JUSTIFY_DAYS(x)` | DuckDB normalisation expression | `JUSTIFY_DAYS` |
 | Interval helpers | `JUSTIFY_HOURS(x)` | DuckDB normalisation expression | `JUSTIFY_HOURS` |
 | Interval helpers | `JUSTIFY_INTERVAL(x)` | both JUSTIFY_HOURS + JUSTIFY_DAYS rules combined | `JUSTIFY_INTERVAL` |
-| ISO date parts | `DATE_TRUNC(date, DAY\|MONTH\|QUARTER\|YEAR)` | `CAST(... AS DATE)` | `DATE_TRUNC_CALENDAR_UNIT` |
-| ISO date parts | `DATE_TRUNC(date, ISOYEAR)` | `CAST(DATE_TRUNC('ISOYEAR', date) AS DATE)` | `DATE_TRUNC_ISOYEAR` |
-| ISO date parts | `DATE_TRUNC(date, WEEK)` | Sunday-start truncation cast to DATE | `DATE_TRUNC_WEEK` |
+| ISO date parts | `DATE_TRUNC(x, DAY\|MONTH\|QUARTER\|YEAR\|ISOYEAR)` | `DATE_TRUNC` in *x*'s type | `DATE_TRUNC_CALENDAR_UNIT` |
+| ISO date parts | `DATE_TRUNC(x, WEEK\|WEEK(<WEEKDAY>)\|ISOWEEK)` | week-start truncation in *x*'s type | `DATE_TRUNC_WEEK` |
 | ISO date parts | `EXTRACT(ISOWEEK FROM x)` | `EXTRACT(WEEK FROM x)` | `EXTRACT_ISOWEEK` |
 | JSON helpers | `JSON_ARRAY_INSERT(j, path, value)` | helper-UDF call wrapped in `CAST(... AS JSON)` | `JSON_ARRAY_INSERT` |
 | JSON helpers | `JSON_KEYS(json)` | `json_keys(json)` | `JSON_KEYS` |
@@ -157,7 +156,7 @@ table below maps each BigQuery view to its rewriter function.
 | Pre-translator (aggregate variants) | Pre-translate BigQuery aggregate variants DuckDB rejects | — | `rewrite_aggregate_variants` |
 | Pre-translator (COLLATE) | Pre-translate BigQuery SQL for the `COLLATE(value, specifier)` form | — | `rewrite_collate_specifier` |
 | Pre-translator (CTAS schema) | Convert combined `CREATE TABLE x (schema) AS SELECT …` to bare CTAS | — | `rewrite_create_table_schema_ctas` |
-| Pre-translator (date / time) | Pre-translate BigQuery SQL for date/time functions with lossy transpiles | — | `rewrite_datetime_helpers` |
+| Pre-translator (date / time) | Rewrite BigQuery date/time calls whose semantics the DuckDB transpile loses | — | `rewrite_datetime_helpers` |
 | Pre-translator (decimal literals) | Pin bare BigQuery decimal literals to `FLOAT64`-typed form | — | `rewrite_decimal_literals` |
 | Pre-translator (default dataset) | Rewrite unqualified table refs in `bq_sql` to the default project + dataset | — | `qualify_unqualified_tables` |
 | Pre-translator (division by zero) | Pre-translate BigQuery SQL to raise on `a / 0` for the bare `/` operator | — | `rewrite_division_by_zero` |
