@@ -103,7 +103,7 @@ describe("bqemulator G2 upload host (Node.js)", () => {
 
   it("loads a multi-MiB NDJSON via multipart upload", async () => {
     await client.query(
-      `CREATE TABLE IF NOT EXISTS \`${PROJECT}.${DATASET}.rows_rs\` ` +
+      `CREATE TABLE IF NOT EXISTS \`${PROJECT}.${DATASET}.rows_mib\` ` +
         `(id INT64, name STRING)`,
     );
 
@@ -120,7 +120,7 @@ describe("bqemulator G2 upload host (Node.js)", () => {
     // requires a @google-cloud/storage File object for direct load().
     const writeStream = client
       .dataset(DATASET)
-      .table("rows_rs")
+      .table("rows_mib")
       .createWriteStream({
         sourceFormat: "NEWLINE_DELIMITED_JSON",
         writeDisposition: "WRITE_TRUNCATE",
@@ -144,7 +144,7 @@ describe("bqemulator G2 upload host (Node.js)", () => {
     assert.equal(meta.status.state, "DONE");
 
     const [rows] = await client.query(
-      `SELECT COUNT(*) AS n FROM \`${PROJECT}.${DATASET}.rows_rs\``,
+      `SELECT COUNT(*) AS n FROM \`${PROJECT}.${DATASET}.rows_mib\``,
     );
     assert.equal(Number(rows[0].n), 60_000);
   });

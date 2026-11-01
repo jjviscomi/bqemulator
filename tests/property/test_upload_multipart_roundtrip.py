@@ -13,6 +13,7 @@ from __future__ import annotations
 
 import json
 import re
+from unittest import mock
 
 from hypothesis import assume, given, settings
 from hypothesis import strategies as st
@@ -85,6 +86,15 @@ def _has_delimiter_line(media: bytes) -> bool:
     """
     lines = re.split(rb"\r\n|\r|\n", media)
     return any(line.rstrip(b" \t") in (_DELIMITER, _DELIMITER + b"--") for line in lines)
+
+
+@pytest.mark.parametrize("media", [b"", b"id,name\n1,a", b"PAR1\x00\r\n\xffPAR1"])
+def test_frame_matches_google_resumable_media(media: bytes) -> None:
+    """``_frame`` must stay byte-identical to the client library's own framing."""
+    upload = pytest.importorskip("google.resumable_media._upload")
+    with mock.patch.object(upload, "get_boundary", return_value=_BOUNDARY.encode()):
+        expected, _ = upload.construct_multipart_request(media, _ENVELOPE, "*/*")
+    assert _frame(media, "*/*") == expected
 
 
 @given(media=_media_bytes, media_ct=_discrete_media_types)

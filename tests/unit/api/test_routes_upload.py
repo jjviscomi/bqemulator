@@ -36,12 +36,14 @@ def _build_multipart_related(
     json_body: dict[str, object],
     media: bytes,
     media_ct: str | None = "text/csv",
+    extra_media_headers: tuple[str, ...] = (),
 ) -> tuple[str, bytes]:
     """Construct a ``multipart/related`` body the way BQ clients do.
 
     Returns ``(content_type_header, body_bytes)``. The Content-Type
     header includes the boundary that the body uses. ``media_ct=None``
-    omits the media part's Content-Type header entirely.
+    omits the media part's Content-Type header entirely;
+    ``extra_media_headers`` are appended to the media part's headers.
     """
     boundary = "===boundary===bqemu"
     lines: list[bytes] = []
@@ -52,6 +54,7 @@ def _build_multipart_related(
     lines.append(f"--{boundary}".encode())
     if media_ct is not None:
         lines.append(f"Content-Type: {media_ct}".encode())
+    lines.extend(header.encode() for header in extra_media_headers)
     lines.append(b"")
     lines.append(media)
     lines.append(f"--{boundary}--".encode())
@@ -272,6 +275,54 @@ class TestMultipartUpload:
             content=body,
         )
         assert r.status_code == 400
+
+    @pytest.mark.parametrize(
+        ("transfer_encoding", "media"),
+        [
+            # What the ``bq`` CLI (googleapiclient) sends on its multipart path.
+            pytest.param("binary", b'{"id":1,"name":"a"}\n{"id":2,"name":"b"}\n', id="binary"),
+            pytest.param(
+                "base64",
+                b"eyJpZCI6MSwibmFtZSI6ImEifQp7ImlkIjoyLCJuYW1lIjoiYiJ9Cg==",
+                id="base64",
+            ),
+        ],
+    )
+    def test_media_part_decoded_per_content_transfer_encoding(
+        self, app: FastAPI, transfer_encoding: str, media: bytes
+    ) -> None:
+        """``binary`` bytes pass through unchanged; an encoded part is decoded first."""
+        c = TestClient(app)
+        envelope = {
+            "configuration": {
+                "load": {
+                    "destinationTable": {"projectId": "p", "datasetId": "d", "tableId": "t"},
+                    "sourceFormat": "NEWLINE_DELIMITED_JSON",
+                    "writeDisposition": "WRITE_TRUNCATE",
+                }
+            }
+        }
+        ct, body = _build_multipart_related(
+            envelope,
+            media,
+            media_ct="application/octet-stream",
+            extra_media_headers=(f"Content-Transfer-Encoding: {transfer_encoding}",),
+        )
+        r = c.post(
+            "/upload/bigquery/v2/projects/p/jobs?uploadType=multipart",
+            headers={"Content-Type": ct},
+            content=body,
+        )
+        assert r.status_code == 200, r.text
+        assert "errorResult" not in r.json()["status"]
+        query = c.post(
+            "/bigquery/v2/projects/p/queries",
+            json={"query": "SELECT id, name FROM `p.d.t` ORDER BY id", "useLegacySql": False},
+        )
+        assert [[cell["v"] for cell in row["f"]] for row in query.json()["rows"]] == [
+            ["1", "a"],
+            ["2", "b"],
+        ]
 
     @pytest.mark.parametrize(
         "media_ct",

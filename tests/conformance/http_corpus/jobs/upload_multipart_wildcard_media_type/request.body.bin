@@ -1,7 +1,7 @@
 --===============7330845974216740156==
 content-type: application/json; charset=UTF-8
 
-{"configuration": {"load": {"destinationTable": {"projectId": "${PROJECT}", "datasetId": "${DATASET_ID}", "tableId": "tbl"}, "sourceFormat": "NEWLINE_DELIMITED_JSON", "writeDisposition": "WRITE_TRUNCATE"}}}
+{"jobReference": {"jobId": "${DATASET_ID}_load_json", "projectId": "${PROJECT}"}, "configuration": {"load": {"sourceFormat": "NEWLINE_DELIMITED_JSON", "writeDisposition": "WRITE_TRUNCATE", "autodetect": true, "destinationTable": {"projectId": "${PROJECT}", "datasetId": "${DATASET_ID}", "tableId": "tbl"}}}}
 --===============7330845974216740156==
 content-type: */*
 

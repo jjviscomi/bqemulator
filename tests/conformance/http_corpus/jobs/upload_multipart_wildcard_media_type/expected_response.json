@@ -1,7 +1,7 @@
 {
   "fixture_version": 1,
   "source": "hand-authored-emulator-baseline",
-  "note": "Hand-authored against the in-process emulator. Re-record from real BigQuery once operator credentials are available. The request is byte-for-byte the multipart upload google-cloud-bigquery's load_table_from_json sends: google-resumable-media framing with the media part labelled '*/*'. BigQuery's jobs.insert media upload accepts '*/*' (discovery document mediaUpload.accept) and parses the bytes per sourceFormat.",
+  "note": "Hand-authored against the in-process emulator. Re-record from real BigQuery once operator credentials are available. Mirrors the multipart upload google-cloud-bigquery's load_table_from_json sends (google-resumable-media framing, envelope key order, media part labelled '*/*'), with placeholders for the project, dataset, and a dataset-derived job id. BigQuery's jobs.insert media upload accepts '*/*' (discovery document mediaUpload.accept) and parses the bytes per sourceFormat.",
   "http_status": 200,
   "headers": {
     "content-type": "application/json"
@@ -24,6 +24,7 @@
         },
         "sourceFormat": "NEWLINE_DELIMITED_JSON",
         "writeDisposition": "WRITE_TRUNCATE",
+        "autodetect": true,
         "sourceUris": "<*>"
       }
     },
