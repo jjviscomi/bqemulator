@@ -24,12 +24,20 @@ before DuckDB generation rather than on text, because re-serialising
 BigQuery SQL is lossy (SQLGlot's BigQuery generator strips `CAST` type
 parameters and reshapes `AT TIME ZONE` and `VALUES … AS v(…)`).
 
-When such a rewrite also needs operand types, which exist only once the
-rule engine annotates the DuckDB AST, it emits a `BQEMU_*` handoff call
-that a rule expands: `DATE_TRUNC(x, WEEK(MONDAY))` becomes
-`BQEMU_DATE_TRUNC(x, 'WEEK(MONDAY)')`, which `DateTruncWeekRule`
-expands into a `DATE` or `TIMESTAMP` truncation according to the type
-of `x`.
+When such a rewrite must be finished after DuckDB generation, it emits a
+`BQEMU_*` handoff call that a rule expands: `DATE_TRUNC(x, WEEK(MONDAY))`
+becomes `BQEMU_DATE_TRUNC(x, 'WEEK(MONDAY)')`, which `DateTruncWeekRule`
+expands to `time_bucket(INTERVAL '7' DAY, x)`. Where possible the
+expansion lets DuckDB pick the result type when it binds the query
+(`time_bucket` returns `DATE` for a `DATE` operand), because the
+translator cannot see the type of a query parameter, `UNNEST` element
+or UDF argument.
+
+The rule engine's type annotation runs `qualify` and SQLGlot's type
+annotator on a copy of the statement and copies the resulting types back
+onto the original nodes, so rules see operand types while the
+translated SQL keeps the user's identifiers, `*` projections and
+column names exactly as written.
 
 ## Rule engine
 

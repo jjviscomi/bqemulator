@@ -21,9 +21,14 @@ import sqlglot
 from sqlglot import exp
 
 from bqemulator.domain.result import Ok
-from bqemulator.sql.rewriter.datetime_helpers import DATE_TRUNC_FUNCTION
+from bqemulator.sql.rewriter.datetime_helpers import DATE_TRUNC_CALENDAR_UNITS, DATE_TRUNC_FUNCTION
 from bqemulator.sql.rules._base import TranslationRule
-from bqemulator.sql.rules.iso_date_parts import DateTruncCalendarUnitRule, DateTruncWeekRule
+from bqemulator.sql.rules.iso_date_parts import (
+    _CALENDAR_BUCKET_WIDTHS,
+    DateTruncCalendarUnitRule,
+    DateTruncIsoyearRule,
+    DateTruncWeekRule,
+)
 from bqemulator.sql.translator import SQLTranslator
 
 pytestmark = pytest.mark.unit
@@ -294,8 +299,9 @@ class TestDateTruncOverTableColumn:
         unit: str,
         first_day: int,
     ) -> None:
-        # Without a schema the operand type is unknown: the week start is
-        # still BigQuery's, in DuckDB's natural TIMESTAMP result type.
+        # Without a schema the translator cannot see the operand's type;
+        # ``time_bucket`` takes it from DuckDB at bind time, so the result
+        # is still BigQuery's DATE.
         rows, types = _query_table(
             t,
             con,
@@ -305,8 +311,8 @@ class TestDateTruncOverTableColumn:
             "FROM `test-project.bqemu.t` ORDER BY placed_on",
             with_schema=False,
         )
-        assert types == ["TIMESTAMP"]
-        assert [row[0].date() for row in rows] == [week_start(day, first_day) for day in ONE_WEEK]
+        assert types == ["DATE"]
+        assert rows == [(week_start(day, first_day),) for day in ONE_WEEK]
 
     @pytest.mark.parametrize(("unit", "first_day"), WEEK_UNITS)
     @pytest.mark.parametrize(
@@ -486,7 +492,9 @@ class TestDateTruncOverTableColumn:
 class TestDateTruncHandoffMatching:
     """Each ``DATE_TRUNC`` rule expands only well-formed handoff calls in its granularity family."""
 
-    @pytest.mark.parametrize("rule", [DateTruncCalendarUnitRule(), DateTruncWeekRule()])
+    @pytest.mark.parametrize(
+        "rule", [DateTruncCalendarUnitRule(), DateTruncIsoyearRule(), DateTruncWeekRule()]
+    )
     @pytest.mark.parametrize(
         "call_sql",
         [
@@ -514,7 +522,8 @@ class TestDateTruncHandoffMatching:
             ("month", DateTruncCalendarUnitRule),
             ("QUARTER", DateTruncCalendarUnitRule),
             ("YEAR", DateTruncCalendarUnitRule),
-            ("ISOYEAR", DateTruncCalendarUnitRule),
+            ("ISOYEAR", DateTruncIsoyearRule),
+            ("isoyear", DateTruncIsoyearRule),
             ("WEEK(SUNDAY)", DateTruncWeekRule),
             ("week(wednesday)", DateTruncWeekRule),
             ("WEEK(SATURDAY)", DateTruncWeekRule),
@@ -527,7 +536,97 @@ class TestDateTruncHandoffMatching:
         assert isinstance(node, exp.Anonymous)
         matches = [
             type(rule)
-            for rule in (DateTruncCalendarUnitRule(), DateTruncWeekRule())
+            for rule in (DateTruncCalendarUnitRule(), DateTruncIsoyearRule(), DateTruncWeekRule())
             if rule.applies_to(node)
         ]
         assert matches == [matching_rule]
+
+
+#: Every BigQuery date granularity with its expected truncation of Wednesday 2024-05-15.
+ALL_GRANULARITIES: list[tuple[str, _dt.date]] = [
+    ("DAY", _dt.date(2024, 5, 15)),
+    ("MONTH", _dt.date(2024, 5, 1)),
+    ("QUARTER", _dt.date(2024, 4, 1)),
+    ("YEAR", _dt.date(2024, 1, 1)),
+    ("ISOYEAR", _dt.date(2024, 1, 1)),
+    *((unit, week_start(_dt.date(2024, 5, 15), first_day)) for unit, first_day in WEEK_UNITS),
+]
+
+
+class TestOperandEvaluatedOnce:
+    """The expansions reference the operand once, so positional parameters bind in order."""
+
+    @pytest.mark.parametrize(("unit", "expected"), ALL_GRANULARITIES)
+    def test_positional_parameters_bind_in_order(
+        self, t: SQLTranslator, con: duckdb.DuckDBPyConnection, unit: str, expected: _dt.date
+    ) -> None:
+        result = t.translate(f"SELECT DATE_TRUNC(?, {unit}) AS w, ? AS s")
+        assert isinstance(result, Ok), result
+        assert result.value.count("?") == 2, result.value
+        row = con.execute(result.value, [_dt.date(2024, 5, 15), "x"]).fetchone()
+        assert row is not None
+        truncated, marker = row
+        # An untyped ``?`` leaves ISOYEAR's result TIMESTAMP (see DateTruncIsoyearRule).
+        day = truncated.date() if isinstance(truncated, _dt.datetime) else truncated
+        assert (day, marker) == (expected, "x")
+
+    def test_volatile_operand_still_truncates_to_week_start(
+        self, t: SQLTranslator, con: duckdb.DuckDBPyConnection
+    ) -> None:
+        # Evaluating ``RAND()`` twice would mix two different dates.
+        result = t.translate(
+            "SELECT EXTRACT(DAYOFWEEK FROM DATE_TRUNC(DATE_ADD(DATE '2024-01-01', "
+            "INTERVAL CAST(FLOOR(RAND() * 7) AS INT64) DAY), ISOWEEK)) AS dow "
+            "FROM UNNEST(GENERATE_ARRAY(1, 200))",
+        )
+        assert isinstance(result, Ok), result
+        assert {row[0] for row in con.execute(result.value).fetchall()} == {2}
+
+
+class TestOperandTypeUnknownToTheTranslator:
+    """Operands typed only by DuckDB still truncate to BigQuery's DATE result."""
+
+    @pytest.mark.parametrize(
+        ("unit", "expected"),
+        [(unit, expected) for unit, expected in ALL_GRANULARITIES if unit != "ISOYEAR"],
+    )
+    @pytest.mark.parametrize(
+        "bq_sql",
+        [
+            "SELECT DATE_TRUNC(x, {unit}) AS v FROM UNNEST([DATE '2024-05-15']) AS x",
+            (
+                "SELECT DATE_TRUNC(x, {unit}) AS v "
+                "FROM UNNEST(GENERATE_DATE_ARRAY('2024-05-15', '2024-05-15')) AS x"
+            ),
+            "WITH c AS (SELECT DATE '2024-05-15' AS x) SELECT DATE_TRUNC(x, {unit}) AS v FROM c",
+        ],
+    )
+    def test_returns_date(
+        self,
+        t: SQLTranslator,
+        con: duckdb.DuckDBPyConnection,
+        bq_sql: str,
+        unit: str,
+        expected: _dt.date,
+    ) -> None:
+        result = t.translate(bq_sql.format(unit=unit))
+        assert isinstance(result, Ok), result
+        relation = con.execute(result.value)
+        assert relation.description[0][1] == "DATE"
+        assert relation.fetchone() == (expected,)
+
+    @pytest.mark.parametrize(("unit", "expected"), ALL_GRANULARITIES)
+    def test_date_parameter_returns_date(
+        self, t: SQLTranslator, con: duckdb.DuckDBPyConnection, unit: str, expected: _dt.date
+    ) -> None:
+        result = t.translate(f"SELECT DATE_TRUNC(CAST(@d AS DATE), {unit}) AS v")
+        assert isinstance(result, Ok), result
+        sql = result.value.replace("@d", "?").replace("$d", "?")
+        relation = con.execute(sql, [_dt.date(2024, 5, 15)])
+        assert relation.description[0][1] == "DATE"
+        assert relation.fetchone() == (expected,)
+
+
+def test_handoff_vocabulary_matches_rule_coverage() -> None:
+    """Every handoff calendar granularity has exactly one expansion."""
+    assert set(_CALENDAR_BUCKET_WIDTHS) | {"ISOYEAR"} == DATE_TRUNC_CALENDAR_UNITS

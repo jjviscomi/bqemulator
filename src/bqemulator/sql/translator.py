@@ -135,6 +135,11 @@ _DUCKDB_EXPRESSION_METADATA = {
 }
 
 
+#: ``meta`` key that pairs each node with its counterpart in the annotated
+#: copy (see :meth:`SQLTranslator._annotate_tree`).
+_TYPE_TAG = "bqemu_type_tag"
+
+
 _DUCKDB_DIALECT = sqlglot.Dialect.get_or_raise("duckdb")
 
 
@@ -483,21 +488,28 @@ class SQLTranslator:
         tree: exp.Expression,
         schema: dict[str, Any],
     ) -> exp.Expression:
-        """Run SQLGlot's ``qualify`` + type-annotation passes.
+        """Set each node's ``.type`` from SQLGlot's ``qualify`` + type-annotation passes.
+
+        The passes run on a copy of *tree*: ``qualify`` normalises
+        identifier case, expands ``*`` from the schema snapshot (which
+        omits ``STRUCT`` / ``RANGE`` columns), and aliases unnamed
+        projections — rewrites that would change the result schema the
+        caller sees if the rules worked on the qualified tree. Each node
+        of *tree* is tagged first and the copy's annotated types are
+        written back onto the tagged originals, so the rules read
+        operand types while rewriting the statement exactly as written.
 
         The annotator uses :data:`_DUCKDB_BINARY_COERCIONS` so operator
         result types match DuckDB's evaluation of the SQL being
         annotated, and :data:`_DUCKDB_EXPRESSION_METADATA` so the
         ``BQEMU_*`` handoff calls carry their result types. Failures
-        are logged and the unannotated tree is returned; rules that
-        need type info gracefully skip. The runtime ``isinstance``
-        check narrows SQLGlot's loosely-typed
-        ``Expr`` return to :class:`exp.Expression` without resorting
-        to a ``cast`` (which different stub revisions flag as either
-        required or redundant).
+        are logged and *tree* is returned untyped; rules that need
+        type info gracefully skip.
         """
+        for tag, node in enumerate(tree.walk()):
+            node.meta[_TYPE_TAG] = tag
         try:
-            qualified = qualify(tree, schema=schema, dialect="duckdb", infer_schema=True)
+            qualified = qualify(tree.copy(), schema=schema, dialect="duckdb", infer_schema=True)
             annotated = TypeAnnotator(
                 schema=ensure_schema(schema),
                 expression_metadata=_DUCKDB_EXPRESSION_METADATA,
@@ -506,8 +518,16 @@ class SQLTranslator:
         except Exception as exc:  # noqa: BLE001
             _log.debug("sql.annotate_types_skipped", error=str(exc))
             return tree
-        assert isinstance(annotated, exp.Expression)  # noqa: S101 — stub-bridge narrowing
-        return annotated
+        types = {
+            node.meta[_TYPE_TAG]: node.type
+            for node in annotated.walk()
+            if _TYPE_TAG in node.meta and node.type is not None
+        }
+        for node in tree.walk():
+            annotated_type = types.get(node.meta[_TYPE_TAG])
+            if annotated_type is not None:
+                node.type = annotated_type
+        return tree
 
     def _apply_first_matching_rule(
         self,

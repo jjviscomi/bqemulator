@@ -301,3 +301,67 @@ class TestDatetimeRewritesLeaveTheRestOfTheStatementIntact:
             translator, con, f"SELECT v.b, {call} AS d FROM (VALUES (1, 'x')) AS v(a, b)"
         )
         assert value == "x"
+
+
+_STATEMENT_SCHEMA = {"t": {"d": "DATE", "UserName": "VARCHAR", "n": "DECIMAL(38, 9)"}}
+
+
+class TestRulesKeepTheStatementAsWritten:
+    """Type annotation informs the rules without rewriting the user's statement.
+
+    ``qualify`` lowercases identifiers, expands ``*`` from the schema
+    snapshot (which omits ``STRUCT`` / ``RANGE`` columns) and aliases
+    unnamed projections; none of that may reach the translated SQL.
+    """
+
+    @pytest.fixture
+    def con(self) -> duckdb.DuckDBPyConnection:
+        connection = duckdb.connect()
+        connection.execute(
+            "CREATE TABLE t (d DATE, UserName VARCHAR, n DECIMAL(38, 9), "
+            "rec STRUCT(a BIGINT, b DATE))",
+        )
+        connection.execute(
+            "INSERT INTO t VALUES "
+            "(DATE '2024-05-15', 'ann', 1.5, {'a': 1, 'b': DATE '2024-05-15'})",
+        )
+        return connection
+
+    def _columns(
+        self, translator: SQLTranslator, con: duckdb.DuckDBPyConnection, bq_sql: str
+    ) -> list[tuple[str, str]]:
+        result = translator.translate(bq_sql, schema=_STATEMENT_SCHEMA)
+        assert isinstance(result, Ok), result
+        return [(name, str(kind)) for name, kind, *_ in con.execute(result.value).description]
+
+    def test_identifier_case_is_preserved(
+        self, translator: SQLTranslator, con: duckdb.DuckDBPyConnection
+    ) -> None:
+        assert self._columns(
+            translator, con, "SELECT UserName, DATE_TRUNC(d, MONTH) AS Month FROM t"
+        ) == [("UserName", "VARCHAR"), ("Month", "DATE")]
+
+    def test_star_keeps_columns_missing_from_the_schema_snapshot(
+        self, translator: SQLTranslator, con: duckdb.DuckDBPyConnection
+    ) -> None:
+        columns = self._columns(
+            translator, con, "SELECT * FROM t WHERE DATE_TRUNC(d, MONTH) = DATE '2024-05-01'"
+        )
+        assert [name for name, _ in columns] == ["d", "UserName", "n", "rec"]
+
+    def test_other_type_aware_rules_keep_names_too(
+        self, translator: SQLTranslator, con: duckdb.DuckDBPyConnection
+    ) -> None:
+        columns = self._columns(translator, con, "SELECT AVG(n) AS AvgAmount FROM t")
+        assert [name for name, _ in columns] == ["AvgAmount"]
+
+    def test_annotation_types_the_original_tree_in_place(self) -> None:
+        tree = sqlglot.parse_one(
+            "WITH c AS (SELECT d AS x FROM t) SELECT UserName, x AS Day FROM c, t", read="duckdb"
+        )
+        before = tree.sql(dialect="duckdb")
+        assert SQLTranslator._annotate_tree(tree, _STATEMENT_SCHEMA) is tree
+        assert tree.sql(dialect="duckdb") == before
+        outer = tree.find(exp.Select)
+        assert outer is not None
+        assert [str(projection.type) for projection in outer.expressions] == ["VARCHAR", "DATE"]

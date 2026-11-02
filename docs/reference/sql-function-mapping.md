@@ -50,7 +50,7 @@ table below maps each BigQuery view to its rewriter function.
 
 > **Auto-generated.** Edit translation rules under [`src/bqemulator/sql/rules/`](https://github.com/jjviscomi/bqemulator/blob/main/src/bqemulator/sql/rules/) or rewriters under [`src/bqemulator/sql/rewriter/`](https://github.com/jjviscomi/bqemulator/blob/main/src/bqemulator/sql/rewriter/), then run `make function-mapping` to regenerate this block. The CI gate (`--check`) refuses to merge a PR whose committed registry has drifted from the live source. Per-rule docstring summaries are extracted as the cell text — if a cell reads wrong, edit the rule's docstring.
 
-- **Registered rules**: 91 (13 rule modules)
+- **Registered rules**: 92 (13 rule modules)
 - **Rewriter functions**: 24 (24 rewriter modules; the INFORMATION_SCHEMA rewriter has its own hand-maintained per-view table below)
 
 ### Translation rules (post-transpile AST passes)
@@ -83,8 +83,9 @@ table below maps each BigQuery view to its rewriter function.
 | Interval helpers | `JUSTIFY_DAYS(x)` | DuckDB normalisation expression | `JUSTIFY_DAYS` |
 | Interval helpers | `JUSTIFY_HOURS(x)` | DuckDB normalisation expression | `JUSTIFY_HOURS` |
 | Interval helpers | `JUSTIFY_INTERVAL(x)` | both JUSTIFY_HOURS + JUSTIFY_DAYS rules combined | `JUSTIFY_INTERVAL` |
-| ISO date parts | `DATE_TRUNC(x, DAY\|MONTH\|QUARTER\|YEAR\|ISOYEAR)` | `DATE_TRUNC` in *x*'s type | `DATE_TRUNC_CALENDAR_UNIT` |
-| ISO date parts | `DATE_TRUNC(x, WEEK\|WEEK(<WEEKDAY>)\|ISOWEEK)` | week-start truncation in *x*'s type | `DATE_TRUNC_WEEK` |
+| ISO date parts | `DATE_TRUNC(x, DAY\|MONTH\|QUARTER\|YEAR)` | `time_bucket` in *x*'s type | `DATE_TRUNC_CALENDAR_UNIT` |
+| ISO date parts | `DATE_TRUNC(x, ISOYEAR)` | `DATE_TRUNC('ISOYEAR', x)`, cast to DATE for a DATE operand | `DATE_TRUNC_ISOYEAR` |
+| ISO date parts | `DATE_TRUNC(x, WEEK\|WEEK(<WEEKDAY>)\|ISOWEEK)` | week-start `time_bucket` in *x*'s type | `DATE_TRUNC_WEEK` |
 | ISO date parts | `EXTRACT(ISOWEEK FROM x)` | `EXTRACT(WEEK FROM x)` | `EXTRACT_ISOWEEK` |
 | JSON helpers | `JSON_ARRAY_INSERT(j, path, value)` | helper-UDF call wrapped in `CAST(... AS JSON)` | `JSON_ARRAY_INSERT` |
 | JSON helpers | `JSON_KEYS(json)` | `json_keys(json)` | `JSON_KEYS` |

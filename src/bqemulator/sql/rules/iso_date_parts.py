@@ -25,7 +25,13 @@ recognises only the unqualified keywords and its ``DATE_TRUNC`` widens
   :func:`~bqemulator.sql.rewriter.datetime_helpers.rewrite_datetime_helpers`
   carries each call across as ``BQEMU_DATE_TRUNC(x, '<granularity>')``.
   :class:`DateTruncCalendarUnitRule` and :class:`DateTruncWeekRule`
-  expand that call here, preserving the operand's type. Truncations
+  expand it to DuckDB's ``time_bucket``, which returns ``DATE`` /
+  ``TIMESTAMP`` / ``TIMESTAMPTZ`` for an operand of that type — so the
+  result type is right even where the translator cannot see the
+  operand's type (query parameters, ``UNNEST`` elements, script
+  variables, UDF arguments) — and references the operand once.
+  :class:`DateTruncIsoyearRule` handles ``ISOYEAR``, which has no fixed
+  bucket width. Truncations
   that arrive as DuckDB ``DATE_TRUNC`` calls — ``TIMESTAMP_TRUNC`` /
   ``DATETIME_TRUNC`` and the time-zone and time-granularity forms of
   ``DATE_TRUNC`` — are not rewritten.
@@ -38,7 +44,6 @@ from typing import TYPE_CHECKING
 from sqlglot import exp
 
 from bqemulator.sql.rewriter.datetime_helpers import (
-    DATE_TRUNC_CALENDAR_UNITS,
     DATE_TRUNC_FUNCTION,
     DATE_TRUNC_WEEK_START,
 )
@@ -52,6 +57,22 @@ _ISOWEEK_SYNONYM = "WEEK"
 
 #: Days in a week — the modulus of the week-start offset arithmetic.
 _DAYS_PER_WEEK = 7
+
+#: DuckDB ``DAYOFWEEK`` index of Monday, the weekday ``time_bucket``'s
+#: default origin (2000-01-03) falls on for day-multiple widths.
+_TIME_BUCKET_ORIGIN_WEEKDAY = 1
+
+#: ``time_bucket`` width for each calendar granularity, as an
+#: ``INTERVAL`` ``(count, unit)``. Month and year widths bucket from
+#: 2000-01-01, so their buckets are calendar months, quarters and years.
+_CALENDAR_BUCKET_WIDTHS: dict[str, tuple[int, str]] = {
+    "DAY": (1, "DAY"),
+    "MONTH": (1, "MONTH"),
+    "QUARTER": (3, "MONTH"),
+    "YEAR": (1, "YEAR"),
+}
+
+_ISOYEAR = frozenset({"ISOYEAR"})
 
 
 @register
@@ -76,33 +97,59 @@ class ExtractIsoweekRule(TranslationRule):
 
 @register
 class DateTruncCalendarUnitRule(TranslationRule):
-    """``DATE_TRUNC(x, DAY|MONTH|QUARTER|YEAR|ISOYEAR)`` → ``DATE_TRUNC`` in *x*'s type.
+    """``DATE_TRUNC(x, DAY|MONTH|QUARTER|YEAR)`` → ``time_bucket`` in *x*'s type.
 
-    Expands the ``BQEMU_DATE_TRUNC(x, '<unit>')`` handoff call. DuckDB's
-    ``DATE_TRUNC`` computes each of these granularities under the same
-    name but returns ``TIMESTAMP`` for a ``DATE`` operand, where
-    BigQuery returns ``DATE``. The call is wrapped in
-    ``CAST(... AS DATE)`` when the operand is DATE-typed, so the Arrow
-    column lands on ``date32`` and the REST schema renders ``DATE``;
-    DuckDB's result for a ``TIMESTAMP`` / ``TIMESTAMPTZ`` operand is
-    already BigQuery's ``DATETIME`` / ``TIMESTAMP``.
+    Expands the ``BQEMU_DATE_TRUNC(x, '<unit>')`` handoff call to
+    ``time_bucket(INTERVAL <width>, x)``. DuckDB's ``DATE_TRUNC``
+    returns ``TIMESTAMP`` for a ``DATE`` operand, where BigQuery returns
+    ``DATE``; ``time_bucket`` returns the operand's own ``DATE`` /
+    ``TIMESTAMP`` / ``TIMESTAMPTZ`` type, decided when DuckDB binds the
+    query, so no translate-time operand type is needed.
     """
 
     name = "DATE_TRUNC_CALENDAR_UNIT"
 
     def applies_to(self, node: exp.Expression) -> bool:
         """Match a ``BQEMU_DATE_TRUNC`` handoff call with a calendar granularity."""
-        return _date_trunc_args(node, DATE_TRUNC_CALENDAR_UNITS) is not None
+        return _date_trunc_args(node, _CALENDAR_BUCKET_WIDTHS) is not None
 
     def rewrite(self, node: exp.Expression) -> exp.Expression:
-        """Emit DuckDB's ``DATE_TRUNC``, cast to ``DATE`` for a DATE-typed operand."""
-        args = _date_trunc_args(node, DATE_TRUNC_CALENDAR_UNITS)
+        """Emit ``time_bucket`` with the granularity's bucket width."""
+        args = _date_trunc_args(node, _CALENDAR_BUCKET_WIDTHS)
         if args is None:
             return node
         operand, unit = args
+        return _time_bucket(_CALENDAR_BUCKET_WIDTHS[unit], operand)
+
+
+@register
+class DateTruncIsoyearRule(TranslationRule):
+    """``DATE_TRUNC(x, ISOYEAR)`` → ``DATE_TRUNC('ISOYEAR', x)``, cast to DATE for a DATE operand.
+
+    Expands the ``BQEMU_DATE_TRUNC(x, 'ISOYEAR')`` handoff call. An ISO
+    year has no fixed length, so ``time_bucket`` cannot express it;
+    DuckDB's ``DATE_TRUNC('ISOYEAR', x)`` computes the boundary but
+    returns ``TIMESTAMP`` for a ``DATE`` operand. The call is wrapped in
+    ``CAST(... AS DATE)`` when the operand is provably DATE-typed (see
+    :func:`_is_date_typed`); ``TIMESTAMP`` / ``TIMESTAMPTZ`` operands
+    keep DuckDB's result type, which is BigQuery's.
+    """
+
+    name = "DATE_TRUNC_ISOYEAR"
+
+    def applies_to(self, node: exp.Expression) -> bool:
+        """Match a ``BQEMU_DATE_TRUNC(x, 'ISOYEAR')`` handoff call."""
+        return _date_trunc_args(node, _ISOYEAR) is not None
+
+    def rewrite(self, node: exp.Expression) -> exp.Expression:
+        """Emit ``DATE_TRUNC('ISOYEAR', x)``, cast to ``DATE`` for a DATE-typed operand."""
+        args = _date_trunc_args(node, _ISOYEAR)
+        if args is None:
+            return node
+        operand, _ = args
         truncated = exp.Anonymous(
             this="DATE_TRUNC",
-            expressions=[exp.Literal.string(unit), operand.copy()],
+            expressions=[exp.Literal.string("ISOYEAR"), operand.copy()],
         )
         if _is_date_typed(operand):
             return exp.Cast(this=truncated, to=exp.DataType.build("DATE"))
@@ -111,23 +158,16 @@ class DateTruncCalendarUnitRule(TranslationRule):
 
 @register
 class DateTruncWeekRule(TranslationRule):
-    """``DATE_TRUNC(x, WEEK|WEEK(<WEEKDAY>)|ISOWEEK)`` → week-start truncation in *x*'s type.
+    """``DATE_TRUNC(x, WEEK|WEEK(<WEEKDAY>)|ISOWEEK)`` → week-start ``time_bucket`` in *x*'s type.
 
     Expands the ``BQEMU_DATE_TRUNC(x, 'WEEK(<WEEKDAY>)')`` handoff call
     (``WEEK`` arrives as ``WEEK(SUNDAY)``, ``ISOWEEK`` as
-    ``WEEK(MONDAY)``). The truncation subtracts the days elapsed since
-    the week's first day, ``offset = (DAYOFWEEK(x) - first_day) mod 7``,
-    where DuckDB's ``DAYOFWEEK`` is Sunday = 0 … Saturday = 6:
-
-    * DATE-typed *x* → ``CAST(x - INTERVAL (offset) DAY AS DATE)``;
-      BigQuery returns ``DATE`` and DuckDB's ``DATE - INTERVAL`` widens
-      to ``TIMESTAMP``.
-    * any other *x* (DATETIME / TIMESTAMP, or a type the translator
-      cannot determine) → ``DATE_TRUNC('DAY', x) - INTERVAL (offset)
-      DAY``, which keeps DuckDB's ``TIMESTAMP`` / ``TIMESTAMPTZ`` —
-      BigQuery's ``DATETIME`` / ``TIMESTAMP`` result types. DuckDB
-      evaluates ``TIMESTAMPTZ`` week boundaries in the session time
-      zone, which the engine pins to UTC (BigQuery's default).
+    ``WEEK(MONDAY)``) to ``time_bucket(INTERVAL 7 DAY, x, INTERVAL
+    <offset> DAY)``. Seven-day buckets start on Monday, the weekday of
+    ``time_bucket``'s default origin, so the offset is the days from
+    Monday to the week's first day. The result keeps the operand's
+    ``DATE`` / ``TIMESTAMP`` / ``TIMESTAMPTZ`` type, and ``TIMESTAMPTZ``
+    weeks are bucketed in UTC (BigQuery's default time zone).
     """
 
     name = "DATE_TRUNC_WEEK"
@@ -137,21 +177,14 @@ class DateTruncWeekRule(TranslationRule):
         return _date_trunc_args(node, DATE_TRUNC_WEEK_START) is not None
 
     def rewrite(self, node: exp.Expression) -> exp.Expression:
-        """Emit the week-start truncation for the call's operand and first day."""
+        """Emit the week-start ``time_bucket`` for the call's operand and first day."""
         args = _date_trunc_args(node, DATE_TRUNC_WEEK_START)
         if args is None:
             return node
         operand, granularity = args
-        offset = _days_since_week_start(operand, DATE_TRUNC_WEEK_START[granularity])
-        interval = exp.Interval(this=exp.Paren(this=offset), unit=exp.Var(this="DAY"))
-        if _is_date_typed(operand):
-            sub = exp.Sub(this=operand.copy(), expression=interval)
-            return exp.Cast(this=sub, to=exp.DataType.build("DATE"))
-        day_start = exp.Anonymous(
-            this="DATE_TRUNC",
-            expressions=[exp.Literal.string("DAY"), operand.copy()],
-        )
-        return exp.Sub(this=day_start, expression=interval)
+        first_day = DATE_TRUNC_WEEK_START[granularity]
+        offset = (first_day - _TIME_BUCKET_ORIGIN_WEEKDAY) % _DAYS_PER_WEEK
+        return _time_bucket((_DAYS_PER_WEEK, "DAY"), operand, offset_days=offset)
 
 
 def _date_trunc_args(
@@ -176,19 +209,23 @@ def _date_trunc_args(
     return operand, name
 
 
-def _days_since_week_start(operand: exp.Expression, first_day: int) -> exp.Expression:
-    """Build ``(DAYOFWEEK(operand) - first_day) mod 7`` as a non-negative DuckDB expression.
+def _time_bucket(
+    width: tuple[int, str],
+    operand: exp.Expression,
+    *,
+    offset_days: int = 0,
+) -> exp.Expression:
+    """Build ``time_bucket(INTERVAL <width>, operand[, INTERVAL <offset_days> DAY])``."""
+    count, unit = width
+    arguments: list[exp.Expression] = [_interval(count, unit), operand.copy()]
+    if offset_days:
+        arguments.append(_interval(offset_days, "DAY"))
+    return exp.Anonymous(this="TIME_BUCKET", expressions=arguments)
 
-    DuckDB's ``DAYOFWEEK`` is 0 (Sunday) … 6 (Saturday). For a Sunday
-    week start the offset is ``DAYOFWEEK`` itself; otherwise adding
-    ``7 - first_day`` before the modulus keeps the dividend
-    non-negative.
-    """
-    dayofweek = exp.Anonymous(this="DAYOFWEEK", expressions=[operand.copy()])
-    if first_day == 0:
-        return dayofweek
-    shifted = exp.Add(this=dayofweek, expression=exp.Literal.number(_DAYS_PER_WEEK - first_day))
-    return exp.Mod(this=exp.Paren(this=shifted), expression=exp.Literal.number(_DAYS_PER_WEEK))
+
+def _interval(count: int, unit: str) -> exp.Interval:
+    """Build ``INTERVAL '<count>' <unit>``."""
+    return exp.Interval(this=exp.Literal.string(str(count)), unit=exp.Var(this=unit))
 
 
 def _is_date_typed(node: exp.Expression | None) -> bool:
@@ -207,8 +244,9 @@ def _is_date_typed(node: exp.Expression | None) -> bool:
 
     An operand whose type the translator cannot statically determine
     (no schema supplied, or annotation failed for that query) is not
-    DATE-typed: the rules keep DuckDB's ``TIMESTAMP`` result, which is
-    BigQuery's result type for DATETIME / TIMESTAMP operands.
+    DATE-typed: :class:`DateTruncIsoyearRule` then keeps DuckDB's
+    ``TIMESTAMP`` result, which is BigQuery's result type for DATETIME /
+    TIMESTAMP operands.
     """
     if node is None:
         return False
@@ -230,6 +268,7 @@ def _name(node: exp.Expression) -> str:
 
 __all__ = [
     "DateTruncCalendarUnitRule",
+    "DateTruncIsoyearRule",
     "DateTruncWeekRule",
     "ExtractIsoweekRule",
 ]

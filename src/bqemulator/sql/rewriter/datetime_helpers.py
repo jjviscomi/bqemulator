@@ -54,7 +54,7 @@ Currently handled:
   granularity as ``WEEK(<WEEKDAY>)`` (``WEEK`` → ``WEEK(SUNDAY)``,
   ``ISOWEEK`` → ``WEEK(MONDAY)``). The DuckDB generator emits the call
   verbatim, and the :mod:`~bqemulator.sql.rules.iso_date_parts` rules
-  expand it once operand types are annotated.
+  expand it.
 
 * ``TIMESTAMP_MICROS(n)`` / ``TIMESTAMP_MILLIS(n)`` — BigQuery returns
   ``TIMESTAMP`` (a UTC instant). SQLGlot transpiles them to DuckDB's
