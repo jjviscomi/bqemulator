@@ -583,13 +583,77 @@ class TestOperandEvaluatedOnce:
         assert {row[0] for row in con.execute(result.value).fetchall()} == {2}
 
 
-class TestOperandTypeUnknownToTheTranslator:
-    """Operands typed only by DuckDB still truncate to BigQuery's DATE result."""
+#: The ISO year containing Saturday 2021-01-02 (2020-W53) starts Monday 2019-12-30.
+ISO_YEAR_2020_START = _dt.date(2019, 12, 30)
+
+
+class TestIsoyearOfDerivedDates:
+    """``DATE_TRUNC(x, ISOYEAR)`` returns DATE for every DATE expression the translator types.
+
+    ``ISOYEAR`` is the one granularity without a ``time_bucket`` form, so
+    its DATE result depends on the operand's annotated type.
+    """
+
+    @pytest.mark.parametrize("unit", [unit for unit, _ in ALL_GRANULARITIES])
+    def test_truncation_of_a_truncation(
+        self, t: SQLTranslator, con: duckdb.DuckDBPyConnection, unit: str
+    ) -> None:
+        # The inner truncation is expanded first; the ISOYEAR rule reads the
+        # type of the expansion that replaced it.
+        result = t.translate(
+            f"SELECT DATE_TRUNC(DATE_TRUNC(DATE '2021-01-02', {unit}), ISOYEAR) AS v"
+        )
+        assert isinstance(result, Ok), result
+        relation = con.execute(result.value)
+        assert relation.description[0][1] == "DATE"
+        assert relation.fetchone() == (ISO_YEAR_2020_START,)
 
     @pytest.mark.parametrize(
-        ("unit", "expected"),
-        [(unit, expected) for unit, expected in ALL_GRANULARITIES if unit != "ISOYEAR"],
+        "operand",
+        [
+            "DATE(2021, 1, 2)",
+            "PARSE_DATE('%Y-%m-%d', '2021-01-02')",
+            "SAFE.PARSE_DATE('%Y-%m-%d', '2021-01-02')",
+            "DATE_FROM_UNIX_DATE(18629)",
+            "LAST_DAY(DATE '2020-12-15')",
+            "IF(TRUE, DATE '2021-01-02', NULL)",
+            "COALESCE(NULL, DATE '2021-01-02')",
+        ],
     )
+    def test_date_function_operand(
+        self, t: SQLTranslator, con: duckdb.DuckDBPyConnection, operand: str
+    ) -> None:
+        result = t.translate(f"SELECT DATE_TRUNC({operand}, ISOYEAR) AS v")
+        assert isinstance(result, Ok), result
+        relation = con.execute(result.value)
+        assert relation.description[0][1] == "DATE"
+        assert relation.fetchone() == (ISO_YEAR_2020_START,)
+
+    def test_current_date_operand(self, t: SQLTranslator, con: duckdb.DuckDBPyConnection) -> None:
+        result = t.translate("SELECT DATE_TRUNC(CURRENT_DATE(), ISOYEAR) AS v")
+        assert isinstance(result, Ok), result
+        assert con.execute(result.value).description[0][1] == "DATE"
+
+    def test_truncation_of_a_datetime_truncation_stays_datetime(
+        self, t: SQLTranslator, con: duckdb.DuckDBPyConnection
+    ) -> None:
+        result = t.translate(
+            "SELECT DATE_TRUNC(DATE_TRUNC(DATETIME '2021-01-02 10:00:00', MONTH), ISOYEAR) AS v"
+        )
+        assert isinstance(result, Ok), result
+        relation = con.execute(result.value)
+        assert relation.description[0][1] == "TIMESTAMP"
+        assert relation.fetchone() == (_dt.datetime.combine(ISO_YEAR_2020_START, _dt.time()),)
+
+
+class TestDateOperandsWithoutACatalogTable:
+    """DATE operands of statements without a catalog table truncate to DATE.
+
+    ``time_bucket`` takes its result type from DuckDB; ``ISOYEAR`` from the
+    type the translator infers for the ``UNNEST`` element or CTE column.
+    """
+
+    @pytest.mark.parametrize(("unit", "expected"), ALL_GRANULARITIES)
     @pytest.mark.parametrize(
         "bq_sql",
         [

@@ -130,9 +130,9 @@ class DateTruncIsoyearRule(TranslationRule):
     year has no fixed length, so ``time_bucket`` cannot express it;
     DuckDB's ``DATE_TRUNC('ISOYEAR', x)`` computes the boundary but
     returns ``TIMESTAMP`` for a ``DATE`` operand. The call is wrapped in
-    ``CAST(... AS DATE)`` when the operand is provably DATE-typed (see
-    :func:`_is_date_typed`); ``TIMESTAMP`` / ``TIMESTAMPTZ`` operands
-    keep DuckDB's result type, which is BigQuery's.
+    ``CAST(... AS DATE)`` when the operand's annotated type is ``DATE``
+    (see :func:`_is_date_typed`); ``TIMESTAMP`` / ``TIMESTAMPTZ``
+    operands keep DuckDB's result type, which is BigQuery's.
     """
 
     name = "DATE_TRUNC_ISOYEAR"
@@ -215,12 +215,17 @@ def _time_bucket(
     *,
     offset_days: int = 0,
 ) -> exp.Expression:
-    """Build ``time_bucket(INTERVAL <width>, operand[, INTERVAL <offset_days> DAY])``."""
+    """Build ``time_bucket(INTERVAL <width>, operand[, INTERVAL <offset_days> DAY])``.
+
+    The call is SQLGlot's ``exp.DateBin``, built from its argument list
+    as SQLGlot's DuckDB parser builds ``time_bucket``, so the translator
+    types it as the operand's type, which is how DuckDB binds it.
+    """
     count, unit = width
     arguments: list[exp.Expression] = [_interval(count, unit), operand.copy()]
     if offset_days:
         arguments.append(_interval(offset_days, "DAY"))
-    return exp.Anonymous(this="TIME_BUCKET", expressions=arguments)
+    return exp.DateBin.from_arg_list(arguments)
 
 
 def _interval(count: int, unit: str) -> exp.Interval:
@@ -228,34 +233,25 @@ def _interval(count: int, unit: str) -> exp.Interval:
     return exp.Interval(this=exp.Literal.string(str(count)), unit=exp.Var(this=unit))
 
 
-def _is_date_typed(node: exp.Expression | None) -> bool:
-    """Return True when *node* is provably a DATE-typed expression.
+def _is_date_typed(node: exp.Expression) -> bool:
+    """Return True when *node*'s annotated type is ``DATE``.
 
-    Recognises three forms: an explicit ``CAST(... AS DATE)`` (which
-    is what ``DATE '…'`` typed literals collapse to), ``CURRENT_DATE()``
-    / ``CURRENT_DATE``, and — when the caller ran the translator with a
-    ``schema`` — the operand's annotated ``.type``. The translator's
-    annotation pass (``SQLTranslator._annotate_tree``) resolves
-    table/column references against that schema and types operators
-    the way DuckDB evaluates them, so a schema-declared DATE column
-    (e.g. ``pl.placed_on`` in a JOINed/aliased query) is DATE-typed
-    while ``date + INTERVAL …`` — and any CTE column derived from it —
-    is ``TIMESTAMP``.
+    The translator types every statement before the rules run, and
+    every rule replacement as it is made, the way DuckDB evaluates the
+    SQL. So a ``DATE '…'`` literal (``CAST(... AS DATE)``),
+    ``CURRENT_DATE``, ``LAST_DAY`` / ``MAKE_DATE`` / ``SAFE.`` date
+    functions, a catalog ``DATE`` column, and a nested ``DATE_TRUNC``
+    already expanded to ``time_bucket`` are ``DATE``-typed, while
+    ``date + INTERVAL …``, and any CTE column derived from it, is
+    ``TIMESTAMP``.
 
-    An operand whose type the translator cannot statically determine
-    (no schema supplied, or annotation failed for that query) is not
-    DATE-typed: :class:`DateTruncIsoyearRule` then keeps DuckDB's
-    ``TIMESTAMP`` result, which is BigQuery's result type for DATETIME /
-    TIMESTAMP operands.
+    An operand whose type the translator cannot determine (a query
+    parameter, a SQL UDF argument) is not DATE-typed:
+    :class:`DateTruncIsoyearRule` then keeps DuckDB's ``TIMESTAMP``
+    result, which is BigQuery's result type for DATETIME / TIMESTAMP
+    operands.
     """
-    if node is None:
-        return False
-    if isinstance(node, exp.Cast):
-        target = node.to
-        return target is not None and target.is_type(exp.DataType.Type.DATE)
-    if isinstance(node, exp.CurrentDate):
-        return True
-    annotated = getattr(node, "type", None)
+    annotated = node.type
     return annotated is not None and annotated.is_type(exp.DataType.Type.DATE)
 
 

@@ -10,8 +10,8 @@ BigQuery SQL
     ▼  BigQuery-AST rewrites (bqemulator.sql.rewriter.datetime_helpers)
     ▼  DuckDB generation
     ▼  rule engine (bqemulator.sql.rules.*): re-parse as DuckDB, qualify +
-       annotate types against the catalog schema snapshot, apply rules
-       post-order
+       annotate types (with the catalog schema snapshot's column
+       types), apply rules post-order, typing each replacement
 DuckDB SQL
 ```
 
@@ -38,6 +38,22 @@ annotator on a copy of the statement and copies the resulting types back
 onto the original nodes, so rules see operand types while the
 translated SQL keeps the user's identifiers, `*` projections and
 column names exactly as written.
+
+Types describe the DuckDB SQL being rewritten, as DuckDB evaluates it:
+the annotator uses SQLGlot's DuckDB dialect typing (`time_bucket` keeps
+its operand's type, date-part functions return `BIGINT`), types
+`DATE ± INTERVAL` as `TIMESTAMP` and `TRY(x)` as `x`, and types each
+`BQEMU_*` handoff call as its expansion. Every statement is annotated;
+the catalog schema snapshot supplies the column types of the tables it
+references, so a statement that reads no catalog table is still typed
+from its literals, casts, functions and `UNNEST` / CTE columns. When
+`qualify` cannot resolve a statement, its nodes are typed from their
+own structure and only column references stay unknown.
+
+Each rule replacement is typed the same way as soon as it is made, so
+a rule that reads an operand's type sees the type of the SQL that
+replaced the operand: in `DATE_TRUNC(DATE_TRUNC(d, MONTH), ISOYEAR)`
+the outer rule sees the inner `time_bucket` as `DATE`.
 
 ## Rule engine
 

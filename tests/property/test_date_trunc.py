@@ -5,7 +5,8 @@ For any date, any BigQuery date granularity (``DAY``, ``WEEK``,
 ``ISOYEAR``), and any operand type (DATE literal, DATE / DATETIME /
 TIMESTAMP column), the translated query must return the start of the
 BigQuery period containing the input — computed here independently with
-:mod:`datetime` — in the operand's BigQuery type.
+:mod:`datetime` — in the operand's BigQuery type. A truncation of a
+truncation must do the same for its outer granularity.
 """
 
 from __future__ import annotations
@@ -129,3 +130,48 @@ def test_column_truncates_to_period_start_in_operand_type(
         assert truncated == expected_day
     else:
         assert truncated == dt.datetime.combine(expected_day, dt.time(), tzinfo=value.tzinfo)
+
+
+@given(
+    moment=_moment,
+    inner=_granularity,
+    outer=_granularity,
+    operand_type=st.sampled_from(["DATE literal", *sorted(_COLUMN_RESULT_TYPES)]),
+)
+@settings(max_examples=200, deadline=None)
+def test_truncation_of_a_truncation_keeps_operand_type(
+    conn: duckdb.DuckDBPyConnection,
+    translator: SQLTranslator,
+    moment: dt.datetime,
+    inner: tuple[str, Callable[[dt.date], dt.date]],
+    outer: tuple[str, Callable[[dt.date], dt.date]],
+    operand_type: str,
+) -> None:
+    inner_sql, inner_reference = inner
+    outer_sql, outer_reference = outer
+    if operand_type == "DATE literal":
+        operand, schema, result_type = f"DATE '{moment.date().isoformat()}'", None, "DATE"
+        bq_from = ""
+    else:
+        conn.execute(f'CREATE OR REPLACE TABLE "test-project".bqemu.t (v {operand_type})')
+        value: dt.date | dt.datetime = moment.date() if operand_type == "DATE" else moment
+        if operand_type == "TIMESTAMPTZ":
+            value = moment.replace(tzinfo=dt.UTC)
+        conn.execute('INSERT INTO "test-project".bqemu.t VALUES (?)', [value])
+        operand, schema = "v", {"t": {"v": operand_type}}
+        result_type, bq_from = _COLUMN_RESULT_TYPES[operand_type], " FROM `test-project.bqemu.t`"
+
+    result = translator.translate(
+        f"SELECT DATE_TRUNC(DATE_TRUNC({operand}, {inner_sql}), {outer_sql}) AS w{bq_from}",
+        schema=schema,
+    )
+    assert isinstance(result, Ok), result
+    relation = conn.execute(result.value)
+    assert relation.description[0][1] == result_type
+
+    expected_day = outer_reference(inner_reference(moment.date()))
+    (truncated,) = relation.fetchone()
+    if result_type == "DATE":
+        assert truncated == expected_day
+    else:
+        assert truncated.replace(tzinfo=None) == dt.datetime.combine(expected_day, dt.time())

@@ -80,6 +80,8 @@ _UNSUPPORTED_KEYWORDS: frozenset[str] = frozenset(
     }
 )
 
+_DUCKDB_DIALECT = sqlglot.Dialect.get_or_raise("duckdb")
+
 
 def _date_interval_arithmetic_type(_left: exp.Expr, _right: exp.Expr) -> exp.DType:
     """Return the DuckDB result type of ``DATE ± INTERVAL`` (always ``TIMESTAMP``)."""
@@ -102,7 +104,18 @@ _DUCKDB_BINARY_COERCIONS = {
 
 
 #: SQLGlot's own typing for anonymous calls: the schema's UDF type.
-_annotate_udf_call = sqlglot.Dialect.EXPRESSION_METADATA[exp.Anonymous]["annotator"]
+_annotate_udf_call = _DUCKDB_DIALECT.EXPRESSION_METADATA[exp.Anonymous]["annotator"]
+
+#: Operand types a ``BQEMU_DATE_TRUNC`` handoff returns unchanged: DuckDB's
+#: ``DATE``, ``TIMESTAMP`` (which SQLGlot's DuckDB dialect reads as
+#: ``TIMESTAMPNTZ`` and types some functions as ``TIMESTAMP``) and
+#: ``TIMESTAMPTZ``.
+_DATE_TRUNC_OPERAND_TYPES = (
+    exp.DType.DATE,
+    exp.DType.TIMESTAMP,
+    exp.DType.TIMESTAMPNTZ,
+    exp.DType.TIMESTAMPTZ,
+)
 
 
 def _annotate_anonymous_call(annotator: TypeAnnotator, call: exp.Anonymous) -> None:
@@ -117,30 +130,73 @@ def _annotate_anonymous_call(annotator: TypeAnnotator, call: exp.Anonymous) -> N
     """
     if call.name.upper() == DATE_TRUNC_FUNCTION and call.expressions:
         operand_type = call.expressions[0].type
-        if operand_type is not None and operand_type.is_type(
-            exp.DType.DATE,
-            exp.DType.TIMESTAMP,
-            exp.DType.TIMESTAMPTZ,
-        ):
+        if operand_type is not None and operand_type.is_type(*_DATE_TRUNC_OPERAND_TYPES):
             annotator._set_type(call, operand_type)  # noqa: SLF001 — SQLGlot annotator protocol
             return
     _annotate_udf_call(annotator, call)
 
 
-#: Expression typing for the annotation pass: SQLGlot's defaults plus the
-#: result types of the ``BQEMU_*`` handoff calls.
+def _annotate_try(annotator: TypeAnnotator, call: exp.Try) -> None:
+    """Type ``TRY(x)`` as *x*'s type, as DuckDB does.
+
+    The transpile wraps every ``SAFE.``-prefixed BigQuery call in
+    ``TRY``, so ``SAFE.PARSE_DATE(...)`` stays ``DATE``-typed.
+    """
+    annotator._annotate_by_args(call, "this")  # noqa: SLF001 — SQLGlot annotator protocol
+
+
+#: Expression typing for the annotation pass: SQLGlot's DuckDB dialect
+#: typing — each function typed as DuckDB binds it, e.g. ``time_bucket``
+#: (``exp.DateBin``) as its operand's type and the date-part functions as
+#: ``BIGINT`` — plus ``TRY`` and the result types of the ``BQEMU_*``
+#: handoff calls.
 _DUCKDB_EXPRESSION_METADATA = {
-    **sqlglot.Dialect.EXPRESSION_METADATA,
+    **_DUCKDB_DIALECT.EXPRESSION_METADATA,
     exp.Anonymous: {"annotator": _annotate_anonymous_call},
+    exp.Try: {"annotator": _annotate_try},
 }
+
+
+def _duckdb_type_annotator(
+    schema: dict[str, Any] | None = None,
+    *,
+    overwrite_types: bool = True,
+) -> TypeAnnotator:
+    """Return a SQLGlot type annotator that types DuckDB SQL as DuckDB evaluates it.
+
+    It combines :data:`_DUCKDB_EXPRESSION_METADATA` function typing,
+    :data:`_DUCKDB_BINARY_COERCIONS` operator typing, and *schema*'s
+    column types read as DuckDB type names. With *overwrite_types*
+    false, nodes that already carry a type keep it.
+    """
+    return TypeAnnotator(
+        schema=ensure_schema(schema or {}, dialect=_DUCKDB_DIALECT),
+        expression_metadata=_DUCKDB_EXPRESSION_METADATA,
+        binary_coercions=_DUCKDB_BINARY_COERCIONS,
+        overwrite_types=overwrite_types,
+    )
+
+
+def _type_from_structure(expression: exp.Expression) -> None:
+    """Type *expression*'s untyped nodes from their own structure, keeping existing types.
+
+    Infers types without scope resolution: a ``CAST`` is typed by its
+    target, a literal by its value, a function by its arguments, while
+    a column reference stays as typed or unknown. Covers the nodes a
+    rule's replacement introduces around copies of already-typed
+    operands, and a statement the scope-resolving pass cannot qualify.
+    A typing failure leaves the nodes untyped, as if no annotation had
+    run.
+    """
+    try:
+        _duckdb_type_annotator(overwrite_types=False).annotate(expression, annotate_scope=False)
+    except Exception as exc:  # noqa: BLE001
+        _log.debug("sql.structural_typing_skipped", error=str(exc))
 
 
 #: ``meta`` key that pairs each node with its counterpart in the annotated
 #: copy (see :meth:`SQLTranslator._annotate_tree`).
 _TYPE_TAG = "bqemu_type_tag"
-
-
-_DUCKDB_DIALECT = sqlglot.Dialect.get_or_raise("duckdb")
 
 
 def _transpile_to_duckdb(bq_sql: str) -> list[str]:
@@ -217,13 +273,12 @@ class SQLTranslator:
         Args:
             bq_sql: The BigQuery GoogleSQL query.
             schema: Optional ``{table_name: {column_name: type_str}}``
-                catalog snapshot consumed by SQLGlot's ``annotate_types``
-                pass. When provided, each AST node carries a resolved
-                ``.type`` attribute that operand-type-aware rules
-                (currently ``AvgDecimalRule`` for ADR 0023 §1.B
-                aggregate-type preservation) consult. ``None`` disables
-                the annotation pass — rules that depend on operand
-                types simply skip.
+                catalog snapshot of the tables *bq_sql* references. The
+                rule engine types every statement before its
+                operand-type-aware rules run (``AvgDecimalRule``,
+                ``DivDecimalRule``, ``DateTruncIsoyearRule``); the
+                snapshot supplies the column types of catalog tables,
+                which are otherwise unknown.
             caller: Optional :class:`~bqemulator.row_access.identity.CallerIdentity`
                 used by the ``SESSION_USER()`` pre-translator
                 (ADR 0038). ``None`` folds to the unauthenticated
@@ -449,11 +504,12 @@ class SQLTranslator:
         where the inner constructors must be renamed before the outer
         ``ST_DWITHIN`` is rebuilt.
 
-        When *schema* is provided, runs SQLGlot's ``qualify`` +
-        ``annotate_types`` passes so operand-type-aware rules
-        (``AvgDecimalRule``) can see resolved column types. Failure of
-        either pass is non-fatal — we fall back to the unannotated AST
-        and rules that need type info simply skip.
+        Every statement is type-annotated first (:meth:`_annotate_tree`)
+        so operand-type-aware rules (``AvgDecimalRule``,
+        ``DivDecimalRule``, ``DateTruncIsoyearRule``) see resolved
+        types; *schema* supplies the catalog's column types. A
+        statement's types therefore do not depend on whether it
+        references a catalog table.
         """
         try:
             tree = sqlglot.parse_one(sql, read="duckdb")
@@ -467,8 +523,7 @@ class SQLTranslator:
         # narrows it for the rest of the function and the helpers.
         assert isinstance(tree, exp.Expression)  # noqa: S101
 
-        if schema is not None:
-            tree = self._annotate_tree(tree, schema)
+        tree = self._annotate_tree(tree, schema)
 
         modified = False
         # Snapshot nodes pre-order, then iterate in reverse — children
@@ -486,9 +541,14 @@ class SQLTranslator:
     @staticmethod
     def _annotate_tree(
         tree: exp.Expression,
-        schema: dict[str, Any],
+        schema: dict[str, Any] | None,
     ) -> exp.Expression:
         """Set each node's ``.type`` from SQLGlot's ``qualify`` + type-annotation passes.
+
+        *schema* is the catalog snapshot of the tables the statement
+        references; ``None`` or an empty snapshot still types every
+        expression whose type the statement itself determines (literals,
+        casts, functions, ``UNNEST`` / CTE / subquery columns).
 
         The passes run on a copy of *tree*: ``qualify`` normalises
         identifier case, expands ``*`` from the schema snapshot (which
@@ -499,24 +559,24 @@ class SQLTranslator:
         written back onto the tagged originals, so the rules read
         operand types while rewriting the statement exactly as written.
 
-        The annotator uses :data:`_DUCKDB_BINARY_COERCIONS` so operator
-        result types match DuckDB's evaluation of the SQL being
-        annotated, and :data:`_DUCKDB_EXPRESSION_METADATA` so the
-        ``BQEMU_*`` handoff calls carry their result types. Failures
-        are logged and *tree* is returned untyped; rules that need
-        type info gracefully skip.
+        Types follow DuckDB's evaluation of the SQL being annotated
+        (:func:`_duckdb_type_annotator`), with the ``BQEMU_*`` handoff
+        calls typed as their expansions. When ``qualify`` cannot resolve
+        the statement (for example an unqualified column of a table the
+        schema does not cover), the failure is logged and *tree* is
+        typed from its own structure (:func:`_type_from_structure`), so
+        only its column references stay unknown.
         """
         for tag, node in enumerate(tree.walk()):
             node.meta[_TYPE_TAG] = tag
         try:
-            qualified = qualify(tree.copy(), schema=schema, dialect="duckdb", infer_schema=True)
-            annotated = TypeAnnotator(
-                schema=ensure_schema(schema),
-                expression_metadata=_DUCKDB_EXPRESSION_METADATA,
-                binary_coercions=_DUCKDB_BINARY_COERCIONS,
-            ).annotate(qualified)
+            qualified = qualify(
+                tree.copy(), schema=schema or {}, dialect="duckdb", infer_schema=True
+            )
+            annotated = _duckdb_type_annotator(schema).annotate(qualified)
         except Exception as exc:  # noqa: BLE001
             _log.debug("sql.annotate_types_skipped", error=str(exc))
+            _type_from_structure(tree)
             return tree
         types = {
             node.meta[_TYPE_TAG]: node.type
@@ -541,6 +601,10 @@ class SQLTranslator:
         we stop scanning further rules for it. Subsequent reversed-
         walk iterations pick up the original positions inside the
         replacement subtree on their own.
+
+        The replacement is typed (:func:`_type_from_structure`) before
+        an enclosing node is visited, so a rule that reads an operand's
+        type sees the type of the SQL that replaced it.
         """
         if node.parent is None and node is not tree:
             # Node has been detached by an earlier replacement;
@@ -552,6 +616,7 @@ class SQLTranslator:
             replacement = rule.rewrite(node)
             if replacement is not node:
                 node.replace(replacement)
+                _type_from_structure(replacement)
                 return True
         return False
 

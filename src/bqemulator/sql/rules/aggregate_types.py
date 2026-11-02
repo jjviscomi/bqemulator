@@ -9,11 +9,10 @@ operands (``AVG(NUMERIC)`` → ``NUMERIC``, ``AVG(BIGNUMERIC)`` →
 
 This module hosts the rules that detect operand-type-sensitive
 aggregate shapes and rewrite them so the DuckDB output preserves the
-BigQuery type tag. The rules consult ``node.type`` populated by
-SQLGlot's ``annotate_types`` pass (the translator runs it when the
-caller supplies a catalog-derived schema dict); when the operand's
-type cannot be resolved, the rule skips — matching the legacy
-emulator behaviour for queries the catalog cannot annotate.
+BigQuery type tag. The rules consult ``node.type`` populated by the
+translator's type-annotation pass, which types every statement, with
+catalog column types from the caller's schema snapshot; when the
+operand's type cannot be resolved, the rule skips.
 
 A second concern handled here is *function-name parity* — BigQuery
 aggregates that have a DuckDB primitive but under a different name and
@@ -198,9 +197,8 @@ class DivDecimalRule(TranslationRule):
     contracts (matching DuckDB's behaviour) are preserved.
 
     The annotation-based detection mirrors :class:`AvgDecimalRule`'s
-    operand-type-sensitive design. When the catalog cannot annotate
-    operand types (no schema available), the rule skips — matching
-    the legacy emulator's behaviour.
+    operand-type-sensitive design. When neither operand's type can be
+    resolved, the rule skips.
     """
 
     name = "DIV_DECIMAL"

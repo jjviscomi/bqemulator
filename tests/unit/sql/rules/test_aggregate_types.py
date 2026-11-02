@@ -77,11 +77,38 @@ class TestAvgDecimalRule:
         assert "CAST(AVG" not in result.value.upper()
 
     def test_skips_without_schema(self, t: SQLTranslator) -> None:
-        # No schema → annotate_types can't resolve the column → rule
-        # skips. (Falls back to legacy emulator behaviour.)
+        # No schema snapshot → the catalog column's type is unknown → the
+        # rule skips.
         result = t.translate("SELECT AVG(amount) FROM `test-project.bqemu.orders`")
         assert isinstance(result, Ok)
         assert "CAST(AVG" not in result.value.upper()
+
+    @pytest.mark.parametrize(
+        ("bq_sql", "expected_type", "expected"),
+        [
+            (
+                "SELECT AVG(x) AS a FROM UNNEST([NUMERIC '1.5', NUMERIC '2.5']) AS x",
+                "DECIMAL(38,9)",
+                Decimal(2),
+            ),
+            ("SELECT AVG(x) AS a FROM UNNEST([1, 2]) AS x", "DOUBLE", 1.5),
+        ],
+    )
+    def test_statement_without_a_catalog_table(
+        self,
+        t: SQLTranslator,
+        con: duckdb.DuckDBPyConnection,
+        bq_sql: str,
+        expected_type: str,
+        expected: object,
+    ) -> None:
+        # BigQuery: AVG(NUMERIC) → NUMERIC, AVG(INT64) → FLOAT64, whether or
+        # not the statement reads a table.
+        result = t.translate(bq_sql)
+        assert isinstance(result, Ok), result
+        relation = con.execute(result.value)
+        assert relation.description[0][1] == expected_type
+        assert relation.fetchone() == (expected,)
 
     def test_executes_cleanly_against_duckdb(
         self, t: SQLTranslator, con: duckdb.DuckDBPyConnection
@@ -216,12 +243,37 @@ class TestDivDecimalRule:
         assert "DECIMAL(38, 9)" not in result.value.upper()
 
     def test_skips_without_schema(self, t: SQLTranslator) -> None:
-        # No schema → annotate_types can't resolve → rule skips.
+        # No schema snapshot → the catalog columns' types are unknown →
+        # the rule skips.
         result = t.translate(
             "SELECT amount / qty FROM `test-project.bqemu.orders`",
         )
         assert isinstance(result, Ok)
         assert "DECIMAL(38, 9)" not in result.value.upper()
+
+    @pytest.mark.parametrize(
+        ("bq_sql", "expected_type", "expected"),
+        [
+            ("SELECT NUMERIC '10' / 4 AS r", "DECIMAL(38,9)", Decimal("2.5")),
+            ("SELECT 10 / NUMERIC '4' AS r", "DECIMAL(38,9)", Decimal("2.5")),
+            ("SELECT x / 4 AS r FROM UNNEST([NUMERIC '10']) AS x", "DECIMAL(38,9)", Decimal("2.5")),
+            ("SELECT 10 / 4 AS r", "DOUBLE", 2.5),
+        ],
+    )
+    def test_statement_without_a_catalog_table(
+        self,
+        t: SQLTranslator,
+        con: duckdb.DuckDBPyConnection,
+        bq_sql: str,
+        expected_type: str,
+        expected: object,
+    ) -> None:
+        # BigQuery: NUMERIC / INT64 → NUMERIC, INT64 / INT64 → FLOAT64.
+        result = t.translate(bq_sql)
+        assert isinstance(result, Ok), result
+        relation = con.execute(result.value)
+        assert relation.description[0][1] == expected_type
+        assert relation.fetchone() == (expected,)
 
     def test_preserves_math_csc_float_pattern(self, t: SQLTranslator) -> None:
         # ``ROUND(1 / SIN(1), 6)`` (math_csc fixture). The Div's

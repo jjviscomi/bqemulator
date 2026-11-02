@@ -144,11 +144,11 @@ _TYPES_SCHEMA = {"t": {"d": "DATE", "n": "BIGINT", "ts": "TIMESTAMP", "tz": "TIM
 
 
 def _annotated_projection_type(duckdb_sql: str) -> str:
-    """Annotate *duckdb_sql* the way the translator does; return the projection's type."""
+    """Annotate *duckdb_sql* the way the translator does; return the projection's DuckDB type."""
     tree = sqlglot.parse_one(duckdb_sql, read="duckdb")
     annotated = SQLTranslator._annotate_tree(tree, _TYPES_SCHEMA)
     (projection,) = annotated.find(exp.Select).expressions
-    return str(projection.type)
+    return projection.type.sql(dialect="duckdb")
 
 
 class TestTypeAnnotation:
@@ -200,7 +200,7 @@ class TestTypeAnnotation:
         duckdb_sql = "WITH c AS (SELECT d + INTERVAL '1' DAY AS x FROM t) SELECT x AS v FROM c"
         assert _annotated_projection_type(duckdb_sql) == "TIMESTAMP"
 
-    def test_annotation_failure_returns_unannotated_tree(
+    def test_qualify_failure_types_the_tree_from_its_structure(
         self, monkeypatch: pytest.MonkeyPatch
     ) -> None:
         def _fail(*_args: object, **_kwargs: object) -> exp.Expression:
@@ -208,8 +208,69 @@ class TestTypeAnnotation:
             raise ValueError(msg)
 
         monkeypatch.setattr(translator_module, "qualify", _fail)
-        tree = sqlglot.parse_one("SELECT d FROM t", read="duckdb")
+        tree = sqlglot.parse_one("SELECT d, LAST_DAY(CURRENT_DATE) AS e FROM t", read="duckdb")
+        before = tree.sql(dialect="duckdb")
         assert SQLTranslator._annotate_tree(tree, _TYPES_SCHEMA) is tree
+        assert tree.sql(dialect="duckdb") == before
+        column, last_day = tree.find(exp.Select).expressions
+        assert column.type.is_type(exp.DType.UNKNOWN)
+        assert last_day.type.is_type(exp.DType.DATE)
+
+    @pytest.mark.parametrize(
+        ("duckdb_sql", "expected"),
+        [
+            # Statements with no catalog table are typed too.
+            ("SELECT CURRENT_DATE AS v", "DATE"),
+            ("SELECT MAKE_DATE(2024, 5, 15) AS v", "DATE"),
+            (
+                "SELECT x AS v FROM UNNEST([CAST('1.5' AS DECIMAL(38, 9))]) AS _t0(x)",
+                "DECIMAL(38, 9)",
+            ),
+            # DuckDB's own function typing: ``time_bucket`` keeps its operand's type.
+            ("SELECT TIME_BUCKET(INTERVAL '7' DAY, d) AS v FROM t", "DATE"),
+            ("SELECT TIME_BUCKET(INTERVAL '1' MONTH, tz) AS v FROM t", "TIMESTAMPTZ"),
+            ("SELECT EXTRACT(YEAR FROM d) AS v FROM t", "BIGINT"),
+            # ``SAFE.`` calls transpile to ``TRY``, which keeps its operand's type.
+            ("SELECT TRY(CAST(STRPTIME('2024-05-15', '%Y-%m-%d') AS DATE)) AS v", "DATE"),
+        ],
+    )
+    def test_types_follow_duckdb_evaluation(self, duckdb_sql: str, expected: str) -> None:
+        assert _annotated_projection_type(duckdb_sql) == expected
+
+
+class TestTypeFromStructure:
+    """``_type_from_structure`` types new nodes and keeps the types already set."""
+
+    def test_types_untyped_nodes_and_keeps_existing_types(self) -> None:
+        operand = exp.column("d")
+        operand.type = exp.DataType.build("DATE")
+        bucket = exp.DateBin.from_arg_list(
+            [exp.Interval(this=exp.Literal.string("1"), unit=exp.Var(this="MONTH")), operand]
+        )
+        translator_module._type_from_structure(bucket)
+        assert operand.type.is_type(exp.DType.DATE)
+        assert bucket.type.is_type(exp.DType.DATE)
+
+    def test_typing_failure_leaves_the_expression_untyped(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        def _fail(*_args: object, **_kwargs: object) -> object:
+            msg = "annotator failed"
+            raise ValueError(msg)
+
+        monkeypatch.setattr(translator_module, "_duckdb_type_annotator", _fail)
+        call = exp.Anonymous(this="F", expressions=[exp.Literal.number(1)])
+        translator_module._type_from_structure(call)
+        assert call.type is None
+
+    def test_rule_replacements_are_typed_for_enclosing_rules(self) -> None:
+        # The inner DATE_TRUNC expands first; the outer ISOYEAR rule then
+        # reads the type of the ``time_bucket`` that replaced it.
+        result = SQLTranslator().translate(
+            "SELECT DATE_TRUNC(DATE_TRUNC(DATE '2024-05-15', MONTH), ISOYEAR) AS v"
+        )
+        assert isinstance(result, Ok), result
+        assert result.value.startswith("SELECT CAST(DATE_TRUNC('ISOYEAR', TIME_BUCKET(")
 
 
 class TestTranspileToDuckdb:
@@ -364,4 +425,7 @@ class TestRulesKeepTheStatementAsWritten:
         assert tree.sql(dialect="duckdb") == before
         outer = tree.find(exp.Select)
         assert outer is not None
-        assert [str(projection.type) for projection in outer.expressions] == ["VARCHAR", "DATE"]
+        assert [projection.type.sql(dialect="duckdb") for projection in outer.expressions] == [
+            "TEXT",
+            "DATE",
+        ]

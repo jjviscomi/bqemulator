@@ -11,8 +11,8 @@ looks each up in the catalog, and emits the dict. Unresolvable refs
 dict carries only what the translator can usefully annotate.
 
 The helper is intentionally tolerant: SQLGlot parse failures and
-catalog lookup failures both surface as an empty dict so the
-translator falls back to its legacy (un-annotated) behaviour.
+catalog lookup failures both surface as an empty dict, and the
+translator then types the statement without catalog column types.
 """
 
 from __future__ import annotations
@@ -49,8 +49,8 @@ def build_catalog_schema(
     as the column qualifier.
 
     On parse failure or any catalog error, returns an empty dict — the
-    translator then runs without operand type annotation and the
-    type-aware rules skip cleanly.
+    translator then types the statement without catalog column types,
+    and type-aware rules skip operands whose types stay unknown.
     """
     try:
         tree = sqlglot.parse_one(bq_sql, read="bigquery")

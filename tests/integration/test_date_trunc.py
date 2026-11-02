@@ -160,6 +160,44 @@ def test_truncating_a_truncated_date_column_stays_date(client, events: str) -> N
     assert row.w == dt.date(2024, 4, 28)
 
 
+def test_isoyear_of_a_truncation_stays_date(client, events: str) -> None:
+    """``ISOYEAR`` of a nested ``DATE_TRUNC`` keeps its operand's type."""
+    job = client.query(
+        "SELECT DATE_TRUNC(DATE_TRUNC(d, MONTH), ISOYEAR) AS from_column, "
+        "DATE_TRUNC(DATE_TRUNC(DATE '2021-01-02', WEEK), ISOYEAR) AS from_literal, "
+        "DATE_TRUNC(DATE_TRUNC(dt, MONTH), ISOYEAR) AS from_datetime "
+        f"FROM {events}",
+    )
+    row = next(iter(job.result()))
+    assert [field.field_type for field in job.result().schema] == ["DATE", "DATE", "DATETIME"]
+    assert (row.from_column, row.from_literal, row.from_datetime) == (
+        dt.date(2024, 1, 1),
+        dt.date(2019, 12, 30),
+        dt.datetime(2024, 1, 1),  # noqa: DTZ001 — DATETIME is naive
+    )
+
+
+def test_isoyear_of_derived_dates_without_a_table(client) -> None:
+    """A statement that reads no table types its DATE expressions too."""
+    job = client.query(
+        "SELECT DATE_TRUNC(LAST_DAY(DATE '2020-12-15'), ISOYEAR) AS last_day, "
+        "DATE_TRUNC(SAFE.PARSE_DATE('%Y-%m-%d', '2021-01-02'), ISOYEAR) AS parsed, "
+        "(SELECT DATE_TRUNC(day, ISOYEAR) FROM UNNEST(GENERATE_DATE_ARRAY("
+        "'2021-01-02', '2021-01-02')) AS day) AS spine",
+    )
+    row = next(iter(job.result()))
+    assert [field.field_type for field in job.result().schema] == ["DATE", "DATE", "DATE"]
+    assert (row.last_day, row.parsed, row.spine) == (dt.date(2019, 12, 30),) * 3
+
+
+def test_numeric_average_without_a_table_stays_numeric(client) -> None:
+    """``AVG`` over NUMERIC values is NUMERIC whether or not the statement reads a table."""
+    job = client.query("SELECT AVG(x) AS a FROM UNNEST([NUMERIC '1.5', NUMERIC '2.5']) AS x")
+    row = next(iter(job.result()))
+    assert [field.field_type for field in job.result().schema] == ["NUMERIC"]
+    assert row.a == Decimal(2)
+
+
 @pytest.fixture
 def orders(client) -> str:
     """Create ``p.trunc_ds.Orders`` with mixed-case and STRUCT columns."""
