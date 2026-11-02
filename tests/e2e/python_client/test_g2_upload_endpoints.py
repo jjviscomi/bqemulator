@@ -57,7 +57,7 @@ def _create_dataset_and_table(client: bigquery.Client, ds_id: str, tbl_id: str) 
 
 
 def test_load_table_from_file_csv_multipart(bq_client: bigquery.Client) -> None:
-    """``load_table_from_file`` with a known small size goes through multipart."""
+    """Verify that ``load_table_from_file`` with a known small size goes through multipart."""
     ds_id = "g2_csv_multipart"
     tbl_id = "rows"
     _create_dataset_and_table(bq_client, ds_id, tbl_id)
@@ -87,7 +87,7 @@ def test_load_table_from_file_csv_multipart(bq_client: bigquery.Client) -> None:
 
 
 def test_load_table_from_json_multipart(bq_client: bigquery.Client) -> None:
-    """``load_table_from_json`` always sends a multipart upload under 5 MiB."""
+    """Verify that ``load_table_from_json`` always sends a multipart upload under 5 MiB."""
     ds_id = "g2_json_multipart"
     tbl_id = "rows"
     _create_dataset_and_table(bq_client, ds_id, tbl_id)
@@ -109,7 +109,7 @@ def test_load_table_from_json_multipart(bq_client: bigquery.Client) -> None:
 
 
 def test_load_table_from_file_parquet_multipart(bq_client: bigquery.Client) -> None:
-    """Binary Parquet loads through the multipart path byte for byte.
+    """Verify that binary Parquet loads through the multipart path byte for byte.
 
     This is the upload ``load_table_from_dataframe`` performs for a small
     frame: Parquet bytes with a known size.
@@ -142,7 +142,7 @@ def test_load_table_from_file_parquet_multipart(bq_client: bigquery.Client) -> N
 
 
 def test_load_table_from_file_ndjson_resumable(bq_client: bigquery.Client) -> None:
-    """An unsized file object always goes through the resumable protocol."""
+    """Verify that an unsized file object always goes through the resumable protocol."""
     ds_id = "g2_json_resumable"
     tbl_id = "rows"
     _create_dataset_and_table(bq_client, ds_id, tbl_id)

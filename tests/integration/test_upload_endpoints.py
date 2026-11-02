@@ -443,7 +443,7 @@ def test_load_from_local_file_via_python_client(bqemu_server: EmulatorServer, si
 
 
 def test_load_table_from_json_via_python_client(bqemu_server: EmulatorServer) -> None:
-    """``load_table_from_json`` sends a multipart upload with a ``*/*`` media part."""
+    """Verify that ``load_table_from_json`` sends a multipart upload with a ``*/*`` media part."""
     from google.cloud import bigquery
 
     dataset = f"upload_pyjson_{uuid.uuid4().hex[:8]}"
@@ -470,7 +470,7 @@ def test_load_table_from_json_via_python_client(bqemu_server: EmulatorServer) ->
 
 
 def test_load_parquet_multipart_via_python_client(bqemu_server: EmulatorServer) -> None:
-    """Binary Parquet survives the ``*/*`` multipart path byte for byte.
+    """Verify that binary Parquet survives the ``*/*`` multipart path byte for byte.
 
     This is the upload ``load_table_from_dataframe`` performs for a small
     frame: it writes Parquet to a temp file and loads it with ``size`` set.

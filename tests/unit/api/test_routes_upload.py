@@ -203,7 +203,7 @@ class TestMultipartUpload:
     def test_ndjson_multipart_loads_under_any_discrete_media_type(
         self, app: FastAPI, media_ct: str | None
     ) -> None:
-        """The media part's declared type never selects the parser.
+        """Verify that the media part's declared type never selects the parser.
 
         BigQuery's ``jobs.insert`` media upload accepts ``*/*`` and reads
         the bytes per ``sourceFormat``; each parameter is a label an
@@ -291,7 +291,10 @@ class TestMultipartUpload:
     def test_media_part_decoded_per_content_transfer_encoding(
         self, app: FastAPI, transfer_encoding: str, media: bytes
     ) -> None:
-        """``binary`` bytes pass through unchanged; an encoded part is decoded first."""
+        """Verify that the media part is decoded per its ``Content-Transfer-Encoding``.
+
+        ``binary`` bytes pass through unchanged; an encoded part is decoded first.
+        """
         c = TestClient(app)
         envelope = {
             "configuration": {
@@ -335,7 +338,11 @@ class TestMultipartUpload:
     def test_multipart_with_composite_media_type_rejected(
         self, app: FastAPI, tmp_path: Path, media_ct: str
     ) -> None:
-        """A composite media part would otherwise stage an empty or altered file."""
+        """Verify that a composite media part is rejected and nothing is staged.
+
+        The ``email`` parser would otherwise decompose the part and stage an
+        empty or altered file.
+        """
         c = TestClient(app, raise_server_exceptions=False)
         envelope = {
             "configuration": {
