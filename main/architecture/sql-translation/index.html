@@ -5630,15 +5630,55 @@
 
 
 <h1 id="sql-translation">SQL translation<a class="headerlink" href="#sql-translation" title="Permanent link">&para;</a></h1>
-<p>Pipeline (implemented in <code>src/bqemulator/sql/</code>):</p>
+<p>Pipeline (implemented in <code>bqemulator.sql.translator.SQLTranslator</code>):</p>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>BigQuery SQL
 </span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>    │
-</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>    ▼  preprocess (bqemulator.sql.rewriter.pre_sqlglot)
-</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>    ▼  sqlglot.transpile(read=&quot;bigquery&quot;, write=&quot;duckdb&quot;)
-</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>    ▼  postprocess (bqemulator.sql.rewriter.post_sqlglot)
-</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>    ▼  rule engine apply (bqemulator.sql.rules.*)
-</span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>DuckDB SQL
+</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>    ▼  text pre-translators (bqemulator.sql.rewriter.*)
+</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>    ▼  sqlglot.parse(read=&quot;bigquery&quot;)
+</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>    ▼  BigQuery-AST rewrites (bqemulator.sql.rewriter.datetime_helpers)
+</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>    ▼  DuckDB generation
+</span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>    ▼  rule engine (bqemulator.sql.rules.*): re-parse as DuckDB, qualify +
+</span><span id="__span-0-8"><a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a>       annotate types (with the catalog schema snapshot&#39;s column
+</span><span id="__span-0-9"><a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a>       types), apply rules post-order, typing each replacement
+</span><span id="__span-0-10"><a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a>DuckDB SQL
 </span></code></pre></div>
+<p>Text pre-translators rewrite constructs the BigQuery parser or the
+transpile cannot take in their original form. Rewrites that depend on
+distinctions only the BigQuery AST carries — <code>DATE_ADD(...)</code> versus
+<code>date + INTERVAL</code>, <code>DATE_TRUNC</code> versus <code>TIMESTAMP_TRUNC</code>,
+<code>WEEK(&lt;WEEKDAY&gt;)</code> — run on the parsed BigQuery statement immediately
+before DuckDB generation rather than on text, because re-serialising
+BigQuery SQL is lossy (SQLGlot's BigQuery generator strips <code>CAST</code> type
+parameters and reshapes <code>AT TIME ZONE</code> and <code>VALUES … AS v(…)</code>).</p>
+<p>When such a rewrite must be finished after DuckDB generation, it emits a
+<code>BQEMU_*</code> handoff call that a rule expands: <code>DATE_TRUNC(x, WEEK(MONDAY))</code>
+becomes <code>BQEMU_DATE_TRUNC(x, 'WEEK(MONDAY)')</code>, which <code>DateTruncWeekRule</code>
+expands to <code>time_bucket(INTERVAL '7' DAY, x)</code>. Where possible the
+expansion lets DuckDB pick the result type when it binds the query
+(<code>time_bucket</code> returns <code>DATE</code> for a <code>DATE</code> operand), because the
+translator cannot see the type of a query parameter, <code>UNNEST</code> element
+or UDF argument.</p>
+<p>The rule engine's type annotation runs <code>qualify</code> and SQLGlot's type
+annotator on a copy of the statement and copies the resulting types back
+onto the original nodes, so rules see operand types while the
+translated SQL keeps the user's identifiers, <code>*</code> projections and
+column names exactly as written.</p>
+<p>Types describe the DuckDB SQL being rewritten, as DuckDB evaluates it:
+the annotator uses SQLGlot's DuckDB dialect typing (<code>time_bucket</code> keeps
+its operand's type, date-part functions return <code>BIGINT</code>), types
+<code>DATE ± INTERVAL</code> as <code>TIMESTAMP</code> and <code>TRY(x)</code> as <code>x</code>, types calls to
+the engine's Python-backed helpers by the return types they are
+registered with (<code>bqemulator.sql.builtin_udfs.BUILTIN_UDFS</code>), and types
+each <code>BQEMU_*</code> handoff call as its expansion. Every statement is annotated;
+the catalog schema snapshot supplies the column types of the tables it
+references, so a statement that reads no catalog table is still typed
+from its literals, casts, functions and <code>UNNEST</code> / CTE columns. When
+<code>qualify</code> cannot resolve a statement, its nodes are typed from their
+own structure and only column references stay unknown.</p>
+<p>Each rule replacement is typed the same way as soon as it is made, so
+a rule that reads an operand's type sees the type of the SQL that
+replaced the operand: in <code>DATE_TRUNC(DATE_TRUNC(d, MONTH), ISOYEAR)</code>
+the outer rule sees the inner <code>time_bucket</code> as <code>DATE</code>.</p>
 <h2 id="rule-engine">Rule engine<a class="headerlink" href="#rule-engine" title="Permanent link">&para;</a></h2>
 <p>Each BigQuery function or construct that requires custom translation is
 represented by a <code>TranslationRule</code> subclass in <code>bqemulator.sql.rules/</code>.

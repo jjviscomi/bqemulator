@@ -5757,13 +5757,13 @@ table below maps each BigQuery view to its rewriter function.</p>
 <tr>
 <td>Aggregate / window</td>
 <td><code>AVG(decimal_col)</code></td>
-<td><code>CAST(AVG(decimal_col) AS DECIMAL(38, 9))</code></td>
+<td><code>CAST(AVG(decimal_col) AS DECIMAL(38, 9 \| 10))</code></td>
 <td><code>AVG_DECIMAL</code></td>
 </tr>
 <tr>
 <td>Aggregate / window</td>
 <td><code>&lt;dec&gt; / &lt;x&gt;</code> or <code>&lt;x&gt; / &lt;dec&gt;</code></td>
-<td><code>CAST(... AS DECIMAL(38, 9))</code></td>
+<td><code>CAST(... AS DECIMAL(38, 9 \| 10))</code></td>
 <td><code>DIV_DECIMAL</code></td>
 </tr>
 <tr>
@@ -5906,20 +5906,20 @@ table below maps each BigQuery view to its rewriter function.</p>
 </tr>
 <tr>
 <td>ISO date parts</td>
-<td><code>DATE_TRUNC(date, DAY\|MONTH\|QUARTER\|YEAR)</code></td>
-<td><code>CAST(... AS DATE)</code></td>
+<td><code>DATE_TRUNC(x, DAY\|MONTH\|QUARTER\|YEAR)</code></td>
+<td><code>time_bucket</code> in <em>x</em>'s type</td>
 <td><code>DATE_TRUNC_CALENDAR_UNIT</code></td>
 </tr>
 <tr>
 <td>ISO date parts</td>
-<td><code>DATE_TRUNC(date, ISOYEAR)</code></td>
-<td><code>CAST(DATE_TRUNC('ISOYEAR', date) AS DATE)</code></td>
+<td><code>DATE_TRUNC(x, ISOYEAR)</code></td>
+<td><code>DATE_TRUNC('ISOYEAR', x)</code>, cast to DATE for a DATE operand</td>
 <td><code>DATE_TRUNC_ISOYEAR</code></td>
 </tr>
 <tr>
 <td>ISO date parts</td>
-<td><code>DATE_TRUNC(date, WEEK)</code></td>
-<td>Sunday-start truncation cast to DATE</td>
+<td><code>DATE_TRUNC(x, WEEK\|WEEK(&lt;WEEKDAY&gt;)\|ISOWEEK)</code></td>
+<td>week-start <code>time_bucket</code> in <em>x</em>'s type</td>
 <td><code>DATE_TRUNC_WEEK</code></td>
 </tr>
 <tr>
@@ -6333,7 +6333,7 @@ table below maps each BigQuery view to its rewriter function.</p>
 </tr>
 <tr>
 <td>Pre-translator (date / time)</td>
-<td>Pre-translate BigQuery SQL for date/time functions with lossy transpiles</td>
+<td>Rewrite BigQuery date/time calls whose semantics the DuckDB transpile loses</td>
 <td>—</td>
 <td><code>rewrite_datetime_helpers</code></td>
 </tr>

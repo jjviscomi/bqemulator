@@ -6340,6 +6340,18 @@ emulator targets. The fixture stays XFAILed against this section.</p>
 <p><em>Conformance fixtures pinned to this section</em>:
 - <code>standard_functions/bound_bignumeric_max</code> (39 integer digits —
   XFAILed against DuckDB's 38-digit DECIMAL cap).</p>
+<p><strong>Computed BIGNUMERIC values</strong> hold 28 integer digits. A
+BIGNUMERIC value the emulator computes rather than reads from a
+literal's own digits is <code>DECIMAL(38, 10)</code>: <code>bqemu_to_bignumeric</code>
+(<code>BIGNUMERIC</code> literals with fewer than 10 fractional digits,
+<code>PARSE_BIGNUMERIC</code>), and <code>AVG</code> / <code>/</code> with a BIGNUMERIC operand. A
+result of 1e28 or more raises an out-of-range conversion error, where
+BigQuery returns it. A scale above 9 is what reports the value as
+BIGNUMERIC on the wire, and DuckDB's 38-digit cap leaves 28 integer
+digits at scale 10; a NUMERIC-scale result would hold 29 but report
+NUMERIC and round BIGNUMERIC values to 9 fractional digits. DuckDB
+also divides decimals in <code>DOUBLE</code>, so a quotient carries about 16
+significant digits.</p>
 <h3 id="spheroidal-geometry-on-geography">Spheroidal geometry on GEOGRAPHY<a class="headerlink" href="#spheroidal-geometry-on-geography" title="Permanent link">&para;</a></h3>
 <p>BigQuery's <code>GEOGRAPHY</code> uses a <strong>spherical</strong> geometry model — it
 uses S2's documented <code>kEarthRadiusMeters = 6371010.0</code>. The
