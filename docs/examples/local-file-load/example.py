@@ -1,4 +1,4 @@
-"""Runnable example: local-file loads against the emulator (G2).
+"""Runnable example: local-file loads against the emulator.
 
 Demonstrates the Python client idioms for uploading local data to
 BigQuery — ``load_table_from_file`` and ``load_table_from_json`` — routed
