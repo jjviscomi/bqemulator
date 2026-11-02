@@ -1,0 +1,8 @@
+{
+  "method": "POST",
+  "path": "/upload/bigquery/v2/projects/${PROJECT}/jobs?uploadType=multipart",
+  "headers": {
+    "Content-Type": "multipart/related; boundary=\"===============7330845974216740156==\""
+  },
+  "body_bin": "request.body.bin"
+}

@@ -19,13 +19,19 @@ repos:
       - id: check-json
       - id: check-executables-have-shebangs
       - id: check-shebang-scripts-are-executable
+      # HTTP conformance request bodies (``request.body.bin``) are wire
+      # captures: their CRLF framing and missing final newline are the
+      # bytes under test, so the text-normalising hooks must not touch them.
       - id: end-of-file-fixer
+        exclude: ^tests/conformance/http_corpus/.+\.bin$
       - id: trailing-whitespace
         args: ["--markdown-linebreak-ext=md"]
+        exclude: ^tests/conformance/http_corpus/.+\.bin$
       - id: debug-statements
       - id: detect-private-key
       - id: mixed-line-ending
         args: ["--fix=lf"]
+        exclude: ^tests/conformance/http_corpus/.+\.bin$
 
   - repo: https://github.com/astral-sh/ruff-pre-commit
     rev: v0.3.5

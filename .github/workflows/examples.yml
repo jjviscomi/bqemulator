@@ -72,6 +72,21 @@ jobs:
         working-directory: docs/examples/python/pytest-integration
         run: make test
 
+  example-local-file-load:
+    name: local-file-load
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+      - uses: astral-sh/setup-uv@fac544c07dec837d0ccb6301d7b5580bf5edae39 # v8.2.0
+        with:
+          enable-cache: true
+      - run: |
+          uv sync --frozen --extra dev --extra all --python "3.11"
+          echo "$PWD/.venv/bin" >> "$GITHUB_PATH"
+      - name: make test
+        working-directory: docs/examples/local-file-load
+        run: make test
+
   example-export-to-gcs:
     name: export-to-gcs
     runs-on: ubuntu-latest

@@ -9,7 +9,7 @@ not drift.
 | Path | What it demonstrates |
 |---|---|
 | [`bq-cli-quickstart/`](bq-cli-quickstart/README.md) | Five-command `bq` CLI tour (mk dataset → mk table → load → query → rm) |
-| [`local-file-load/`](local-file-load/README.md) | `client.load_table_from_file(io.BytesIO(...))` against `/upload/bigquery/v2/...` |
+| [`local-file-load/`](local-file-load/README.md) | `client.load_table_from_file(io.BytesIO(...), size=...)` and `client.load_table_from_json(...)` against `/upload/bigquery/v2/...` |
 
 ## Python integrations
 
