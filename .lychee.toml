@@ -20,28 +20,12 @@
 timeout = 20
 
 # Don't follow more than 25 redirects (catches infinite-loop CDNs).
-# Bumped from 5 → 10 → 15 → 20 → 25 to absorb Google Cloud docs'
-# CDN/locale redirect chain (``cloud.google.com → docs.cloud.google.com →
-# locale-prefixed → canonical``) which keeps growing with their
-# CDN topology. PR #101 (2026-05-28) bumped 10 → 15 to clear PR #100's
-# failures; PR #110 (2026-05-30) bumped 15 → 20 after the pre-v1.1.2
-# audit CI hit ``[302] Rejected status code: ... Redirects may have
-# been limited by "max-redirects"`` on two GCP docs URLs
-# (``information-schema-columns``, ``standard-sql/transactions``)
-# referenced from ``docs/reference/conformance-coverage-matrix.md``.
-# Issue #141 (2026-06-11 nightly) hit the same limit on
-# ``reference/rest`` and ``standard-sql/date_functions``: the
-# ``cloud.google.com`` host now issues a 301 to ``docs.cloud.google.com``
-# (a permanent host move), adding one hop on top of the locale chain,
-# so 20 → 25. The source URLs have since been migrated to the canonical
-# ``docs.cloud.google.com`` host, so the host-move 301 no longer sits in
-# the chain and the references resolve directly; this cap now only needs to
-# absorb any residual locale hop, and is kept high as headroom against
-# pathological CDN loops.
-# Same URLs resolve fine in a browser; the hop count from the runner
-# egress region is the variable. 25 absorbs the latest observed chain
-# with headroom; infinite-loop CDNs cap out much higher (40+) so we
-# still catch the pathological cases.
+# Legitimate chains in these docs are short -- Google Cloud docs page
+# moves are a single 301 and the longest chain is three hops -- so the
+# cap is headroom, not a tuning knob. A ``[302] ... Redirects may have
+# been limited by "max-redirects"`` failure on ``docs.cloud.google.com``
+# is Google's anti-abuse redirect loop rather than a long chain, and no
+# cap fixes it; see "Per-host rate limits" at the end of this file.
 max_redirects = 25
 
 # Retry failed URLs on transient errors. Calibrated against the
@@ -203,3 +187,35 @@ exclude = [
     # Email / messaging schemes
     "^mailto:",
 ]
+
+# ---------------------------------------------------------------------------
+# Per-host rate limits
+# ---------------------------------------------------------------------------
+#
+# Host tables must stay at the end of this file: TOML assigns every key
+# below a ``[table]`` header to that table, so a top-level key added
+# after them would silently become a per-host setting. Requires lychee
+# >= 0.23; older releases reject the ``hosts`` key.
+#
+# docs.cloud.google.com: the generated conformance-coverage matrix links
+# ~280 anchors on ~50 distinct Google Cloud docs pages. At lychee's
+# default per-host budget (10 concurrent requests, 50ms apart) a run with
+# a cold ``.lycheecache`` sends all of them in a few seconds, and Google's
+# anti-abuse frontend intermittently flags that burst from GitHub Actions
+# runner egress. Flagged requests either fail to connect (``Network
+# error: Connection failed``) or redirect to the ``www.google.com/sorry``
+# interstitial, which bounces back to the page and round again until the
+# redirect cap stops it (``[302] ... Redirects may have been limited by
+# "max-redirects"``). lychee classifies both as permanent, so
+# ``max_retries`` never applies to them. The same URLs return 200 from
+# developer machines, and runs that inherit a warm cache re-check too few
+# of them to trip the limit.
+#
+# Two concurrent requests at least 500ms apart keep this host under two
+# requests per second, below the burst that trips the interstitial; a
+# cold run spends ~30s on it. Anchors on the same page are answered from
+# lychee's per-host in-memory cache, so they add no requests. This keeps
+# every Google Cloud docs link checked rather than excluding the host.
+[hosts."docs.cloud.google.com"]
+concurrency = 2
+request_interval = "500ms"
