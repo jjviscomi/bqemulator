@@ -6,10 +6,14 @@ Individual rule tests live in ``tests/unit/sql/rules/``.
 
 from __future__ import annotations
 
+import duckdb
 import pytest
+import sqlglot
+from sqlglot import exp
 
 from bqemulator.domain.errors import UnsupportedFeatureError
 from bqemulator.domain.result import Err, Ok
+from bqemulator.sql import translator as translator_module
 from bqemulator.sql.translator import SQLTranslator
 
 pytestmark = pytest.mark.unit
@@ -134,3 +138,230 @@ class TestTranslatorIsStateless:
         assert isinstance(r2, Ok)
         assert "1" in r1.value
         assert "2" in r2.value
+
+
+_TYPES_SCHEMA = {"t": {"d": "DATE", "n": "BIGINT", "ts": "TIMESTAMP", "tz": "TIMESTAMPTZ"}}
+
+
+def _annotated_projection_type(duckdb_sql: str) -> str:
+    """Annotate *duckdb_sql* the way the translator does; return the projection's type."""
+    tree = sqlglot.parse_one(duckdb_sql, read="duckdb")
+    annotated = SQLTranslator._annotate_tree(tree, _TYPES_SCHEMA)
+    (projection,) = annotated.find(exp.Select).expressions
+    return str(projection.type)
+
+
+class TestTypeAnnotation:
+    """The annotation pass types operators the way DuckDB evaluates them."""
+
+    @pytest.mark.parametrize(
+        ("expression", "expected"),
+        [
+            ("d + INTERVAL '1' DAY", "TIMESTAMP"),
+            ("INTERVAL '1' DAY + d", "TIMESTAMP"),
+            ("d - INTERVAL '2' MONTH", "TIMESTAMP"),
+            ("d + 1", "DATE"),
+            ("CAST(d + INTERVAL '1' DAY AS DATE)", "DATE"),
+            ("d", "DATE"),
+        ],
+    )
+    def test_projection_type_matches_duckdb(self, expression: str, expected: str) -> None:
+        duckdb_sql = f"SELECT {expression} AS v FROM t"
+        assert _annotated_projection_type(duckdb_sql) == expected
+        connection = duckdb.connect()
+        connection.execute("CREATE TABLE t (d DATE, n BIGINT)")
+        assert connection.execute(duckdb_sql).description[0][1] == expected
+
+    @pytest.mark.parametrize(
+        ("expression", "expected"),
+        [
+            ("BQEMU_DATE_TRUNC(d, 'MONTH')", "DATE"),
+            ("BQEMU_DATE_TRUNC(ts, 'WEEK(MONDAY)')", "TIMESTAMP"),
+            ("BQEMU_DATE_TRUNC(tz, 'DAY')", "TIMESTAMPTZ"),
+            ("BQEMU_DATE_TRUNC(d + INTERVAL '1' DAY, 'YEAR')", "TIMESTAMP"),
+            ("bqemu_date_trunc(d, 'MONTH')", "DATE"),
+            ("BQEMU_DATE_TRUNC(n, 'MONTH')", "UNKNOWN"),
+            ("BQEMU_DATE_TRUNC()", "UNKNOWN"),
+            ("SOME_UDF(d)", "UNKNOWN"),
+        ],
+    )
+    def test_date_trunc_handoff_carries_its_operand_type(
+        self, expression: str, expected: str
+    ) -> None:
+        assert _annotated_projection_type(f"SELECT {expression} AS v FROM t") == expected
+
+    def test_cte_column_inherits_date_trunc_handoff_type(self) -> None:
+        duckdb_sql = (
+            "WITH c AS (SELECT BQEMU_DATE_TRUNC(d, 'DAY') AS x FROM t) SELECT x AS v FROM c"
+        )
+        assert _annotated_projection_type(duckdb_sql) == "DATE"
+
+    def test_cte_column_inherits_operator_type(self) -> None:
+        duckdb_sql = "WITH c AS (SELECT d + INTERVAL '1' DAY AS x FROM t) SELECT x AS v FROM c"
+        assert _annotated_projection_type(duckdb_sql) == "TIMESTAMP"
+
+    def test_annotation_failure_returns_unannotated_tree(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        def _fail(*_args: object, **_kwargs: object) -> exp.Expression:
+            msg = "qualify failed"
+            raise ValueError(msg)
+
+        monkeypatch.setattr(translator_module, "qualify", _fail)
+        tree = sqlglot.parse_one("SELECT d FROM t", read="duckdb")
+        assert SQLTranslator._annotate_tree(tree, _TYPES_SCHEMA) is tree
+
+
+class TestTranspileToDuckdb:
+    """The transpile step equals ``sqlglot.transpile`` outside the datetime rewrites."""
+
+    @pytest.mark.parametrize(
+        "bq_sql",
+        [
+            "SELECT 1 AS one",
+            "SELECT a, b FROM ds.t WHERE a > 1; SELECT 2",
+            "SELECT 1;;",
+            "SELECT EXTRACT(HOUR FROM TIMESTAMP '2024-06-15 00:00:00+00' AT TIME ZONE '+05:45')",
+            "SELECT v.a FROM (VALUES (1, 'x')) AS v(a, b)",
+            "SELECT CAST('1.5' AS DECIMAL(38, 9)) AS n, DATE_TRUNC(ts, HOUR) AS h FROM ds.t",
+        ],
+    )
+    def test_matches_sqlglot_transpile(self, bq_sql: str) -> None:
+        assert translator_module._transpile_to_duckdb(bq_sql) == sqlglot.transpile(
+            bq_sql, read="bigquery", write="duckdb"
+        )
+
+    def test_applies_datetime_rewrites_per_statement(self) -> None:
+        first, second = translator_module._transpile_to_duckdb(
+            "SELECT DATE_TRUNC(d, MONTH) FROM t; SELECT DATE_TRUNC(d, WEEK) FROM t",
+        )
+        assert "BQEMU_DATE_TRUNC(d, 'MONTH')" in first
+        assert "BQEMU_DATE_TRUNC(d, 'WEEK(SUNDAY)')" in second
+
+
+class TestDatetimeRewritesLeaveTheRestOfTheStatementIntact:
+    """A datetime rewrite changes only its own call, never the surrounding SQL.
+
+    Re-serialising BigQuery SQL is lossy — SQLGlot's BigQuery generator
+    strips ``CAST`` type parameters and reshapes ``AT TIME ZONE`` and
+    ``VALUES … AS v(…)`` clauses — so each case pairs one of those
+    constructs with every datetime rewrite and checks it still executes
+    to the BigQuery result.
+    """
+
+    _DATETIME_CALLS = (
+        "DATE_TRUNC(DATE '2024-05-15', MONTH)",
+        "DATE_TRUNC(DATE '2024-05-15', WEEK(MONDAY))",
+        "DATE_ADD(DATE '2024-05-15', INTERVAL 1 DAY)",
+        "LAST_DAY(DATE '2024-05-15', WEEK)",
+        "TIMESTAMP_MICROS(0)",
+    )
+
+    @pytest.fixture
+    def con(self) -> duckdb.DuckDBPyConnection:
+        connection = duckdb.connect()
+        connection.execute("SET TimeZone = 'UTC'")
+        return connection
+
+    def _first_value(
+        self, translator: SQLTranslator, con: duckdb.DuckDBPyConnection, bq_sql: str
+    ) -> object:
+        result = translator.translate(bq_sql)
+        assert isinstance(result, Ok), result
+        row = con.execute(result.value).fetchone()
+        assert row is not None
+        return row[0]
+
+    @pytest.mark.parametrize("call", _DATETIME_CALLS)
+    def test_numeric_literal_keeps_its_precision(
+        self, translator: SQLTranslator, con: duckdb.DuckDBPyConnection, call: str
+    ) -> None:
+        value = self._first_value(
+            translator, con, f"SELECT NUMERIC '1.123456789' AS n, {call} AS d"
+        )
+        assert str(value) == "1.123456789"
+
+    @pytest.mark.parametrize("call", _DATETIME_CALLS)
+    def test_utc_offset_time_zone_still_applies(
+        self, translator: SQLTranslator, con: duckdb.DuckDBPyConnection, call: str
+    ) -> None:
+        value = self._first_value(
+            translator,
+            con,
+            "SELECT EXTRACT(HOUR FROM TIMESTAMP '2024-06-15 00:00:00+00' AT TIME ZONE '+05:45') "
+            f"AS h, {call} AS d",
+        )
+        assert value == 5
+
+    @pytest.mark.parametrize("call", _DATETIME_CALLS)
+    def test_values_column_aliases_survive(
+        self, translator: SQLTranslator, con: duckdb.DuckDBPyConnection, call: str
+    ) -> None:
+        value = self._first_value(
+            translator, con, f"SELECT v.b, {call} AS d FROM (VALUES (1, 'x')) AS v(a, b)"
+        )
+        assert value == "x"
+
+
+_STATEMENT_SCHEMA = {"t": {"d": "DATE", "UserName": "VARCHAR", "n": "DECIMAL(38, 9)"}}
+
+
+class TestRulesKeepTheStatementAsWritten:
+    """Type annotation informs the rules without rewriting the user's statement.
+
+    ``qualify`` lowercases identifiers, expands ``*`` from the schema
+    snapshot (which omits ``STRUCT`` / ``RANGE`` columns) and aliases
+    unnamed projections; none of that may reach the translated SQL.
+    """
+
+    @pytest.fixture
+    def con(self) -> duckdb.DuckDBPyConnection:
+        connection = duckdb.connect()
+        connection.execute(
+            "CREATE TABLE t (d DATE, UserName VARCHAR, n DECIMAL(38, 9), "
+            "rec STRUCT(a BIGINT, b DATE))",
+        )
+        connection.execute(
+            "INSERT INTO t VALUES "
+            "(DATE '2024-05-15', 'ann', 1.5, {'a': 1, 'b': DATE '2024-05-15'})",
+        )
+        return connection
+
+    def _columns(
+        self, translator: SQLTranslator, con: duckdb.DuckDBPyConnection, bq_sql: str
+    ) -> list[tuple[str, str]]:
+        result = translator.translate(bq_sql, schema=_STATEMENT_SCHEMA)
+        assert isinstance(result, Ok), result
+        return [(name, str(kind)) for name, kind, *_ in con.execute(result.value).description]
+
+    def test_identifier_case_is_preserved(
+        self, translator: SQLTranslator, con: duckdb.DuckDBPyConnection
+    ) -> None:
+        assert self._columns(
+            translator, con, "SELECT UserName, DATE_TRUNC(d, MONTH) AS Month FROM t"
+        ) == [("UserName", "VARCHAR"), ("Month", "DATE")]
+
+    def test_star_keeps_columns_missing_from_the_schema_snapshot(
+        self, translator: SQLTranslator, con: duckdb.DuckDBPyConnection
+    ) -> None:
+        columns = self._columns(
+            translator, con, "SELECT * FROM t WHERE DATE_TRUNC(d, MONTH) = DATE '2024-05-01'"
+        )
+        assert [name for name, _ in columns] == ["d", "UserName", "n", "rec"]
+
+    def test_other_type_aware_rules_keep_names_too(
+        self, translator: SQLTranslator, con: duckdb.DuckDBPyConnection
+    ) -> None:
+        columns = self._columns(translator, con, "SELECT AVG(n) AS AvgAmount FROM t")
+        assert [name for name, _ in columns] == ["AvgAmount"]
+
+    def test_annotation_types_the_original_tree_in_place(self) -> None:
+        tree = sqlglot.parse_one(
+            "WITH c AS (SELECT d AS x FROM t) SELECT UserName, x AS Day FROM c, t", read="duckdb"
+        )
+        before = tree.sql(dialect="duckdb")
+        assert SQLTranslator._annotate_tree(tree, _STATEMENT_SCHEMA) is tree
+        assert tree.sql(dialect="duckdb") == before
+        outer = tree.find(exp.Select)
+        assert outer is not None
+        assert [str(projection.type) for projection in outer.expressions] == ["VARCHAR", "DATE"]

@@ -19,8 +19,9 @@ from typing import TYPE_CHECKING, Any
 
 import sqlglot
 from sqlglot import exp
-from sqlglot.optimizer.annotate_types import annotate_types
+from sqlglot.optimizer.annotate_types import TypeAnnotator
 from sqlglot.optimizer.qualify import qualify
+from sqlglot.schema import ensure_schema
 
 from bqemulator.domain.errors import InvalidQueryError, UnsupportedFeatureError
 from bqemulator.domain.result import Err, Ok, Result
@@ -34,7 +35,10 @@ from bqemulator.sql.rewriter.collate_specifier import rewrite_collate_specifier
 from bqemulator.sql.rewriter.create_table_schema_ctas import (
     rewrite_create_table_schema_ctas,
 )
-from bqemulator.sql.rewriter.datetime_helpers import rewrite_datetime_helpers
+from bqemulator.sql.rewriter.datetime_helpers import (
+    DATE_TRUNC_FUNCTION,
+    rewrite_datetime_helpers,
+)
 from bqemulator.sql.rewriter.decimal_literals import rewrite_decimal_literals
 from bqemulator.sql.rewriter.division_by_zero import rewrite_division_by_zero
 from bqemulator.sql.rewriter.json_helpers import rewrite_json_helpers
@@ -75,6 +79,88 @@ _UNSUPPORTED_KEYWORDS: frozenset[str] = frozenset(
         "ML.GENERATE_EMBEDDING",
     }
 )
+
+
+def _date_interval_arithmetic_type(_left: exp.Expr, _right: exp.Expr) -> exp.DType:
+    """Return the DuckDB result type of ``DATE ± INTERVAL`` (always ``TIMESTAMP``)."""
+    return exp.DType.TIMESTAMP
+
+
+#: Binary-operator result types for the annotation pass over the
+#: transpiled DuckDB SQL. SQLGlot's defaults type ``DATE ± INTERVAL`` as
+#: ``DATE`` (the BigQuery ``DATE_ADD`` contract), but DuckDB evaluates the
+#: operator to ``TIMESTAMP`` — matching BigQuery's own ``date + INTERVAL``
+#: operator, which returns ``DATETIME`` (stored as DuckDB ``TIMESTAMP``).
+#: Typing the operator the way DuckDB evaluates it keeps operand-type-aware
+#: rules, and every CTE / subquery column derived from such an expression,
+#: consistent with the values DuckDB produces.
+_DUCKDB_BINARY_COERCIONS = {
+    **TypeAnnotator.BINARY_COERCIONS,
+    (exp.DType.DATE, exp.DType.INTERVAL): _date_interval_arithmetic_type,
+    (exp.DType.INTERVAL, exp.DType.DATE): _date_interval_arithmetic_type,
+}
+
+
+#: SQLGlot's own typing for anonymous calls: the schema's UDF type.
+_annotate_udf_call = sqlglot.Dialect.EXPRESSION_METADATA[exp.Anonymous]["annotator"]
+
+
+def _annotate_anonymous_call(annotator: TypeAnnotator, call: exp.Anonymous) -> None:
+    """Type a ``BQEMU_DATE_TRUNC`` handoff as its operand; any other call as SQLGlot does.
+
+    BigQuery's ``DATE_TRUNC`` returns its operand's type, and the
+    :mod:`~bqemulator.sql.rules.iso_date_parts` rules expand the handoff
+    to exactly that DuckDB type for a ``DATE`` / ``TIMESTAMP`` /
+    ``TIMESTAMPTZ`` operand. Typing the call before the rules run lets
+    columns derived from it — through CTEs and subqueries — carry the
+    type into rules that read it.
+    """
+    if call.name.upper() == DATE_TRUNC_FUNCTION and call.expressions:
+        operand_type = call.expressions[0].type
+        if operand_type is not None and operand_type.is_type(
+            exp.DType.DATE,
+            exp.DType.TIMESTAMP,
+            exp.DType.TIMESTAMPTZ,
+        ):
+            annotator._set_type(call, operand_type)  # noqa: SLF001 — SQLGlot annotator protocol
+            return
+    _annotate_udf_call(annotator, call)
+
+
+#: Expression typing for the annotation pass: SQLGlot's defaults plus the
+#: result types of the ``BQEMU_*`` handoff calls.
+_DUCKDB_EXPRESSION_METADATA = {
+    **sqlglot.Dialect.EXPRESSION_METADATA,
+    exp.Anonymous: {"annotator": _annotate_anonymous_call},
+}
+
+
+#: ``meta`` key that pairs each node with its counterpart in the annotated
+#: copy (see :meth:`SQLTranslator._annotate_tree`).
+_TYPE_TAG = "bqemu_type_tag"
+
+
+_DUCKDB_DIALECT = sqlglot.Dialect.get_or_raise("duckdb")
+
+
+def _transpile_to_duckdb(bq_sql: str) -> list[str]:
+    """Transpile BigQuery SQL to one DuckDB SQL string per statement.
+
+    Equivalent to ``sqlglot.transpile(bq_sql, read="bigquery",
+    write="duckdb")`` except that
+    :func:`~bqemulator.sql.rewriter.datetime_helpers.rewrite_datetime_helpers`
+    rewrites each parsed BigQuery statement before DuckDB generation.
+    Those rewrites depend on BigQuery-only AST shapes that neither the
+    DuckDB output nor a BigQuery re-serialisation preserves, so they
+    run on the AST the generator reads. An empty statement yields
+    ``""``, as in ``sqlglot.transpile``.
+    """
+    return [
+        _DUCKDB_DIALECT.generate(rewrite_datetime_helpers(statement), copy=False)
+        if statement is not None
+        else ""
+        for statement in sqlglot.parse(bq_sql, read="bigquery")
+    ]
 
 
 def _resolve_caller(caller: CallerIdentity | None) -> CallerIdentity:
@@ -229,13 +315,6 @@ class SQLTranslator:
         #     narrow ``DECIMAL(p, s)`` that surfaces as NUMERIC on the
         #     wire.
         bq_sql_for_transpile = rewrite_decimal_literals(bq_sql_for_transpile)
-        # 2f. Datetime-helpers pre-translator: rewrite ``LAST_DAY(x,
-        #     WEEK)`` to ``DATE_ADD(x, INTERVAL (7 - EXTRACT(DAYOFWEEK
-        #     FROM x)) DAY)``. SQLGlot's default transpile inlines the
-        #     call to a Sunday-end (not BigQuery's Saturday-end)
-        #     expression; the pre-translate runs while the AST still
-        #     carries the LastDay shape so we can replace it cleanly.
-        bq_sql_for_transpile = rewrite_datetime_helpers(bq_sql_for_transpile)
         # 2g. JSON-helpers pre-translator: wrap ``TO_JSON(x)`` in
         #     ``CAST(... AS JSON)`` so the result column lands on the
         #     wire as ``JSON`` rather than ``STRING`` (which is what
@@ -322,14 +401,13 @@ class SQLTranslator:
         #     fixture for ``< '1900-01-01'`` that expects 0 rows.
         bq_sql_for_transpile = rewrite_partition_pseudo_columns(bq_sql_for_transpile)
 
-        # 3. SQLGlot transpile.
+        # 3. SQLGlot transpile, with the BigQuery-AST datetime rewrites
+        #    (``LAST_DAY(x, WEEK)``, ``DATE_TRUNC``, ``DATE_ADD`` /
+        #    ``DATE_SUB`` / ``DATE_FROM_UNIX_DATE``, ``TIMESTAMP_MICROS`` /
+        #    ``TIMESTAMP_MILLIS``) applied to each parsed statement just
+        #    before DuckDB generation — see :func:`_transpile_to_duckdb`.
         try:
-            transpiled_list = sqlglot.transpile(
-                bq_sql_for_transpile,
-                read="bigquery",
-                write="duckdb",
-                pretty=False,
-            )
+            transpiled_list = _transpile_to_duckdb(bq_sql_for_transpile)
         except sqlglot.errors.ParseError as exc:
             return Err(sql_parse_error(str(exc)))
         except sqlglot.errors.OptimizeError as exc:
@@ -410,23 +488,46 @@ class SQLTranslator:
         tree: exp.Expression,
         schema: dict[str, Any],
     ) -> exp.Expression:
-        """Run SQLGlot's ``qualify`` + ``annotate_types`` passes.
+        """Set each node's ``.type`` from SQLGlot's ``qualify`` + type-annotation passes.
 
-        Failures are logged and the unannotated tree is returned;
-        rules that need type info gracefully skip. The runtime
-        ``isinstance`` check narrows SQLGlot's loosely-typed
-        ``Expr`` return to :class:`exp.Expression` without resorting
-        to a ``cast`` (which different stub revisions flag as either
-        required or redundant).
+        The passes run on a copy of *tree*: ``qualify`` normalises
+        identifier case, expands ``*`` from the schema snapshot (which
+        omits ``STRUCT`` / ``RANGE`` columns), and aliases unnamed
+        projections — rewrites that would change the result schema the
+        caller sees if the rules worked on the qualified tree. Each node
+        of *tree* is tagged first and the copy's annotated types are
+        written back onto the tagged originals, so the rules read
+        operand types while rewriting the statement exactly as written.
+
+        The annotator uses :data:`_DUCKDB_BINARY_COERCIONS` so operator
+        result types match DuckDB's evaluation of the SQL being
+        annotated, and :data:`_DUCKDB_EXPRESSION_METADATA` so the
+        ``BQEMU_*`` handoff calls carry their result types. Failures
+        are logged and *tree* is returned untyped; rules that need
+        type info gracefully skip.
         """
+        for tag, node in enumerate(tree.walk()):
+            node.meta[_TYPE_TAG] = tag
         try:
-            qualified = qualify(tree, schema=schema, dialect="duckdb", infer_schema=True)
-            annotated = annotate_types(qualified, schema=schema)
+            qualified = qualify(tree.copy(), schema=schema, dialect="duckdb", infer_schema=True)
+            annotated = TypeAnnotator(
+                schema=ensure_schema(schema),
+                expression_metadata=_DUCKDB_EXPRESSION_METADATA,
+                binary_coercions=_DUCKDB_BINARY_COERCIONS,
+            ).annotate(qualified)
         except Exception as exc:  # noqa: BLE001
             _log.debug("sql.annotate_types_skipped", error=str(exc))
             return tree
-        assert isinstance(annotated, exp.Expression)  # noqa: S101 — stub-bridge narrowing
-        return annotated
+        types = {
+            node.meta[_TYPE_TAG]: node.type
+            for node in annotated.walk()
+            if _TYPE_TAG in node.meta and node.type is not None
+        }
+        for node in tree.walk():
+            annotated_type = types.get(node.meta[_TYPE_TAG])
+            if annotated_type is not None:
+                node.type = annotated_type
+        return tree
 
     def _apply_first_matching_rule(
         self,
