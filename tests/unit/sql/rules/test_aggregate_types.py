@@ -25,9 +25,13 @@ from decimal import Decimal
 
 import duckdb
 import pytest
+from sqlglot import exp
 
 from bqemulator.domain.result import Ok
+from bqemulator.sql.builtin_udfs import register_builtin_udfs
+from bqemulator.sql.rules.aggregate_types import _is_bignumeric
 from bqemulator.sql.translator import SQLTranslator
+from bqemulator.storage.type_map import bq_to_duckdb
 
 pytestmark = pytest.mark.unit
 
@@ -39,7 +43,10 @@ def t() -> SQLTranslator:
 
 @pytest.fixture
 def con() -> duckdb.DuckDBPyConnection:
-    return duckdb.connect()
+    connection = duckdb.connect()
+    # ``BIGNUMERIC '1'`` and ``PARSE_BIGNUMERIC`` call the engine's helper.
+    register_builtin_udfs(connection)
+    return connection
 
 
 class TestAvgDecimalRule:
@@ -92,6 +99,19 @@ class TestAvgDecimalRule:
                 Decimal(2),
             ),
             ("SELECT AVG(x) AS a FROM UNNEST([1, 2]) AS x", "DOUBLE", 1.5),
+            (
+                (
+                    "SELECT AVG(x) AS a FROM UNNEST([BIGNUMERIC '0.0000000001', "
+                    "BIGNUMERIC '0.0000000003']) AS x"
+                ),
+                "DECIMAL(38,10)",
+                Decimal("2E-10"),
+            ),
+            (
+                "SELECT AVG(x) AS a FROM UNNEST([BIGNUMERIC '1', BIGNUMERIC '2']) AS x",
+                "DECIMAL(38,10)",
+                Decimal("1.5"),
+            ),
         ],
     )
     def test_statement_without_a_catalog_table(
@@ -102,8 +122,8 @@ class TestAvgDecimalRule:
         expected_type: str,
         expected: object,
     ) -> None:
-        # BigQuery: AVG(NUMERIC) → NUMERIC, AVG(INT64) → FLOAT64, whether or
-        # not the statement reads a table.
+        # BigQuery: AVG(NUMERIC) → NUMERIC, AVG(BIGNUMERIC) → BIGNUMERIC,
+        # AVG(INT64) → FLOAT64, whether or not the statement reads a table.
         result = t.translate(bq_sql)
         assert isinstance(result, Ok), result
         relation = con.execute(result.value)
@@ -151,6 +171,21 @@ class TestAvgDecimalRule:
         upper = result.value.upper()
         assert "CAST(AVG" in upper
         assert "DECIMAL(38, 9)" in upper
+
+    @pytest.mark.parametrize(
+        "bq_sql",
+        [
+            "SELECT AVG(amount) AS a FROM `test-project.bqemu.ledger`",
+            "SELECT AVG(amount) OVER () AS a FROM `test-project.bqemu.ledger`",
+        ],
+    )
+    def test_bignumeric_column_average_stays_bignumeric(
+        self, t: SQLTranslator, bq_sql: str
+    ) -> None:
+        schema = {"ledger": {"amount": bq_to_duckdb("BIGNUMERIC")}}
+        result = t.translate(bq_sql, schema=schema)
+        assert isinstance(result, Ok), result
+        assert "AS DECIMAL(38, 10))" in result.value
 
     def test_nested_round_avg_wrapped(self, t: SQLTranslator) -> None:
         # ``ROUND(AVG(decimal_col), n)`` — once AVG is wrapped in
@@ -258,6 +293,18 @@ class TestDivDecimalRule:
             ("SELECT 10 / NUMERIC '4' AS r", "DECIMAL(38,9)", Decimal("2.5")),
             ("SELECT x / 4 AS r FROM UNNEST([NUMERIC '10']) AS x", "DECIMAL(38,9)", Decimal("2.5")),
             ("SELECT 10 / 4 AS r", "DOUBLE", 2.5),
+            ("SELECT BIGNUMERIC '0.0000000001' / 1 AS r", "DECIMAL(38,10)", Decimal("1E-10")),
+            ("SELECT BIGNUMERIC '1' / 3 AS r", "DECIMAL(38,10)", Decimal("0.3333333333")),
+            (
+                "SELECT PARSE_BIGNUMERIC('0.0000000001') / 1 AS r",
+                "DECIMAL(38,10)",
+                Decimal("1E-10"),
+            ),
+            (
+                "SELECT x / 1 AS r FROM UNNEST([BIGNUMERIC '0.0000000001']) AS x",
+                "DECIMAL(38,10)",
+                Decimal("1E-10"),
+            ),
         ],
     )
     def test_statement_without_a_catalog_table(
@@ -268,12 +315,38 @@ class TestDivDecimalRule:
         expected_type: str,
         expected: object,
     ) -> None:
-        # BigQuery: NUMERIC / INT64 → NUMERIC, INT64 / INT64 → FLOAT64.
+        # BigQuery: NUMERIC / INT64 → NUMERIC, any BIGNUMERIC operand →
+        # BIGNUMERIC (keeping the tenth fractional digit), INT64 / INT64 → FLOAT64.
         result = t.translate(bq_sql)
         assert isinstance(result, Ok), result
         relation = con.execute(result.value)
         assert relation.description[0][1] == expected_type
         assert relation.fetchone() == (expected,)
+
+    @pytest.mark.parametrize(
+        ("expression", "target"),
+        [
+            ("amount / qty", "DECIMAL(38, 10)"),
+            ("price / amount", "DECIMAL(38, 10)"),
+            ("price / qty", "DECIMAL(38, 9)"),
+        ],
+    )
+    def test_result_type_follows_bigquery_division(
+        self, t: SQLTranslator, expression: str, target: str
+    ) -> None:
+        # BigQuery: any BIGNUMERIC operand → BIGNUMERIC; NUMERIC / INT64 → NUMERIC.
+        schema = {
+            "ledger": {
+                "amount": bq_to_duckdb("BIGNUMERIC"),
+                "price": "DECIMAL(38, 9)",
+                "qty": "BIGINT",
+            }
+        }
+        result = t.translate(
+            f"SELECT {expression} AS r FROM `test-project.bqemu.ledger`", schema=schema
+        )
+        assert isinstance(result, Ok), result
+        assert f"AS {target})" in result.value
 
     def test_preserves_math_csc_float_pattern(self, t: SQLTranslator) -> None:
         # ``ROUND(1 / SIN(1), 6)`` (math_csc fixture). The Div's
@@ -309,6 +382,23 @@ class TestDivDecimalRule:
         )
         desc = con.execute(duckdb_sql).description
         assert "DECIMAL" in str(desc[0][1]).upper()
+
+
+@pytest.mark.parametrize(
+    ("data_type", "expected"),
+    [
+        (exp.DataType.build("DECIMAL(38, 9)", dialect="duckdb"), False),
+        (exp.DataType.build("DECIMAL(38, 10)", dialect="duckdb"), True),
+        (exp.DataType.build("DECIMAL(76, 38)", dialect="duckdb"), True),
+        (exp.DataType.build("DECIMAL(18)", dialect="duckdb"), False),
+        (exp.DataType(this=exp.DataType.Type.BIGDECIMAL), True),
+        (exp.DataType.build("DOUBLE", dialect="duckdb"), False),
+    ],
+)
+def test_bignumeric_is_a_decimal_wider_than_numeric(
+    data_type: exp.DataType, expected: bool
+) -> None:
+    assert _is_bignumeric(data_type) is expected
 
 
 class TestArrayConcatAggRule:

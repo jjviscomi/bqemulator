@@ -190,14 +190,6 @@ def test_isoyear_of_derived_dates_without_a_table(client) -> None:
     assert (row.last_day, row.parsed, row.spine) == (dt.date(2019, 12, 30),) * 3
 
 
-def test_numeric_average_without_a_table_stays_numeric(client) -> None:
-    """``AVG`` over NUMERIC values is NUMERIC whether or not the statement reads a table."""
-    job = client.query("SELECT AVG(x) AS a FROM UNNEST([NUMERIC '1.5', NUMERIC '2.5']) AS x")
-    row = next(iter(job.result()))
-    assert [field.field_type for field in job.result().schema] == ["NUMERIC"]
-    assert row.a == Decimal(2)
-
-
 @pytest.fixture
 def orders(client) -> str:
     """Create ``p.trunc_ds.Orders`` with mixed-case and STRUCT columns."""

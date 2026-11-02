@@ -232,6 +232,10 @@ class TestTypeAnnotation:
             ("SELECT EXTRACT(YEAR FROM d) AS v FROM t", "BIGINT"),
             # ``SAFE.`` calls transpile to ``TRY``, which keeps its operand's type.
             ("SELECT TRY(CAST(STRPTIME('2024-05-15', '%Y-%m-%d') AS DATE)) AS v", "DATE"),
+            # The engine's Python-backed helpers are typed by their registered return type.
+            ("SELECT BQEMU_TO_BIGNUMERIC('1') AS v", "DECIMAL(38, 10)"),
+            ("SELECT bqemu_parse_timestamp_iso('%Y', '2024') AS v", "TIMESTAMP"),
+            ("SELECT NOT_A_HELPER('1') AS v", "UNKNOWN"),
         ],
     )
     def test_types_follow_duckdb_evaluation(self, duckdb_sql: str, expected: str) -> None:

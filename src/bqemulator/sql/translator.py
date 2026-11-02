@@ -26,6 +26,7 @@ from sqlglot.schema import ensure_schema
 from bqemulator.domain.errors import InvalidQueryError, UnsupportedFeatureError
 from bqemulator.domain.result import Err, Ok, Result
 from bqemulator.observability.logging_ import get_logger
+from bqemulator.sql.builtin_udfs import BUILTIN_UDFS
 from bqemulator.sql.errors import sql_parse_error, sql_unsupported
 from bqemulator.sql.rewriter.aggregate_variants import rewrite_aggregate_variants
 from bqemulator.sql.rewriter.alter_table_set_options import (
@@ -106,6 +107,11 @@ _DUCKDB_BINARY_COERCIONS = {
 #: SQLGlot's own typing for anonymous calls: the schema's UDF type.
 _annotate_udf_call = _DUCKDB_DIALECT.EXPRESSION_METADATA[exp.Anonymous]["annotator"]
 
+#: Return types of the engine's Python-backed helpers, the UDF types the
+#: annotator gives calls to them (``bqemu_to_bignumeric`` is
+#: ``DECIMAL(38, 10)``, BIGNUMERIC on the wire).
+_BUILTIN_UDF_TYPES: dict[str, object] = {udf.name: udf.return_type for udf in BUILTIN_UDFS}
+
 #: Operand types a ``BQEMU_DATE_TRUNC`` handoff returns unchanged: DuckDB's
 #: ``DATE``, ``TIMESTAMP`` (which SQLGlot's DuckDB dialect reads as
 #: ``TIMESTAMPNTZ`` and types some functions as ``TIMESTAMP``) and
@@ -165,12 +171,13 @@ def _duckdb_type_annotator(
     """Return a SQLGlot type annotator that types DuckDB SQL as DuckDB evaluates it.
 
     It combines :data:`_DUCKDB_EXPRESSION_METADATA` function typing,
-    :data:`_DUCKDB_BINARY_COERCIONS` operator typing, and *schema*'s
+    :data:`_DUCKDB_BINARY_COERCIONS` operator typing, the engine's
+    helper return types (:data:`_BUILTIN_UDF_TYPES`), and *schema*'s
     column types read as DuckDB type names. With *overwrite_types*
     false, nodes that already carry a type keep it.
     """
     return TypeAnnotator(
-        schema=ensure_schema(schema or {}, dialect=_DUCKDB_DIALECT),
+        schema=ensure_schema(schema or {}, dialect=_DUCKDB_DIALECT, udf_mapping=_BUILTIN_UDF_TYPES),
         expression_metadata=_DUCKDB_EXPRESSION_METADATA,
         binary_coercions=_DUCKDB_BINARY_COERCIONS,
         overwrite_types=overwrite_types,

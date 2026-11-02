@@ -42,8 +42,10 @@ column names exactly as written.
 Types describe the DuckDB SQL being rewritten, as DuckDB evaluates it:
 the annotator uses SQLGlot's DuckDB dialect typing (`time_bucket` keeps
 its operand's type, date-part functions return `BIGINT`), types
-`DATE ± INTERVAL` as `TIMESTAMP` and `TRY(x)` as `x`, and types each
-`BQEMU_*` handoff call as its expansion. Every statement is annotated;
+`DATE ± INTERVAL` as `TIMESTAMP` and `TRY(x)` as `x`, types calls to
+the engine's Python-backed helpers by the return types they are
+registered with (`bqemulator.sql.builtin_udfs.BUILTIN_UDFS`), and types
+each `BQEMU_*` handoff call as its expansion. Every statement is annotated;
 the catalog schema snapshot supplies the column types of the tables it
 references, so a statement that reads no catalog table is still typed
 from its literals, casts, functions and `UNNEST` / CTE columns. When

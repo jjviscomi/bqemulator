@@ -58,8 +58,8 @@ table below maps each BigQuery view to its rewriter function.
 | Category | BigQuery surface | DuckDB equivalent | Rule / function |
 |---|---|---|---|
 | Aggregate / window | `ARRAY_CONCAT_AGG(arr [ORDER BY …])` | `flatten(array_agg(arr [ORDER BY …]))` | `ARRAY_CONCAT_AGG` |
-| Aggregate / window | `AVG(decimal_col)` | `CAST(AVG(decimal_col) AS DECIMAL(38, 9))` | `AVG_DECIMAL` |
-| Aggregate / window | `<dec> / <x>` or `<x> / <dec>` | `CAST(... AS DECIMAL(38, 9))` | `DIV_DECIMAL` |
+| Aggregate / window | `AVG(decimal_col)` | `CAST(AVG(decimal_col) AS DECIMAL(38, 9 \| 10))` | `AVG_DECIMAL` |
+| Aggregate / window | `<dec> / <x>` or `<x> / <dec>` | `CAST(... AS DECIMAL(38, 9 \| 10))` | `DIV_DECIMAL` |
 | Aggregate / window | `HLL_COUNT.EXTRACT(HLL_COUNT.INIT(x [, precision]))` | `COUNT(DISTINCT x)` | `HLL_COUNT_EXTRACT_INIT` |
 | Aggregate / window | `HLL_COUNT.MERGE(col)` | `COUNT(DISTINCT col)` over an inlined source subquery | `HLL_COUNT_MERGE` |
 | Array helpers | `ARRAY_FIRST(arr)` | empty-check CASE around `list_extract(arr, 1)` | `ARRAY_FIRST` |
