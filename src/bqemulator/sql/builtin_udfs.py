@@ -25,6 +25,7 @@ Helpers are registered exactly once per :class:`DuckDBEngine`; concurrent
 from __future__ import annotations
 
 import base64
+from dataclasses import dataclass
 import datetime as _datetime
 from decimal import Decimal, InvalidOperation
 import hashlib
@@ -37,6 +38,8 @@ import unicodedata
 from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
 if TYPE_CHECKING:  # pragma: no cover
+    from collections.abc import Callable
+
     import duckdb
 
 
@@ -1566,190 +1569,118 @@ def bqemu_geojson_normalize_empty(value: str | None) -> str | None:
     return value
 
 
-def register_builtin_udfs(connection: duckdb.DuckDBPyConnection) -> None:
-    """Register every Python-backed helper on *connection*.
+@dataclass(frozen=True, slots=True)
+class BuiltinUdf:
+    """A Python-backed helper and the DuckDB signature it is registered with."""
 
-    Called once at :class:`DuckDBEngine.start` after the spatial
-    extension loads. Each helper is registered with ``side_effects=False``
-    (the default) so DuckDB can fold constant arguments at plan time.
-    """
-    connection.create_function(  # type: ignore[call-overload]
-        "bqemu_json_remove",
-        bqemu_json_remove,
-        ["JSON", "VARCHAR"],
-        "JSON",
-        null_handling="special",
-    )
-    connection.create_function(  # type: ignore[call-overload]
-        "bqemu_json_set",
-        bqemu_json_set,
-        ["JSON", "VARCHAR", "JSON"],
-        "JSON",
-        null_handling="special",
-    )
-    connection.create_function(  # type: ignore[call-overload]
-        "bqemu_json_strip_nulls",
-        bqemu_json_strip_nulls,
-        ["JSON"],
-        "JSON",
-        null_handling="special",
-    )
-    connection.create_function(  # type: ignore[call-overload]
-        "bqemu_normalize",
-        bqemu_normalize,
-        ["VARCHAR", "VARCHAR"],
-        "VARCHAR",
-        null_handling="special",
-    )
-    connection.create_function(  # type: ignore[call-overload]
+    name: str
+    function: Callable[..., Any]
+    parameter_types: tuple[str, ...]
+    return_type: str
+
+
+#: Every Python-backed helper :func:`register_builtin_udfs` registers. The
+#: translator's type annotation reads the return types, so SQL that calls
+#: a helper is typed as DuckDB evaluates it.
+BUILTIN_UDFS: tuple[BuiltinUdf, ...] = (
+    BuiltinUdf("bqemu_json_remove", bqemu_json_remove, ("JSON", "VARCHAR"), "JSON"),
+    BuiltinUdf("bqemu_json_set", bqemu_json_set, ("JSON", "VARCHAR", "JSON"), "JSON"),
+    BuiltinUdf("bqemu_json_strip_nulls", bqemu_json_strip_nulls, ("JSON",), "JSON"),
+    BuiltinUdf("bqemu_normalize", bqemu_normalize, ("VARCHAR", "VARCHAR"), "VARCHAR"),
+    BuiltinUdf(
         "bqemu_normalize_casefold",
         bqemu_normalize_casefold,
-        ["VARCHAR", "VARCHAR"],
+        ("VARCHAR", "VARCHAR"),
         "VARCHAR",
-        null_handling="special",
-    )
-    connection.create_function(  # type: ignore[call-overload]
-        "bqemu_farm_fingerprint",
-        bqemu_farm_fingerprint,
-        ["VARCHAR"],
-        "BIGINT",
-        null_handling="special",
-    )
+    ),
+    BuiltinUdf("bqemu_farm_fingerprint", bqemu_farm_fingerprint, ("VARCHAR",), "BIGINT"),
     # ``bqemu_to_bignumeric`` returns DECIMAL(38, 10). The scale of 10
     # is deliberate — every DECIMAL with ``scale > 9`` is reported as
     # BIGNUMERIC by the REST schema renderer (ADR 0023 §1.B), so the
     # literal's natural scale is preserved on the value side via
     # Python's :class:`Decimal` while the column-level type tag lands
     # on BIGNUMERIC.
-    connection.create_function(  # type: ignore[call-overload]
-        "bqemu_to_bignumeric",
-        bqemu_to_bignumeric,
-        ["VARCHAR"],
-        "DECIMAL(38, 10)",
-        null_handling="special",
-    )
-    connection.create_function(  # type: ignore[call-overload]
-        "bqemu_upper_unicode",
-        bqemu_upper_unicode,
-        ["VARCHAR"],
-        "VARCHAR",
-        null_handling="special",
-    )
-    connection.create_function(  # type: ignore[call-overload]
+    BuiltinUdf("bqemu_to_bignumeric", bqemu_to_bignumeric, ("VARCHAR",), "DECIMAL(38, 10)"),
+    BuiltinUdf("bqemu_upper_unicode", bqemu_upper_unicode, ("VARCHAR",), "VARCHAR"),
+    BuiltinUdf(
         "bqemu_instr_occurrence",
         bqemu_instr_occurrence,
-        ["VARCHAR", "VARCHAR", "BIGINT", "BIGINT"],
+        ("VARCHAR", "VARCHAR", "BIGINT", "BIGINT"),
         "BIGINT",
-        null_handling="special",
-    )
-    connection.create_function(  # type: ignore[call-overload]
-        "bqemu_to_base32",
-        bqemu_to_base32,
-        ["BLOB"],
-        "VARCHAR",
-        null_handling="special",
-    )
-    connection.create_function(  # type: ignore[call-overload]
-        "bqemu_from_base32",
-        bqemu_from_base32,
-        ["VARCHAR"],
-        "BLOB",
-        null_handling="special",
-    )
-    connection.create_function(  # type: ignore[call-overload]
-        "bqemu_code_points_to_bytes",
-        bqemu_code_points_to_bytes,
-        ["BIGINT[]"],
-        "BLOB",
-        null_handling="special",
-    )
-    connection.create_function(  # type: ignore[call-overload]
-        "bqemu_soundex",
-        bqemu_soundex,
-        ["VARCHAR"],
-        "VARCHAR",
-        null_handling="special",
-    )
-    connection.create_function(  # type: ignore[call-overload]
+    ),
+    BuiltinUdf("bqemu_to_base32", bqemu_to_base32, ("BLOB",), "VARCHAR"),
+    BuiltinUdf("bqemu_from_base32", bqemu_from_base32, ("VARCHAR",), "BLOB"),
+    BuiltinUdf("bqemu_code_points_to_bytes", bqemu_code_points_to_bytes, ("BIGINT[]",), "BLOB"),
+    BuiltinUdf("bqemu_soundex", bqemu_soundex, ("VARCHAR",), "VARCHAR"),
+    BuiltinUdf(
         "bqemu_geojson_normalize_empty",
         bqemu_geojson_normalize_empty,
-        ["VARCHAR"],
+        ("VARCHAR",),
         "VARCHAR",
-        null_handling="special",
-    )
-    connection.create_function(  # type: ignore[call-overload]
+    ),
+    BuiltinUdf(
         "bqemu_geojson_geodesic_interp",
         bqemu_geojson_geodesic_interp,
-        ["VARCHAR"],
+        ("VARCHAR",),
         "VARCHAR",
-        null_handling="special",
-    )
-    connection.create_function(  # type: ignore[call-overload]
+    ),
+    BuiltinUdf(
         "bqemu_json_array_insert",
         bqemu_json_array_insert,
-        ["VARCHAR", "VARCHAR", "VARCHAR"],
+        ("VARCHAR", "VARCHAR", "VARCHAR"),
         "VARCHAR",
-        null_handling="special",
-    )
-    connection.create_function(  # type: ignore[call-overload]
-        "bqemu_st_snaptogrid",
-        bqemu_st_snaptogrid,
-        ["VARCHAR", "DOUBLE"],
-        "VARCHAR",
-        null_handling="special",
-    )
-    connection.create_function(  # type: ignore[call-overload]
-        "bqemu_sha512",
-        bqemu_sha512,
-        ["VARCHAR"],
-        "BLOB",
-        null_handling="special",
-    )
-    connection.create_function(  # type: ignore[call-overload]
+    ),
+    BuiltinUdf("bqemu_st_snaptogrid", bqemu_st_snaptogrid, ("VARCHAR", "DOUBLE"), "VARCHAR"),
+    BuiltinUdf("bqemu_sha512", bqemu_sha512, ("VARCHAR",), "BLOB"),
+    BuiltinUdf(
         "bqemu_st_distance_spheroidal",
         bqemu_st_distance_spheroidal,
-        ["VARCHAR", "VARCHAR"],
+        ("VARCHAR", "VARCHAR"),
         "DOUBLE",
-        null_handling="special",
-    )
-    connection.create_function(  # type: ignore[call-overload]
-        "bqemu_st_length_spheroidal",
-        bqemu_st_length_spheroidal,
-        ["VARCHAR"],
-        "DOUBLE",
-        null_handling="special",
-    )
-    connection.create_function(  # type: ignore[call-overload]
-        "bqemu_st_area_spheroidal",
-        bqemu_st_area_spheroidal,
-        ["VARCHAR"],
-        "DOUBLE",
-        null_handling="special",
-    )
-    connection.create_function(  # type: ignore[call-overload]
+    ),
+    BuiltinUdf("bqemu_st_length_spheroidal", bqemu_st_length_spheroidal, ("VARCHAR",), "DOUBLE"),
+    BuiltinUdf("bqemu_st_area_spheroidal", bqemu_st_area_spheroidal, ("VARCHAR",), "DOUBLE"),
+    BuiltinUdf(
         "bqemu_st_perimeter_spheroidal",
         bqemu_st_perimeter_spheroidal,
-        ["VARCHAR"],
+        ("VARCHAR",),
         "DOUBLE",
-        null_handling="special",
-    )
-    connection.create_function(  # type: ignore[call-overload]
+    ),
+    BuiltinUdf(
         "bqemu_format_timestamp_iso",
         bqemu_format_timestamp_iso,
-        ["VARCHAR", "TIMESTAMP WITH TIME ZONE", "VARCHAR"],
+        ("VARCHAR", "TIMESTAMP WITH TIME ZONE", "VARCHAR"),
         "VARCHAR",
-        null_handling="special",
-    )
-    connection.create_function(  # type: ignore[call-overload]
+    ),
+    BuiltinUdf(
         "bqemu_parse_timestamp_iso",
         bqemu_parse_timestamp_iso,
-        ["VARCHAR", "VARCHAR"],
+        ("VARCHAR", "VARCHAR"),
         "TIMESTAMP",
-        null_handling="special",
-    )
+    ),
+)
+
+
+def register_builtin_udfs(connection: duckdb.DuckDBPyConnection) -> None:
+    """Register every Python-backed helper in :data:`BUILTIN_UDFS` on *connection*.
+
+    Called once at :class:`DuckDBEngine.start` after the spatial
+    extension loads. Each helper is registered with ``side_effects=False``
+    (the default) so DuckDB can fold constant arguments at plan time.
+    """
+    for udf in BUILTIN_UDFS:
+        connection.create_function(  # type: ignore[call-overload]
+            udf.name,
+            udf.function,
+            list(udf.parameter_types),
+            udf.return_type,
+            null_handling="special",
+        )
 
 
 __all__ = [
+    "BUILTIN_UDFS",
+    "BuiltinUdf",
     "bqemu_code_points_to_bytes",
     "bqemu_farm_fingerprint",
     "bqemu_format_timestamp_iso",

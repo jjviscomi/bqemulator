@@ -9,11 +9,10 @@ operands (``AVG(NUMERIC)`` → ``NUMERIC``, ``AVG(BIGNUMERIC)`` →
 
 This module hosts the rules that detect operand-type-sensitive
 aggregate shapes and rewrite them so the DuckDB output preserves the
-BigQuery type tag. The rules consult ``node.type`` populated by
-SQLGlot's ``annotate_types`` pass (the translator runs it when the
-caller supplies a catalog-derived schema dict); when the operand's
-type cannot be resolved, the rule skips — matching the legacy
-emulator behaviour for queries the catalog cannot annotate.
+BigQuery type tag. The rules consult ``node.type`` populated by the
+translator's type-annotation pass, which types every statement, with
+catalog column types from the caller's schema snapshot; when the
+operand's type cannot be resolved, the rule skips.
 
 A second concern handled here is *function-name parity* — BigQuery
 aggregates that have a DuckDB primitive but under a different name and
@@ -52,16 +51,27 @@ from bqemulator.sql.rules._base import TranslationRule
 
 _NUMERIC_TYPE = "DECIMAL(38, 9)"
 
+#: NUMERIC's fixed scale. A DECIMAL with a wider scale holds a BIGNUMERIC
+#: value — the boundary the REST schema renderer also applies.
+_NUMERIC_SCALE = 9
+
+#: DuckDB type of a computed BIGNUMERIC value, as ``bqemu_to_bignumeric``
+#: and ``PARSE_BIGNUMERIC`` return it: its scale reports BIGNUMERIC on the
+#: wire, and DuckDB's 38-digit cap leaves it 28 integer digits (see
+#: ``docs/reference/out-of-scope.md``).
+_BIGNUMERIC_TYPE = "DECIMAL(38, 10)"
+
 
 @register
 class AvgDecimalRule(TranslationRule):
-    """``AVG(decimal_col)`` → ``CAST(AVG(decimal_col) AS DECIMAL(38, 9))``.
+    """``AVG(decimal_col)`` → ``CAST(AVG(decimal_col) AS DECIMAL(38, 9 | 10))``.
 
-    BigQuery's contract: ``AVG(NUMERIC) → NUMERIC``. DuckDB's: always
-    ``DOUBLE``. We wrap the AVG call in a cast back to ``DECIMAL(38, 9)``
-    so the REST schema renderer surfaces NUMERIC and downstream
-    expressions (``ROUND(AVG(numeric), n)``) preserve the DECIMAL
-    output type.
+    BigQuery's contract: ``AVG(NUMERIC) → NUMERIC`` and
+    ``AVG(BIGNUMERIC) → BIGNUMERIC``. DuckDB's: always ``DOUBLE``. We
+    wrap the AVG call in a cast back to the operand's decimal type
+    (:func:`_decimal_result_type`) so the REST schema renderer surfaces
+    NUMERIC or BIGNUMERIC and downstream expressions
+    (``ROUND(AVG(numeric), n)``) preserve the DECIMAL output type.
 
     Windowed forms — ``AVG(decimal_col) OVER (…)`` — require the cast
     to wrap the *entire* windowed expression, not the inner aggregate
@@ -88,29 +98,24 @@ class AvgDecimalRule(TranslationRule):
         form DuckDB requires.
         """
         if isinstance(node, exp.Window) and isinstance(node.this, exp.Avg):
-            return _avg_operand_is_decimal(node.this)
+            return _operand_is_decimal(_avg_operand(node))
         if not isinstance(node, exp.Avg):
             return False
         if isinstance(node.parent, exp.Window):
             # Window-parent case is handled when the Window node is
             # visited — skip the inner AVG so we don't double-wrap.
             return False
-        return _avg_operand_is_decimal(node)
+        return _operand_is_decimal(_avg_operand(node))
 
     def rewrite(self, node: exp.Expression) -> exp.Expression:
-        """Wrap the AVG (or window-AVG) in ``CAST(... AS DECIMAL(38, 9))``."""
-        return exp.Cast(this=node.copy(), to=exp.DataType.build(_NUMERIC_TYPE))
+        """Wrap the AVG (or window-AVG) in a cast to its operand's NUMERIC / BIGNUMERIC type."""
+        return exp.Cast(this=node.copy(), to=_decimal_result_type(_avg_operand(node)))
 
 
-def _avg_operand_is_decimal(avg_node: exp.Expression) -> bool:
-    """Return True when *avg_node*'s operand is annotated as DECIMAL."""
-    operand = avg_node.this if isinstance(avg_node, exp.Avg) else None
-    if operand is None:
-        return False
-    operand_type = getattr(operand, "type", None)
-    if operand_type is None:
-        return False
-    return _is_decimal(operand_type)
+def _avg_operand(node: exp.Expression) -> exp.Expression | None:
+    """Return the operand of ``AVG(x)`` or of ``AVG(x) OVER (…)``."""
+    avg = node.this if isinstance(node, exp.Window) else node
+    return avg.this if isinstance(avg, exp.Avg) else None
 
 
 @register
@@ -173,24 +178,58 @@ def _is_decimal(dtype: exp.DataType) -> bool:
     return dtype.this in _DECIMAL_TYPES
 
 
+def _is_bignumeric(dtype: exp.DataType) -> bool:
+    """Return True when *dtype* holds a BigQuery BIGNUMERIC value.
+
+    That is SQLGlot's ``BIGDECIMAL``, or a DECIMAL whose scale exceeds
+    NUMERIC's 9: a BIGNUMERIC literal, ``PARSE_BIGNUMERIC`` result or
+    catalog BIGNUMERIC column.
+    """
+    if dtype.this == exp.DataType.Type.BIGDECIMAL:
+        return True
+    if not _is_decimal(dtype) or len(dtype.expressions) < 2:  # noqa: PLR2004 — (precision, scale)
+        return False
+    scale = dtype.expressions[1].this
+    return isinstance(scale, exp.Literal) and int(scale.name) > _NUMERIC_SCALE
+
+
+def _decimal_result_type(*operands: exp.Expression | None) -> exp.DataType:
+    """Return the DuckDB type of BigQuery's decimal result over *operands*.
+
+    BigQuery's ``AVG`` and ``/`` return BIGNUMERIC when any operand is
+    BIGNUMERIC and NUMERIC otherwise, so a BIGNUMERIC operand's value
+    keeps BIGNUMERIC's type and ten fractional digits instead of being
+    rounded to NUMERIC's nine.
+    """
+    for operand in operands:
+        operand_type = getattr(operand, "type", None)
+        if operand_type is not None and _is_bignumeric(operand_type):
+            return exp.DataType.build(_BIGNUMERIC_TYPE)
+    return exp.DataType.build(_NUMERIC_TYPE)
+
+
 @register
 class DivDecimalRule(TranslationRule):
-    """``<dec> / <x>`` or ``<x> / <dec>`` → ``CAST(... AS DECIMAL(38, 9))``.
+    """``<dec> / <x>`` or ``<x> / <dec>`` → ``CAST(... AS DECIMAL(38, 9 | 10))``.
 
-    BigQuery's contract: when at least one operand of a binary ``/``
-    is NUMERIC (or BIGNUMERIC), the result is NUMERIC. Mixed-type
-    division coerces the non-NUMERIC operand to NUMERIC at runtime —
-    so ``NUMERIC / FLOAT64`` returns NUMERIC, ``INT64 / NUMERIC``
-    returns NUMERIC, etc. DuckDB instead promotes ``DECIMAL / DECIMAL``
-    (and any DECIMAL-involving division) to ``DOUBLE`` for precision-
-    safety, which the wire-format renderer surfaces as ``FLOAT``.
+    BigQuery's contract: a binary ``/`` with a NUMERIC operand returns
+    NUMERIC, and with a BIGNUMERIC operand returns BIGNUMERIC —
+    ``INT64 / NUMERIC`` is NUMERIC, ``NUMERIC / BIGNUMERIC`` is
+    BIGNUMERIC. A FLOAT64 literal coerces to NUMERIC, so
+    ``NUMERIC / 1.5`` is NUMERIC; the rule treats every FLOAT64
+    operand that way, although BigQuery returns FLOAT64 when the
+    FLOAT64 operand is not a literal. DuckDB instead promotes
+    ``DECIMAL / DECIMAL`` (and any DECIMAL-involving division) to
+    ``DOUBLE`` for precision-safety, which the wire-format renderer
+    surfaces as ``FLOAT``.
 
     The rule fires when SQLGlot's ``annotate_types`` pass has resolved
-    either operand to a DECIMAL family type, and wraps the Div in
-    ``CAST(... AS DECIMAL(38, 9))`` so the result column type matches
-    BigQuery's NUMERIC contract. The downstream ``ROUND`` (when
-    present) operates on DECIMAL and preserves DECIMAL via DuckDB's
-    DECIMAL-typed ``ROUND`` overload.
+    either operand to a DECIMAL family type, and wraps the Div in a
+    cast to the decimal result type (:func:`_decimal_result_type`) so
+    the result column type matches BigQuery's NUMERIC / BIGNUMERIC
+    contract. The downstream ``ROUND`` (when present) operates on
+    DECIMAL and preserves DECIMAL via DuckDB's DECIMAL-typed ``ROUND``
+    overload.
 
     The rule skips when neither operand resolves to DECIMAL — pure
     FLOAT64 or INT64 division flows through unchanged so BigQuery's
@@ -198,9 +237,8 @@ class DivDecimalRule(TranslationRule):
     contracts (matching DuckDB's behaviour) are preserved.
 
     The annotation-based detection mirrors :class:`AvgDecimalRule`'s
-    operand-type-sensitive design. When the catalog cannot annotate
-    operand types (no schema available), the rule skips — matching
-    the legacy emulator's behaviour.
+    operand-type-sensitive design. When neither operand's type can be
+    resolved, the rule skips.
     """
 
     name = "DIV_DECIMAL"
@@ -218,8 +256,8 @@ class DivDecimalRule(TranslationRule):
         if not isinstance(node, exp.Div):
             return False
         # Avoid wrapping a Div that's already inside our own CAST —
-        # the rule sets ``to=DECIMAL(38, 9)`` so a parent ``Cast``
-        # with matching target is a fixed point.
+        # the rule's DECIMAL target makes a parent ``Cast`` to DECIMAL
+        # a fixed point.
         parent = node.parent
         if isinstance(parent, exp.Cast):
             target = parent.to
@@ -228,8 +266,11 @@ class DivDecimalRule(TranslationRule):
         return _operand_is_decimal(node.this) or _operand_is_decimal(node.expression)
 
     def rewrite(self, node: exp.Expression) -> exp.Expression:
-        """Wrap the Div in ``CAST(... AS DECIMAL(38, 9))``."""
-        return exp.Cast(this=node.copy(), to=exp.DataType.build(_NUMERIC_TYPE))
+        """Wrap the Div in a cast to its operands' NUMERIC / BIGNUMERIC result type."""
+        return exp.Cast(
+            this=node.copy(),
+            to=_decimal_result_type(node.this, node.expression),
+        )
 
 
 def _operand_is_decimal(operand: exp.Expression | None) -> bool:
