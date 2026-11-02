@@ -57,7 +57,8 @@ _NUMERIC_SCALE = 9
 
 #: DuckDB type of a computed BIGNUMERIC value, as ``bqemu_to_bignumeric``
 #: and ``PARSE_BIGNUMERIC`` return it: its scale reports BIGNUMERIC on the
-#: wire, and its 28 integer digits hold any quotient of BIGNUMERIC values.
+#: wire, and DuckDB's 38-digit cap leaves it 28 integer digits (see
+#: ``docs/reference/out-of-scope.md``).
 _BIGNUMERIC_TYPE = "DECIMAL(38, 10)"
 
 

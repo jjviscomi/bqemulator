@@ -348,6 +348,28 @@ class TestDivDecimalRule:
         assert isinstance(result, Ok), result
         assert f"AS {target})" in result.value
 
+    def test_bignumeric_quotient_larger_than_either_operand(
+        self, t: SQLTranslator, con: duckdb.DuckDBPyConnection
+    ) -> None:
+        result = t.translate("SELECT BIGNUMERIC '12.5000000000' / 0.5 AS r")
+        assert isinstance(result, Ok), result
+        relation = con.execute(result.value)
+        assert relation.description[0][1] == "DECIMAL(38,10)"
+        assert relation.fetchone() == (Decimal(25),)
+
+    def test_bignumeric_quotient_beyond_28_integer_digits_is_out_of_range(
+        self, t: SQLTranslator, con: duckdb.DuckDBPyConnection
+    ) -> None:
+        # Computed BIGNUMERIC values are DECIMAL(38, 10), which holds 28
+        # integer digits — the capacity ``bqemu_to_bignumeric`` /
+        # ``PARSE_BIGNUMERIC`` share (docs/reference/out-of-scope.md).
+        result = t.translate(
+            "SELECT BIGNUMERIC '1000000000000000000000000000.0000000000' / 0.1 AS r"
+        )
+        assert isinstance(result, Ok), result
+        with pytest.raises(duckdb.ConversionException, match=r"DECIMAL\(38,10\)"):
+            con.execute(result.value)
+
     def test_preserves_math_csc_float_pattern(self, t: SQLTranslator) -> None:
         # ``ROUND(1 / SIN(1), 6)`` (math_csc fixture). The Div's
         # operands are INT and DOUBLE; neither is DECIMAL; the rule
