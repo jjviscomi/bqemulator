@@ -72,9 +72,13 @@ await bq.dataset("sales").table("customers").load("./customers.csv", {
 });
 ```
 
-`Table.load` takes a local file path (or a Cloud Storage `File`); to
-upload in-memory data, pipe it into `Table.createWriteStream(metadata)`
-instead. Either way the client sends one multipart request.
+Given a local file path, `Table.load` sends the file as one multipart
+request. To upload in-memory data, pipe it into
+`Table.createWriteStream(metadata)`, which also sends one multipart
+request. Given a Cloud Storage `File` instead, `Table.load` does not
+upload anything: it submits a load job whose `sourceUris` names the
+object's `gs://` URI, through the regular
+`/bigquery/v2/projects/{p}/jobs` endpoint rather than the upload host.
 
 ## Go
 
