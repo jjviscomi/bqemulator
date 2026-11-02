@@ -1,12 +1,11 @@
 """Property tests for the upload host's ``multipart/related`` parser.
 
-Invariants:
+The media part's bytes come back verbatim for any payload (CSV, NDJSON,
+or binary Parquet / Avro / ORC) under any non-composite media type, when
+framed the way ``google-resumable-media`` frames a multipart upload.
 
-* The media part's bytes come back verbatim for any payload (CSV, NDJSON,
-  or binary Parquet / Avro / ORC) under any non-composite media type, when
-  framed the way ``google-resumable-media`` frames a multipart upload.
-* Any composite media type (``multipart/*``, ``message/*``) is rejected
-  rather than silently staging the parser's decomposition of the part.
+Any composite media type (``multipart/*``, ``message/*``) is rejected
+rather than silently staging the parser's decomposition of the part.
 """
 
 from __future__ import annotations
