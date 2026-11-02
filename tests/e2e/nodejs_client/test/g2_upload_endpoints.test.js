@@ -1,11 +1,14 @@
 /**
- * E2E: G2 upload-host endpoints (multipart + resumable) against a live
- * bqemulator container via the @google-cloud/bigquery Node.js client.
+ * E2E: G2 upload-host endpoints against a live bqemulator container via
+ * the @google-cloud/bigquery Node.js client.
  *
- * The Node client's `table.load(streamOrFile)` API auto-selects
- * multipart vs resumable upload based on the payload size. Both
- * branches exercise `/upload/bigquery/v2/projects/{p}/jobs` rather
- * than the data-plane `/jobs` endpoint.
+ * The Node client uploads local data (`table.createWriteStream()`, and
+ * `table.load()` with a local file path) as a single `multipart/related`
+ * request whatever the payload size, labelling the media part
+ * `application/octet-stream`. It has no resumable upload path, so these
+ * tests cover multipart at small and multi-MiB payload sizes against
+ * `/upload/bigquery/v2/projects/{p}/jobs` rather than the data-plane
+ * `/jobs` endpoint.
  */
 
 const { describe, it, before, after } = require("node:test");
@@ -98,13 +101,13 @@ describe("bqemulator G2 upload host (Node.js)", () => {
     assert.equal(Number(rows[0].n), 3);
   });
 
-  it("loads a larger NDJSON via resumable upload", async () => {
+  it("loads a multi-MiB NDJSON via multipart upload", async () => {
     await client.query(
-      `CREATE TABLE IF NOT EXISTS \`${PROJECT}.${DATASET}.rows_rs\` ` +
+      `CREATE TABLE IF NOT EXISTS \`${PROJECT}.${DATASET}.rows_mib\` ` +
         `(id INT64, name STRING)`,
     );
 
-    // Synthesize ~2 MiB of NDJSON to push the client into resumable mode.
+    // ~2 MiB of NDJSON: still one multipart request from the Node client.
     const lines = [];
     for (let i = 0; i < 60_000; i += 1) {
       lines.push(JSON.stringify({ id: i, name: `name-${i}` }));
@@ -117,7 +120,7 @@ describe("bqemulator G2 upload host (Node.js)", () => {
     // requires a @google-cloud/storage File object for direct load().
     const writeStream = client
       .dataset(DATASET)
-      .table("rows_rs")
+      .table("rows_mib")
       .createWriteStream({
         sourceFormat: "NEWLINE_DELIMITED_JSON",
         writeDisposition: "WRITE_TRUNCATE",
@@ -141,7 +144,7 @@ describe("bqemulator G2 upload host (Node.js)", () => {
     assert.equal(meta.status.state, "DONE");
 
     const [rows] = await client.query(
-      `SELECT COUNT(*) AS n FROM \`${PROJECT}.${DATASET}.rows_rs\``,
+      `SELECT COUNT(*) AS n FROM \`${PROJECT}.${DATASET}.rows_mib\``,
     );
     assert.equal(Number(rows[0].n), 60_000);
   });

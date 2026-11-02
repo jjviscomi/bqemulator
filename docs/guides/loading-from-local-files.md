@@ -3,23 +3,25 @@
 The emulator ships multipart and resumable upload host endpoints.
 See [ADR 0029](../adr/0029-upload-host-endpoints.md).
 
-This guide covers the standard `load_table_from_file()` idiom across
-the four official client libraries. The emulator's
+This guide covers the standard local-file load idioms across the four
+official client libraries and the `bq` CLI. The emulator's
 `/upload/bigquery/v2/...` routes implement the same multipart /
 resumable upload protocols that real BigQuery uses, so client code
 runs unchanged.
 
 ## Quick reference
 
-| Client | API | Default protocol | Upload host code path |
+| Client | API | Protocol | Media part `Content-Type` |
 |---|---|---|---|
-| Python | `Client.load_table_from_file(BytesIO, …)` | Auto (multipart < 5 MiB, resumable otherwise) | ✅ |
-| Node | `Table.load(stream, …)` | Auto (multipart < 5 MiB, resumable otherwise) | ✅ |
-| Go | `Loader.From(reader).Run(ctx)` | Resumable | ✅ |
-| Java | `BigQuery.writer(WriteChannelConfiguration)` | Resumable | ✅ |
+| Python | `Client.load_table_from_file(file, …, size=n)`, `load_table_from_json`, `load_table_from_dataframe` | Multipart when the size is known and under 5 MiB, resumable otherwise | `*/*` |
+| Python | `Client.load_table_from_file(file, …)` without `size` | Resumable | — |
+| Node | `Table.createWriteStream(…)`, `Table.load(localPath, …)` | Multipart, at any size | `application/octet-stream` |
+| Go | `Table.LoaderFrom(bigquery.NewReaderSource(r)).Run(ctx)` | Multipart below the upload chunk size (16 MiB default), resumable otherwise | Sniffed from the first 512 bytes |
+| Java | `BigQuery.writer(WriteChannelConfiguration)` | Resumable | — |
+| `bq` CLI | `bq load <local file>` | Resumable; multipart with `--noenable_resumable_uploads` or for an empty file | `application/octet-stream` |
 
-All four route through `/upload/bigquery/v2/projects/{p}/jobs` rather
-than the data-plane `/bigquery/v2/projects/{p}/jobs` endpoint.
+All of them route through `/upload/bigquery/v2/projects/{p}/jobs`
+rather than the data-plane `/bigquery/v2/projects/{p}/jobs` endpoint.
 
 ## Python
 
@@ -46,19 +48,20 @@ job = client.load_table_from_file(
 job.result()  # waits for the load to complete
 ```
 
-The Python client picks `multipart` for payloads under ~5 MiB and
-`resumable` for larger ones. The emulator handles both shapes
-identically — the same `LoadJobConfig` flags apply.
+The Python client sends a single `multipart` request when it knows the
+payload size and it is under 5 MiB: pass `size=` to
+`load_table_from_file`, while `load_table_from_json` and
+`load_table_from_dataframe` always know it. Otherwise, including any file
+object loaded without `size`, it uses `resumable`. The emulator handles
+both shapes identically — the same `LoadJobConfig` flags apply.
 
 ## Node.js
 
 ```javascript
 const { BigQuery } = require("@google-cloud/bigquery");
-const { Readable } = require("node:stream");
 
 const bq = new BigQuery({ projectId: "my-project" });
-const stream = Readable.from(Buffer.from("id,name\n1,alice\n2,bob\n"));
-await bq.dataset("sales").table("customers").load(stream, {
+await bq.dataset("sales").table("customers").load("./customers.csv", {
   sourceFormat: "CSV",
   skipLeadingRows: 1,
   writeDisposition: "WRITE_TRUNCATE",
@@ -68,6 +71,14 @@ await bq.dataset("sales").table("customers").load(stream, {
   ] },
 });
 ```
+
+Given a local file path, `Table.load` sends the file as one multipart
+request. To upload in-memory data, pipe it into
+`Table.createWriteStream(metadata)`, which also sends one multipart
+request. Given a Cloud Storage `File` instead, `Table.load` does not
+upload anything: it submits a load job whose `sourceUris` names the
+object's `gs://` URI, through the regular
+`/bigquery/v2/projects/{p}/jobs` endpoint rather than the upload host.
 
 ## Go
 
@@ -90,6 +101,13 @@ job, err := loader.Run(ctx)
 status, err := job.Wait(ctx)
 ```
 
+The Go client labels the media part with whatever
+`http.DetectContentType` reports for the first 512 bytes — `text/plain`
+for typical CSV and NDJSON, but `image/bmp` for a CSV whose header
+starts with `BM` or `text/html` for one that starts with an HTML-like
+tag. The label does not affect the load (see
+[Supported formats](#supported-formats)).
+
 ## Java
 
 ```java
@@ -108,13 +126,23 @@ try (TableDataWriteChannel channel = client.writer(cfg)) {
 
 ## Supported formats
 
-| `sourceFormat` | Multipart media Content-Type | Notes |
-|---|---|---|
-| `CSV` | `text/csv` | `autodetect` honored; CSV loads currently assume a header row (other CSV parsing knobs like `skipLeadingRows`, `fieldDelimiter`, and `quote` are not applied). |
-| `NEWLINE_DELIMITED_JSON` | `application/json` | `autodetect` flag honored. |
-| `PARQUET` | `application/x-parquet` or `application/octet-stream` | Schema inferred from file. |
-| `AVRO` | `application/avro` or `application/octet-stream` | Requires DuckDB's `avro` extension (G1, ADR 0027). |
-| `ORC` | `application/x-orc` or `application/octet-stream` | Requires `pip install bqemulator[orc]` (G1, ADR 0027). |
+| `sourceFormat` | Notes |
+|---|---|
+| `CSV` | `autodetect` honored; CSV loads currently assume a header row (other CSV parsing knobs like `skipLeadingRows`, `fieldDelimiter`, and `quote` are not applied). |
+| `NEWLINE_DELIMITED_JSON` | `autodetect` flag honored. |
+| `PARQUET` | Schema inferred from file. |
+| `AVRO` | Requires DuckDB's `avro` extension (G1, ADR 0027). |
+| `ORC` | Requires `pip install bqemulator[orc]` (G1, ADR 0027). |
+
+The bytes are always parsed per `sourceFormat`; the multipart media
+part's `Content-Type` never selects the parser. As on BigQuery, whose
+`jobs.insert` media upload accepts `*/*`, any media type is accepted —
+`*/*`, `application/octet-stream`, a sniffed type such as `image/bmp`, or
+no header at all — and the bytes are staged as sent (decoded only if the
+part declares a `Content-Transfer-Encoding` such as `base64`). The one
+exception is a composite type (`multipart/*` or `message/*`), which is
+rejected with `400 invalidQuery`; see
+[ADR 0049](../adr/0049-upload-media-part-content-type.md).
 
 ## Operator configuration
 
@@ -154,14 +182,25 @@ A client that loses track of the offset can probe the session with
 - **Multipart envelope is parsed via the stdlib `email` package.**
   The boundary syntax follows RFC 2387 (`multipart/related`). Other
   multipart variants (`multipart/form-data`, etc.) are rejected.
+- **Go client resumable uploads are rejected.** The Go client sends
+  each resumable chunk as a `POST` to the session URI with
+  `X-GUploader-No-308: yes`; the upload host accepts chunks only as
+  `PUT` and treats that `POST` as a new session initiation, so a Go load
+  larger than the client's upload chunk size (16 MiB by default) fails.
+  Smaller Go loads go out as one multipart request and are unaffected.
+- **Composite media-part types are rejected.** A media part labelled
+  `multipart/*` or `message/*` returns `400 invalidQuery`; no official
+  client sends one. See
+  [out-of-scope.md](../reference/out-of-scope.md#composite-media-part-content-types-on-multipart-uploads).
 
 ## Runnable example
 
 A complete runnable example lives at
 [`docs/examples/local-file-load`](../examples/local-file-load/README.md) — a
-single-file Python script that starts the emulator, runs the
-multipart upload, queries the rows back, and asserts. The example
-is executed in CI by the docs build to prevent doc rot.
+single-file Python script that starts the emulator, runs multipart
+uploads through `load_table_from_file` and `load_table_from_json`,
+queries the rows back, and asserts. The Examples workflow runs it on
+every PR to prevent doc rot.
 
 ## Schema Autodetection
 

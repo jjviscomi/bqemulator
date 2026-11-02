@@ -1,6 +1,7 @@
 # ADR 0029: Upload-host endpoints (G2 — multipart + resumable)
 
-- **Status**: Accepted
+- **Status**: Accepted (Decision #2's media-type whitelist superseded by
+  [ADR 0049](0049-upload-media-part-content-type.md))
 
 ## Context
 

@@ -56,15 +56,25 @@ def test_load_newline_delimited_json(
         _rm_dataset(bq_runner, ds_id)
 
 
-def test_load_csv(bq_runner: BqRunner, tmp_path: Path) -> None:
+@pytest.mark.parametrize(
+    "upload_flags",
+    [
+        pytest.param((), id="resumable"),
+        # One multipart request whose media part is ``application/octet-stream``
+        # with ``Content-Transfer-Encoding: binary``.
+        pytest.param(("--noenable_resumable_uploads",), id="multipart"),
+    ],
+)
+def test_load_csv(bq_runner: BqRunner, tmp_path: Path, upload_flags: tuple[str, ...]) -> None:
     """``bq load --source_format=CSV --skip_leading_rows=1`` ingests a header-row CSV."""
-    ds_id = "bq_cli_jobs_load_csv"
+    ds_id = f"bq_cli_jobs_load_csv_{len(upload_flags)}"
     table_fq = f"{ds_id}.t"
     src = tmp_path / "t.csv"
     src.write_text("id,name\n1,alpha\n2,beta\n", encoding="utf-8")
     try:
         _mk_dataset(bq_runner, ds_id)
         result = bq_runner.run(
+            *upload_flags,
             "load",
             "--source_format=CSV",
             "--skip_leading_rows=1",

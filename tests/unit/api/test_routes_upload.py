@@ -35,12 +35,15 @@ pytestmark = pytest.mark.unit
 def _build_multipart_related(
     json_body: dict[str, object],
     media: bytes,
-    media_ct: str = "text/csv",
+    media_ct: str | None = "text/csv",
+    extra_media_headers: tuple[str, ...] = (),
 ) -> tuple[str, bytes]:
     """Construct a ``multipart/related`` body the way BQ clients do.
 
     Returns ``(content_type_header, body_bytes)``. The Content-Type
-    header includes the boundary that the body uses.
+    header includes the boundary that the body uses. ``media_ct=None``
+    omits the media part's Content-Type header entirely;
+    ``extra_media_headers`` are appended to the media part's headers.
     """
     boundary = "===boundary===bqemu"
     lines: list[bytes] = []
@@ -49,7 +52,9 @@ def _build_multipart_related(
     lines.append(b"")
     lines.append(json.dumps(json_body).encode())
     lines.append(f"--{boundary}".encode())
-    lines.append(f"Content-Type: {media_ct}".encode())
+    if media_ct is not None:
+        lines.append(f"Content-Type: {media_ct}".encode())
+    lines.extend(header.encode() for header in extra_media_headers)
     lines.append(b"")
     lines.append(media)
     lines.append(f"--{boundary}--".encode())
@@ -183,7 +188,27 @@ class TestMultipartUpload:
         )
         assert query.json()["rows"][0]["f"][0]["v"] == "2"
 
-    def test_ndjson_multipart_loads_table(self, app: FastAPI) -> None:
+    @pytest.mark.parametrize(
+        "media_ct",
+        [
+            pytest.param("*/*", id="python-client-wildcard"),
+            pytest.param("application/octet-stream", id="node-client-and-bq-cli"),
+            pytest.param("text/plain; charset=utf-8", id="go-client-sniffed-text"),
+            pytest.param("image/bmp", id="go-client-sniffed-bm-prefix"),
+            pytest.param("text/html; charset=utf-8", id="go-client-sniffed-html-prefix"),
+            pytest.param("application/json", id="explicit-json"),
+            pytest.param(None, id="header-omitted"),
+        ],
+    )
+    def test_ndjson_multipart_loads_under_any_discrete_media_type(
+        self, app: FastAPI, media_ct: str | None
+    ) -> None:
+        """The media part's declared type never selects the parser.
+
+        BigQuery's ``jobs.insert`` media upload accepts ``*/*`` and reads
+        the bytes per ``sourceFormat``; each parameter is a label an
+        official client actually puts on the media part.
+        """
         c = TestClient(app)
         envelope = {
             "configuration": {
@@ -195,13 +220,19 @@ class TestMultipartUpload:
             }
         }
         ndjson = b'{"id":1,"name":"a"}\n{"id":2,"name":"b"}\n'
-        ct, body = _build_multipart_related(envelope, ndjson, media_ct="application/json")
+        ct, body = _build_multipart_related(envelope, ndjson, media_ct=media_ct)
         r = c.post(
             "/upload/bigquery/v2/projects/p/jobs?uploadType=multipart",
             headers={"Content-Type": ct},
             content=body,
         )
-        assert r.status_code == 200
+        assert r.status_code == 200, r.text
+        assert "errorResult" not in r.json()["status"]
+        query = c.post(
+            "/bigquery/v2/projects/p/queries",
+            json={"query": "SELECT COUNT(*) AS n FROM `p.d.t`", "useLegacySql": False},
+        )
+        assert query.json()["rows"][0]["f"][0]["v"] == "2"
 
     def test_multipart_with_wrong_content_type_returns_400(self, app: FastAPI) -> None:
         c = TestClient(app, raise_server_exceptions=False)
@@ -245,7 +276,66 @@ class TestMultipartUpload:
         )
         assert r.status_code == 400
 
-    def test_multipart_with_unsupported_media_type_rejected(self, app: FastAPI) -> None:
+    @pytest.mark.parametrize(
+        ("transfer_encoding", "media"),
+        [
+            # What the ``bq`` CLI (googleapiclient) sends on its multipart path.
+            pytest.param("binary", b'{"id":1,"name":"a"}\n{"id":2,"name":"b"}\n', id="binary"),
+            pytest.param(
+                "base64",
+                b"eyJpZCI6MSwibmFtZSI6ImEifQp7ImlkIjoyLCJuYW1lIjoiYiJ9Cg==",
+                id="base64",
+            ),
+        ],
+    )
+    def test_media_part_decoded_per_content_transfer_encoding(
+        self, app: FastAPI, transfer_encoding: str, media: bytes
+    ) -> None:
+        """``binary`` bytes pass through unchanged; an encoded part is decoded first."""
+        c = TestClient(app)
+        envelope = {
+            "configuration": {
+                "load": {
+                    "destinationTable": {"projectId": "p", "datasetId": "d", "tableId": "t"},
+                    "sourceFormat": "NEWLINE_DELIMITED_JSON",
+                    "writeDisposition": "WRITE_TRUNCATE",
+                }
+            }
+        }
+        ct, body = _build_multipart_related(
+            envelope,
+            media,
+            media_ct="application/octet-stream",
+            extra_media_headers=(f"Content-Transfer-Encoding: {transfer_encoding}",),
+        )
+        r = c.post(
+            "/upload/bigquery/v2/projects/p/jobs?uploadType=multipart",
+            headers={"Content-Type": ct},
+            content=body,
+        )
+        assert r.status_code == 200, r.text
+        assert "errorResult" not in r.json()["status"]
+        query = c.post(
+            "/bigquery/v2/projects/p/queries",
+            json={"query": "SELECT id, name FROM `p.d.t` ORDER BY id", "useLegacySql": False},
+        )
+        assert [[cell["v"] for cell in row["f"]] for row in query.json()["rows"]] == [
+            ["1", "a"],
+            ["2", "b"],
+        ]
+
+    @pytest.mark.parametrize(
+        "media_ct",
+        [
+            'multipart/mixed; boundary="inner"',
+            "multipart/mixed",
+            "message/rfc822",
+        ],
+    )
+    def test_multipart_with_composite_media_type_rejected(
+        self, app: FastAPI, tmp_path: Path, media_ct: str
+    ) -> None:
+        """A composite media part would otherwise stage an empty or altered file."""
         c = TestClient(app, raise_server_exceptions=False)
         envelope = {
             "configuration": {
@@ -255,13 +345,20 @@ class TestMultipartUpload:
                 }
             }
         }
-        ct, body = _build_multipart_related(envelope, b"hello", media_ct="image/jpeg")
+        media = b"--inner\r\nContent-Type: text/csv\r\n\r\nid,name\n1,a\r\n--inner--"
+        ct, body = _build_multipart_related(envelope, media, media_ct=media_ct)
         r = c.post(
             "/upload/bigquery/v2/projects/p/jobs?uploadType=multipart",
             headers={"Content-Type": ct},
             content=body,
         )
         assert r.status_code == 400
+        error = r.json()["error"]
+        assert error["errors"][0]["reason"] == "invalidQuery"
+        assert "composite Content-Type" in error["message"]
+        assert media_ct.split(";", maxsplit=1)[0] in error["message"]
+        staging = tmp_path / "uploads"
+        assert not staging.exists() or list(staging.iterdir()) == []
 
     def test_multipart_missing_configuration_load_returns_400(self, app: FastAPI) -> None:
         c = TestClient(app, raise_server_exceptions=False)
