@@ -1,11 +1,12 @@
-"""Tests for the Bucket I datetime pre-translator.
+"""Tests for the Bucket I datetime BigQuery-AST rewrites.
 
-The rewrites in :mod:`bqemulator.sql.rewriter.datetime_helpers` run
-*before* SQLGlot's BQ → DuckDB transpile so they can preserve
-information the transpile would otherwise drop (the function-call
-form of ``DATE_ADD`` etc., the int → ts direction of
-``TIMESTAMP_MICROS`` / ``TIMESTAMP_MILLIS``, and the Saturday-end
-semantic of ``LAST_DAY(x, WEEK)``).
+The rewrites in :mod:`bqemulator.sql.rewriter.datetime_helpers` run on
+each parsed BigQuery statement *before* DuckDB generation so they can
+preserve information the transpile would otherwise drop (the
+function-call form of ``DATE_ADD`` etc., the int → ts direction of
+``TIMESTAMP_MICROS`` / ``TIMESTAMP_MILLIS``, the Saturday-end semantic
+of ``LAST_DAY(x, WEEK)``, and the function identity and week start of
+``DATE_TRUNC(x, <date granularity>)``).
 """
 
 from __future__ import annotations
@@ -14,10 +15,16 @@ import datetime as _dt
 
 import duckdb
 import pytest
+import sqlglot
 from sqlglot import exp
 
 from bqemulator.domain.result import Ok
 from bqemulator.sql.rewriter.datetime_helpers import (
+    DATE_TRUNC_CALENDAR_UNITS,
+    DATE_TRUNC_FUNCTION,
+    DATE_TRUNC_WEEK_START,
+    _date_trunc_granularity,
+    _interval_value,
     _literal_int,
     _name,
     rewrite_datetime_helpers,
@@ -44,6 +51,11 @@ def _execute(t: SQLTranslator, con: duckdb.DuckDBPyConnection, sql: str) -> obje
     return con.execute(result.value).fetchone()
 
 
+def _rewrite(bq_sql: str) -> exp.Expression:
+    """Parse *bq_sql* as BigQuery and apply the datetime rewrites."""
+    return rewrite_datetime_helpers(sqlglot.parse_one(bq_sql, read="bigquery"))
+
+
 def _column_type(t: SQLTranslator, con: duckdb.DuckDBPyConnection, sql: str) -> str:
     """Return the DuckDB column type for the first column of *sql*."""
     result = t.translate(sql)
@@ -53,16 +65,22 @@ def _column_type(t: SQLTranslator, con: duckdb.DuckDBPyConnection, sql: str) -> 
 
 
 class TestNoOpSql:
-    """``rewrite_datetime_helpers`` is a no-op for SQL without trigger tokens."""
+    """Statements without a rewrite target come back unchanged."""
 
-    def test_returns_input_unchanged(self) -> None:
-        sql = "SELECT 1, 'x', 3.14"
-        assert rewrite_datetime_helpers(sql) is sql
-
-    def test_no_trigger_no_rewrite(self) -> None:
-        # ``MONTH`` is not a trigger by itself.
-        sql = "SELECT DATE_TRUNC(DATE '2024-01-15', MONTH)"
-        assert rewrite_datetime_helpers(sql) is sql
+    @pytest.mark.parametrize(
+        "sql",
+        [
+            "SELECT 1, 'x', 3.14",
+            "SELECT DATE_TRUNC(ts, HOUR) FROM t",
+            "SELECT LAST_DAY(DATE '2024-02-15', MONTH)",
+            "SELECT 'DATE_TRUNC LAST_DAY WEEK DATE_ADD TIMESTAMP_MICROS' AS lbl",
+        ],
+    )
+    def test_returns_same_unchanged_tree(self, sql: str) -> None:
+        tree = sqlglot.parse_one(sql, read="bigquery")
+        before = tree.sql(dialect="bigquery")
+        assert rewrite_datetime_helpers(tree) is tree
+        assert tree.sql(dialect="bigquery") == before
 
 
 class TestDateAddFunctionCall:
@@ -130,6 +148,43 @@ class TestTimestampMicrosMillis:
         col_type = _column_type(t, con, "SELECT TIMESTAMP_MILLIS(1705320000000) AS ts")
         assert "TIME ZONE" in col_type
 
+    @pytest.mark.parametrize(
+        ("sql", "expected"),
+        [
+            # Interval values beyond the 32-bit range, which DuckDB only
+            # parses in the quoted ``INTERVAL '<n>' <unit>`` form.
+            (
+                "SELECT TIMESTAMP_MICROS(1705320000000000) AS ts",
+                _dt.datetime(2024, 1, 15, 12, tzinfo=_dt.UTC),
+            ),
+            (
+                "SELECT TIMESTAMP_MILLIS(2147483648) AS ts",
+                _dt.datetime(1970, 1, 25, 20, 31, 23, 648000, tzinfo=_dt.UTC),
+            ),
+            (
+                "SELECT TIMESTAMP_MICROS(-62135596800000000) AS ts",
+                _dt.datetime(1, 1, 1, tzinfo=_dt.UTC),
+            ),
+            ("SELECT TIMESTAMP_MICROS(1 + 2) AS ts", _dt.datetime(1970, 1, 1, 0, 0, 0, 3, _dt.UTC)),
+        ],
+    )
+    def test_wide_and_computed_operands_execute(
+        self, t: SQLTranslator, con: duckdb.DuckDBPyConnection, sql: str, expected: _dt.datetime
+    ) -> None:
+        con.execute("SET TimeZone = 'UTC'")
+        assert _execute(t, con, sql) == (expected,)
+
+    def test_interval_value_helper(self) -> None:
+        assert _interval_value(exp.Literal.number(1705320000000000)) == exp.Literal.string(
+            "1705320000000000",
+        )
+        negative = sqlglot.parse_one("-5", read="bigquery")
+        assert _interval_value(negative) == exp.Literal.string("-5")
+        column = exp.column("n")
+        copied = _interval_value(column)
+        assert copied == column
+        assert copied is not column
+
     def test_seconds_unchanged(self, t: SQLTranslator, con: duckdb.DuckDBPyConnection) -> None:
         # ``TIMESTAMP_SECONDS`` transpiles to DuckDB's ``TO_TIMESTAMP``
         # which already returns TIMESTAMPTZ — the pre-translator should
@@ -180,51 +235,97 @@ class TestLastDayWeek:
         assert row == (_dt.date(2024, 2, 29),)
 
 
-class TestParseFailureTolerance:
-    """Parse failures are tolerated — the input is returned unchanged."""
-
-    def test_invalid_sql_with_last_day_week_token_returned_as_is(self) -> None:
-        """Garbage SQL with LAST_DAY + WEEK trigger tokens returned unchanged."""
-        sql = "LAST_DAY WEEK ((( garbage"
-        assert rewrite_datetime_helpers(sql) == sql
-
-    def test_invalid_sql_with_date_add_token_returned_as_is(self) -> None:
-        """Garbage SQL with DATE_ADD trigger returned unchanged."""
-        sql = "DATE_ADD ))) bad"
-        assert rewrite_datetime_helpers(sql) == sql
-
-    def test_invalid_sql_with_timestamp_micros_token_returned_as_is(self) -> None:
-        """Garbage SQL with TIMESTAMP_MICROS trigger returned unchanged."""
-        sql = "TIMESTAMP_MICROS ((( bad"
-        assert rewrite_datetime_helpers(sql) == sql
+def _handoff_calls(bq_sql: str) -> list[exp.Anonymous]:
+    """Return the ``BQEMU_DATE_TRUNC`` calls after rewriting *bq_sql*, outermost first."""
+    return [
+        node
+        for node in _rewrite(bq_sql).find_all(exp.Anonymous)
+        if node.name.upper() == DATE_TRUNC_FUNCTION
+    ]
 
 
-class TestNoModificationPath:
-    """Trigger token present but no matching node — return input unchanged."""
+def _handoff_args(call: exp.Anonymous) -> list[str]:
+    """Return a handoff call's arguments as BigQuery SQL."""
+    return [arg.sql(dialect="bigquery") for arg in call.expressions]
 
-    def test_last_day_week_token_in_string_only(self) -> None:
-        """LAST_DAY + WEEK trigger tokens inside string literal don't fire."""
-        # Both trigger tokens present in a string literal so the
-        # upper() short-circuit fires; the actual LAST_DAY node uses
-        # MONTH, so the unit filter inside _rewrite_last_day_week
-        # skips and modified remains False.
-        sql = "SELECT 'LAST_DAY WEEK' AS lbl, LAST_DAY(DATE '2024-02-15', MONTH) AS d"
-        out = rewrite_datetime_helpers(sql)
-        # The unit-match check uses the Var.name branch in _name —
-        # exercises the non-Literal path.
-        assert out == sql
 
-    def test_date_add_trigger_in_string_only(self) -> None:
-        """DATE_ADD substring in literal doesn't fire when no actual call exists."""
-        sql = "SELECT 'DATE_ADD only in string' AS lbl"
-        out = rewrite_datetime_helpers(sql)
-        assert out == sql
+class TestDateTrunc:
+    """Date-granularity ``DATE_TRUNC`` → ``BQEMU_DATE_TRUNC(x, '<granularity>')``."""
 
-    def test_timestamp_micros_trigger_in_string_only(self) -> None:
-        """TIMESTAMP_MICROS substring in literal doesn't fire."""
-        sql = "SELECT 'TIMESTAMP_MICROS only in string' AS lbl"
-        out = rewrite_datetime_helpers(sql)
-        assert out == sql
+    @pytest.mark.parametrize(
+        ("unit", "granularity"),
+        [
+            ("DAY", "DAY"),
+            ("month", "MONTH"),
+            ("QUARTER", "QUARTER"),
+            ("YEAR", "YEAR"),
+            ("ISOYEAR", "ISOYEAR"),
+            ("WEEK", "WEEK(SUNDAY)"),
+            ("week", "WEEK(SUNDAY)"),
+            ("ISOWEEK", "WEEK(MONDAY)"),
+            ("WEEK(SUNDAY)", "WEEK(SUNDAY)"),
+            ("WEEK(monday)", "WEEK(MONDAY)"),
+            ("WEEK(TUESDAY)", "WEEK(TUESDAY)"),
+            ("WEEK(Wednesday)", "WEEK(WEDNESDAY)"),
+            ("WEEK(THURSDAY)", "WEEK(THURSDAY)"),
+            ("WEEK(FRIDAY)", "WEEK(FRIDAY)"),
+            ("WEEK(SATURDAY)", "WEEK(SATURDAY)"),
+        ],
+    )
+    def test_emits_handoff_with_canonical_granularity(self, unit: str, granularity: str) -> None:
+        (call,) = _handoff_calls(f"SELECT DATE_TRUNC(d, {unit}) AS w FROM t")
+        assert _handoff_args(call) == ["d", f"'{granularity}'"]
+
+    def test_every_canonical_granularity_is_in_the_handoff_vocabulary(self) -> None:
+        assert {"DAY", "MONTH", "QUARTER", "YEAR", "ISOYEAR"} == DATE_TRUNC_CALENDAR_UNITS
+        assert DATE_TRUNC_WEEK_START == {
+            "WEEK(SUNDAY)": 0,
+            "WEEK(MONDAY)": 1,
+            "WEEK(TUESDAY)": 2,
+            "WEEK(WEDNESDAY)": 3,
+            "WEEK(THURSDAY)": 4,
+            "WEEK(FRIDAY)": 5,
+            "WEEK(SATURDAY)": 6,
+        }
+
+    def test_handoff_is_generated_verbatim_for_duckdb(self) -> None:
+        # The week start must reach the post-translator rule intact even
+        # though SQLGlot's DuckDB output collapses every week to ``'WEEK'``.
+        tree = _rewrite("SELECT DATE_TRUNC(d, WEEK(WEDNESDAY)) FROM t")
+        assert f"{DATE_TRUNC_FUNCTION}(d, 'WEEK(WEDNESDAY)')" in tree.sql(dialect="duckdb")
+
+    @pytest.mark.parametrize("unit", ["HOUR", "MINUTE", "SECOND", "MILLISECOND", "MICROSECOND"])
+    def test_time_granularities_untouched(self, unit: str) -> None:
+        assert _handoff_calls(f"SELECT DATE_TRUNC(ts, {unit}) FROM t") == []
+
+    def test_time_zone_form_untouched(self) -> None:
+        assert _handoff_calls("SELECT DATE_TRUNC(ts, WEEK, 'America/New_York') FROM t") == []
+
+    def test_timestamp_and_datetime_trunc_untouched(self) -> None:
+        # Only ``DATE_TRUNC`` returns DATE for a DATE operand; the other
+        # truncations reach DuckDB as plain ``DATE_TRUNC`` calls.
+        calls = _handoff_calls(
+            "SELECT TIMESTAMP_TRUNC(ts, MONTH) AS a, DATETIME_TRUNC(dt, ISOWEEK) AS b, "
+            "DATE_TRUNC(d, MONTH) AS c FROM t",
+        )
+        assert [_handoff_args(call) for call in calls] == [["d", "'MONTH'"]]
+
+    def test_unknown_weekday_left_for_parser(self) -> None:
+        assert _handoff_calls("SELECT DATE_TRUNC(d, WEEK(FUNDAY)) FROM t") == []
+
+    def test_nested_calls_both_rewritten(self) -> None:
+        outer, inner = _handoff_calls("SELECT DATE_TRUNC(DATE_TRUNC(d, WEEK), ISOWEEK) FROM t")
+        assert inner.parent is outer
+        assert _handoff_args(outer)[1] == "'WEEK(MONDAY)'"
+        assert _handoff_args(inner) == ["d", "'WEEK(SUNDAY)'"]
+
+    def test_granularity_helper(self) -> None:
+        assert _date_trunc_granularity(None) is None
+        assert _date_trunc_granularity(exp.Var(this="hour")) is None
+        assert _date_trunc_granularity(exp.Var(this="quarter")) == "QUARTER"
+        assert _date_trunc_granularity(exp.WeekStart(this=exp.Var(this="saturday"))) == (
+            "WEEK(SATURDAY)"
+        )
 
 
 class TestAlreadyCastAsDate:
@@ -232,24 +333,24 @@ class TestAlreadyCastAsDate:
 
     def test_hand_written_cast_skipped(self) -> None:
         """Hand-written CAST(DATE_ADD(...) AS DATE) is left as a single cast."""
-        sql = "SELECT CAST(DATE_ADD(DATE '2024-01-15', INTERVAL 7 DAY) AS DATE) AS d"
-        out = rewrite_datetime_helpers(sql)
-        # Only one CAST in the output — no double-wrap from the rewriter.
-        # (The output is the canonical SQLGlot serialisation; should
-        #  still have exactly one CAST.)
-        assert out.upper().count("CAST(") == 1
+        tree = _rewrite("SELECT CAST(DATE_ADD(DATE '2024-01-15', INTERVAL 7 DAY) AS DATE) AS d")
+        date_add = tree.find(exp.DateAdd)
+        assert date_add is not None
+        assert isinstance(date_add.parent, exp.Cast)
+        assert not isinstance(date_add.parent.parent, exp.Cast)
 
     def test_non_date_cast_still_inner_wrapped(self) -> None:
-        """CAST(DATE_ADD(...) AS STRING) gets its inner DATE_ADD re-wrapped."""
-        sql = "SELECT CAST(DATE_ADD(DATE '2024-01-15', INTERVAL 7 DAY) AS STRING) AS d"
-        out = rewrite_datetime_helpers(sql)
-        # The non-DATE cast doesn't satisfy the skip; rewriter wraps
-        # the inner DATE_ADD with an additional CAST AS DATE.
-        upper = out.upper()
-        # The output should contain at least one inner CAST AS DATE
-        # (the one added by the rewriter, plus the outer STRING cast).
-        assert "AS DATE" in upper
-        assert "AS STRING" in upper
+        """CAST(DATE_ADD(...) AS STRING) gets its inner DATE_ADD wrapped in CAST AS DATE."""
+        tree = _rewrite(
+            "SELECT CAST(DATE_ADD(DATE '2024-01-15', INTERVAL 7 DAY) AS STRING) AS d",
+        )
+        date_add = tree.find(exp.DateAdd)
+        assert date_add is not None
+        inner, outer = date_add.parent, date_add.parent.parent
+        assert isinstance(inner, exp.Cast)
+        assert inner.to.is_type(exp.DataType.Type.DATE)
+        assert isinstance(outer, exp.Cast)
+        assert outer.to.is_type(exp.DataType.Type.TEXT)
 
 
 class TestTimestampMicrosMillisMixed:

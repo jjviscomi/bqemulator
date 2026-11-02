@@ -1190,13 +1190,8 @@ def _ts_literal(ms: int) -> str:
 
     We emit the ISO 8601 form (``TIMESTAMP '...' UTC``) rather than the
     functional ``TIMESTAMP_MILLIS(N)`` call. Both are semantically
-    equivalent for BigQuery, but the literal form survives the
-    ``datetime_helpers`` pre-translator's parse + serialize round-trip
-    unchanged — the SQLGlot BigQuery output drops the named-column
-    alias from a ``VALUES (...) AS v(col_list)`` clause when it
-    transpiles to ``UNNEST([STRUCT(... AS _c0, ...)])``, and
-    ``TIMESTAMP_MILLIS`` is the one builtin in this rewriter that
-    triggers the round-trip.
+    equivalent for BigQuery; the literal is a constant the transpile
+    renders as a ``TIMESTAMPTZ`` cast with no further rewriting.
     """
     from datetime import UTC, datetime, timedelta
 

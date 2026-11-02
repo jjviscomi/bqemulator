@@ -255,6 +255,19 @@ emulator targets. The fixture stays XFAILed against this section.
 - ``standard_functions/bound_bignumeric_max`` (39 integer digits —
   XFAILed against DuckDB's 38-digit DECIMAL cap).
 
+**Computed BIGNUMERIC values** hold 28 integer digits. A
+BIGNUMERIC value the emulator computes rather than reads from a
+literal's own digits is `DECIMAL(38, 10)`: `bqemu_to_bignumeric`
+(`BIGNUMERIC` literals with fewer than 10 fractional digits,
+`PARSE_BIGNUMERIC`), and `AVG` / `/` with a BIGNUMERIC operand. A
+result of 1e28 or more raises an out-of-range conversion error, where
+BigQuery returns it. A scale above 9 is what reports the value as
+BIGNUMERIC on the wire, and DuckDB's 38-digit cap leaves 28 integer
+digits at scale 10; a NUMERIC-scale result would hold 29 but report
+NUMERIC and round BIGNUMERIC values to 9 fractional digits. DuckDB
+also divides decimals in `DOUBLE`, so a quotient carries about 16
+significant digits.
+
 ### Spheroidal geometry on GEOGRAPHY
 
 BigQuery's `GEOGRAPHY` uses a **spherical** geometry model — it
