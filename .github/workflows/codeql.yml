@@ -31,7 +31,7 @@ jobs:
       # ``.github/workflows/*.yml`` so this pin moves forward
       # automatically. Bumps the Scorecard ``Pinned-Dependencies``
       # check that PR #48 (ADR 0037) introduced.
-      - uses: github/codeql-action/init@8aad20d150bbac5944a9f9d289da16a4b0d87c1e # v4.36.2
+      - uses: github/codeql-action/init@1fc58d04a4d4374f921bdac573c3811c240f9c26 # v4.39.2
         with:
           languages: ${{ matrix.language }}
           queries: security-extended
