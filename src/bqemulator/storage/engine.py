@@ -1,14 +1,18 @@
 """DuckDB engine — single-writer connection with async-safe lifecycle.
 
-The emulator uses exactly one :class:`duckdb.DuckDBPyConnection` for the
-entire process. Writes serialize on an :class:`asyncio.Lock`; reads do not
-take the lock (DuckDB provides internal read/write concurrency for the
-same connection object).
+The emulator uses one :class:`duckdb.DuckDBPyConnection` for the entire
+process, used only from the event loop. Writes serialize on an
+:class:`asyncio.Lock`; reads do not take the lock (DuckDB provides internal
+read/write concurrency for the same connection object).
+
+Query statements are the exception: :meth:`DuckDBEngine.fetch_arrow_off_loop`
+runs them on a second cursor of the same database, owned by a single worker
+thread, so a long query does not block the event loop (ADR 0049).
 
 The engine also handles startup tasks:
 
 * Ensure the reserved ``_bqemulator_catalog`` schema exists.
-* Set the connection's time zone to ``UTC`` (BigQuery TIMESTAMP semantics).
+* Set the database's time zone to ``UTC`` (BigQuery TIMESTAMP semantics).
 * Install and load the ``spatial`` extension. Required — startup fails
   fast with a clear error if the extension cannot be installed/loaded
   (e.g. offline build with no cached extension), because GEOGRAPHY
@@ -18,6 +22,7 @@ The engine also handles startup tasks:
 from __future__ import annotations
 
 import asyncio
+from concurrent.futures import ThreadPoolExecutor
 from contextlib import asynccontextmanager
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
@@ -56,15 +61,17 @@ class DuckDBEngine:
             engine.execute("INSERT INTO ...")
         await engine.stop()
 
-    :class:`DuckDBEngine` is intentionally synchronous-under-the-hood. DuckDB
-    releases the GIL during query execution, so awaiting the write lock
-    gives other tasks a chance to progress. Long queries should be run
-    inside ``asyncio.to_thread`` by the caller.
+    :class:`DuckDBEngine` is intentionally synchronous-under-the-hood:
+    :meth:`execute` and :meth:`fetch_arrow` run on the calling thread, i.e.
+    they block the event loop for the duration of the statement. Query
+    statements go through :meth:`fetch_arrow_off_loop` instead.
     """
 
     def __init__(self, settings: Settings) -> None:
         self._settings = settings
         self._connection: duckdb.DuckDBPyConnection | None = None
+        self._query_cursor: duckdb.DuckDBPyConnection | None = None
+        self._query_executor: ThreadPoolExecutor | None = None
         self._write_lock = asyncio.Lock()
         self._started = False
 
@@ -88,10 +95,24 @@ class DuckDBEngine:
         if self._settings.enable_format_extensions:
             self._load_format_extensions()
         self._register_builtin_udfs()
+        # A cursor is a separate connection to the same database: it sees
+        # the same tables, macros, UDFs and extensions, but has its own
+        # result set, so the worker thread never touches ``_connection``.
+        self._query_cursor = self._connection.cursor()
+        self._query_executor = ThreadPoolExecutor(
+            max_workers=1,
+            thread_name_prefix="bqemu-query",
+        )
         self._started = True
 
     async def stop(self) -> None:
         """Close the DuckDB connection (idempotent)."""
+        if self._query_executor is not None:
+            self._query_executor.shutdown(wait=True, cancel_futures=True)
+            self._query_executor = None
+        if self._query_cursor is not None:
+            self._query_cursor.close()
+            self._query_cursor = None
         if self._connection is not None:
             try:
                 self._connection.close()
@@ -133,14 +154,32 @@ class DuckDBEngine:
         :func:`bqemulator.jobs.executor._arrow_field_to_schema_entry`
         recover the BigQuery wire-format type for those columns.
         """
-        result = self.execute(sql, parameters)
-        description = result.description
-        arrow_table = (
-            result.to_arrow_table()
-            if hasattr(result, "to_arrow_table")
-            else result.fetch_arrow_table()
+        return _fetch_arrow(self.connection, sql, parameters)
+
+    async def fetch_arrow_off_loop(
+        self,
+        sql: str,
+        parameters: list[Any] | None = None,
+    ) -> pa.Table:
+        """Like :meth:`fetch_arrow`, but without blocking the event loop.
+
+        The statement runs on the query cursor in the engine's single
+        worker thread, so other requests (``/healthz`` included) are
+        served while it executes. Statements sent here still run one at
+        a time, in submission order. Connection-local objects (``TEMP``
+        tables and views, ``connection.register`` views) created on
+        :attr:`connection` are not visible to them.
+        """
+        if self._query_executor is None or self._query_cursor is None:
+            raise InternalError("DuckDBEngine not started")
+        loop = asyncio.get_running_loop()
+        return await loop.run_in_executor(
+            self._query_executor,
+            _fetch_arrow,
+            self._query_cursor,
+            sql,
+            parameters,
         )
-        return _annotate_with_duckdb_types(arrow_table, description)
 
     @asynccontextmanager
     async def write_lock(self) -> AsyncIterator[None]:
@@ -169,8 +208,9 @@ class DuckDBEngine:
     def _apply_session_pragmas(self) -> None:
         if self._connection is None:  # internal invariant
             raise InternalError("DuckDBEngine not started")
-        # BigQuery TIMESTAMP is always UTC; align DuckDB.
-        self._connection.execute("SET TimeZone = 'UTC'")
+        # BigQuery TIMESTAMP is always UTC; align DuckDB. GLOBAL so the
+        # query cursor, a separate connection, gets it too.
+        self._connection.execute("SET GLOBAL TimeZone = 'UTC'")
 
     def _ensure_catalog_schema(self) -> None:
         if self._connection is None:  # internal invariant
@@ -240,6 +280,20 @@ class DuckDBEngine:
             _log.warning("duckdb.avro_unavailable", error=str(exc))
             return
         _log.debug("duckdb.avro_loaded")
+
+
+def _fetch_arrow(
+    conn: duckdb.DuckDBPyConnection,
+    sql: str,
+    parameters: list[Any] | None,
+) -> pa.Table:
+    """Execute *sql* on *conn* and return the annotated Arrow result."""
+    result = conn.execute(sql, parameters) if parameters is not None else conn.execute(sql)
+    description = result.description
+    arrow_table = (
+        result.to_arrow_table() if hasattr(result, "to_arrow_table") else result.fetch_arrow_table()
+    )
+    return _annotate_with_duckdb_types(arrow_table, description)
 
 
 def _annotate_with_duckdb_types(

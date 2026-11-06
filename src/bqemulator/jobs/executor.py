@@ -897,7 +897,7 @@ async def _run_single_sql(
         # domain error that must be shaped by translate_runtime_error.
         duckdb_sql = rewrite_table_refs(translated_sql, project_id)
         duckdb_sql, param_values = bind_parameters(duckdb_sql, query_params)
-        return ctx.engine.fetch_arrow(duckdb_sql, param_values or None)
+        return await ctx.engine.fetch_arrow_off_loop(duckdb_sql, param_values or None)
     except DomainError as exc:
         # ADR 0022 §3: pre-execution domain errors (RAP denials,
         # malformed-id ValidationErrors from the SQL pipeline) are

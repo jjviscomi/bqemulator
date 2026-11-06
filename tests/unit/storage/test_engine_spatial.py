@@ -79,7 +79,7 @@ class TestSpatialExtensionFailure:
         # The startup did get as far as setting the catalog schema before
         # spatial failed — confirms we run pragmas / schemas first so the
         # spatial failure doesn't leave the catalog half-initialised.
-        assert any("SET TimeZone" in stmt for stmt in fake.executed)
+        assert any("SET GLOBAL TimeZone" in stmt for stmt in fake.executed)
 
     async def test_load_spatial_failure_raises_internal_error(
         self,
