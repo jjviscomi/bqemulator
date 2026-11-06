@@ -766,3 +766,72 @@ class TestMultiBatchStreaming:
         finally:
             channel.close()
             _cleanup(bqemu_server)
+
+
+class TestConcurrentRestTraffic:
+    def test_append_rows_alongside_rest_writes_and_queries(
+        self,
+        bqemu_server: EmulatorServer,
+    ) -> None:
+        """AppendRows and REST calls on the same table all complete.
+
+        AppendRows runs on grpc.aio's thread pool while REST requests run
+        on the event loop; both reach the same DuckDB connection. A
+        regression deadlocks the whole process, so it shows up as a hang.
+        """
+        from concurrent.futures import ThreadPoolExecutor
+
+        from google.cloud.bigquery_storage_v1 import types
+        import requests
+
+        dataset = "concurrent_rest_ds"
+        _setup_test_table(bqemu_server, dataset=dataset)
+        stream = f"projects/write-project/datasets/{dataset}/tables/target/streams/_default"
+        schema_bytes, batch_bytes = _make_arrow_payload(list(range(50)), ["x"] * 50)
+        base = f"{bqemu_server.rest_url}/bigquery/v2/projects/write-project"
+        rounds = 20
+
+        def append() -> None:
+            channel = grpc.insecure_channel(bqemu_server.grpc_endpoint)
+            call = channel.stream_stream(f"{_WRITE}/AppendRows")
+            request = types.AppendRowsRequest.serialize(
+                _build_arrow_request(stream, schema_bytes, batch_bytes),
+            )
+            try:
+                for _ in range(rounds):
+                    for response in call(iter([request]), timeout=10):
+                        assert types.AppendRowsResponse.deserialize(response).error.code == 0
+            finally:
+                channel.close()
+
+        def rest() -> None:
+            for i in range(rounds):
+                requests.post(
+                    f"{base}/datasets/{dataset}/tables/target/insertAll",
+                    json={"rows": [{"json": {"id": 1_000_000 + i, "name": "rest"}}]},
+                    timeout=10,
+                ).raise_for_status()
+                requests.post(
+                    f"{base}/queries",
+                    json={
+                        "query": f"SELECT COUNT(*) FROM {dataset}.target",
+                        "useLegacySql": False,
+                    },
+                    timeout=10,
+                ).raise_for_status()
+
+        try:
+            with ThreadPoolExecutor(6) as pool:
+                futures = [pool.submit(append) for _ in range(3)]
+                futures += [pool.submit(rest) for _ in range(3)]
+                for future in futures:
+                    future.result(timeout=90)
+
+            count = requests.post(
+                f"{base}/queries",
+                json={"query": f"SELECT COUNT(*) FROM {dataset}.target", "useLegacySql": False},
+                timeout=10,
+            ).json()["rows"][0]["f"][0]["v"]
+            assert int(count) == 3 * rounds * 50 + 3 * rounds
+        finally:
+            _cleanup(bqemu_server, dataset=dataset)
