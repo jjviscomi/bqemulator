@@ -115,6 +115,24 @@ class TestSyncCreatedTable:
         assert meta.num_rows == 0
         assert [f.name for f in meta.schema_.fields] == ["id", "label"]
 
+    async def test_create_table_keeps_json_column_type(self, ctx: AppContext) -> None:
+        """A ``JSON`` column registers as ``JSON``, not the ``STRING`` Arrow exports it as."""
+        ctx.engine.execute(
+            'CREATE TABLE "p__ds"."t_json" (id BIGINT, doc JSON NOT NULL, extra JSON)',
+        )
+        sync_created_table(
+            "CREATE TABLE `p.ds.t_json` (id INT64, doc JSON NOT NULL, extra JSON)",
+            "p",
+            ctx,
+        )
+        meta = ctx.catalog.get_table("p", "ds", "t_json")
+        assert meta is not None
+        assert [(f.name, f.type, f.mode) for f in meta.schema_.fields] == [
+            ("id", "INTEGER", "NULLABLE"),
+            ("doc", "JSON", "REQUIRED"),
+            ("extra", "JSON", "NULLABLE"),
+        ]
+
     async def test_create_or_replace_updates_existing_entry(
         self,
         ctx: AppContext,
