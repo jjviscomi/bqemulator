@@ -29,6 +29,7 @@ from sqlglot import exp
 
 from bqemulator.catalog.ddl_sync import (
     assert_drop_schema_allowed,
+    sync_altered_table,
     sync_created_schema,
     sync_created_table,
     sync_created_view,
@@ -737,6 +738,8 @@ class ScriptInterpreter:
         # MATERIALIZED VIEW / DROP SNAPSHOT TABLE route through the
         # versioning DDL fast path above and are not handled here.
         sync_dropped_object(sql, self._project_id, self._ctx)
+        # Refresh the catalog schema after a column-level ALTER TABLE.
+        sync_altered_table(sql, self._project_id, self._ctx)
 
     async def _handle_txn_statement(self, op: str) -> None:
         """Apply a BEGIN / COMMIT / ROLLBACK [TRANSACTION] statement.

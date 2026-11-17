@@ -18,6 +18,7 @@ import pyarrow as pa
 
 from bqemulator.catalog.ddl_sync import (
     assert_drop_schema_allowed,
+    sync_altered_table,
     sync_created_schema,
     sync_created_table,
     sync_created_view,
@@ -703,7 +704,9 @@ async def _run_query_body(
     also auto-registers a missing dataset as a fallback). It then syncs
     ``DROP TABLE/VIEW/SCHEMA`` by removing the dropped object from the
     catalog (``sync_dropped_object``) so the relation or dataset
-    disappears from those same surfaces, matching BigQuery.
+    disappears from those same surfaces, matching BigQuery. A
+    column-level ``ALTER TABLE`` refreshes the table's catalog schema
+    (``sync_altered_table``).
     """
     if is_scripted:
         interpreter = ScriptInterpreter(ctx, project_id, caller=effective_caller)
@@ -719,6 +722,7 @@ async def _run_query_body(
     sync_created_table(bq_sql, project_id, ctx)
     sync_created_view(bq_sql, project_id, ctx)
     sync_dropped_object(bq_sql, project_id, ctx)
+    sync_altered_table(bq_sql, project_id, ctx)
     return arrow_table
 
 
