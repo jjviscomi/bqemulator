@@ -50,7 +50,7 @@ table below maps each BigQuery view to its rewriter function.
 
 > **Auto-generated.** Edit translation rules under [`src/bqemulator/sql/rules/`](https://github.com/jjviscomi/bqemulator/blob/main/src/bqemulator/sql/rules/) or rewriters under [`src/bqemulator/sql/rewriter/`](https://github.com/jjviscomi/bqemulator/blob/main/src/bqemulator/sql/rewriter/), then run `make function-mapping` to regenerate this block. The CI gate (`--check`) refuses to merge a PR whose committed registry has drifted from the live source. Per-rule docstring summaries are extracted as the cell text — if a cell reads wrong, edit the rule's docstring.
 
-- **Registered rules**: 92 (13 rule modules)
+- **Registered rules**: 93 (13 rule modules)
 - **Rewriter functions**: 24 (24 rewriter modules; the INFORMATION_SCHEMA rewriter has its own hand-maintained per-view table below)
 
 ### Translation rules (post-transpile AST passes)
@@ -104,6 +104,7 @@ table below maps each BigQuery view to its rewriter function.
 | Math / numeric / misc | `COUNTIF(p)` | `COALESCE(COUNTIF(p), 0)` (wrapped only when needed) | `COUNTIF_EMPTY_ZERO` |
 | Math / numeric / misc | `FARM_FINGERPRINT(s)` | `bqemu_farm_fingerprint(s)` | `FARM_FINGERPRINT` |
 | Math / numeric / misc | `IEEE_DIVIDE(a, b)` | `CAST(a AS DOUBLE) / CAST(b AS DOUBLE)` | `IEEE_DIVIDE` |
+| Math / numeric / misc | `MERGE ... WHEN MATCHED THEN UPDATE SET l.col = ...` | `SET col = ...` | `MERGE_UPDATE_SET` |
 | Math / numeric / misc | `RANGE_BUCKET(point, boundaries)` | `len(list_filter(boundaries, x -> x <= point))` | `RANGE_BUCKET` |
 | Math / numeric / misc | `SIGN(<float_arg>)` | NaN-aware FLOAT64 wrapper | `SIGN_FLOAT_TYPE` |
 | Numeric type helpers | `PARSE_BIGNUMERIC(s)` | `bqemu_to_bignumeric(s)` | `PARSE_BIGNUMERIC` |
