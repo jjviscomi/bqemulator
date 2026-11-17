@@ -48,20 +48,42 @@ def rewrite_safe_helpers(bq_sql: str) -> str:
 
 
 def _rewrite_safe_funcs(tree: exp.Expression) -> bool:
-    """Replace every ``SafeFunc(inner)`` with ``TRY(inner)``.
+    """Replace every ``SAFE.X(args)`` call with ``TRY(X(args))``.
 
     The walk uses a snapshot list so the replacement nodes (which are
-    ``Anonymous`` and not ``SafeFunc``) do not loop the iterator.
+    ``Anonymous`` and not ``SafeFunc``) do not loop the iterator. The
+    snapshot is visited deepest-first so a nested call such as
+    ``SAFE.PARSE_JSON(SAFE.STRING(...))`` has its inner ``SafeFunc``
+    rewritten before the enclosing call copies it; visiting top-down
+    would copy the still-unrewritten inner node into the replacement
+    and leave it behind as a literal ``SAFE.`` call.
     """
     modified = False
-    for node in list(tree.find_all(exp.SafeFunc)):
-        inner = node.this
+    for node in reversed(list(tree.find_all(exp.SafeFunc, exp.Dot))):
+        inner = _safe_call_target(node)
         if inner is None:
             continue
         replacement = exp.Anonymous(this="TRY", expressions=[inner.copy()])
         node.replace(replacement)
         modified = True
     return modified
+
+
+def _safe_call_target(node: exp.Expression) -> exp.Expression | None:
+    """Return the call wrapped by a ``SAFE.`` prefix, or ``None``.
+
+    SQLGlot emits a typed ``SafeFunc(call)`` for a bare ``SAFE.X(args)``
+    but falls back to ``Dot(SAFE, call)`` when the call is immediately
+    subscripted (``SAFE.PARSE_JSON(x)['k']``), so both shapes are
+    recognised.
+    """
+    if isinstance(node, exp.SafeFunc):
+        return node.this
+    if not isinstance(node, exp.Dot) or not isinstance(node.this, exp.Identifier):
+        return None
+    call = node.expression
+    is_call = isinstance(call, exp.Expression) and isinstance(call, exp.Func)
+    return call if is_call and node.this.name.upper() == "SAFE" else None
 
 
 __all__ = ["rewrite_safe_helpers"]

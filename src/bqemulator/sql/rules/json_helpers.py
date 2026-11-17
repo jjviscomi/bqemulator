@@ -393,8 +393,12 @@ def _produces_json(node: exp.Expression) -> bool:
     BigQuery-to-DuckDB transpiler emits for ``PARSE_JSON`` and the
     explicit ``CAST(... AS JSON)`` form. Adding more producers (e.g.
     ``JSON_EXTRACT``, ``JSON_OBJECT``, ``TO_JSON``) requires evidence
-    that the rewrite is safe for those AST shapes.
+    that the rewrite is safe for those AST shapes. ``TRY(x)`` (the
+    lowering of BigQuery's ``SAFE.`` prefix) has the type of ``x``, so
+    it is looked through.
     """
+    if isinstance(node, exp.Try):
+        return _produces_json(node.this)
     if isinstance(node, exp.ParseJSON):
         return True
     return isinstance(node, exp.Cast) and _is_json_type(node.to)
